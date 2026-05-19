@@ -178,7 +178,7 @@ async fn compute_ecl(req: actix_web::HttpRequest, web::Query(_params): web::Quer
     if !rl_allow() { return HttpResponse::TooManyRequests().json(json!({"error": "rate_limit_exceeded", "retry_after": 1})); }
     let result = compute_ecl_portfolio();
     let upstream = std::env::var("RISK_URL").unwrap_or_else(|_| "http://credit-risk-engine-rs:8080".to_string());
-    let _ = call_service_sync(&format!("{}/v1/notify", upstream), &format!("{\"source\": \"ifrs9-ecl-engine-rs\", \"action\": \"compute_ecl\"}"));
+    let _ = call_service_sync(&format!("{}/v1/notify", upstream), r#"{"source": "ifrs9-ecl-engine-rs", "action": "compute_ecl"}"#);
     db_persist(&state, "compute_ecl", &json!({"action": "compute_ecl"})).await;
     HttpResponse::Ok().insert_header(("content-security-policy", "default-src 'self'")).json(result)
 }

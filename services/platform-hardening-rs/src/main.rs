@@ -35,7 +35,7 @@ async fn test_coverage(req: actix_web::HttpRequest, state: web::Data<AppState>) 
     if let Err(resp) = check_jwt(&req) { return resp; }
     if !rl_allow() { return HttpResponse::TooManyRequests().json(json!({"error": "rate_limit_exceeded", "retry_after": 1})); }
     let upstream = std::env::var("SECURITY_URL").unwrap_or_else(|_| "http://security-gateway-go:8080".to_string());
-    let _ = call_service_sync(&format!("{}/v1/notify", upstream), &format!("{\"source\": \"platform-hardening-rs\", \"action\": \"test_coverage\"}"));
+    let _ = call_service_sync(&format!("{}/v1/notify", upstream), r#"{"source": "platform-hardening-rs", "action": "test_coverage"}"#);
     db_persist(&state, "test_coverage", &json!({"action": "test_coverage"})).await;
     HttpResponse::Ok().insert_header(("content-security-policy", "default-src 'self'")).json(json!({
         "enhancementId": 21,

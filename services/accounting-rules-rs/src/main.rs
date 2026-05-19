@@ -83,7 +83,7 @@ async fn evaluate_rules(req: actix_web::HttpRequest, body: web::Json<RuleEvalReq
         }).collect();
     db_persist(&state, "evaluate_rules", &json!({"action": "evaluate_rules"})).await;
     let upstream = std::env::var("GL_ENGINE_URL").unwrap_or_else(|_| "http://gl-engine-rs:8080".to_string());
-    let _ = call_service_sync(&format!("{}/v1/notify", upstream), &format!("{\"source\": \"accounting-rules-rs\", \"action\": \"evaluate_rules\"}"));
+    let _ = call_service_sync(&format!("{}/v1/notify", upstream), r#"{"source": "accounting-rules-rs", "action": "evaluate_rules"}"#);
     HttpResponse::Ok().json(json!({"event": body.event_type, "entries": matching, "total_rules_matched": matching.len()}))
 }
 

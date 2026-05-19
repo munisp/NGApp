@@ -90,7 +90,7 @@ async fn calculate_interest(req: actix_web::HttpRequest, body: web::Json<Interes
     };
     let maturity = body.principal + interest;
     let upstream = std::env::var("CORE_BANKING_URL").unwrap_or_else(|_| "http://core-banking-go:8080".to_string());
-    let _ = call_service_sync(&format!("{}/v1/notify", upstream), &format!("{\"source\": \"interest-computation-rs\", \"action\": \"calculate_interest\"}"));
+    let _ = call_service_sync(&format!("{}/v1/notify", upstream), r#"{"source": "interest-computation-rs", "action": "calculate_interest"}"#);
     db_persist(&state, "calculate_interest", &json!({"action": "calculate_interest"})).await;
     HttpResponse::Ok().json(json!({"principal": body.principal, "rate": body.rate_percent, "tenor_days": body.tenor_days,
         "day_count": convention, "compounding": compounding, "interest": (interest * 100.0).round() / 100.0,

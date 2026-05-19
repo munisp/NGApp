@@ -79,7 +79,7 @@ async fn enaira_cbdc(req: actix_web::HttpRequest, state: web::Data<AppState>) ->
         "middleware": middleware_actions("banking.enaira.cbdc"),
     });
     let upstream = std::env::var("AML_URL").unwrap_or_else(|_| "http://aml-engine-rs:8080".to_string());
-    let _ = call_service_sync(&format!("{}/v1/notify", upstream), &format!("{\"source\": \"ai-fraud-scoring-rs\", \"action\": \"enaira_cbdc\"}"));
+    let _ = call_service_sync(&format!("{}/v1/notify", upstream), r#"{"source": "ai-fraud-scoring-rs", "action": "enaira_cbdc"}"#);
     db_persist(&state, "enaira_cbdc", &json!({"action": "enaira_cbdc"})).await;
     HttpResponse::Ok().insert_header(("content-security-policy", "default-src 'self'")).json(result)
 }

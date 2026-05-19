@@ -206,7 +206,7 @@ async fn list_cbn_returns(req: actix_web::HttpRequest) -> HttpResponse {
     if !rl_allow() { return HttpResponse::TooManyRequests().json(json!({"error": "rate_limit_exceeded", "retry_after": 1})); }
     let returns = get_all_cbn_returns();
     let upstream = std::env::var("GL_ENGINE_URL").unwrap_or_else(|_| "http://gl-engine-rs:8080".to_string());
-    let _ = call_service_sync(&format!("{}/v1/notify", upstream), &format!("{\"source\": \"efass-generator-rs\", \"action\": \"list_cbn_returns\"}"));
+    let _ = call_service_sync(&format!("{}/v1/notify", upstream), r#"{"source": "efass-generator-rs", "action": "list_cbn_returns"}"#);
     HttpResponse::Ok().json(json!({
         "items": returns,
         "total": returns.len(),
