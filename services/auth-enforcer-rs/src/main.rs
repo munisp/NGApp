@@ -41,7 +41,7 @@ fn can_escalate(current_role: &str, target_role: &str) -> bool {
 }
 
 async fn health() -> HttpResponse {
-    HttpResponse::Ok().json(json!({"status": "healthy", "service": "auth-enforcer-rs", "version": "1.0.0"}))
+    HttpResponse::Ok().insert_header(("content-security-policy", "default-src 'self'")).json(json!({"status": "healthy", "service": "auth-enforcer-rs", "version": "1.0.0"}))
 }
 
 async fn enforce(req: actix_web::HttpRequest, state: web::Data<AppState>, body: web::Json<serde_json::Value>) -> HttpResponse {

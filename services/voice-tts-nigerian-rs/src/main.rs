@@ -24,7 +24,7 @@ fn estimate_duration_ms(text: &str) -> u64 { (text.split_whitespace().count() as
 fn phoneme_replace_nigerian(text: &str) -> String { text.replace("the", "de").replace("this", "dis") }
 
 async fn health() -> HttpResponse {
-    HttpResponse::Ok().json(json!({
+    HttpResponse::Ok().insert_header(("content-security-policy", "default-src 'self'")).json(json!({
         "status": "healthy",
         "service": "voice-tts-nigerian-rs",
         "version": "1.0.0",

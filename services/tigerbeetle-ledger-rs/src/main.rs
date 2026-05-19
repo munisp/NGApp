@@ -27,7 +27,7 @@ fn two_phase_status(pending: bool, posted: bool) -> &'static str {
 }
 
 async fn health() -> HttpResponse {
-    HttpResponse::Ok().json(json!({
+    HttpResponse::Ok().insert_header(("content-security-policy", "default-src 'self'")).json(json!({
         "status": "healthy",
         "service": "tigerbeetle-ledger-rs",
         "version": "1.0.0",

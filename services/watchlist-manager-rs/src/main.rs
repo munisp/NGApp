@@ -30,7 +30,7 @@ fn list_type_priority(list_type: &str) -> u8 {
 fn dedup_entries(entries: &mut Vec<String>) { entries.sort(); entries.dedup(); }
 
 async fn health() -> HttpResponse {
-    HttpResponse::Ok().json(json!({
+    HttpResponse::Ok().insert_header(("content-security-policy", "default-src 'self'")).json(json!({
         "status": "healthy",
         "service": "watchlist-manager-rs",
         "version": "1.0.0",

@@ -25,7 +25,7 @@ fn provision_required(classification: &str, amount: f64) -> f64 {
 fn disclosure_required(classification: &str) -> bool { classification != "remote" }
 
 async fn health() -> HttpResponse {
-    HttpResponse::Ok().json(json!({
+    HttpResponse::Ok().insert_header(("content-security-policy", "default-src 'self'")).json(json!({
         "status": "healthy",
         "service": "contingent-liabilities-rs",
         "version": "1.0.0",

@@ -19,7 +19,7 @@ struct AppState {
 fn grpc_status_to_http(code: u32) -> u16 { match code { 0 => 200, 1 => 499, 2 => 500, 3 => 400, 5 => 404, 7 => 403, 16 => 401, _ => 500 } }
 
 async fn health() -> HttpResponse {
-    HttpResponse::Ok().json(json!({"status": "healthy", "service": "grpc-gateway-rs"}))
+    HttpResponse::Ok().insert_header(("content-security-policy", "default-src 'self'")).json(json!({"status": "healthy", "service": "grpc-gateway-rs"}))
 }
 
 async fn transcode(req: actix_web::HttpRequest, state: web::Data<AppState>, body: web::Json<serde_json::Value>) -> HttpResponse {

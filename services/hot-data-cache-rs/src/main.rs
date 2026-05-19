@@ -19,7 +19,7 @@ struct AppState {
 fn cache_hit_rate(hits: u64, misses: u64) -> f64 { if hits + misses == 0 { 0.0 } else { hits as f64 / (hits + misses) as f64 * 100.0 } }
 
 async fn health() -> HttpResponse {
-    HttpResponse::Ok().json(json!({"status": "healthy", "service": "hot-data-cache-rs"}))
+    HttpResponse::Ok().insert_header(("content-security-policy", "default-src 'self'")).json(json!({"status": "healthy", "service": "hot-data-cache-rs"}))
 }
 
 async fn cache_get(req: actix_web::HttpRequest, state: web::Data<AppState>, body: web::Json<serde_json::Value>) -> HttpResponse {

@@ -23,7 +23,7 @@ fn basis(spot: f64, futures: f64) -> f64 { spot - futures }
 fn margin_requirement(contract_value: f64, initial_margin_pct: f64) -> f64 { contract_value * initial_margin_pct / 100.0 }
 
 async fn health() -> HttpResponse {
-    HttpResponse::Ok().json(json!({
+    HttpResponse::Ok().insert_header(("content-security-policy", "default-src 'self'")).json(json!({
         "status": "healthy",
         "service": "commodity-exchange-rs",
         "version": "1.0.0",

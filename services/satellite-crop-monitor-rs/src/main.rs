@@ -23,7 +23,7 @@ fn rainfall_adequacy(actual_mm: f64, expected_mm: f64) -> f64 { if expected_mm =
 fn yield_estimate(ndvi_avg: f64, rainfall_pct: f64, baseline_yield: f64) -> f64 { baseline_yield * ndvi_avg * (rainfall_pct / 100.0).min(1.2) }
 
 async fn health() -> HttpResponse {
-    HttpResponse::Ok().json(json!({"status": "healthy", "service": "satellite-crop-monitor-rs"}))
+    HttpResponse::Ok().insert_header(("content-security-policy", "default-src 'self'")).json(json!({"status": "healthy", "service": "satellite-crop-monitor-rs"}))
 }
 
 async fn analyze_imagery(req: actix_web::HttpRequest, state: web::Data<AppState>, body: web::Json<serde_json::Value>) -> HttpResponse {

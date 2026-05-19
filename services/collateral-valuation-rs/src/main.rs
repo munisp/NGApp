@@ -29,7 +29,7 @@ fn coverage_ratio(collateral_value: f64, loan_outstanding: f64) -> f64 {
 fn margin_call_needed(coverage: f64, minimum_coverage: f64) -> bool { coverage < minimum_coverage }
 
 async fn health() -> HttpResponse {
-    HttpResponse::Ok().json(json!({
+    HttpResponse::Ok().insert_header(("content-security-policy", "default-src 'self'")).json(json!({
         "status": "healthy",
         "service": "collateral-valuation-rs",
         "version": "1.0.0",

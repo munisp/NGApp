@@ -173,14 +173,19 @@ fn compute_ecl_portfolio() -> ECLPortfolioResult {
     }
 }
 
-async fn compute_ecl(req: actix_web::HttpRequest, web::Query(_params): web::Query<std::collections::HashMap<String, String>>) -> HttpResponse {
+async fn compute_ecl(req: actix_web::HttpRequest, web::Query(_params): web::Query<std::collections::HashMap<String, String>>, state: web::Data<AppState>) -> HttpResponse {
     if let Err(resp) = check_jwt(&req) { return resp; }
+    if !rl_allow() { return HttpResponse::TooManyRequests().json(json!({"error": "rate_limit_exceeded", "retry_after": 1})); }
     let result = compute_ecl_portfolio();
-    HttpResponse::Ok().json(result)
+    let upstream = std::env::var("RISK_URL").unwrap_or_else(|_| "http://credit-risk-engine-rs:8080".to_string());
+    let _ = call_service_sync(&format!("{}/v1/notify", upstream), &format!("{\"source\": \"ifrs9-ecl-engine-rs\", \"action\": \"compute_ecl\"}"));
+    db_persist(&state, "compute_ecl", &json!({"action": "compute_ecl"})).await;
+    HttpResponse::Ok().insert_header(("content-security-policy", "default-src 'self'")).json(result)
 }
 
 async fn healthz(req: actix_web::HttpRequest) -> HttpResponse {
     if let Err(resp) = check_jwt(&req) { return resp; }
+    if !rl_allow() { return HttpResponse::TooManyRequests().json(json!({"error": "rate_limit_exceeded", "retry_after": 1})); }
     HttpResponse::Ok().json(json!({
         "status": "healthy",
         "service": "ifrs9-ecl-engine-rs",

@@ -26,7 +26,7 @@ fn overnight_rate(nibor: f64, spread: f64) -> f64 { nibor + spread }
 fn collateral_required(amount: f64, unsecured_limit: f64) -> f64 { (amount - unsecured_limit).max(0.0) }
 
 async fn health() -> HttpResponse {
-    HttpResponse::Ok().json(json!({
+    HttpResponse::Ok().insert_header(("content-security-policy", "default-src 'self'")).json(json!({
         "status": "healthy",
         "service": "interbank-lending-rs",
         "version": "1.0.0",

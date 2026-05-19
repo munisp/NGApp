@@ -19,7 +19,7 @@ struct AppState {
 fn pan_detected(text: &str) -> bool { text.chars().filter(|c| c.is_ascii_digit()).count() >= 13 && text.chars().filter(|c| c.is_ascii_digit()).count() <= 19 }
 
 async fn health() -> HttpResponse {
-    HttpResponse::Ok().json(json!({"status": "healthy", "service": "pci-scanner-rs"}))
+    HttpResponse::Ok().insert_header(("content-security-policy", "default-src 'self'")).json(json!({"status": "healthy", "service": "pci-scanner-rs"}))
 }
 
 async fn scan_compliance(req: actix_web::HttpRequest, state: web::Data<AppState>, body: web::Json<serde_json::Value>) -> HttpResponse {

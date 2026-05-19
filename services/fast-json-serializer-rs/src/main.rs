@@ -20,7 +20,7 @@ fn estimate_json_size(fields: u32, avg_value_len: u32) -> u64 { (fields * (avg_v
 fn should_compress(size_bytes: u64) -> bool { size_bytes > 1024 }
 
 async fn health() -> HttpResponse {
-    HttpResponse::Ok().json(json!({"status": "healthy", "service": "fast-json-serializer-rs"}))
+    HttpResponse::Ok().insert_header(("content-security-policy", "default-src 'self'")).json(json!({"status": "healthy", "service": "fast-json-serializer-rs"}))
 }
 
 async fn serialize(req: actix_web::HttpRequest, state: web::Data<AppState>, body: web::Json<serde_json::Value>) -> HttpResponse {

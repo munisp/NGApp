@@ -19,7 +19,7 @@ struct AppState {
 fn sri_format_valid(hash: &str) -> bool { hash.starts_with("sha256-") || hash.starts_with("sha384-") || hash.starts_with("sha512-") }
 
 async fn health() -> HttpResponse {
-    HttpResponse::Ok().json(json!({"status": "healthy", "service": "sri-validator-rs"}))
+    HttpResponse::Ok().insert_header(("content-security-policy", "default-src 'self'")).json(json!({"status": "healthy", "service": "sri-validator-rs"}))
 }
 
 async fn validate_sri(req: actix_web::HttpRequest, state: web::Data<AppState>, body: web::Json<serde_json::Value>) -> HttpResponse {

@@ -19,7 +19,7 @@ struct AppState {
 fn frame_policy(origin: &str, allowed: &[&str]) -> bool { allowed.contains(&origin) }
 
 async fn health() -> HttpResponse {
-    HttpResponse::Ok().json(json!({"status": "healthy", "service": "clickjack-defender-rs"}))
+    HttpResponse::Ok().insert_header(("content-security-policy", "default-src 'self'")).json(json!({"status": "healthy", "service": "clickjack-defender-rs"}))
 }
 
 async fn check_frame(req: actix_web::HttpRequest, state: web::Data<AppState>, body: web::Json<serde_json::Value>) -> HttpResponse {

@@ -22,7 +22,7 @@ fn session_valid(created_at: u64, max_age_secs: u64, last_activity: u64, idle_ti
 }
 
 async fn health() -> HttpResponse {
-    HttpResponse::Ok().json(json!({"status": "healthy", "service": "session-security-rs"}))
+    HttpResponse::Ok().insert_header(("content-security-policy", "default-src 'self'")).json(json!({"status": "healthy", "service": "session-security-rs"}))
 }
 
 async fn validate_session(req: actix_web::HttpRequest, state: web::Data<AppState>, body: web::Json<serde_json::Value>) -> HttpResponse {

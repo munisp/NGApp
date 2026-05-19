@@ -19,7 +19,7 @@ struct AppState {
 fn should_use_replica(query: &str) -> bool { let q = query.trim().to_uppercase(); q.starts_with("SELECT") && !q.contains("FOR UPDATE") }
 
 async fn health() -> HttpResponse {
-    HttpResponse::Ok().json(json!({"status": "healthy", "service": "read-replica-router-rs"}))
+    HttpResponse::Ok().insert_header(("content-security-policy", "default-src 'self'")).json(json!({"status": "healthy", "service": "read-replica-router-rs"}))
 }
 
 async fn route_query(req: actix_web::HttpRequest, state: web::Data<AppState>, body: web::Json<serde_json::Value>) -> HttpResponse {

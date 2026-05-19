@@ -19,7 +19,7 @@ struct AppState {
 fn ip_in_cidr(ip: &str, cidr: &str) -> bool { cidr.contains('/') && ip.starts_with(cidr.split('/').next().unwrap_or("").rsplit('.').skip(1).collect::<Vec<_>>().into_iter().rev().collect::<Vec<_>>().join(".").as_str()) }
 
 async fn health() -> HttpResponse {
-    HttpResponse::Ok().json(json!({"status": "healthy", "service": "ip-allowlist-rs"}))
+    HttpResponse::Ok().insert_header(("content-security-policy", "default-src 'self'")).json(json!({"status": "healthy", "service": "ip-allowlist-rs"}))
 }
 
 async fn check_ip(req: actix_web::HttpRequest, state: web::Data<AppState>, body: web::Json<serde_json::Value>) -> HttpResponse {

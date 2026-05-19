@@ -19,7 +19,7 @@ struct AppState {
 fn compute_chain_hash(prev_hash: &str, entry: &str) -> String { format!("{:x}", prev_hash.bytes().chain(entry.bytes()).fold(0u64, |h, b| h.wrapping_mul(31).wrapping_add(b as u64))) }
 
 async fn health() -> HttpResponse {
-    HttpResponse::Ok().json(json!({"status": "healthy", "service": "immutable-audit-rs"}))
+    HttpResponse::Ok().insert_header(("content-security-policy", "default-src 'self'")).json(json!({"status": "healthy", "service": "immutable-audit-rs"}))
 }
 
 async fn append_entry(req: actix_web::HttpRequest, state: web::Data<AppState>, body: web::Json<serde_json::Value>) -> HttpResponse {

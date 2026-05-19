@@ -24,7 +24,7 @@ fn is_ubo(ownership_pct: f64) -> bool { ownership_pct >= 25.0 }
 fn shell_company_indicator(layers: u32, jurisdictions: u32) -> f64 { (layers as f64 * 15.0 + jurisdictions as f64 * 10.0).min(100.0) }
 
 async fn health() -> HttpResponse {
-    HttpResponse::Ok().json(json!({"status": "healthy", "service": "ubo-ownership-graph-rs"}))
+    HttpResponse::Ok().insert_header(("content-security-policy", "default-src 'self'")).json(json!({"status": "healthy", "service": "ubo-ownership-graph-rs"}))
 }
 
 async fn resolve_ubo(req: actix_web::HttpRequest, state: web::Data<AppState>, body: web::Json<serde_json::Value>) -> HttpResponse {

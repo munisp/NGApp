@@ -27,7 +27,7 @@ fn product_code(category: &str, sub: &str) -> String { format!("{}-{}-{}", categ
 fn eligible(age: u32, income: f64, min_age: u32, min_income: f64) -> bool { age >= min_age && income >= min_income }
 
 async fn health() -> HttpResponse {
-    HttpResponse::Ok().json(json!({
+    HttpResponse::Ok().insert_header(("content-security-policy", "default-src 'self'")).json(json!({
         "status": "healthy",
         "service": "product-factory-rs",
         "version": "1.0.0",

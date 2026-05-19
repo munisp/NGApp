@@ -22,7 +22,7 @@ fn cypher_match(node_type: &str, property: &str, value: &str) -> String {
 fn shortest_path(from: &str, to: &str) -> String { format!("MATCH p=shortestPath((a {{id:'{}'}})-[*]-(b {{id:'{}'}})) RETURN p", from, to) }
 
 async fn health() -> HttpResponse {
-    HttpResponse::Ok().json(json!({"status": "healthy", "service": "falkordb-graph-rs"}))
+    HttpResponse::Ok().insert_header(("content-security-policy", "default-src 'self'")).json(json!({"status": "healthy", "service": "falkordb-graph-rs"}))
 }
 
 async fn query_graph(req: actix_web::HttpRequest, state: web::Data<AppState>, body: web::Json<serde_json::Value>) -> HttpResponse {

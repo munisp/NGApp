@@ -116,6 +116,9 @@ jsonResp(w, 201, map[string]interface{}{"created": true, "id": id, "source": "da
 		return
 	}
 	// No DB — respond with in-memory acknowledgement
+	if dbErr := dbInsert(fmt.Sprintf("whatsapp_cloud_api_go-%d", time.Now().UnixNano()), "whatsapp_cloud_api_go", "default", "active", dataBytes); dbErr != nil {
+		log.Printf("[%s] dbInsert failed: %v", serviceName, dbErr)
+	}
 	jsonResp(w, 201, map[string]interface{}{"created": true, "id": id, "source": "in-memory"})
 }
 

@@ -67,7 +67,7 @@ fn generate_accrual_schedule(principal: f64, rate: f64, days: u32, freq: &str) -
 }
 
 async fn health(state: web::Data<AppState>) -> HttpResponse {
-    HttpResponse::Ok().json(json!({
+    HttpResponse::Ok().insert_header(("content-security-policy", "default-src 'self'")).json(json!({
         "status": "healthy",
         "service": "interest-computation-rs",
         "version": "1.0.0",
@@ -75,8 +75,9 @@ async fn health(state: web::Data<AppState>) -> HttpResponse {
 }
 
 
-async fn calculate_interest(req: actix_web::HttpRequest, body: web::Json<InterestCalcRequest>) -> HttpResponse {
+async fn calculate_interest(req: actix_web::HttpRequest, body: web::Json<InterestCalcRequest>, state: web::Data<AppState>) -> HttpResponse {
     if let Err(resp) = check_jwt(&req) { return resp; }
+    if !rl_allow() { return HttpResponse::TooManyRequests().json(json!({"error": "rate_limit_exceeded", "retry_after": 1})); }
     let convention = body.day_count_convention.as_deref().unwrap_or("ACT/365");
     let day_basis = get_day_basis(convention);
     let compounding = body.compounding.as_deref().unwrap_or("simple");
@@ -88,6 +89,9 @@ async fn calculate_interest(req: actix_web::HttpRequest, body: web::Json<Interes
         _ => compute_simple_interest(body.principal, body.rate_percent, body.tenor_days, day_basis),
     };
     let maturity = body.principal + interest;
+    let upstream = std::env::var("CORE_BANKING_URL").unwrap_or_else(|_| "http://core-banking-go:8080".to_string());
+    let _ = call_service_sync(&format!("{}/v1/notify", upstream), &format!("{\"source\": \"interest-computation-rs\", \"action\": \"calculate_interest\"}"));
+    db_persist(&state, "calculate_interest", &json!({"action": "calculate_interest"})).await;
     HttpResponse::Ok().json(json!({"principal": body.principal, "rate": body.rate_percent, "tenor_days": body.tenor_days,
         "day_count": convention, "compounding": compounding, "interest": (interest * 100.0).round() / 100.0,
         "maturity_amount": (maturity * 100.0).round() / 100.0}))
@@ -95,12 +99,14 @@ async fn calculate_interest(req: actix_web::HttpRequest, body: web::Json<Interes
 
 async fn accrual_schedule(req: actix_web::HttpRequest, body: web::Json<AccrualSchedule>) -> HttpResponse {
     if let Err(resp) = check_jwt(&req) { return resp; }
+    if !rl_allow() { return HttpResponse::TooManyRequests().json(json!({"error": "rate_limit_exceeded", "retry_after": 1})); }
     let schedule = generate_accrual_schedule(body.principal, body.rate, 365, &body.frequency);
     HttpResponse::Ok().json(json!({"account_id": body.account_id, "schedule": schedule}))
 }
 
 async fn effective_rate(req: actix_web::HttpRequest, body: web::Json<InterestCalcRequest>) -> HttpResponse {
     if let Err(resp) = check_jwt(&req) { return resp; }
+    if !rl_allow() { return HttpResponse::TooManyRequests().json(json!({"error": "rate_limit_exceeded", "retry_after": 1})); }
     let nominal = body.rate_percent / 100.0;
     let n = match body.compounding.as_deref().unwrap_or("monthly") {
         "daily" => 365.0, "monthly" => 12.0, "quarterly" => 4.0, "semi-annual" => 2.0, _ => 12.0,

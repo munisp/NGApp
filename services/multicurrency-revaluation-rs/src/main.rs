@@ -21,7 +21,7 @@ fn unrealized_pnl(positions: &[(f64, f64, f64)]) -> f64 { positions.iter().map(|
 fn translation_rate(method: &str) -> &str { match method { "current" => "closing_rate", "temporal" => "historical_rate", _ => "closing_rate" } }
 
 async fn health() -> HttpResponse {
-    HttpResponse::Ok().json(json!({
+    HttpResponse::Ok().insert_header(("content-security-policy", "default-src 'self'")).json(json!({
         "status": "healthy",
         "service": "multicurrency-revaluation-rs",
         "version": "1.0.0",

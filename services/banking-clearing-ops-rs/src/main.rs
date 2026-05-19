@@ -33,8 +33,9 @@ async fn db_persist(state: &web::Data<AppState>, endpoint: &str, data: &serde_js
 }
 
 
-async fn cheque_clearing_gl(req: actix_web::HttpRequest) -> HttpResponse {
+async fn cheque_clearing_gl(req: actix_web::HttpRequest, state: web::Data<AppState>) -> HttpResponse {
     if let Err(resp) = check_jwt(&req) { return resp; }
+    if !rl_allow() { return HttpResponse::TooManyRequests().json(json!({"error": "rate_limit_exceeded", "retry_after": 1})); }
     let result = json!({
         "batchId": "CHQ-CLR-2026-05-09",
         "businessDate": "2026-05-09",
@@ -77,7 +78,10 @@ async fn cheque_clearing_gl(req: actix_web::HttpRequest) -> HttpResponse {
         },
         "middleware": middleware_actions("banking.cheque.clearing"),
     });
-    HttpResponse::Ok().json(result)
+    let upstream = std::env::var("GL_ENGINE_URL").unwrap_or_else(|_| "http://gl-engine-rs:8080".to_string());
+    let _ = call_service_sync(&format!("{}/v1/notify", upstream), &format!("{\"source\": \"banking-clearing-ops-rs\", \"action\": \"cheque_clearing_gl\"}"));
+    db_persist(&state, "cheque_clearing_gl", &json!({"action": "cheque_clearing_gl"})).await;
+    HttpResponse::Ok().insert_header(("content-security-policy", "default-src 'self'")).json(result)
 }
 
 // ═══════════════════════════════════════════════════════════════════════════════
@@ -86,6 +90,7 @@ async fn cheque_clearing_gl(req: actix_web::HttpRequest) -> HttpResponse {
 
 async fn collateral_gl(req: actix_web::HttpRequest) -> HttpResponse {
     if let Err(resp) = check_jwt(&req) { return resp; }
+    if !rl_allow() { return HttpResponse::TooManyRequests().json(json!({"error": "rate_limit_exceeded", "retry_after": 1})); }
     let result = json!({
         "batchId": "COLL-GL-2026-05-09",
         "businessDate": "2026-05-09",
@@ -144,6 +149,7 @@ async fn collateral_gl(req: actix_web::HttpRequest) -> HttpResponse {
 
 async fn cash_management_gl(req: actix_web::HttpRequest) -> HttpResponse {
     if let Err(resp) = check_jwt(&req) { return resp; }
+    if !rl_allow() { return HttpResponse::TooManyRequests().json(json!({"error": "rate_limit_exceeded", "retry_after": 1})); }
     let result = json!({
         "batchId": "CASH-GL-2026-05-09",
         "businessDate": "2026-05-09",
@@ -202,6 +208,7 @@ async fn cash_management_gl(req: actix_web::HttpRequest) -> HttpResponse {
 
 async fn swift_correspondent_gl(req: actix_web::HttpRequest) -> HttpResponse {
     if let Err(resp) = check_jwt(&req) { return resp; }
+    if !rl_allow() { return HttpResponse::TooManyRequests().json(json!({"error": "rate_limit_exceeded", "retry_after": 1})); }
     let result = json!({
         "batchId": "SWIFT-GL-2026-05-09",
         "businessDate": "2026-05-09",
@@ -276,6 +283,7 @@ fn middleware_actions(topic: &str) -> serde_json::Value {
 
 async fn healthz(req: actix_web::HttpRequest) -> HttpResponse {
     if let Err(resp) = check_jwt(&req) { return resp; }
+    if !rl_allow() { return HttpResponse::TooManyRequests().json(json!({"error": "rate_limit_exceeded", "retry_after": 1})); }
     HttpResponse::Ok().json(json!({
         "status": "healthy",
         "service": "banking-clearing-ops-rs",

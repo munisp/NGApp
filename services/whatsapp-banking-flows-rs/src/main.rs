@@ -25,7 +25,7 @@ fn next_step(current: u8, response: &str) -> u8 {
 }
 
 async fn health() -> HttpResponse {
-    HttpResponse::Ok().json(json!({
+    HttpResponse::Ok().insert_header(("content-security-policy", "default-src 'self'")).json(json!({
         "status": "healthy",
         "service": "whatsapp-banking-flows-rs",
         "version": "1.0.0",

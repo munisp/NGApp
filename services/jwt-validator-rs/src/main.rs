@@ -26,7 +26,7 @@ fn validate_claims(exp: u64, nbf: u64, iss: &str) -> Vec<String> {
 }
 
 async fn health() -> HttpResponse {
-    HttpResponse::Ok().json(json!({"status": "healthy", "service": "jwt-validator-rs"}))
+    HttpResponse::Ok().insert_header(("content-security-policy", "default-src 'self'")).json(json!({"status": "healthy", "service": "jwt-validator-rs"}))
 }
 
 async fn validate_jwt(req: actix_web::HttpRequest, state: web::Data<AppState>, body: web::Json<serde_json::Value>) -> HttpResponse {

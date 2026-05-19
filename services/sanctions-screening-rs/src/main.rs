@@ -30,7 +30,7 @@ fn sanctions_list_priority(list: &str) -> u8 {
 }
 
 async fn health() -> HttpResponse {
-    HttpResponse::Ok().json(json!({
+    HttpResponse::Ok().insert_header(("content-security-policy", "default-src 'self'")).json(json!({
         "status": "healthy",
         "service": "sanctions-screening-rs",
         "version": "1.0.0",

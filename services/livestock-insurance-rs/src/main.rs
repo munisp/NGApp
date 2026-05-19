@@ -21,7 +21,7 @@ fn payout_amount(insured_value: f64, deductible_pct: f64) -> f64 { insured_value
 fn claim_status(verified: bool, approved: bool) -> &'static str { match (verified, approved) { (true, true) => "approved", (true, false) => "denied", _ => "pending" } }
 
 async fn health() -> HttpResponse {
-    HttpResponse::Ok().json(json!({"status": "healthy", "service": "livestock-insurance-rs"}))
+    HttpResponse::Ok().insert_header(("content-security-policy", "default-src 'self'")).json(json!({"status": "healthy", "service": "livestock-insurance-rs"}))
 }
 
 async fn process_claim(req: actix_web::HttpRequest, state: web::Data<AppState>, body: web::Json<serde_json::Value>) -> HttpResponse {

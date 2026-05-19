@@ -21,7 +21,7 @@ fn seasonal_repayment(principal: f64, crop: &str) -> Vec<(u32, f64)> { let month
 fn anchor_borrower_eligible(farm_size_ha: f64, registered: bool) -> bool { farm_size_ha >= 0.5 && registered }
 
 async fn health() -> HttpResponse {
-    HttpResponse::Ok().json(json!({"status": "healthy", "service": "agriculture-banking-rs"}))
+    HttpResponse::Ok().insert_header(("content-security-policy", "default-src 'self'")).json(json!({"status": "healthy", "service": "agriculture-banking-rs"}))
 }
 
 async fn assess_farm(req: actix_web::HttpRequest, state: web::Data<AppState>, body: web::Json<serde_json::Value>) -> HttpResponse {

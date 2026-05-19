@@ -33,7 +33,7 @@ struct SWIFTMessage {
 
 async fn healthz(req: actix_web::HttpRequest, state: web::Data<AppState>) -> HttpResponse {
     if let Err(resp) = check_jwt(&req) { return resp; }
-    HttpResponse::Ok().json(json!({
+    HttpResponse::Ok().insert_header(("content-security-policy", "default-src 'self'")).json(json!({
         "service": "swift-iso20022-rs",
         "status": "healthy",
         "protocol": ["MT103", "MT202", "MT760", "pacs.008", "pacs.009", "camt.053"],

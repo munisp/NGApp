@@ -21,7 +21,7 @@ fn evaluate_policy(subject_role: &str, resource: &str, action: &str, context: &s
 }
 
 async fn health() -> HttpResponse {
-    HttpResponse::Ok().json(json!({"status": "healthy", "service": "pbac-engine-rs"}))
+    HttpResponse::Ok().insert_header(("content-security-policy", "default-src 'self'")).json(json!({"status": "healthy", "service": "pbac-engine-rs"}))
 }
 
 async fn evaluate_policy_handler(req: actix_web::HttpRequest, state: web::Data<AppState>, body: web::Json<serde_json::Value>) -> HttpResponse {

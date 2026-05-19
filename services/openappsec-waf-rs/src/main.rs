@@ -20,7 +20,7 @@ fn detect_sqli(input: &str) -> bool { let lower = input.to_lowercase(); lower.co
 fn detect_xss(input: &str) -> bool { input.contains("<script") || input.contains("javascript:") || input.contains("onerror=") }
 
 async fn health() -> HttpResponse {
-    HttpResponse::Ok().json(json!({"status": "healthy", "service": "openappsec-waf-rs"}))
+    HttpResponse::Ok().insert_header(("content-security-policy", "default-src 'self'")).json(json!({"status": "healthy", "service": "openappsec-waf-rs"}))
 }
 
 async fn evaluate_request(req: actix_web::HttpRequest, state: web::Data<AppState>, body: web::Json<serde_json::Value>) -> HttpResponse {

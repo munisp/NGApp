@@ -21,7 +21,7 @@ fn gdp_impact_on_pd(base_pd: f64, gdp_shock: f64) -> f64 { (base_pd * (1.0 + gdp
 fn capital_post_stress(capital: f64, losses: f64) -> f64 { (capital - losses).max(0.0) }
 
 async fn health() -> HttpResponse {
-    HttpResponse::Ok().json(json!({"status": "healthy", "service": "stress-testing-rs"}))
+    HttpResponse::Ok().insert_header(("content-security-policy", "default-src 'self'")).json(json!({"status": "healthy", "service": "stress-testing-rs"}))
 }
 
 async fn run_stress(req: actix_web::HttpRequest, state: web::Data<AppState>, body: web::Json<serde_json::Value>) -> HttpResponse {

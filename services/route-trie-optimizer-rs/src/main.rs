@@ -19,7 +19,7 @@ struct AppState {
 fn trie_depth(path: &str) -> u32 { path.split('/').filter(|s| !s.is_empty()).count() as u32 }
 
 async fn health() -> HttpResponse {
-    HttpResponse::Ok().json(json!({"status": "healthy", "service": "route-trie-optimizer-rs"}))
+    HttpResponse::Ok().insert_header(("content-security-policy", "default-src 'self'")).json(json!({"status": "healthy", "service": "route-trie-optimizer-rs"}))
 }
 
 async fn optimize_routes(req: actix_web::HttpRequest, state: web::Data<AppState>, body: web::Json<serde_json::Value>) -> HttpResponse {

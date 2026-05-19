@@ -29,7 +29,7 @@ fn format_ussd_response(text: &str, end_session: bool) -> serde_json::Value {
 }
 
 async fn health() -> HttpResponse {
-    HttpResponse::Ok().json(json!({
+    HttpResponse::Ok().insert_header(("content-security-policy", "default-src 'self'")).json(json!({
         "status": "healthy",
         "service": "ussd-transaction-engine-rs",
         "version": "1.0.0",

@@ -19,7 +19,7 @@ struct AppState {
 fn visible_items(scroll_top: u64, item_height: u64, viewport_height: u64) -> (u64, u64) { let start = scroll_top / item_height.max(1); let count = viewport_height / item_height.max(1) + 2; (start, count) }
 
 async fn health() -> HttpResponse {
-    HttpResponse::Ok().json(json!({"status": "healthy", "service": "virtual-scroll-engine-rs"}))
+    HttpResponse::Ok().insert_header(("content-security-policy", "default-src 'self'")).json(json!({"status": "healthy", "service": "virtual-scroll-engine-rs"}))
 }
 
 async fn compute_window(req: actix_web::HttpRequest, state: web::Data<AppState>, body: web::Json<serde_json::Value>) -> HttpResponse {

@@ -19,7 +19,7 @@ struct AppState {
 fn partition_key(key: &str, partitions: u32) -> u32 { key.bytes().fold(0u32, |h, b| h.wrapping_mul(31).wrapping_add(b as u32)) % partitions }
 
 async fn health() -> HttpResponse {
-    HttpResponse::Ok().json(json!({"status": "healthy", "service": "fluvio-streams-rs"}))
+    HttpResponse::Ok().insert_header(("content-security-policy", "default-src 'self'")).json(json!({"status": "healthy", "service": "fluvio-streams-rs"}))
 }
 
 async fn process_stream(req: actix_web::HttpRequest, state: web::Data<AppState>, body: web::Json<serde_json::Value>) -> HttpResponse {

@@ -29,7 +29,7 @@ fn reactivation_requirements(status: &str) -> Vec<&str> {
 }
 
 async fn health() -> HttpResponse {
-    HttpResponse::Ok().json(json!({
+    HttpResponse::Ok().insert_header(("content-security-policy", "default-src 'self'")).json(json!({
         "status": "healthy",
         "service": "dormancy-management-rs",
         "version": "1.0.0",

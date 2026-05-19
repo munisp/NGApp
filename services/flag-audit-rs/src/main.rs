@@ -19,7 +19,7 @@ struct AppState {
 fn change_type(old: bool, new: bool) -> &'static str { match (old, new) { (false, true) => "enabled", (true, false) => "disabled", _ => "unchanged" } }
 
 async fn health() -> HttpResponse {
-    HttpResponse::Ok().json(json!({"status": "healthy", "service": "flag-audit-rs"}))
+    HttpResponse::Ok().insert_header(("content-security-policy", "default-src 'self'")).json(json!({"status": "healthy", "service": "flag-audit-rs"}))
 }
 
 async fn audit_change(req: actix_web::HttpRequest, state: web::Data<AppState>, body: web::Json<serde_json::Value>) -> HttpResponse {

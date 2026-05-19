@@ -275,6 +275,11 @@ func handleTraverseChain(w http.ResponseWriter, r *http.Request) {
 	chains = append(chains, chain)
 	mu.Unlock()
 
+	csURL := os.Getenv("KYC_ENGINE_URL")
+	if csURL == "" { csURL = "http://kyc-engine-go:8080" }
+	if _, csErr := callService("POST", csURL+"/v1/notify", map[string]interface{}{"source": "beneficial_ownership_go", "action": "create"}); csErr != nil {
+		log.Printf("[%s] upstream call failed: %v", serviceName, csErr)
+	}
 	respondJSON(w, 200, map[string]interface{}{
 		"chain":        chain,
 		"ubosFound":    len(ubos),

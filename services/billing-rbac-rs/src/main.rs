@@ -28,7 +28,7 @@ fn has_permission(role: &str, action: &str) -> bool {
 fn role_hierarchy(role: &str) -> u8 { match role { "admin" => 4, "manager" => 3, "agent" => 2, "viewer" => 1, _ => 0 } }
 
 async fn health() -> HttpResponse {
-    HttpResponse::Ok().json(json!({
+    HttpResponse::Ok().insert_header(("content-security-policy", "default-src 'self'")).json(json!({
         "status": "healthy",
         "service": "billing-rbac-rs",
         "version": "1.0.0",

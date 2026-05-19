@@ -19,7 +19,7 @@ struct AppState {
 fn optimal_batch_size(total: u64, max_batch: u64) -> u64 { total.min(max_batch).max(1) }
 
 async fn health() -> HttpResponse {
-    HttpResponse::Ok().json(json!({"status": "healthy", "service": "tigerbeetle-batch-engine-rs"}))
+    HttpResponse::Ok().insert_header(("content-security-policy", "default-src 'self'")).json(json!({"status": "healthy", "service": "tigerbeetle-batch-engine-rs"}))
 }
 
 async fn process_batch(req: actix_web::HttpRequest, state: web::Data<AppState>, body: web::Json<serde_json::Value>) -> HttpResponse {

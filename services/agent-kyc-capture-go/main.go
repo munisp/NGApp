@@ -203,6 +203,11 @@ func handleCreateCapture(w http.ResponseWriter, r *http.Request) {
 		}
 	}
 
+	csURL := os.Getenv("KYC_ENGINE_URL")
+	if csURL == "" { csURL = "http://kyc-engine-go:8080" }
+	if _, csErr := callService("POST", csURL+"/v1/notify", map[string]interface{}{"source": "agent_kyc_capture_go", "action": "create"}); csErr != nil {
+		log.Printf("[%s] upstream call failed: %v", serviceName, csErr)
+	}
 	respondJSON(w, 201, map[string]interface{}{
 		"created": true, "capture": form,
 		"next_steps": []string{"sync_to_server", "trigger_ocr", "verify_bvn"},

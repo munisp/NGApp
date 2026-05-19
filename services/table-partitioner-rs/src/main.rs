@@ -19,7 +19,7 @@ struct AppState {
 fn partition_name(table: &str, date: &str) -> String { format!("{}_{}", table, date.replace('-', "")) }
 
 async fn health() -> HttpResponse {
-    HttpResponse::Ok().json(json!({"status": "healthy", "service": "table-partitioner-rs"}))
+    HttpResponse::Ok().insert_header(("content-security-policy", "default-src 'self'")).json(json!({"status": "healthy", "service": "table-partitioner-rs"}))
 }
 
 async fn partition(req: actix_web::HttpRequest, state: web::Data<AppState>, body: web::Json<serde_json::Value>) -> HttpResponse {

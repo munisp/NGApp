@@ -19,7 +19,7 @@ struct AppState {
 fn max_concurrent_streams(available_memory_mb: u64) -> u32 { (available_memory_mb * 10).min(1000) as u32 }
 
 async fn health() -> HttpResponse {
-    HttpResponse::Ok().json(json!({"status": "healthy", "service": "http2-multiplexer-rs"}))
+    HttpResponse::Ok().insert_header(("content-security-policy", "default-src 'self'")).json(json!({"status": "healthy", "service": "http2-multiplexer-rs"}))
 }
 
 async fn multiplex(req: actix_web::HttpRequest, state: web::Data<AppState>, body: web::Json<serde_json::Value>) -> HttpResponse {

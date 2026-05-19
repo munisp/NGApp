@@ -28,7 +28,7 @@ fn validate_iban(iban: &str) -> bool { iban.len() >= 15 && iban.len() <= 34 }
 fn generate_msg_id() -> String { format!("MSG{}", std::time::SystemTime::now().duration_since(std::time::UNIX_EPOCH).unwrap().as_millis()) }
 
 async fn health() -> HttpResponse {
-    HttpResponse::Ok().json(json!({
+    HttpResponse::Ok().insert_header(("content-security-policy", "default-src 'self'")).json(json!({
         "status": "healthy",
         "service": "iso20022-hub-rs",
         "version": "1.0.0",

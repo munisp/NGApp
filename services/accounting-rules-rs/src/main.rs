@@ -63,7 +63,7 @@ fn validate_rule(rule: &AccountingRule) -> Vec<String> {
 }
 
 async fn health(state: web::Data<AppState>) -> HttpResponse {
-    HttpResponse::Ok().json(json!({
+    HttpResponse::Ok().insert_header(("content-security-policy", "default-src 'self'")).json(json!({
         "status": "healthy",
         "service": "accounting-rules-rs",
         "version": "1.0.0",
@@ -73,6 +73,7 @@ async fn health(state: web::Data<AppState>) -> HttpResponse {
 
 async fn evaluate_rules(req: actix_web::HttpRequest, body: web::Json<RuleEvalRequest>, state: web::Data<AppState>) -> HttpResponse {
     if let Err(resp) = check_jwt(&req) { return resp; }
+    if !rl_allow() { return HttpResponse::TooManyRequests().json(json!({"error": "rate_limit_exceeded", "retry_after": 1})); }
     let rules = state.rules.lock().unwrap();
     let matching: Vec<serde_json::Value> = rules.iter()
         .filter(|r| r.event_type == body.event_type && r.active.unwrap_or(true))
@@ -81,17 +82,21 @@ async fn evaluate_rules(req: actix_web::HttpRequest, body: web::Json<RuleEvalReq
             json!({"rule_id": r.rule_id, "debit": r.debit_account, "credit": r.credit_account, "amount": computed, "formula": r.amount_formula})
         }).collect();
     db_persist(&state, "evaluate_rules", &json!({"action": "evaluate_rules"})).await;
+    let upstream = std::env::var("GL_ENGINE_URL").unwrap_or_else(|_| "http://gl-engine-rs:8080".to_string());
+    let _ = call_service_sync(&format!("{}/v1/notify", upstream), &format!("{\"source\": \"accounting-rules-rs\", \"action\": \"evaluate_rules\"}"));
     HttpResponse::Ok().json(json!({"event": body.event_type, "entries": matching, "total_rules_matched": matching.len()}))
 }
 
 async fn validate_rule_handler(req: actix_web::HttpRequest, body: web::Json<AccountingRule>) -> HttpResponse {
     if let Err(resp) = check_jwt(&req) { return resp; }
+    if !rl_allow() { return HttpResponse::TooManyRequests().json(json!({"error": "rate_limit_exceeded", "retry_after": 1})); }
     let errors = validate_rule(&body);
     HttpResponse::Ok().json(json!({"valid": errors.is_empty(), "errors": errors}))
 }
 
 async fn rules_by_event(req: actix_web::HttpRequest, path: web::Path<String>, state: web::Data<AppState>) -> HttpResponse {
     if let Err(resp) = check_jwt(&req) { return resp; }
+    if !rl_allow() { return HttpResponse::TooManyRequests().json(json!({"error": "rate_limit_exceeded", "retry_after": 1})); }
     let event_type = path.into_inner();
     let rules = state.rules.lock().unwrap();
     let matching: Vec<&AccountingRule> = rules.iter().filter(|r| r.event_type == event_type).collect();

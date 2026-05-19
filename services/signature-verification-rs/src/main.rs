@@ -19,7 +19,7 @@ struct AppState {
 fn signature_algorithm(alg: &str) -> bool { matches!(alg, "RS256" | "RS384" | "RS512" | "ES256" | "ES384" | "EdDSA") }
 
 async fn health() -> HttpResponse {
-    HttpResponse::Ok().json(json!({"status": "healthy", "service": "signature-verification-rs"}))
+    HttpResponse::Ok().insert_header(("content-security-policy", "default-src 'self'")).json(json!({"status": "healthy", "service": "signature-verification-rs"}))
 }
 
 async fn verify_signature(req: actix_web::HttpRequest, state: web::Data<AppState>, body: web::Json<serde_json::Value>) -> HttpResponse {

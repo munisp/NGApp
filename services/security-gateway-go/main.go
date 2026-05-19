@@ -139,6 +139,10 @@ func handleCreate(w http.ResponseWriter, r *http.Request) {
 	}
 	if rec.Type == "" { rec.Type = "primary" }
 	records = append(records, rec)
+	dataBytes, _ := json.Marshal(body)
+	if dbErr := dbInsert(fmt.Sprintf("security_gateway_go-%d", time.Now().UnixNano()), "security_gateway_go", "default", "active", dataBytes); dbErr != nil {
+		log.Printf("[%s] dbInsert failed: %v", serviceName, dbErr)
+	}
 	domainStats.TotalRecords = len(records)
 
 	auditLog = append(auditLog, AuditEntry{

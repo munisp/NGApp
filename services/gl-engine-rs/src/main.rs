@@ -94,7 +94,7 @@ fn compute_trial_balance(accounts: &[GLAccount]) -> serde_json::Value {
 }
 
 async fn health(state: web::Data<AppState>) -> HttpResponse {
-    HttpResponse::Ok().json(json!({
+    HttpResponse::Ok().insert_header(("content-security-policy", "default-src 'self'")).json(json!({
         "status": "healthy",
         "service": "gl-engine-rs",
         "version": "1.0.0",

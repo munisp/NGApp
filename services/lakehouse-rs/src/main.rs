@@ -19,7 +19,7 @@ struct AppState {
 fn partition_path(table: &str, date: &str) -> String { format!("lakehouse/{}/year={}/month={}/day={}", table, &date[..4], &date[5..7], &date[8..10]) }
 
 async fn health() -> HttpResponse {
-    HttpResponse::Ok().json(json!({"status": "healthy", "service": "lakehouse-rs"}))
+    HttpResponse::Ok().insert_header(("content-security-policy", "default-src 'self'")).json(json!({"status": "healthy", "service": "lakehouse-rs"}))
 }
 
 async fn query_lake(req: actix_web::HttpRequest, state: web::Data<AppState>, body: web::Json<serde_json::Value>) -> HttpResponse {

@@ -24,7 +24,7 @@ fn nibss_fee(amount: f64) -> f64 {
 }
 
 async fn health() -> HttpResponse {
-    HttpResponse::Ok().json(json!({
+    HttpResponse::Ok().insert_header(("content-security-policy", "default-src 'self'")).json(json!({
         "status": "healthy",
         "service": "bulk-payments-rs",
         "version": "1.0.0",

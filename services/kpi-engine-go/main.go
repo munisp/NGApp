@@ -23,8 +23,6 @@ import (
 
 )
 
-var db *sql.DB
-
 var serviceName = "kpi-engine-go"
 
 var (
@@ -807,6 +805,10 @@ func rollUpHandler(w http.ResponseWriter, r *http.Request) {
 	}
 	
 	tree := buildTree(RoleCEO)
+	dbData, _ := json.Marshal(map[string]string{"service": "kpi_engine_go", "action": "create"})
+	if dbErr := dbInsert(fmt.Sprintf("kpi_engine_go-%d", time.Now().UnixNano()), "kpi_engine_go", "default", "active", dbData); dbErr != nil {
+		log.Printf("[%s] dbInsert failed: %v", serviceName, dbErr)
+	}
 	jsonResp(w, 200, tree)
 }
 

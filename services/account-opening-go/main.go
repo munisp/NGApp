@@ -334,6 +334,10 @@ func createHandler(w http.ResponseWriter, r *http.Request) {
 		"timestamp": app.CreatedAt,
 	})
 
+	dataBytes, _ := json.Marshal(body)
+	if dbErr := dbInsert(fmt.Sprintf("account_opening_go-%d", time.Now().UnixNano()), "account_opening_go", "default", "active", dataBytes); dbErr != nil {
+		log.Printf("[%s] dbInsert failed: %v", serviceName, dbErr)
+	}
 	jsonResp(w, 201, map[string]interface{}{
 		"application": app,
 		"message":     fmt.Sprintf("Account application approved — %s KYC verified", app.KYCLevel),

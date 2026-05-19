@@ -19,7 +19,7 @@ struct AppState {
 fn pin_block_format0(pin: &str, pan: &str) -> String { format!("0{}{:0>12}", pin.len(), &pan[pan.len()-13..pan.len()-1]) }
 
 async fn health() -> HttpResponse {
-    HttpResponse::Ok().json(json!({"status": "healthy", "service": "pin-block-engine-rs"}))
+    HttpResponse::Ok().insert_header(("content-security-policy", "default-src 'self'")).json(json!({"status": "healthy", "service": "pin-block-engine-rs"}))
 }
 
 async fn format_pin_block(req: actix_web::HttpRequest, state: web::Data<AppState>, body: web::Json<serde_json::Value>) -> HttpResponse {

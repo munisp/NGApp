@@ -21,7 +21,7 @@ fn movement_record(from: &str, to: &str) -> String { format!("{} -> {}", from, t
 fn quarantine_required(disease_zone: bool) -> bool { disease_zone }
 
 async fn health() -> HttpResponse {
-    HttpResponse::Ok().json(json!({"status": "healthy", "service": "animal-id-traceability-rs"}))
+    HttpResponse::Ok().insert_header(("content-security-policy", "default-src 'self'")).json(json!({"status": "healthy", "service": "animal-id-traceability-rs"}))
 }
 
 async fn trace_animal(req: actix_web::HttpRequest, state: web::Data<AppState>, body: web::Json<serde_json::Value>) -> HttpResponse {

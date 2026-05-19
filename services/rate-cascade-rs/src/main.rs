@@ -32,7 +32,7 @@ fn blended_rate(tiers: &[(f64, f64)], amount: f64) -> f64 {
 }
 
 async fn health() -> HttpResponse {
-    HttpResponse::Ok().json(json!({"status": "healthy", "service": "rate-cascade-rs"}))
+    HttpResponse::Ok().insert_header(("content-security-policy", "default-src 'self'")).json(json!({"status": "healthy", "service": "rate-cascade-rs"}))
 }
 
 async fn cascade_rate(req: actix_web::HttpRequest, state: web::Data<AppState>, body: web::Json<serde_json::Value>) -> HttpResponse {

@@ -32,11 +32,12 @@ fn sliding_window_count(timestamps: &[u64], window_ms: u64, now: u64) -> u32 {
 }
 
 async fn health() -> HttpResponse {
-    HttpResponse::Ok().json(json!({"status": "healthy", "service": "adaptive-rate-limiter-rs", "version": "1.0.0"}))
+    HttpResponse::Ok().insert_header(("content-security-policy", "default-src 'self'")).json(json!({"status": "healthy", "service": "adaptive-rate-limiter-rs", "version": "1.0.0"}))
 }
 
 async fn check_rate(req: actix_web::HttpRequest, body: web::Json<serde_json::Value>, state: web::Data<AppState>) -> HttpResponse {
     if let Err(resp) = check_jwt(&req) { return resp; }
+    if !rl_allow() { return HttpResponse::TooManyRequests().json(json!({"error": "rate_limit_exceeded", "retry_after": 1})); }
     let client_id = body.get("client_id").and_then(|v| v.as_str()).unwrap_or("unknown");
     let base_rate = body.get("base_rate").and_then(|v| v.as_u64()).unwrap_or(100);
     let error_rate = body.get("error_rate").and_then(|v| v.as_f64()).unwrap_or(0.0);
@@ -47,12 +48,17 @@ async fn check_rate(req: actix_web::HttpRequest, body: web::Json<serde_json::Val
     let (tokens, _) = buckets.entry(client_id.to_string()).or_insert((limit, now_ms));
     let allowed = *tokens > 0;
     if allowed { *tokens -= 1; }
+    db_persist(&state, "check_rate", &json!({"action": "check_rate"})).await;
+    let upstream = std::env::var("METRICS_URL").unwrap_or_else(|_| "http://kpi-threshold-monitor-rs:8080".to_string());
+    let _ = call_service_sync(&format!("{}/v1/notify", upstream), &format!("{\"source\": \"adaptive-rate-limiter-rs\", \"action\": \"check_rate\"}"));
     HttpResponse::Ok().json(json!({"client_id": client_id, "allowed": allowed, "remaining": tokens, "limit": limit, "adaptive_factor": limit as f64 / base_rate as f64}))
 }
 
 async fn stats(req: actix_web::HttpRequest, state: web::Data<AppState>) -> HttpResponse {
     if let Err(resp) = check_jwt(&req) { return resp; }
+    if !rl_allow() { return HttpResponse::TooManyRequests().json(json!({"error": "rate_limit_exceeded", "retry_after": 1})); }
     let buckets = state.buckets.lock().unwrap();
+    db_persist(&state, "stats", &json!({"action": "stats"})).await;
     HttpResponse::Ok().json(json!({"active_clients": buckets.len(), "service": "adaptive-rate-limiter-rs"}))
 }
 

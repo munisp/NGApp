@@ -37,7 +37,7 @@ fn cbn_reporting_threshold_ngn() -> f64 { 5_000_000.0 }
 fn fatf_reporting_threshold_usd() -> f64 { 10_000.0 }
 
 async fn health() -> HttpResponse {
-    HttpResponse::Ok().json(json!({
+    HttpResponse::Ok().insert_header(("content-security-policy", "default-src 'self'")).json(json!({
         "status": "healthy",
         "service": "aml-engine-rs",
         "version": "1.0.0",

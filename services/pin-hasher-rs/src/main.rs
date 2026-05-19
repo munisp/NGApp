@@ -19,7 +19,7 @@ struct AppState {
 fn pin_complexity_check(pin: &str) -> Vec<String> { let mut e = Vec::new(); if pin.len() < 4 { e.push("too short".into()); } if pin.chars().collect::<std::collections::HashSet<_>>().len() == 1 { e.push("all same digits".into()); } e }
 
 async fn health() -> HttpResponse {
-    HttpResponse::Ok().json(json!({"status": "healthy", "service": "pin-hasher-rs"}))
+    HttpResponse::Ok().insert_header(("content-security-policy", "default-src 'self'")).json(json!({"status": "healthy", "service": "pin-hasher-rs"}))
 }
 
 async fn hash_pin(req: actix_web::HttpRequest, state: web::Data<AppState>, body: web::Json<serde_json::Value>) -> HttpResponse {

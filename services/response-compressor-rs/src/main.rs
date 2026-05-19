@@ -19,7 +19,7 @@ struct AppState {
 fn should_compress(content_type: &str, size: u64) -> bool { size > 1024 && (content_type.contains("json") || content_type.contains("text") || content_type.contains("xml")) }
 
 async fn health() -> HttpResponse {
-    HttpResponse::Ok().json(json!({"status": "healthy", "service": "response-compressor-rs"}))
+    HttpResponse::Ok().insert_header(("content-security-policy", "default-src 'self'")).json(json!({"status": "healthy", "service": "response-compressor-rs"}))
 }
 
 async fn compress(req: actix_web::HttpRequest, state: web::Data<AppState>, body: web::Json<serde_json::Value>) -> HttpResponse {

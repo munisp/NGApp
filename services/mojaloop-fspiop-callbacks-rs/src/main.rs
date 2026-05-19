@@ -23,7 +23,7 @@ fn transfer_state(fulfilled: bool, expired: bool) -> &str {
 fn compute_ilp_fulfilment(condition: &str) -> String { format!("FUL-{}", &condition[..8]) }
 
 async fn health() -> HttpResponse {
-    HttpResponse::Ok().json(json!({
+    HttpResponse::Ok().insert_header(("content-security-policy", "default-src 'self'")).json(json!({
         "status": "healthy",
         "service": "mojaloop-fspiop-callbacks-rs",
         "version": "1.0.0",

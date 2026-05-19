@@ -202,6 +202,15 @@ func handleVerify(w http.ResponseWriter, r *http.Request) {
 	stats["totalChecks"] = len(checks)
 	mu.Unlock()
 
+	dbData, _ := json.Marshal(map[string]string{"service": "multi_bureau_verification_go", "action": "create"})
+	if dbErr := dbInsert(fmt.Sprintf("multi_bureau_verification_go-%d", time.Now().UnixNano()), "multi_bureau_verification_go", "default", "active", dbData); dbErr != nil {
+		log.Printf("[%s] dbInsert failed: %v", serviceName, dbErr)
+	}
+	csURL := os.Getenv("KYC_ENGINE_URL")
+	if csURL == "" { csURL = "http://kyc-engine-go:8080" }
+	if _, csErr := callService("POST", csURL+"/v1/notify", map[string]interface{}{"source": "multi_bureau_verification_go", "action": "create"}); csErr != nil {
+		log.Printf("[%s] upstream call failed: %v", serviceName, csErr)
+	}
 	respondJSON(w, 200, check)
 }
 

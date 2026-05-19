@@ -30,7 +30,7 @@ fn document_type_from_text(text: &str) -> &str {
 }
 
 async fn health() -> HttpResponse {
-    HttpResponse::Ok().json(json!({
+    HttpResponse::Ok().insert_header(("content-security-policy", "default-src 'self'")).json(json!({
         "status": "healthy",
         "service": "whatsapp-document-service-rs",
         "version": "1.0.0",

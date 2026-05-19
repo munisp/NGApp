@@ -202,6 +202,10 @@ func handleCreate(w http.ResponseWriter, r *http.Request) {
 			records = append(records, rec)
 			domainStats.PendingKYC++
 			mu.Unlock()
+	dataBytes, _ := json.Marshal(body)
+	if dbErr := dbInsert(fmt.Sprintf("loan_origination_go-%d", time.Now().UnixNano()), "loan_origination_go", "default", "active", dataBytes); dbErr != nil {
+		log.Printf("[%s] dbInsert failed: %v", serviceName, dbErr)
+	}
 
 			respondJSON(w, 202, map[string]interface{}{
 				"created": true, "record": rec,

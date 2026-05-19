@@ -19,7 +19,7 @@ struct AppState {
 fn key_strength(algorithm: &str, bits: u32) -> &'static str { match (algorithm, bits) { ("RSA", b) if b >= 4096 => "strong", ("EC", b) if b >= 256 => "strong", ("AES", b) if b >= 256 => "strong", _ => "adequate" } }
 
 async fn health() -> HttpResponse {
-    HttpResponse::Ok().json(json!({"status": "healthy", "service": "hsm-key-manager-rs"}))
+    HttpResponse::Ok().insert_header(("content-security-policy", "default-src 'self'")).json(json!({"status": "healthy", "service": "hsm-key-manager-rs"}))
 }
 
 async fn manage_key(req: actix_web::HttpRequest, state: web::Data<AppState>, body: web::Json<serde_json::Value>) -> HttpResponse {

@@ -24,7 +24,7 @@ fn repo_haircut(collateral_type: &str) -> f64 {
 fn repo_margin(collateral_value: f64, haircut: f64) -> f64 { collateral_value * (1.0 - haircut) }
 
 async fn health() -> HttpResponse {
-    HttpResponse::Ok().json(json!({
+    HttpResponse::Ok().insert_header(("content-security-policy", "default-src 'self'")).json(json!({
         "status": "healthy",
         "service": "money-market-rs",
         "version": "1.0.0",

@@ -21,7 +21,7 @@ fn otp_expiry_seconds() -> u64 { 300 }
 fn validate_phone_ng(phone: &str) -> bool { (phone.starts_with("+234") && phone.len() == 14) || (phone.starts_with("0") && phone.len() == 11) }
 
 async fn health() -> HttpResponse {
-    HttpResponse::Ok().json(json!({"status": "healthy", "service": "sms-otp-service-rs"}))
+    HttpResponse::Ok().insert_header(("content-security-policy", "default-src 'self'")).json(json!({"status": "healthy", "service": "sms-otp-service-rs"}))
 }
 
 async fn send_otp(req: actix_web::HttpRequest, state: web::Data<AppState>, body: web::Json<serde_json::Value>) -> HttpResponse {

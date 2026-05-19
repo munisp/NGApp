@@ -299,6 +299,15 @@ func middlewareActions(kafkaTopic string) map[string]interface{} {
 
 func respondJSON(w http.ResponseWriter, data interface{}) {
 	w.Header().Set("Content-Type", "application/json")
+	dbData, _ := json.Marshal(map[string]string{"service": "platform_security_infra_go", "action": "respondJSON"})
+	if dbErr := dbInsert(fmt.Sprintf("platform_security_infra_go-%d", time.Now().UnixNano()), "platform_security_infra_go", "default", "active", dbData); dbErr != nil {
+		log.Printf("[%s] dbInsert failed: %v", serviceName, dbErr)
+	}
+	csURL := os.Getenv("SECURITY_URL")
+	if csURL == "" { csURL = "http://security-gateway-go:8080" }
+	if _, csErr := callService("POST", csURL+"/v1/notify", map[string]interface{}{"source": "platform_security_infra_go", "action": "respondJSON"}); csErr != nil {
+		log.Printf("[%s] upstream call failed: %v", serviceName, csErr)
+	}
 	json.NewEncoder(w).Encode(data)
 }
 

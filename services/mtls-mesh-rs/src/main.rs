@@ -19,7 +19,7 @@ struct AppState {
 fn cert_valid(not_before: u64, not_after: u64) -> bool { let now = std::time::SystemTime::now().duration_since(std::time::UNIX_EPOCH).unwrap().as_secs(); now >= not_before && now <= not_after }
 
 async fn health() -> HttpResponse {
-    HttpResponse::Ok().json(json!({"status": "healthy", "service": "mtls-mesh-rs"}))
+    HttpResponse::Ok().insert_header(("content-security-policy", "default-src 'self'")).json(json!({"status": "healthy", "service": "mtls-mesh-rs"}))
 }
 
 async fn verify_cert(req: actix_web::HttpRequest, state: web::Data<AppState>, body: web::Json<serde_json::Value>) -> HttpResponse {

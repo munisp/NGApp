@@ -40,7 +40,7 @@ fn auth_decision(mfa_score: f64, liveness: f64) -> (&'static str, f64) {
 }
 
 async fn health() -> HttpResponse {
-    HttpResponse::Ok().json(json!({"status": "healthy", "service": "biometric-auth-rs", "version": "1.0.0"}))
+    HttpResponse::Ok().insert_header(("content-security-policy", "default-src 'self'")).json(json!({"status": "healthy", "service": "biometric-auth-rs", "version": "1.0.0"}))
 }
 
 async fn enroll(body: web::Json<serde_json::Value>, state: web::Data<AppState>) -> HttpResponse {

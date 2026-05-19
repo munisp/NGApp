@@ -19,7 +19,7 @@ struct AppState {
 fn transform_record(input: &str, transform_type: &str) -> String { match transform_type { "uppercase" => input.to_uppercase(), "lowercase" => input.to_lowercase(), "trim" => input.trim().to_string(), _ => input.to_string() } }
 
 async fn health() -> HttpResponse {
-    HttpResponse::Ok().json(json!({"status": "healthy", "service": "fluvio-wasm-transform-rs"}))
+    HttpResponse::Ok().insert_header(("content-security-policy", "default-src 'self'")).json(json!({"status": "healthy", "service": "fluvio-wasm-transform-rs"}))
 }
 
 async fn transform(req: actix_web::HttpRequest, state: web::Data<AppState>, body: web::Json<serde_json::Value>) -> HttpResponse {

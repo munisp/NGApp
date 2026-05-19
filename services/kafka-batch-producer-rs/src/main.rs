@@ -19,7 +19,7 @@ struct AppState {
 fn optimal_batch_size(msg_size_bytes: u64, max_batch_bytes: u64) -> u64 { max_batch_bytes / msg_size_bytes.max(1) }
 
 async fn health() -> HttpResponse {
-    HttpResponse::Ok().json(json!({"status": "healthy", "service": "kafka-batch-producer-rs"}))
+    HttpResponse::Ok().insert_header(("content-security-policy", "default-src 'self'")).json(json!({"status": "healthy", "service": "kafka-batch-producer-rs"}))
 }
 
 async fn produce_batch(req: actix_web::HttpRequest, state: web::Data<AppState>, body: web::Json<serde_json::Value>) -> HttpResponse {

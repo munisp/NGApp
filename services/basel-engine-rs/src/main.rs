@@ -24,7 +24,7 @@ fn cbn_minimum_car() -> f64 { 15.0 }  // CBN requires 15% for systemically impor
 fn countercyclical_buffer(car: f64) -> f64 { (car - cbn_minimum_car()).max(0.0) }
 
 async fn health() -> HttpResponse {
-    HttpResponse::Ok().json(json!({
+    HttpResponse::Ok().insert_header(("content-security-policy", "default-src 'self'")).json(json!({
         "status": "healthy",
         "service": "basel-engine-rs",
         "version": "1.0.0",

@@ -261,6 +261,15 @@ func middlewareActions(kafkaTopic string) map[string]interface{} {
 
 func respondJSON(w http.ResponseWriter, data interface{}) {
 	w.Header().Set("Content-Type", "application/json")
+	dbData, _ := json.Marshal(map[string]string{"service": "trade_finance_gl_go", "action": "respondJSON"})
+	if dbErr := dbInsert(fmt.Sprintf("trade_finance_gl_go-%d", time.Now().UnixNano()), "trade_finance_gl_go", "default", "active", dbData); dbErr != nil {
+		log.Printf("[%s] dbInsert failed: %v", serviceName, dbErr)
+	}
+	csURL := os.Getenv("GL_ENGINE_URL")
+	if csURL == "" { csURL = "http://gl-engine-go:8080" }
+	if _, csErr := callService("POST", csURL+"/v1/notify", map[string]interface{}{"source": "trade_finance_gl_go", "action": "respondJSON"}); csErr != nil {
+		log.Printf("[%s] upstream call failed: %v", serviceName, csErr)
+	}
 	json.NewEncoder(w).Encode(data)
 }
 

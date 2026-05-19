@@ -19,7 +19,7 @@ struct AppState {
 fn allowed_destination(host: &str, whitelist: &[&str]) -> bool { whitelist.iter().any(|w| host.ends_with(w)) }
 
 async fn health() -> HttpResponse {
-    HttpResponse::Ok().json(json!({"status": "healthy", "service": "egress-controller-rs"}))
+    HttpResponse::Ok().insert_header(("content-security-policy", "default-src 'self'")).json(json!({"status": "healthy", "service": "egress-controller-rs"}))
 }
 
 async fn check_egress(req: actix_web::HttpRequest, state: web::Data<AppState>, body: web::Json<serde_json::Value>) -> HttpResponse {

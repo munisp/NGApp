@@ -317,6 +317,68 @@ def sanitize_input(s):
     return s[:10000] if len(s) > 10000 else s
 signal.signal(signal.SIGINT, shutdown_handler)
 
+PORT = int(os.environ.get("PORT", "8230"))
+SERVICE_NAME = "tenant-provisioning-py"
+_request_counter = 0
+_counter_lock = threading.Lock()
+
+class Handler(BaseHTTPRequestHandler):
+    def log_message(self, fmt, *args):
+        pass
+
+    def respond(self, code, data):
+        body = json.dumps(data).encode()
+        self.send_response(code)
+        self.send_header("Content-Type", "application/json")
+        add_security_headers(self)
+        self.end_headers()
+        self.wfile.write(body)
+
+    def do_GET(self):
+        global _request_counter
+        with _counter_lock:
+            _request_counter += 1
+        path = urlparse(self.path).path
+        if path in ("/healthz", "/readyz", "/livez"):
+            self.respond(200, {"status": "healthy", "service": SERVICE_NAME})
+            return
+        if path == "/metrics":
+            self.send_response(200)
+            self.send_header("Content-Type", "text/plain")
+            self.end_headers()
+            self.wfile.write(f'requests_total{{service="{SERVICE_NAME}"}} {_request_counter}\n'.encode())
+            return
+        result = handle_request(path)
+        if "error" in result:
+            self.respond(404, result)
+        else:
+            self.respond(200, result)
+
+    def do_POST(self):
+        global _request_counter
+        with _counter_lock:
+            _request_counter += 1
+        valid, err = validate_jwt(dict(self.headers))
+        if not valid:
+            self.respond(401, {"error": "unauthorized", "detail": err})
+            return
+        if not _rl_allow():
+            self.send_response(429)
+            self.send_header("Retry-After", "1")
+            self.send_header("Content-Type", "application/json")
+            self.end_headers()
+            self.wfile.write(json.dumps({"error": "rate_limit_exceeded"}).encode())
+            return
+        content_length = int(self.headers.get("Content-Length", 0))
+        body = json.loads(self.rfile.read(content_length)) if content_length > 0 else {}
+        path = urlparse(self.path).path
+        db_insert("provisioning_events", {"path": path, "action": "create", "timestamp": time.time()})
+        result = handle_request(path)
+        if "error" in result:
+            self.respond(404, result)
+        else:
+            self.respond(201, result)
+
 if __name__ == "__main__":
     get_db()
     server = HTTPServer(("0.0.0.0", PORT), Handler)

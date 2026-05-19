@@ -20,7 +20,7 @@ fn dynamic_price(base: f64, demand_factor: f64, supply_factor: f64) -> f64 { bas
 fn spread_markup(cost: f64, target_margin: f64) -> f64 { cost * (1.0 + target_margin / 100.0) }
 
 async fn health() -> HttpResponse {
-    HttpResponse::Ok().json(json!({"status": "healthy", "service": "realtime-pricing-rs"}))
+    HttpResponse::Ok().insert_header(("content-security-policy", "default-src 'self'")).json(json!({"status": "healthy", "service": "realtime-pricing-rs"}))
 }
 
 async fn compute_price(req: actix_web::HttpRequest, state: web::Data<AppState>, body: web::Json<serde_json::Value>) -> HttpResponse {

@@ -19,7 +19,7 @@ struct AppState {
 fn bloom_hash(item: &str, seed: u64) -> u64 { item.bytes().fold(seed, |h, b| h.wrapping_mul(31).wrapping_add(b as u64)) }
 
 async fn health() -> HttpResponse {
-    HttpResponse::Ok().json(json!({"status": "healthy", "service": "bloom-filter-cache-rs"}))
+    HttpResponse::Ok().insert_header(("content-security-policy", "default-src 'self'")).json(json!({"status": "healthy", "service": "bloom-filter-cache-rs"}))
 }
 
 async fn check_membership(req: actix_web::HttpRequest, state: web::Data<AppState>, body: web::Json<serde_json::Value>) -> HttpResponse {

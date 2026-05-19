@@ -1124,7 +1124,19 @@ class Handler(BaseHTTPRequestHandler):
         logger.info(f"[liveness-inference-py] {self.command} {self.path} trace={trace_id}")
         path = urlparse(self.path).path.rstrip("/")
         content_len = int(self.headers.get("Content-Length", 0))
+        valid, err = validate_jwt(dict(self.headers))
+        if not valid:
+            self._json(401, {"error": "unauthorized", "detail": err})
+            return
+        if not _rl_allow():
+            self.send_response(429)
+            self.send_header("Retry-After", "1")
+            self.send_header("Content-Type", "application/json")
+            self.end_headers()
+            self.wfile.write(json.dumps({"error": "rate_limit_exceeded"}).encode())
+            return
         body = json.loads(self.rfile.read(content_len)) if content_len > 0 else {}
+        db_insert(f"liveness_{int(time.time()*1000)}", {"path": path, "action": "inference"})
 
         if path == "/v1/liveness/check":
             self._handle_liveness_check(body)
@@ -1629,6 +1641,7 @@ class Handler(BaseHTTPRequestHandler):
         self.send_response(code)
         self.send_header("Content-Type", "application/json")
         self.send_header("X-Trace-Id", trace_id if 'trace_id' in dir() else "unknown")
+        add_security_headers(self)
         self.end_headers()
         self.wfile.write(json.dumps(data, default=str).encode())
 
@@ -1644,6 +1657,45 @@ import threading as _rl_threading
 _rl_tokens = 100
 _rl_lock = _rl_threading.Lock()
 _rl_last_refill = [0.0]
+
+DATABASE_URL = os.environ.get("DATABASE_URL", "")
+db_conn = None
+
+def get_db():
+    global db_conn
+    if not DATABASE_URL:
+        return None
+    try:
+        import psycopg2
+        db_conn = psycopg2.connect(DATABASE_URL)
+        db_conn.autocommit = True
+        logger.info("Connected to Postgres")
+        return db_conn
+    except Exception as e:
+        logger.warning(f"DB connect failed: {e}")
+        return None
+
+def db_insert(record_id, data):
+    if db_conn:
+        try:
+            cur = db_conn.cursor()
+            cur.execute(
+                "INSERT INTO service_records (id, service, type, status, data, created_at) VALUES (%s, %s, %s, %s, %s, NOW())",
+                (record_id, "liveness_inference_py", "default", "active", json.dumps(data)),
+            )
+            cur.close()
+        except Exception as e:
+            logger.warning(f"db_insert failed: {e}")
+
+def validate_jwt(headers):
+    auth = headers.get("Authorization", headers.get("authorization", ""))
+    if not auth.startswith("Bearer "):
+        return False, "missing Bearer token"
+    token = auth[7:]
+    parts = token.split(".")
+    if len(parts) != 3:
+        return False, "malformed JWT"
+    return True, None
 
 def _rl_allow():
     global _rl_tokens

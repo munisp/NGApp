@@ -19,7 +19,7 @@ struct AppState {
 fn otp_valid(submitted: &str, expected: &str, attempts: u32, max_attempts: u32) -> (bool, bool) { (submitted == expected && attempts < max_attempts, attempts >= max_attempts) }
 
 async fn health() -> HttpResponse {
-    HttpResponse::Ok().json(json!({"status": "healthy", "service": "otp-hardening-rs"}))
+    HttpResponse::Ok().insert_header(("content-security-policy", "default-src 'self'")).json(json!({"status": "healthy", "service": "otp-hardening-rs"}))
 }
 
 async fn validate_otp(req: actix_web::HttpRequest, state: web::Data<AppState>, body: web::Json<serde_json::Value>) -> HttpResponse {

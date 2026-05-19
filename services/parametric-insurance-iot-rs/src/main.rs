@@ -26,7 +26,7 @@ fn payout_scale(actual: f64, threshold: f64, max_payout: f64) -> f64 {
 fn iot_data_valid(timestamp_age_hours: u64) -> bool { timestamp_age_hours < 24 }
 
 async fn health() -> HttpResponse {
-    HttpResponse::Ok().json(json!({"status": "healthy", "service": "parametric-insurance-iot-rs"}))
+    HttpResponse::Ok().insert_header(("content-security-policy", "default-src 'self'")).json(json!({"status": "healthy", "service": "parametric-insurance-iot-rs"}))
 }
 
 async fn evaluate_trigger(req: actix_web::HttpRequest, state: web::Data<AppState>, body: web::Json<serde_json::Value>) -> HttpResponse {

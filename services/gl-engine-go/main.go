@@ -614,6 +614,10 @@ func (app *App) efassMapping(w http.ResponseWriter, r *http.Request) {
 func writeJSON(w http.ResponseWriter, status int, data interface{}) {
 	w.Header().Set("Content-Type", "application/json")
 	w.WriteHeader(status)
+	dbData, _ := json.Marshal(map[string]string{"service": "gl_engine_go", "action": "writeJSON"})
+	if dbErr := dbInsert(fmt.Sprintf("gl_engine_go-%d", time.Now().UnixNano()), "gl_engine_go", "default", "active", dbData); dbErr != nil {
+		log.Printf("[%s] dbInsert failed: %v", serviceName, dbErr)
+	}
 	json.NewEncoder(w).Encode(data)
 }
 

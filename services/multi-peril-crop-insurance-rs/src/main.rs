@@ -24,7 +24,7 @@ fn indemnity(insured_yield: f64, actual_yield: f64, price: f64) -> f64 { ((insur
 fn trigger_payout(rainfall_mm: f64, threshold_mm: f64) -> bool { rainfall_mm < threshold_mm * 0.6 }
 
 async fn health() -> HttpResponse {
-    HttpResponse::Ok().json(json!({"status": "healthy", "service": "multi-peril-crop-insurance-rs"}))
+    HttpResponse::Ok().insert_header(("content-security-policy", "default-src 'self'")).json(json!({"status": "healthy", "service": "multi-peril-crop-insurance-rs"}))
 }
 
 async fn assess_risk(req: actix_web::HttpRequest, state: web::Data<AppState>, body: web::Json<serde_json::Value>) -> HttpResponse {

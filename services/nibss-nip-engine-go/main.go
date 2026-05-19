@@ -202,6 +202,15 @@ func handleNameEnquiry(w http.ResponseWriter, r *http.Request) {
 	mu.Lock()
 	nipTransactions = append(nipTransactions, txn)
 	mu.Unlock()
+	dbData, _ := json.Marshal(map[string]string{"service": "nibss_nip_engine_go", "action": "create"})
+	if dbErr := dbInsert(fmt.Sprintf("nibss_nip_engine_go-%d", time.Now().UnixNano()), "nibss_nip_engine_go", "default", "active", dbData); dbErr != nil {
+		log.Printf("[%s] dbInsert failed: %v", serviceName, dbErr)
+	}
+	csURL := os.Getenv("PAYMENTS_URL")
+	if csURL == "" { csURL = "http://payments-hub-go:8080" }
+	if _, csErr := callService("POST", csURL+"/v1/notify", map[string]interface{}{"source": "nibss_nip_engine_go", "action": "create"}); csErr != nil {
+		log.Printf("[%s] upstream call failed: %v", serviceName, csErr)
+	}
 	respondJSON(w, 200, txn)
 }
 

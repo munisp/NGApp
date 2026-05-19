@@ -19,7 +19,7 @@ struct AppState {
 fn is_path_traversal(path: &str) -> bool { path.contains("..") || path.contains("%2e%2e") || path.contains("%252e") }
 
 async fn health() -> HttpResponse {
-    HttpResponse::Ok().json(json!({"status": "healthy", "service": "path-validator-rs"}))
+    HttpResponse::Ok().insert_header(("content-security-policy", "default-src 'self'")).json(json!({"status": "healthy", "service": "path-validator-rs"}))
 }
 
 async fn validate_path(req: actix_web::HttpRequest, state: web::Data<AppState>, body: web::Json<serde_json::Value>) -> HttpResponse {

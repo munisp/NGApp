@@ -27,7 +27,7 @@ fn risk_band(score: f64) -> &'static str {
 fn edd_required(score: f64) -> bool { score >= 60.0 }
 
 async fn health() -> HttpResponse {
-    HttpResponse::Ok().json(json!({
+    HttpResponse::Ok().insert_header(("content-security-policy", "default-src 'self'")).json(json!({
         "status": "healthy",
         "service": "aml-risk-scoring-rs",
         "version": "1.0.0",

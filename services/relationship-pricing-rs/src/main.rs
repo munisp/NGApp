@@ -28,7 +28,7 @@ fn discount_rate(tier: &str) -> f64 {
 }
 
 async fn health() -> HttpResponse {
-    HttpResponse::Ok().json(json!({
+    HttpResponse::Ok().insert_header(("content-security-policy", "default-src 'self'")).json(json!({
         "status": "healthy",
         "service": "relationship-pricing-rs",
         "version": "1.0.0",

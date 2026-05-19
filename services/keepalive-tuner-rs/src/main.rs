@@ -19,7 +19,7 @@ struct AppState {
 fn optimal_interval(latency_ms: u64) -> u64 { (latency_ms * 5).max(1000).min(60000) }
 
 async fn health() -> HttpResponse {
-    HttpResponse::Ok().json(json!({"status": "healthy", "service": "keepalive-tuner-rs"}))
+    HttpResponse::Ok().insert_header(("content-security-policy", "default-src 'self'")).json(json!({"status": "healthy", "service": "keepalive-tuner-rs"}))
 }
 
 async fn tune_keepalive(req: actix_web::HttpRequest, state: web::Data<AppState>, body: web::Json<serde_json::Value>) -> HttpResponse {

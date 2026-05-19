@@ -24,7 +24,7 @@ fn portfolio_return(current_value: f64, cost_basis: f64) -> f64 {
 fn position_pnl(quantity: f64, avg_cost: f64, market_price: f64) -> f64 { quantity * (market_price - avg_cost) }
 
 async fn health() -> HttpResponse {
-    HttpResponse::Ok().json(json!({
+    HttpResponse::Ok().insert_header(("content-security-policy", "default-src 'self'")).json(json!({
         "status": "healthy",
         "service": "securities-trading-rs",
         "version": "1.0.0",

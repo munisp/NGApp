@@ -22,7 +22,7 @@ fn rule_match(amount: f64, threshold: f64, operator: &str) -> bool {
 fn alert_priority(matches: u32) -> &'static str { if matches >= 3 { "critical" } else if matches >= 2 { "high" } else { "medium" } }
 
 async fn health() -> HttpResponse {
-    HttpResponse::Ok().json(json!({"status": "healthy", "service": "txn-monitoring-rules-rs"}))
+    HttpResponse::Ok().insert_header(("content-security-policy", "default-src 'self'")).json(json!({"status": "healthy", "service": "txn-monitoring-rules-rs"}))
 }
 
 async fn evaluate_txn(req: actix_web::HttpRequest, state: web::Data<AppState>, body: web::Json<serde_json::Value>) -> HttpResponse {

@@ -23,7 +23,7 @@ fn livestock_value(species: &str, count: u32) -> f64 {
 fn insurance_premium(value: f64, mortality_rate: f64) -> f64 { value * mortality_rate * 1.3 }
 
 async fn health() -> HttpResponse {
-    HttpResponse::Ok().json(json!({"status": "healthy", "service": "livestock-finance-rs"}))
+    HttpResponse::Ok().insert_header(("content-security-policy", "default-src 'self'")).json(json!({"status": "healthy", "service": "livestock-finance-rs"}))
 }
 
 async fn assess_livestock(req: actix_web::HttpRequest, state: web::Data<AppState>, body: web::Json<serde_json::Value>) -> HttpResponse {

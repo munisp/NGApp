@@ -24,7 +24,7 @@ fn compute_event_hash(event_type: &str, payload: &str) -> u64 {
 fn is_duplicate(hash: u64, seen: &[u64], window_size: usize) -> bool { seen.iter().rev().take(window_size).any(|&h| h == hash) }
 
 async fn health() -> HttpResponse {
-    HttpResponse::Ok().json(json!({"status": "healthy", "service": "event-dedup-engine-rs"}))
+    HttpResponse::Ok().insert_header(("content-security-policy", "default-src 'self'")).json(json!({"status": "healthy", "service": "event-dedup-engine-rs"}))
 }
 
 async fn check_dedup(req: actix_web::HttpRequest, state: web::Data<AppState>, body: web::Json<serde_json::Value>) -> HttpResponse {

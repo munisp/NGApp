@@ -21,7 +21,7 @@ fn export_duty_rate(commodity: &str) -> f64 { match commodity { "raw_cocoa" => 0
 fn compute_fob_value(quantity_mt: f64, price_per_mt: f64, logistics: f64) -> f64 { quantity_mt * price_per_mt + logistics }
 
 async fn health() -> HttpResponse {
-    HttpResponse::Ok().json(json!({"status": "healthy", "service": "crossborder-agri-trade-rs"}))
+    HttpResponse::Ok().insert_header(("content-security-policy", "default-src 'self'")).json(json!({"status": "healthy", "service": "crossborder-agri-trade-rs"}))
 }
 
 async fn assess_trade(req: actix_web::HttpRequest, state: web::Data<AppState>, body: web::Json<serde_json::Value>) -> HttpResponse {

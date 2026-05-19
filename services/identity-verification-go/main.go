@@ -235,6 +235,10 @@ func handleVerifyBVN(w http.ResponseWriter, r *http.Request) {
 	stats["bvnVerified"] = stats["bvnVerified"].(int) + 1
 	mu.Unlock()
 
+	dbData, _ := json.Marshal(map[string]string{"service": "identity_verification_go", "action": "create"})
+	if dbErr := dbInsert(fmt.Sprintf("identity_verification_go-%d", time.Now().UnixNano()), "identity_verification_go", "default", "active", dbData); dbErr != nil {
+		log.Printf("[%s] dbInsert failed: %v", serviceName, dbErr)
+	}
 	respondJSON(w, 200, result)
 }
 

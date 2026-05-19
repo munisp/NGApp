@@ -19,7 +19,7 @@ struct AppState {
 fn conflict_resolution(local_ts: u64, remote_ts: u64) -> &'static str { if local_ts > remote_ts { "use_local" } else { "use_remote" } }
 
 async fn health() -> HttpResponse {
-    HttpResponse::Ok().json(json!({"status": "healthy", "service": "offline-resilience-rs"}))
+    HttpResponse::Ok().insert_header(("content-security-policy", "default-src 'self'")).json(json!({"status": "healthy", "service": "offline-resilience-rs"}))
 }
 
 async fn sync_offline(req: actix_web::HttpRequest, state: web::Data<AppState>, body: web::Json<serde_json::Value>) -> HttpResponse {

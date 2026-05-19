@@ -34,8 +34,9 @@ async fn db_persist(state: &web::Data<AppState>, endpoint: &str, data: &serde_js
 }
 
 
-async fn enaira_cbdc(req: actix_web::HttpRequest) -> HttpResponse {
+async fn enaira_cbdc(req: actix_web::HttpRequest, state: web::Data<AppState>) -> HttpResponse {
     if let Err(resp) = check_jwt(&req) { return resp; }
+    if !rl_allow() { return HttpResponse::TooManyRequests().json(json!({"error": "rate_limit_exceeded", "retry_after": 1})); }
     let result = json!({
         "enhancementId": 3,
         "name": "eNaira / CBDC Integration",
@@ -77,7 +78,10 @@ async fn enaira_cbdc(req: actix_web::HttpRequest) -> HttpResponse {
         },
         "middleware": middleware_actions("banking.enaira.cbdc"),
     });
-    HttpResponse::Ok().json(result)
+    let upstream = std::env::var("AML_URL").unwrap_or_else(|_| "http://aml-engine-rs:8080".to_string());
+    let _ = call_service_sync(&format!("{}/v1/notify", upstream), &format!("{\"source\": \"ai-fraud-scoring-rs\", \"action\": \"enaira_cbdc\"}"));
+    db_persist(&state, "enaira_cbdc", &json!({"action": "enaira_cbdc"})).await;
+    HttpResponse::Ok().insert_header(("content-security-policy", "default-src 'self'")).json(result)
 }
 
 // ═══════════════════════════════════════════════════════════════════════════════
@@ -87,6 +91,7 @@ async fn enaira_cbdc(req: actix_web::HttpRequest) -> HttpResponse {
 
 async fn fraud_detection_ml(req: actix_web::HttpRequest) -> HttpResponse {
     if let Err(resp) = check_jwt(&req) { return resp; }
+    if !rl_allow() { return HttpResponse::TooManyRequests().json(json!({"error": "rate_limit_exceeded", "retry_after": 1})); }
     let result = json!({
         "enhancementId": 4,
         "name": "Real-Time Fraud Detection (ML Engine)",
@@ -175,6 +180,7 @@ fn middleware_actions(topic: &str) -> serde_json::Value {
 
 async fn healthz(req: actix_web::HttpRequest) -> HttpResponse {
     if let Err(resp) = check_jwt(&req) { return resp; }
+    if !rl_allow() { return HttpResponse::TooManyRequests().json(json!({"error": "rate_limit_exceeded", "retry_after": 1})); }
     HttpResponse::Ok().json(json!({
         "status": "healthy", "service": "ai-fraud-scoring-rs", "version": "1.0.0",
         "enhancements": ["3: eNaira/CBDC", "4: Real-Time Fraud ML"]

@@ -27,7 +27,7 @@ fn disposition_status(is_false_positive: bool, reviewed: bool) -> &'static str {
 }
 
 async fn health() -> HttpResponse {
-    HttpResponse::Ok().json(json!({
+    HttpResponse::Ok().insert_header(("content-security-policy", "default-src 'self'")).json(json!({
         "status": "healthy",
         "service": "sanctions-batch-rescreener-rs",
         "version": "1.0.0",

@@ -19,7 +19,7 @@ struct AppState {
 fn cache_control(method: &str, path: &str) -> u64 { if method != "GET" { 0 } else if path.contains("/static") { 86400 } else { 300 } }
 
 async fn health() -> HttpResponse {
-    HttpResponse::Ok().json(json!({"status": "healthy", "service": "redis-cache-middleware-rs"}))
+    HttpResponse::Ok().insert_header(("content-security-policy", "default-src 'self'")).json(json!({"status": "healthy", "service": "redis-cache-middleware-rs"}))
 }
 
 async fn cache_middleware(req: actix_web::HttpRequest, state: web::Data<AppState>, body: web::Json<serde_json::Value>) -> HttpResponse {

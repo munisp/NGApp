@@ -19,7 +19,7 @@ struct AppState {
 fn skeleton_type(content: &str) -> &str { match content { "table" => "table_skeleton", "card" => "card_skeleton", "list" => "list_skeleton", _ => "generic_skeleton" } }
 
 async fn health() -> HttpResponse {
-    HttpResponse::Ok().json(json!({"status": "healthy", "service": "skeleton-loading-rs"}))
+    HttpResponse::Ok().insert_header(("content-security-policy", "default-src 'self'")).json(json!({"status": "healthy", "service": "skeleton-loading-rs"}))
 }
 
 async fn loading_state(req: actix_web::HttpRequest, state: web::Data<AppState>, body: web::Json<serde_json::Value>) -> HttpResponse {

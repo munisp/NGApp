@@ -19,7 +19,7 @@ struct AppState {
 fn secret_path(engine: &str, env: &str, name: &str) -> String { format!("{}/data/{}/{}", engine, env, name) }
 
 async fn health() -> HttpResponse {
-    HttpResponse::Ok().json(json!({"status": "healthy", "service": "vault-integration-rs"}))
+    HttpResponse::Ok().insert_header(("content-security-policy", "default-src 'self'")).json(json!({"status": "healthy", "service": "vault-integration-rs"}))
 }
 
 async fn vault_operation(req: actix_web::HttpRequest, state: web::Data<AppState>, body: web::Json<serde_json::Value>) -> HttpResponse {

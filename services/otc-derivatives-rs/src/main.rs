@@ -26,7 +26,7 @@ fn initial_margin(notional: f64, asset_class: &str) -> f64 {
 }
 
 async fn health() -> HttpResponse {
-    HttpResponse::Ok().json(json!({
+    HttpResponse::Ok().insert_header(("content-security-policy", "default-src 'self'")).json(json!({
         "status": "healthy",
         "service": "otc-derivatives-rs",
         "version": "1.0.0",

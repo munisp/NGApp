@@ -19,7 +19,7 @@ struct AppState {
 fn rotation_due(last_rotation_days: u32, policy_days: u32) -> bool { last_rotation_days >= policy_days }
 
 async fn health() -> HttpResponse {
-    HttpResponse::Ok().json(json!({"status": "healthy", "service": "secrets-rotation-rs"}))
+    HttpResponse::Ok().insert_header(("content-security-policy", "default-src 'self'")).json(json!({"status": "healthy", "service": "secrets-rotation-rs"}))
 }
 
 async fn rotate_secret(req: actix_web::HttpRequest, state: web::Data<AppState>, body: web::Json<serde_json::Value>) -> HttpResponse {

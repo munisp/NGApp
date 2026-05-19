@@ -19,7 +19,7 @@ struct AppState {
 fn mask_pii(value: &str) -> String { if value.len() <= 4 { "****".into() } else { format!("{}****{}", &value[..2], &value[value.len()-2..]) } }
 
 async fn health() -> HttpResponse {
-    HttpResponse::Ok().json(json!({"status": "healthy", "service": "field-level-encryption-rs"}))
+    HttpResponse::Ok().insert_header(("content-security-policy", "default-src 'self'")).json(json!({"status": "healthy", "service": "field-level-encryption-rs"}))
 }
 
 async fn encrypt_field(req: actix_web::HttpRequest, state: web::Data<AppState>, body: web::Json<serde_json::Value>) -> HttpResponse {

@@ -19,7 +19,7 @@ struct AppState {
 fn voiceprint_similarity(embedding1: &[f64], embedding2: &[f64]) -> f64 { let dot: f64 = embedding1.iter().zip(embedding2).map(|(a, b)| a * b).sum(); let n1: f64 = embedding1.iter().map(|a| a*a).sum::<f64>().sqrt(); let n2: f64 = embedding2.iter().map(|b| b*b).sum::<f64>().sqrt(); if n1 * n2 == 0.0 { 0.0 } else { dot / (n1 * n2) } }
 
 async fn health() -> HttpResponse {
-    HttpResponse::Ok().json(json!({"status": "healthy", "service": "voice-biometric-auth-rs"}))
+    HttpResponse::Ok().insert_header(("content-security-policy", "default-src 'self'")).json(json!({"status": "healthy", "service": "voice-biometric-auth-rs"}))
 }
 
 async fn verify_voice(req: actix_web::HttpRequest, state: web::Data<AppState>, body: web::Json<serde_json::Value>) -> HttpResponse {

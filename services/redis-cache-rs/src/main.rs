@@ -19,7 +19,7 @@ struct AppState {
 fn eviction_policy(memory_pct: f64) -> &'static str { if memory_pct > 90.0 { "allkeys-lru" } else if memory_pct > 70.0 { "volatile-lru" } else { "noeviction" } }
 
 async fn health() -> HttpResponse {
-    HttpResponse::Ok().json(json!({"status": "healthy", "service": "redis-cache-rs"}))
+    HttpResponse::Ok().insert_header(("content-security-policy", "default-src 'self'")).json(json!({"status": "healthy", "service": "redis-cache-rs"}))
 }
 
 async fn cache_op(req: actix_web::HttpRequest, state: web::Data<AppState>, body: web::Json<serde_json::Value>) -> HttpResponse {

@@ -19,7 +19,7 @@ struct AppState {
 fn rollout_eligible(user_hash: u32, current_pct: u32) -> bool { (user_hash % 100) < current_pct }
 
 async fn health() -> HttpResponse {
-    HttpResponse::Ok().json(json!({"status": "healthy", "service": "graduated-rollout-rs"}))
+    HttpResponse::Ok().insert_header(("content-security-policy", "default-src 'self'")).json(json!({"status": "healthy", "service": "graduated-rollout-rs"}))
 }
 
 async fn rollout_check(req: actix_web::HttpRequest, state: web::Data<AppState>, body: web::Json<serde_json::Value>) -> HttpResponse {

@@ -25,7 +25,7 @@ fn sicr_threshold(origination_pd: f64, current_pd: f64) -> bool { current_pd > o
 fn provision_rate(stage: u8) -> f64 { match stage { 1 => 0.01, 2 => 0.05, 3 => 0.20, _ => 0.0 } }
 
 async fn health() -> HttpResponse {
-    HttpResponse::Ok().json(json!({
+    HttpResponse::Ok().insert_header(("content-security-policy", "default-src 'self'")).json(json!({
         "status": "healthy",
         "service": "ifrs9-engine-rs",
         "version": "1.0.0",

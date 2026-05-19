@@ -43,7 +43,7 @@ struct TBTransfer {
 
 async fn healthz(req: actix_web::HttpRequest, state: web::Data<AppState>) -> HttpResponse {
     if let Err(resp) = check_jwt(&req) { return resp; }
-    HttpResponse::Ok().json(json!({
+    HttpResponse::Ok().insert_header(("content-security-policy", "default-src 'self'")).json(json!({
         "service": "tigerbeetle-protocol-rs",
         "status": "healthy",
         "protocol": "TigerBeetle_0.15",

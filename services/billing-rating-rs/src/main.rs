@@ -34,7 +34,7 @@ fn total_charges(fees: &[f64], vat_rate: f64) -> (f64, f64, f64) {
 }
 
 async fn health() -> HttpResponse {
-    HttpResponse::Ok().json(json!({
+    HttpResponse::Ok().insert_header(("content-security-policy", "default-src 'self'")).json(json!({
         "status": "healthy",
         "service": "billing-rating-rs",
         "version": "1.0.0",

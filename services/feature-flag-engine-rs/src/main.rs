@@ -22,7 +22,7 @@ fn evaluate_flag(flag: &str, user_id: &str, rollout_pct: u32) -> bool {
 }
 
 async fn health() -> HttpResponse {
-    HttpResponse::Ok().json(json!({"status": "healthy", "service": "feature-flag-engine-rs"}))
+    HttpResponse::Ok().insert_header(("content-security-policy", "default-src 'self'")).json(json!({"status": "healthy", "service": "feature-flag-engine-rs"}))
 }
 
 async fn evaluate_flag_handler(req: actix_web::HttpRequest, state: web::Data<AppState>, body: web::Json<serde_json::Value>) -> HttpResponse {

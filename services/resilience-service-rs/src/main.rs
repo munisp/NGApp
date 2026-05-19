@@ -23,7 +23,7 @@ fn circuit_state(failures: u32, threshold: u32, last_failure_ms: u64, recovery_m
 fn retry_delay(attempt: u32, base_ms: u64) -> u64 { base_ms * 2u64.pow(attempt.min(6)) }
 
 async fn health() -> HttpResponse {
-    HttpResponse::Ok().json(json!({"status": "healthy", "service": "resilience-service-rs"}))
+    HttpResponse::Ok().insert_header(("content-security-policy", "default-src 'self'")).json(json!({"status": "healthy", "service": "resilience-service-rs"}))
 }
 
 async fn check_circuit(req: actix_web::HttpRequest, state: web::Data<AppState>, body: web::Json<serde_json::Value>) -> HttpResponse {

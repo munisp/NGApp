@@ -206,7 +206,7 @@ async fn healthz(req: actix_web::HttpRequest, state: web::Data<AppState>) -> Htt
         Err(e) => eprintln!("continuous-liveness-rs: upstream call failed: {}", e),
     }
     db_persist(&state, "healthz", &json!({"action": "healthz"})).await;
-    HttpResponse::Ok().json(json!({
+    HttpResponse::Ok().insert_header(("content-security-policy", "default-src 'self'")).json(json!({
         "service": "continuous-liveness-rs",
         "status": "healthy",
         "version": "2.0.0",

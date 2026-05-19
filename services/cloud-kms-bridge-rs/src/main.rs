@@ -20,7 +20,7 @@ fn key_rotation_due(last_rotation_days: u32, max_days: u32) -> bool { last_rotat
 fn key_usage_type(purpose: &str) -> &str { match purpose { "encrypt" => "ENCRYPT_DECRYPT", "sign" => "ASYMMETRIC_SIGN", "wrap" => "KEY_WRAP", _ => "ENCRYPT_DECRYPT" } }
 
 async fn health() -> HttpResponse {
-    HttpResponse::Ok().json(json!({"status": "healthy", "service": "cloud-kms-bridge-rs"}))
+    HttpResponse::Ok().insert_header(("content-security-policy", "default-src 'self'")).json(json!({"status": "healthy", "service": "cloud-kms-bridge-rs"}))
 }
 
 async fn manage_key(req: actix_web::HttpRequest, state: web::Data<AppState>, body: web::Json<serde_json::Value>) -> HttpResponse {

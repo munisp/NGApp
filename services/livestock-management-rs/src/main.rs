@@ -25,7 +25,7 @@ fn feed_cost_per_day(species: &str, count: u32) -> f64 {
 }
 
 async fn health() -> HttpResponse {
-    HttpResponse::Ok().json(json!({"status": "healthy", "service": "livestock-management-rs"}))
+    HttpResponse::Ok().insert_header(("content-security-policy", "default-src 'self'")).json(json!({"status": "healthy", "service": "livestock-management-rs"}))
 }
 
 async fn manage_herd(req: actix_web::HttpRequest, state: web::Data<AppState>, body: web::Json<serde_json::Value>) -> HttpResponse {

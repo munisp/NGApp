@@ -30,7 +30,7 @@ fn ltv_ratio(loan_amount: f64, property_value: f64) -> f64 {
 fn prepayment_penalty(outstanding: f64, rate: f64) -> f64 { outstanding * rate / 100.0 * 0.5 }
 
 async fn health() -> HttpResponse {
-    HttpResponse::Ok().json(json!({
+    HttpResponse::Ok().insert_header(("content-security-policy", "default-src 'self'")).json(json!({
         "status": "healthy",
         "service": "mortgage-servicing-rs",
         "version": "1.0.0",

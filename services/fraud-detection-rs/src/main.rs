@@ -34,7 +34,7 @@ fn combined_fraud_score(velocity: f64, amount: f64, geo: f64, device: f64) -> f6
 }
 
 async fn health() -> HttpResponse {
-    HttpResponse::Ok().json(json!({
+    HttpResponse::Ok().insert_header(("content-security-policy", "default-src 'self'")).json(json!({
         "status": "healthy",
         "service": "fraud-detection-rs",
         "version": "1.0.0",

@@ -25,7 +25,7 @@ fn cbn_lcr_minimum() -> f64 { 100.0 }
 fn cbn_nsfr_minimum() -> f64 { 100.0 }
 
 async fn health() -> HttpResponse {
-    HttpResponse::Ok().json(json!({
+    HttpResponse::Ok().insert_header(("content-security-policy", "default-src 'self'")).json(json!({
         "status": "healthy",
         "service": "lcr-nsfr-rs",
         "version": "1.0.0",

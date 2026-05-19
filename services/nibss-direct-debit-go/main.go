@@ -103,6 +103,9 @@ jsonResp(w, 201, map[string]interface{}{"created": true, "id": id, "source": "da
 		return
 	}
 	// No DB — respond with in-memory acknowledgement
+	if dbErr := dbInsert(fmt.Sprintf("nibss_direct_debit_go-%d", time.Now().UnixNano()), "nibss_direct_debit_go", "default", "active", dataBytes); dbErr != nil {
+		log.Printf("[%s] dbInsert failed: %v", serviceName, dbErr)
+	}
 	jsonResp(w, 201, map[string]interface{}{"created": true, "id": id, "source": "in-memory"})
 }
 

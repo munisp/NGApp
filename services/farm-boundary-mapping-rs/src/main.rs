@@ -26,7 +26,7 @@ fn compute_area_hectares(coords: &[(f64, f64)]) -> f64 {
 fn valid_polygon(coords: &[(f64, f64)]) -> bool { coords.len() >= 3 }
 
 async fn health() -> HttpResponse {
-    HttpResponse::Ok().json(json!({"status": "healthy", "service": "farm-boundary-mapping-rs"}))
+    HttpResponse::Ok().insert_header(("content-security-policy", "default-src 'self'")).json(json!({"status": "healthy", "service": "farm-boundary-mapping-rs"}))
 }
 
 async fn map_boundary(req: actix_web::HttpRequest, state: web::Data<AppState>, body: web::Json<serde_json::Value>) -> HttpResponse {

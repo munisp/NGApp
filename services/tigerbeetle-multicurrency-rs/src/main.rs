@@ -19,7 +19,7 @@ struct AppState {
 fn currency_code_to_ledger(code: &str) -> u32 { match code { "NGN" => 566, "USD" => 840, "GBP" => 826, "EUR" => 978, _ => 0 } }
 
 async fn health() -> HttpResponse {
-    HttpResponse::Ok().json(json!({"status": "healthy", "service": "tigerbeetle-multicurrency-rs"}))
+    HttpResponse::Ok().insert_header(("content-security-policy", "default-src 'self'")).json(json!({"status": "healthy", "service": "tigerbeetle-multicurrency-rs"}))
 }
 
 async fn convert_currency(req: actix_web::HttpRequest, state: web::Data<AppState>, body: web::Json<serde_json::Value>) -> HttpResponse {

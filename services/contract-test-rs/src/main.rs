@@ -19,7 +19,7 @@ struct AppState {
 fn schema_match(expected: &str, actual: &str) -> bool { expected == actual }
 
 async fn health() -> HttpResponse {
-    HttpResponse::Ok().json(json!({"status": "healthy", "service": "contract-test-rs"}))
+    HttpResponse::Ok().insert_header(("content-security-policy", "default-src 'self'")).json(json!({"status": "healthy", "service": "contract-test-rs"}))
 }
 
 async fn validate_contract(req: actix_web::HttpRequest, state: web::Data<AppState>, body: web::Json<serde_json::Value>) -> HttpResponse {

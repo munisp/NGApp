@@ -28,7 +28,7 @@ fn rebalance_trade(current_weight: f64, target_weight: f64, portfolio_value: f64
 }
 
 async fn health() -> HttpResponse {
-    HttpResponse::Ok().json(json!({
+    HttpResponse::Ok().insert_header(("content-security-policy", "default-src 'self'")).json(json!({
         "status": "healthy",
         "service": "portfolio-mgmt-rs",
         "version": "1.0.0",

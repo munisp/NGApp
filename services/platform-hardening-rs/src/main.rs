@@ -31,9 +31,13 @@ async fn db_persist(state: &web::Data<AppState>, endpoint: &str, data: &serde_js
 }
 
 
-async fn test_coverage(req: actix_web::HttpRequest) -> HttpResponse {
+async fn test_coverage(req: actix_web::HttpRequest, state: web::Data<AppState>) -> HttpResponse {
     if let Err(resp) = check_jwt(&req) { return resp; }
-    HttpResponse::Ok().json(json!({
+    if !rl_allow() { return HttpResponse::TooManyRequests().json(json!({"error": "rate_limit_exceeded", "retry_after": 1})); }
+    let upstream = std::env::var("SECURITY_URL").unwrap_or_else(|_| "http://security-gateway-go:8080".to_string());
+    let _ = call_service_sync(&format!("{}/v1/notify", upstream), &format!("{\"source\": \"platform-hardening-rs\", \"action\": \"test_coverage\"}"));
+    db_persist(&state, "test_coverage", &json!({"action": "test_coverage"})).await;
+    HttpResponse::Ok().insert_header(("content-security-policy", "default-src 'self'")).json(json!({
         "enhancementId": 21,
         "name": "Test Coverage Enhancement",
         "current": {"testFiles": 37, "services": 441, "coverage": "~8%"},
@@ -59,6 +63,7 @@ async fn test_coverage(req: actix_web::HttpRequest) -> HttpResponse {
 // Enhancement 22: Security Scanning
 async fn security_scanning(req: actix_web::HttpRequest) -> HttpResponse {
     if let Err(resp) = check_jwt(&req) { return resp; }
+    if !rl_allow() { return HttpResponse::TooManyRequests().json(json!({"error": "rate_limit_exceeded", "retry_after": 1})); }
     HttpResponse::Ok().json(json!({
         "enhancementId": 22,
         "name": "Security Scanning in CI/CD",
@@ -84,6 +89,7 @@ async fn security_scanning(req: actix_web::HttpRequest) -> HttpResponse {
 // Enhancement 23: Database Indexing
 async fn db_indexing(req: actix_web::HttpRequest) -> HttpResponse {
     if let Err(resp) = check_jwt(&req) { return resp; }
+    if !rl_allow() { return HttpResponse::TooManyRequests().json(json!({"error": "rate_limit_exceeded", "retry_after": 1})); }
     HttpResponse::Ok().json(json!({
         "enhancementId": 23,
         "name": "Database Indexing Audit & Optimization",
@@ -114,6 +120,7 @@ async fn db_indexing(req: actix_web::HttpRequest) -> HttpResponse {
 // Enhancement 24: API Versioning
 async fn api_versioning(req: actix_web::HttpRequest) -> HttpResponse {
     if let Err(resp) = check_jwt(&req) { return resp; }
+    if !rl_allow() { return HttpResponse::TooManyRequests().json(json!({"error": "rate_limit_exceeded", "retry_after": 1})); }
     HttpResponse::Ok().json(json!({
         "enhancementId": 24,
         "name": "API Versioning Strategy",
@@ -144,6 +151,7 @@ async fn api_versioning(req: actix_web::HttpRequest) -> HttpResponse {
 // Enhancement 25: Feature Flags
 async fn feature_flags(req: actix_web::HttpRequest) -> HttpResponse {
     if let Err(resp) = check_jwt(&req) { return resp; }
+    if !rl_allow() { return HttpResponse::TooManyRequests().json(json!({"error": "rate_limit_exceeded", "retry_after": 1})); }
     HttpResponse::Ok().json(json!({
         "enhancementId": 25,
         "name": "Feature Flag System",
@@ -173,6 +181,7 @@ async fn feature_flags(req: actix_web::HttpRequest) -> HttpResponse {
 // Enhancement 26: Secrets Management
 async fn secrets_management(req: actix_web::HttpRequest) -> HttpResponse {
     if let Err(resp) = check_jwt(&req) { return resp; }
+    if !rl_allow() { return HttpResponse::TooManyRequests().json(json!({"error": "rate_limit_exceeded", "retry_after": 1})); }
     HttpResponse::Ok().json(json!({
         "enhancementId": 26,
         "name": "Secrets Management (HashiCorp Vault)",
@@ -199,6 +208,7 @@ async fn secrets_management(req: actix_web::HttpRequest) -> HttpResponse {
 // Enhancement 27: GraphQL
 async fn graphql_layer(req: actix_web::HttpRequest) -> HttpResponse {
     if let Err(resp) = check_jwt(&req) { return resp; }
+    if !rl_allow() { return HttpResponse::TooManyRequests().json(json!({"error": "rate_limit_exceeded", "retry_after": 1})); }
     HttpResponse::Ok().json(json!({
         "enhancementId": 27,
         "name": "GraphQL API Gateway",
@@ -233,6 +243,7 @@ async fn graphql_layer(req: actix_web::HttpRequest) -> HttpResponse {
 // Enhancement 28: Event Sourcing
 async fn event_sourcing(req: actix_web::HttpRequest) -> HttpResponse {
     if let Err(resp) = check_jwt(&req) { return resp; }
+    if !rl_allow() { return HttpResponse::TooManyRequests().json(json!({"error": "rate_limit_exceeded", "retry_after": 1})); }
     HttpResponse::Ok().json(json!({
         "enhancementId": 28,
         "name": "Event Sourcing & Audit Reconstruction",
@@ -268,6 +279,7 @@ async fn event_sourcing(req: actix_web::HttpRequest) -> HttpResponse {
 // Quick Wins (5 items)
 async fn quick_wins(req: actix_web::HttpRequest) -> HttpResponse {
     if let Err(resp) = check_jwt(&req) { return resp; }
+    if !rl_allow() { return HttpResponse::TooManyRequests().json(json!({"error": "rate_limit_exceeded", "retry_after": 1})); }
     HttpResponse::Ok().json(json!({
         "name": "Quick Wins (< 1 week each)",
         "items": [
@@ -322,6 +334,7 @@ fn middleware_actions(topic: &str) -> serde_json::Value {
 
 async fn healthz(req: actix_web::HttpRequest) -> HttpResponse {
     if let Err(resp) = check_jwt(&req) { return resp; }
+    if !rl_allow() { return HttpResponse::TooManyRequests().json(json!({"error": "rate_limit_exceeded", "retry_after": 1})); }
     HttpResponse::Ok().json(json!({
         "status": "healthy", "service": "platform-hardening-rs", "version": "1.0.0",
         "enhancements": ["21: Test Coverage", "22: Security Scanning", "23: DB Indexing", "24: API Versioning", "25: Feature Flags", "26: Secrets Mgmt", "27: GraphQL", "28: Event Sourcing", "Quick Wins 1-5"]

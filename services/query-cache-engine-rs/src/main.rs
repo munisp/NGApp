@@ -19,7 +19,7 @@ struct AppState {
 fn ttl_for_query(query_type: &str) -> u64 { match query_type { "static" => 3600, "semi_static" => 300, "dynamic" => 30, _ => 60 } }
 
 async fn health() -> HttpResponse {
-    HttpResponse::Ok().json(json!({"status": "healthy", "service": "query-cache-engine-rs"}))
+    HttpResponse::Ok().insert_header(("content-security-policy", "default-src 'self'")).json(json!({"status": "healthy", "service": "query-cache-engine-rs"}))
 }
 
 async fn cache_result(req: actix_web::HttpRequest, state: web::Data<AppState>, body: web::Json<serde_json::Value>) -> HttpResponse {

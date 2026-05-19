@@ -29,7 +29,7 @@ fn compute_transfer_risk(amount: f64, corridor_risk: bool, pep: bool) -> f64 {
 }
 
 async fn health() -> HttpResponse {
-    HttpResponse::Ok().json(json!({
+    HttpResponse::Ok().insert_header(("content-security-policy", "default-src 'self'")).json(json!({
         "status": "healthy",
         "service": "wire-transfer-monitor-rs",
         "version": "1.0.0",

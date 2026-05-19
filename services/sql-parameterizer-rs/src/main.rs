@@ -19,7 +19,7 @@ struct AppState {
 fn has_injection_risk(query: &str) -> bool { let q = query.to_lowercase(); q.contains("--") || q.contains(";") || q.contains("union") || q.contains("drop") }
 
 async fn health() -> HttpResponse {
-    HttpResponse::Ok().json(json!({"status": "healthy", "service": "sql-parameterizer-rs"}))
+    HttpResponse::Ok().insert_header(("content-security-policy", "default-src 'self'")).json(json!({"status": "healthy", "service": "sql-parameterizer-rs"}))
 }
 
 async fn parameterize(req: actix_web::HttpRequest, state: web::Data<AppState>, body: web::Json<serde_json::Value>) -> HttpResponse {

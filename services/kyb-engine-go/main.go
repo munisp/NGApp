@@ -288,6 +288,15 @@ func handleAnalyze(w http.ResponseWriter, r *http.Request) {
 	structures = append(structures, structure)
 	stats["totalAnalyses"] = len(structures)
 
+	dbData, _ := json.Marshal(map[string]string{"service": "kyb_engine_go", "action": "create"})
+	if dbErr := dbInsert(fmt.Sprintf("kyb_engine_go-%d", time.Now().UnixNano()), "kyb_engine_go", "default", "active", dbData); dbErr != nil {
+		log.Printf("[%s] dbInsert failed: %v", serviceName, dbErr)
+	}
+	csURL := os.Getenv("KYC_ENGINE_URL")
+	if csURL == "" { csURL = "http://kyc-engine-go:8080" }
+	if _, csErr := callService("POST", csURL+"/v1/notify", map[string]interface{}{"source": "kyb_engine_go", "action": "create"}); csErr != nil {
+		log.Printf("[%s] upstream call failed: %v", serviceName, csErr)
+	}
 	respondJSON(w, 200, map[string]interface{}{
 		"structure":    structure,
 		"votingRights": votingRights,

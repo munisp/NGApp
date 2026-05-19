@@ -19,7 +19,7 @@ struct AppState {
 fn sliding_window_count(timestamps: &[u64], window_ms: u64, now: u64) -> u32 { timestamps.iter().filter(|&&t| now - t <= window_ms).count() as u32 }
 
 async fn health() -> HttpResponse {
-    HttpResponse::Ok().json(json!({"status": "healthy", "service": "express-rate-limiter-rs"}))
+    HttpResponse::Ok().insert_header(("content-security-policy", "default-src 'self'")).json(json!({"status": "healthy", "service": "express-rate-limiter-rs"}))
 }
 
 async fn check_rate(req: actix_web::HttpRequest, state: web::Data<AppState>, body: web::Json<serde_json::Value>) -> HttpResponse {

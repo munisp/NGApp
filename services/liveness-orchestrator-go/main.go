@@ -325,6 +325,10 @@ func handleCreateSession(w http.ResponseWriter, r *http.Request) {
 	stats.TotalChallenges += int64(len(challenges))
 	mu.Unlock()
 
+	dbData, _ := json.Marshal(map[string]string{"service": "liveness_orchestrator_go", "action": "create"})
+	if dbErr := dbInsert(fmt.Sprintf("liveness_orchestrator_go-%d", time.Now().UnixNano()), "liveness_orchestrator_go", "default", "active", dbData); dbErr != nil {
+		log.Printf("[%s] dbInsert failed: %v", serviceName, dbErr)
+	}
 	respondJSON(w, 201, session)
 }
 

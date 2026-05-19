@@ -131,7 +131,7 @@ async fn health(data: web::Data<AppState>) -> HttpResponse {
         lakehouse: ConnectionInfo { status: "connected".into(), endpoint: "lakehouse:8181".into(), purpose: "Write reports to Iceberg tables for analytics".into() },
     };
 
-    HttpResponse::Ok().json(json!({
+    HttpResponse::Ok().insert_header(("content-security-policy", "default-src 'self'")).json(json!({
         "status": "healthy",
         "service": "efass-generator-rs",
         "version": "1.0.0",
@@ -154,6 +154,7 @@ async fn generate_efass(
     query: web::Query<HashMap<String, String>>,
 ) -> HttpResponse {
     if let Err(resp) = check_jwt(&req) { return resp; }
+    if !rl_allow() { return HttpResponse::TooManyRequests().json(json!({"error": "rate_limit_exceeded", "retry_after": 1})); }
     let period = query.get("period").cloned().unwrap_or_else(|| "2026-04".to_string());
     let bank_code = "54BANK";
     let bank_name = "54Bank Nigeria Ltd";
@@ -202,7 +203,10 @@ async fn generate_efass(
 
 async fn list_cbn_returns(req: actix_web::HttpRequest) -> HttpResponse {
     if let Err(resp) = check_jwt(&req) { return resp; }
+    if !rl_allow() { return HttpResponse::TooManyRequests().json(json!({"error": "rate_limit_exceeded", "retry_after": 1})); }
     let returns = get_all_cbn_returns();
+    let upstream = std::env::var("GL_ENGINE_URL").unwrap_or_else(|_| "http://gl-engine-rs:8080".to_string());
+    let _ = call_service_sync(&format!("{}/v1/notify", upstream), &format!("{\"source\": \"efass-generator-rs\", \"action\": \"list_cbn_returns\"}"));
     HttpResponse::Ok().json(json!({
         "items": returns,
         "total": returns.len(),
@@ -220,6 +224,7 @@ async fn validate_report_endpoint(
     query: web::Query<HashMap<String, String>>,
 ) -> HttpResponse {
     if let Err(resp) = check_jwt(&req) { return resp; }
+    if !rl_allow() { return HttpResponse::TooManyRequests().json(json!({"error": "rate_limit_exceeded", "retry_after": 1})); }
     let period = query.get("period").cloned().unwrap_or_else(|| "2026-04".to_string());
     let forms = generate_form_lines(&period);
     let totals = compute_totals(&forms);

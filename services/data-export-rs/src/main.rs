@@ -19,7 +19,7 @@ struct AppState {
 fn estimate_export_size(rows: u64, avg_row_bytes: u64) -> u64 { rows * avg_row_bytes }
 
 async fn health() -> HttpResponse {
-    HttpResponse::Ok().json(json!({"status": "healthy", "service": "data-export-rs"}))
+    HttpResponse::Ok().insert_header(("content-security-policy", "default-src 'self'")).json(json!({"status": "healthy", "service": "data-export-rs"}))
 }
 
 async fn export_data(req: actix_web::HttpRequest, state: web::Data<AppState>, body: web::Json<serde_json::Value>) -> HttpResponse {

@@ -34,7 +34,7 @@ fn delta(s: f64, k: f64, r: f64, sigma: f64, t: f64) -> f64 {
 }
 
 async fn health() -> HttpResponse {
-    HttpResponse::Ok().json(json!({
+    HttpResponse::Ok().insert_header(("content-security-policy", "default-src 'self'")).json(json!({
         "status": "healthy",
         "service": "etd-trading-rs",
         "version": "1.0.0",

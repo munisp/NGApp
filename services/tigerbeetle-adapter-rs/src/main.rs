@@ -19,7 +19,7 @@ struct AppState {
 fn account_flags(debit: bool, credit: bool) -> u32 { (if debit { 1 } else { 0 }) | (if credit { 2 } else { 0 }) }
 
 async fn health() -> HttpResponse {
-    HttpResponse::Ok().json(json!({"status": "healthy", "service": "tigerbeetle-adapter-rs"}))
+    HttpResponse::Ok().insert_header(("content-security-policy", "default-src 'self'")).json(json!({"status": "healthy", "service": "tigerbeetle-adapter-rs"}))
 }
 
 async fn tb_operation(req: actix_web::HttpRequest, state: web::Data<AppState>, body: web::Json<serde_json::Value>) -> HttpResponse {

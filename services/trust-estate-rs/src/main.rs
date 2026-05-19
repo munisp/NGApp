@@ -26,7 +26,7 @@ fn trust_type_rules(trust_type: &str) -> &str {
 }
 
 async fn health() -> HttpResponse {
-    HttpResponse::Ok().json(json!({
+    HttpResponse::Ok().insert_header(("content-security-policy", "default-src 'self'")).json(json!({
         "status": "healthy",
         "service": "trust-estate-rs",
         "version": "1.0.0",

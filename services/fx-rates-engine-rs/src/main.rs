@@ -23,7 +23,7 @@ fn convert_amount(amount: f64, rate: f64) -> f64 { (amount * rate * 100.0).round
 fn cbn_rate_band(official: f64, market: f64) -> bool { (market - official).abs() / official < 0.05 }
 
 async fn health() -> HttpResponse {
-    HttpResponse::Ok().json(json!({
+    HttpResponse::Ok().insert_header(("content-security-policy", "default-src 'self'")).json(json!({
         "status": "healthy",
         "service": "fx-rates-engine-rs",
         "version": "1.0.0",

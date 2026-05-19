@@ -19,7 +19,7 @@ struct AppState {
 fn build_upsert_sql(table: &str, columns: &[&str]) -> String { format!("INSERT INTO {} ({}) VALUES ({}) ON CONFLICT DO UPDATE", table, columns.join(","), columns.iter().map(|_| "$?").collect::<Vec<_>>().join(",")) }
 
 async fn health() -> HttpResponse {
-    HttpResponse::Ok().json(json!({"status": "healthy", "service": "postgres-persistence-rs"}))
+    HttpResponse::Ok().insert_header(("content-security-policy", "default-src 'self'")).json(json!({"status": "healthy", "service": "postgres-persistence-rs"}))
 }
 
 async fn persist(req: actix_web::HttpRequest, state: web::Data<AppState>, body: web::Json<serde_json::Value>) -> HttpResponse {

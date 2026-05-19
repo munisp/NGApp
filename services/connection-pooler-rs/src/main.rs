@@ -19,7 +19,7 @@ struct AppState {
 fn optimal_pool_size(cpu_cores: u32) -> u32 { cpu_cores * 2 + 1 }
 
 async fn health() -> HttpResponse {
-    HttpResponse::Ok().json(json!({"status": "healthy", "service": "connection-pooler-rs"}))
+    HttpResponse::Ok().insert_header(("content-security-policy", "default-src 'self'")).json(json!({"status": "healthy", "service": "connection-pooler-rs"}))
 }
 
 async fn pool_stats(req: actix_web::HttpRequest, state: web::Data<AppState>, body: web::Json<serde_json::Value>) -> HttpResponse {

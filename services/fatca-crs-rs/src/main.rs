@@ -23,7 +23,7 @@ fn reportable_account(balance_usd: f64, threshold: f64) -> bool { balance_usd >=
 fn crs_jurisdiction(country: &str) -> bool { country != "US" }
 
 async fn health() -> HttpResponse {
-    HttpResponse::Ok().json(json!({"status": "healthy", "service": "fatca-crs-rs"}))
+    HttpResponse::Ok().insert_header(("content-security-policy", "default-src 'self'")).json(json!({"status": "healthy", "service": "fatca-crs-rs"}))
 }
 
 async fn generate_report(req: actix_web::HttpRequest, state: web::Data<AppState>, body: web::Json<serde_json::Value>) -> HttpResponse {
