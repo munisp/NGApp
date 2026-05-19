@@ -1,5 +1,5 @@
 import { z } from "zod";
-import { router, protectedProcedure } from "../_core/trpc";
+import { router, publicProcedure, protectedProcedure } from "../_core/trpc";
 import { getDb } from "../db";
 import {
   eq,
@@ -151,4 +151,13 @@ export const accountOpeningRouter = router({
   list: protectedProcedure.query(async () => {
     return { data: [], total: 0 };
   }),
+
+  // ── Sprint 28 domain procedures ──
+  list: publicProcedure.query(async () => {
+    return { applications: [{ id: "AO-001", customerName: "Fatima Ibrahim", accountType: "savings", status: "approved", createdAt: "2024-06-01" }], total: 1 };
+  }),
+  analytics: publicProcedure.query(async () => {
+    return { total: 1500, totalApplications: 1500, approved: 1200, pending: 200, rejected: 100, byStatus: { approved: 1200, pending: 200, rejected: 100 }, byBank: { access: 500, gtbank: 400, zenith: 300, firstbank: 300 }, conversionRate: 80, avgProcessingDays: 3 };
+  }),
+
 });

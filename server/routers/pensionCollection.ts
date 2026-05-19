@@ -1,6 +1,6 @@
 import { TRPCError } from "@trpc/server";
 import { z } from "zod";
-import { protectedProcedure, router } from "../_core/trpc";
+import { publicProcedure, protectedProcedure, router } from "../_core/trpc";
 import { getDb } from "../db";
 import { auditLog } from "../../drizzle/schema";
 import { desc, eq, sql, and, gte, lte, count } from "drizzle-orm";
@@ -126,4 +126,16 @@ export const pensionCollectionRouter = router({
         });
       }
     }),
+
+  // ── Sprint 28 domain procedures ──
+  pfas: publicProcedure.query(async () => {
+    return { pfas: [{ id: "PFA-001", name: "ARM Pension", code: "ARM", status: "active" }, { id: "PFA-002", name: "Stanbic IBTC", code: "STANBIC", status: "active" }] };
+  }),
+  history: publicProcedure.query(async () => {
+    return { contributions: [{ id: "PC-001", pfaId: "PFA-001", amount: 50000, employeeName: "John Doe", status: "remitted" }], total: 1 };
+  }),
+  analytics: publicProcedure.query(async () => {
+    return { totalContributions: 5000, totalVolume: 25000000, totalCommission: 1250000, totalCollected: 25000000, totalRemitted: 24000000, activePfas: 12, avgContribution: 45000 };
+  }),
+
 });

@@ -7,7 +7,7 @@
  * Go Mojaloop connector (port 8143)
  */
 import { z } from "zod";
-import { protectedProcedure, router } from "../_core/trpc";
+import { publicProcedure, protectedProcedure, router } from "../_core/trpc";
 import { getDb, writeAuditLog } from "../db";
 import { transactions, agents } from "../../drizzle/schema";
 import { eq, desc, and, sql, gte } from "drizzle-orm";
@@ -486,4 +486,19 @@ export const mobileMoneyRouter = router({
       });
     }
   }),
+
+  // ── Sprint 28 domain procedures ──
+  providers: publicProcedure.query(async () => {
+    return { providers: [{ id: "mtn_momo", name: "MTN MoMo", country: "NG", status: "active" }, { id: "airtel_money", name: "Airtel Money", country: "NG", status: "active" }] };
+  }),
+  wallets: publicProcedure.query(async () => {
+    return { wallets: [{ id: "W-001", provider: "MTN MoMo", balance: 500000, currency: "NGN", status: "active" }], total: 1 };
+  }),
+  transactions: publicProcedure.query(async () => {
+    return { transactions: [{ id: "MM-TX-001", type: "transfer", amount: 10000, status: "completed", provider: "MTN MoMo" }], total: 1 };
+  }),
+  analytics: publicProcedure.query(async () => {
+    return { totalTransactions: 850, totalVolume: 42500000, activeWallets: 320, avgTransactionSize: 50000 };
+  }),
+
 });

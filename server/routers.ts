@@ -478,6 +478,7 @@ import { transactionDisputeResolutionRouter } from "./routers/transactionDispute
 import { transactionMonitoringRouter } from "./routers/transactionMonitoring";
 import { transactionReversalWorkflowRouter } from "./routers/transactionReversalWorkflow";
 import { ussdLocalizationRouter } from "./routers/ussdLocalization";
+import { geoFenceDedicatedRouter } from "./routers/geoFenceDedicated";
 
 export const appRouter = router({
   goServices: goServiceBridgeRouter,
@@ -514,6 +515,7 @@ export const appRouter = router({
   encryptedFields: encryptedFieldsRouter,
   floatReconciliations: floatReconciliationsRouter,
   geoFences: geoFencesRouter,
+  geoFenceDedicated: geoFenceDedicatedRouter,
   gl_accounts: gl_accountsRouter,
   gl_journal_entries: gl_journal_entriesRouter,
   kycDocuments: kycDocumentsRouter,

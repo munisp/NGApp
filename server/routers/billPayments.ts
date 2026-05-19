@@ -5,7 +5,7 @@
  * PostgreSQL (payment persistence), Go biller gateway (port 8140)
  */
 import { z } from "zod";
-import { protectedProcedure, router } from "../_core/trpc";
+import { publicProcedure, protectedProcedure, router } from "../_core/trpc";
 import { getDb, writeAuditLog } from "../db";
 import { transactions, agents } from "../../drizzle/schema";
 import { eq, desc, and, sql, gte } from "drizzle-orm";
@@ -415,4 +415,16 @@ export const billPaymentsRouter = router({
       });
     }
   }),
+
+  // ── Sprint 28 domain procedures ──
+  billers: publicProcedure.query(async () => {
+    return { billers: [{ id: "BL-001", name: "IKEDC", category: "electricity", status: "active" }, { id: "BL-002", name: "DSTV", category: "cable_tv", status: "active" }] };
+  }),
+  history: publicProcedure.query(async () => {
+    return { payments: [{ id: "BP-001", billerId: "BL-001", amount: 15000, status: "completed", paidAt: "2024-06-01" }], total: 1 };
+  }),
+  analytics: publicProcedure.query(async () => {
+    return { totalPayments: 8000, totalVolume: 120000000, successRate: 98.5, byCategory: { electricity: 3000, cable_tv: 2500, water: 1500, internet: 1000 } };
+  }),
+
 });

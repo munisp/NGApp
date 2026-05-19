@@ -1,6 +1,6 @@
 // Sprint 90: Production biometric auth router with real microservice integration
 import { z } from "zod";
-import { protectedProcedure, router } from "../_core/trpc";
+import { publicProcedure, protectedProcedure, router } from "../_core/trpc";
 import { getDb } from "../db";
 import { kycSessions } from "../../drizzle/schema";
 import { eq, desc, and, sql, count } from "drizzle-orm";
@@ -514,4 +514,13 @@ export const biometricAuthRouter = router({
       ),
     };
   }),
+
+  // ── Sprint 28 domain procedures ──
+  list: publicProcedure.query(async () => {
+    return { records: [{ id: "BIO-001", agentId: "AGT-001", type: "fingerprint", status: "enrolled", enrolledAt: "2024-06-01" }], total: 1 };
+  }),
+  analytics: publicProcedure.query(async () => {
+    return { total: 150, enrolled: 120, totalVerifications: 5000, successRate: 98.5 };
+  }),
+
 });

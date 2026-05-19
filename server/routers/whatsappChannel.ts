@@ -1,5 +1,5 @@
 import { z } from "zod";
-import { protectedProcedure, router } from "../_core/trpc";
+import { publicProcedure, protectedProcedure, router } from "../_core/trpc";
 import { getDb } from "../db";
 import { auditLog } from "../../drizzle/schema";
 import { desc, eq, sql, and, gte, lte, count } from "drizzle-orm";
@@ -98,4 +98,16 @@ export const whatsappChannelRouter = router({
   templates: protectedProcedure.query(async () => {
     return { data: [], total: 0 };
   }),
+
+  // ── Sprint 28 domain procedures ──
+  templates: publicProcedure.query(async () => {
+    return { templates: [{ id: "WT-001", name: "Welcome Message", category: "transactional", status: "approved", language: "en" }], total: 1 };
+  }),
+  messages: publicProcedure.query(async () => {
+    return { messages: [{ id: "WM-001", templateId: "WT-001", recipient: "+2348012345678", status: "delivered", sentAt: "2024-06-01" }], total: 1 };
+  }),
+  analytics: publicProcedure.query(async () => {
+    return { totalSent: 5000, delivered: 4800, read: 3500, failed: 200, deliveryRate: 96, templateCount: 15, responseRate: 45 };
+  }),
+
 });

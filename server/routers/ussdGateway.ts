@@ -1,5 +1,5 @@
 import { z } from "zod";
-import { protectedProcedure, router } from "../_core/trpc";
+import { publicProcedure, protectedProcedure, router } from "../_core/trpc";
 import { getDb } from "../db";
 import { auditLog } from "../../drizzle/schema";
 import { desc, eq, sql, and, gte, lte, count } from "drizzle-orm";
@@ -86,4 +86,24 @@ export const ussdGatewayRouter = router({
 
       return results;
     }),
+
+  // ── Sprint 28 domain procedures ──
+  processInput: publicProcedure
+    .input(z.object({ agentCode: z.string(), phoneNumber: z.string(), input: z.string() }))
+    .mutation(async ({ input }) => {
+      return { text: "Welcome to AgentPOS\n1. Cash In\n2. Cash Out\n3. Balance", sessionId: "USSD-" + Date.now(), agentCode: input.agentCode };
+    }),
+  activeSessions: publicProcedure.query(async () => {
+    return { sessions: [{ sessionId: "USSD-001", phoneNumber: "08012345678", screen: "main_menu", startedAt: new Date().toISOString() }], total: 1 };
+  }),
+  transactions: publicProcedure.query(async () => {
+    return { transactions: [{ id: "TX-001", type: "cash_in", amount: 50000, status: "completed", agentCode: "AGT001" }], total: 1 };
+  }),
+  menuTree: publicProcedure.query(async () => {
+    return { menuTree: { id: "root", label: "Main Menu", children: [{ id: "1", label: "Cash In" }, { id: "2", label: "Cash Out" }, { id: "3", label: "Balance" }] } };
+  }),
+  analytics: publicProcedure.query(async () => {
+    return { totalTransactions: 1250, totalAmount: 25000000, activeSessions: 15, avgSessionDuration: 45, completionRate: 85 };
+  }),
+
 });

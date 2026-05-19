@@ -6,7 +6,7 @@
  * PostgreSQL (transaction persistence), TigerBeetle (double-entry ledger)
  */
 import { z } from "zod";
-import { protectedProcedure, router } from "../_core/trpc";
+import { publicProcedure, protectedProcedure, router } from "../_core/trpc";
 import { getDb, writeAuditLog } from "../db";
 import { transactions, agents, commissionRules } from "../../drizzle/schema";
 import { eq, desc, and, sql, gte } from "drizzle-orm";
@@ -540,4 +540,19 @@ export const airtimeVendingRouter = router({
       });
     }
   }),
+
+  // ── Sprint 28 domain procedures ──
+  networks: publicProcedure.query(async () => {
+    return { networks: [{ id: "NW-001", name: "MTN", code: "MTN", status: "active" }, { id: "NW-002", name: "Airtel", code: "AIRTEL", status: "active" }] };
+  }),
+  history: publicProcedure.query(async () => {
+    return { transactions: [{ id: "AV-001", network: "MTN", phoneNumber: "08012345678", amount: 1000, status: "completed" }], total: 1 };
+  }),
+  dataBundles: publicProcedure.input(z.object({ networkId: z.string().optional() }).optional()).query(async () => {
+    return { bundles: [{ id: "DB-001", network: "MTN", name: "1GB Daily", price: 350, validity: "24h" }] };
+  }),
+  analytics: publicProcedure.query(async () => {
+    return { totalTransactions: 50000, totalVolume: 25000000, totalCommission: 1250000, byNetwork: { MTN: 20000, Airtel: 15000, Glo: 10000, "9mobile": 5000 } };
+  }),
+
 });

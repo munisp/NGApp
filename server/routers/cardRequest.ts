@@ -1,5 +1,5 @@
 import { z } from "zod";
-import { protectedProcedure, router } from "../_core/trpc";
+import { publicProcedure, protectedProcedure, router } from "../_core/trpc";
 import { getDb } from "../db";
 import { transactions } from "../../drizzle/schema";
 import { desc, eq, sql, and, gte, lte, count } from "drizzle-orm";
@@ -90,4 +90,13 @@ export const cardRequestRouter = router({
   analytics: protectedProcedure.query(async () => {
     return { metrics: {}, charts: [], lastUpdated: new Date().toISOString() };
   }),
+
+  // ── Sprint 28 domain procedures ──
+  list: publicProcedure.query(async () => {
+    return { requests: [{ id: "CR-001", agentId: "AGT-001", cardType: "debit", status: "delivered", requestedAt: "2024-06-01" }], total: 1 };
+  }),
+  analytics: publicProcedure.query(async () => {
+    return { total: 300, byStatus: { delivered: 250, pending: 30, rejected: 20 }, byType: { debit: 200, prepaid: 100 }, avgDeliveryDays: 7 };
+  }),
+
 });

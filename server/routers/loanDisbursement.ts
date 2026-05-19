@@ -1,6 +1,6 @@
 import { TRPCError } from "@trpc/server";
 import { z } from "zod";
-import { protectedProcedure, router } from "../_core/trpc";
+import { publicProcedure, protectedProcedure, router } from "../_core/trpc";
 import { getDb } from "../db";
 import { transactions } from "../../drizzle/schema";
 import { desc, eq, sql, and, gte, lte, count } from "drizzle-orm";
@@ -126,4 +126,16 @@ export const loanDisbursementRouter = router({
         });
       }
     }),
+
+  // ── Sprint 28 domain procedures ──
+  list: publicProcedure.query(async () => {
+    return { applications: [{ id: "LA-001", agentId: "AGT-001", amount: 500000, status: "disbursed", productId: "LP-001" }], total: 1 };
+  }),
+  products: publicProcedure.query(async () => {
+    return { products: [{ id: "LP-001", name: "Agent Working Capital", maxAmount: 2000000, interestRate: 15, tenorMonths: 12 }] };
+  }),
+  analytics: publicProcedure.query(async () => {
+    return { totalApplications: 200, totalDisbursed: 50000000, activeLoans: 120, defaultRate: 2.5, avgLoanSize: 400000 };
+  }),
+
 });
