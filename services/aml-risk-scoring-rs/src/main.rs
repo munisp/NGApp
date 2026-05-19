@@ -312,13 +312,13 @@ mod grpc_service {
     pub async fn start_grpc_server(service_name: &str, port: u16) {
         let addr: SocketAddr = ([0, 0, 0, 0], port).into();
         let metrics = Arc::new(GrpcMetrics::new());
-        log::info!("[{}] gRPC server starting on {} (HTTP/2, Protobuf)", service_name, addr);
+        eprintln!("[{}] gRPC server starting on {} (HTTP/2, Protobuf)", service_name, addr);
 
         // TCP listener for gRPC with custom protocol handling
         let listener = match tokio::net::TcpListener::bind(addr).await {
             Ok(l) => l,
             Err(e) => {
-                log::error!("[{}] gRPC bind failed: {}", service_name, e);
+                eprintln!("[{}] gRPC bind failed: {}", service_name, e);
                 return;
             }
         };
@@ -338,10 +338,10 @@ mod grpc_service {
                         let _ = stream.read(&mut buf).await;
                         let elapsed = start.elapsed().as_micros() as u64;
                         m.latency_sum_us.fetch_add(elapsed, Ordering::Relaxed);
-                        log::debug!("[{}] gRPC request from {} ({}µs)", name, peer, elapsed);
+                        eprintln!("[{}] gRPC request from {} ({}µs)", name, peer, elapsed);
                     });
                 }
-                Err(e) => log::warn!("[{}] gRPC accept error: {}", svc_name, e),
+                Err(e) => eprintln!("[{}] gRPC accept error: {}", svc_name, e),
             }
         }
     }
@@ -389,7 +389,7 @@ fn call_service_grpc(target: &str, method: &str, payload: &str) -> Result<String
         let addr = format!("{}:{}", host, port);
         match grpc_service::grpc_call(&addr, method, payload.as_bytes()) {
             Ok(data) => return Ok(String::from_utf8_lossy(&data).to_string()),
-            Err(e) => log::warn!("gRPC fallback to HTTP for {}: {}", target, e),
+            Err(e) => eprintln!("gRPC fallback to HTTP for {}: {}", target, e),
         }
     }
     // Fallback to HTTP
