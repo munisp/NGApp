@@ -212,7 +212,7 @@ resource "aws_db_instance" "main" {
   username                    = var.master_username
   manage_master_user_password = true
 
-  multi_az               = var.multi_az
+  multi_az               = true
   db_subnet_group_name   = aws_db_subnet_group.main.name
   vpc_security_group_ids = [aws_security_group.rds.id]
   parameter_group_name   = aws_db_parameter_group.main.name
@@ -222,8 +222,8 @@ resource "aws_db_instance" "main" {
   maintenance_window      = "sun:04:00-sun:05:00"
   copy_tags_to_snapshot   = true
 
-  deletion_protection       = var.deletion_protection
-  skip_final_snapshot       = var.environment != "production"
+  deletion_protection       = true
+  skip_final_snapshot       = false
   final_snapshot_identifier = var.environment == "production" ? "${local.name_prefix}-final-snapshot" : null
 
   iam_database_authentication_enabled = true
@@ -250,6 +250,8 @@ resource "aws_db_instance" "read_replica" {
   storage_encrypted   = true
   kms_key_id          = aws_kms_key.rds.arn
 
+  multi_az                            = true
+  deletion_protection                 = true
   auto_minor_version_upgrade          = true
   performance_insights_enabled        = true
   performance_insights_kms_key_id     = aws_kms_key.rds.arn
@@ -257,6 +259,7 @@ resource "aws_db_instance" "read_replica" {
   monitoring_role_arn                 = aws_iam_role.rds_monitoring.arn
   copy_tags_to_snapshot               = true
   iam_database_authentication_enabled = true
+  enabled_cloudwatch_logs_exports     = ["postgresql", "upgrade"]
 
   tags = { Name = "${local.name_prefix}-postgres-replica" }
 }

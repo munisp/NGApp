@@ -85,6 +85,143 @@ resource "aws_s3_bucket_versioning" "access_logs" {
   versioning_configuration { status = "Enabled" }
 }
 
+resource "aws_s3_bucket_notification" "access_logs" {
+  bucket      = aws_s3_bucket.access_logs.id
+  eventbridge = true
+}
+
+# ── Replication IAM Role ──────────────────────────────────────────────────────
+
+variable "replication_region" {
+  type    = string
+  default = "us-west-2"
+}
+
+resource "aws_iam_role" "replication" {
+  name = "${local.name_prefix}-s3-replication-role"
+  assume_role_policy = jsonencode({
+    Version = "2012-10-17"
+    Statement = [{
+      Action    = "sts:AssumeRole"
+      Effect    = "Allow"
+      Principal = { Service = "s3.amazonaws.com" }
+    }]
+  })
+}
+
+resource "aws_iam_role_policy" "replication" {
+  name = "${local.name_prefix}-s3-replication-policy"
+  role = aws_iam_role.replication.id
+  policy = jsonencode({
+    Version = "2012-10-17"
+    Statement = [
+      {
+        Effect = "Allow"
+        Action = [
+          "s3:GetReplicationConfiguration",
+          "s3:ListBucket"
+        ]
+        Resource = [
+          aws_s3_bucket.main.arn,
+          aws_s3_bucket.backups.arn,
+          aws_s3_bucket.datalake.arn,
+          aws_s3_bucket.access_logs.arn
+        ]
+      },
+      {
+        Effect = "Allow"
+        Action = [
+          "s3:GetObjectVersionForReplication",
+          "s3:GetObjectVersionAcl",
+          "s3:GetObjectVersionTagging"
+        ]
+        Resource = [
+          "${aws_s3_bucket.main.arn}/*",
+          "${aws_s3_bucket.backups.arn}/*",
+          "${aws_s3_bucket.datalake.arn}/*",
+          "${aws_s3_bucket.access_logs.arn}/*"
+        ]
+      },
+      {
+        Effect = "Allow"
+        Action = [
+          "s3:ReplicateObject",
+          "s3:ReplicateDelete",
+          "s3:ReplicateTags"
+        ]
+        Resource = [
+          "arn:aws:s3:::${local.name_prefix}-storage-replica/*",
+          "arn:aws:s3:::${local.name_prefix}-backups-replica/*",
+          "arn:aws:s3:::${local.name_prefix}-datalake-replica/*",
+          "arn:aws:s3:::${local.name_prefix}-access-logs-replica/*"
+        ]
+      }
+    ]
+  })
+}
+
+# ── Replication Configurations ────────────────────────────────────────────────
+
+resource "aws_s3_bucket_replication_configuration" "main" {
+  depends_on = [aws_s3_bucket_versioning.main]
+  bucket     = aws_s3_bucket.main.id
+  role       = aws_iam_role.replication.arn
+
+  rule {
+    id     = "replicate-all"
+    status = "Enabled"
+    destination {
+      bucket        = "arn:aws:s3:::${local.name_prefix}-storage-replica"
+      storage_class = "STANDARD_IA"
+    }
+  }
+}
+
+resource "aws_s3_bucket_replication_configuration" "backups" {
+  depends_on = [aws_s3_bucket_versioning.backups]
+  bucket     = aws_s3_bucket.backups.id
+  role       = aws_iam_role.replication.arn
+
+  rule {
+    id     = "replicate-all"
+    status = "Enabled"
+    destination {
+      bucket        = "arn:aws:s3:::${local.name_prefix}-backups-replica"
+      storage_class = "GLACIER"
+    }
+  }
+}
+
+resource "aws_s3_bucket_replication_configuration" "datalake" {
+  depends_on = [aws_s3_bucket_versioning.datalake]
+  bucket     = aws_s3_bucket.datalake.id
+  role       = aws_iam_role.replication.arn
+
+  rule {
+    id     = "replicate-all"
+    status = "Enabled"
+    destination {
+      bucket        = "arn:aws:s3:::${local.name_prefix}-datalake-replica"
+      storage_class = "STANDARD_IA"
+    }
+  }
+}
+
+resource "aws_s3_bucket_replication_configuration" "access_logs" {
+  depends_on = [aws_s3_bucket_versioning.access_logs]
+  bucket     = aws_s3_bucket.access_logs.id
+  role       = aws_iam_role.replication.arn
+
+  rule {
+    id     = "replicate-all"
+    status = "Enabled"
+    destination {
+      bucket        = "arn:aws:s3:::${local.name_prefix}-access-logs-replica"
+      storage_class = "STANDARD_IA"
+    }
+  }
+}
+
 # ── Primary Application Bucket ────────────────────────────────────────────────
 
 resource "aws_s3_bucket" "main" {
