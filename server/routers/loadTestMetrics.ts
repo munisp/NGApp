@@ -1,10 +1,8 @@
 import { z } from "zod";
 import { protectedProcedure, router } from "../_core/trpc";
 import { getDb } from "../db";
-import {
-  loadTestRuns as loadTestRunsTable,
-  auditLog,
-} from "../../drizzle/schema";
+import { loadTestRuns as loadTestRunsTable } from "../../drizzle/schema";
+import { auditLog } from "../../drizzle/schema";
 import { desc, eq, sql, and, gte, lte, count } from "drizzle-orm";
 import { notifyOwner } from "../_core/notification";
 import { getConfig, getConfigNumber, setConfig } from "../lib/runtimeConfig";
@@ -39,11 +37,8 @@ function deltaHigherBetter(a: number, b: number) {
 async function getRunsFromDb(limit: number) {
   const db = await getDb();
   if (!db) return [];
-  return db
-    .select()
-    .from(loadTestRunsTable)
-    .orderBy(desc(loadTestRunsTable.id))
-    .limit(limit);
+  // prettier-ignore
+  return db.select().from(loadTestRunsTable).orderBy(desc(loadTestRunsTable.id)).limit(limit);
 }
 
 async function persistRun(run: any) {

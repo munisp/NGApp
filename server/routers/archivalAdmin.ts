@@ -177,7 +177,7 @@ export const archivalAdminRouter = router({
     )
     .mutation(async ({ input }) => {
       const startTime = Date.now();
-      const jobId = `archival_${Date.now()}`;
+      const job = { id: `archival_${Date.now()}` };
       try {
         const result = await runArchivalJob({
           retentionDays: input.retentionDays,
@@ -185,12 +185,12 @@ export const archivalAdminRouter = router({
         });
         const duration = Date.now() - startTime;
         await notifyOwner({
-          title: `Archival Job Completed`,
+          title: `Archival Job ${job.id} Completed`,
           content: `Triggered by: ${input.triggeredBy}\nTotal archived: ${result.totalArchived} records\nDuration: ${duration}ms`,
         });
         return {
           success: true as const,
-          jobId,
+          jobId: job.id,
           ...result,
           duration,
           error: null as string | null,
@@ -198,12 +198,12 @@ export const archivalAdminRouter = router({
       } catch (err: any) {
         const duration = Date.now() - startTime;
         await notifyOwner({
-          title: `Archival Job Failed`,
+          title: `Archival Job ${job.id} Failed`,
           content: `Triggered by: ${input.triggeredBy}\nError: ${err.message}\nDuration: ${duration}ms`,
         });
         return {
           success: false as const,
-          jobId,
+          jobId: job.id,
           error: err.message as string | null,
           totalArchived: 0,
           totalDeleted: 0,
