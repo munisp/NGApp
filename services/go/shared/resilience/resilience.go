@@ -2,9 +2,10 @@ package resilience
 
 import (
 	"context"
+	cryptorand "crypto/rand"
+	"encoding/binary"
 	"fmt"
 	"math"
-	"math/rand"
 	"net/http"
 	"os"
 	"strconv"
@@ -128,7 +129,9 @@ func RetryDo(ctx context.Context, cfg RetryConfig, fn func() error) error {
 		}
 		if attempt < cfg.MaxRetries {
 			delay := math.Min(cfg.BackoffBase*math.Pow(2, float64(attempt)), cfg.BackoffMax)
-			jitter := delay * 0.1 * rand.Float64()
+			var b [8]byte
+			cryptorand.Read(b[:])
+			jitter := delay * 0.1 * float64(binary.LittleEndian.Uint64(b[:])) / float64(^uint64(0))
 			select {
 			case <-ctx.Done():
 				return ctx.Err()

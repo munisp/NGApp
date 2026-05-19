@@ -314,7 +314,7 @@ export const loadTestMetricsRouter = router({
         throw new Error("A load test is already running");
       }
 
-      const runId = `run_${Date.now()}_${Math.random().toString(36).slice(2, 8)}`;
+      const runId = `run_${Date.now()}_${crypto.randomUUID().slice(0, 8)}`;
       activeLoadTest = { runId, startTime: Date.now(), config: input };
 
       try {
