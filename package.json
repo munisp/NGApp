@@ -12,7 +12,7 @@
     "check:fast": "NODE_OPTIONS=--max-old-space-size=3072 tsc --noEmit --incremental",
     "format": "prettier --write .",
     "test": "vitest run",
-    "db:push": "drizzle-kit generate && drizzle-kit migrate",
+    "db:push": "drizzle-kit push",
     "db:seed": "node seed.mjs",
     "db:seed:integration": "node seed-integration.mjs"
   },
