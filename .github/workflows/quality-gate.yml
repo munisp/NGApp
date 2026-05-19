@@ -42,7 +42,8 @@ jobs:
 
       - name: No @ts-nocheck in server
         run: |
-          count=$(grep -rl "@ts-nocheck" server/ --include="*.ts" | grep -v "test\|.test." | wc -l)
+          # Only match actual @ts-nocheck directives (start of line), not mentions in comments
+          count=$(grep -rn "^// @ts-nocheck\|^/\* @ts-nocheck" server/ --include="*.ts" | grep -v "test\|.test." | wc -l)
           if [ "$count" -gt "0" ]; then
             echo "ERROR: Found $count server files with @ts-nocheck"
             exit 1
