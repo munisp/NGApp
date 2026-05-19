@@ -2,12 +2,12 @@
 # Monitoring Module — CloudWatch alarms, dashboards, SNS notifications
 # ─────────────────────────────────────────────────────────────────────────────
 
-variable "project_name"          { type = string }
-variable "environment"           { type = string }
-variable "eks_cluster_name"      { type = string }
-variable "rds_instance_id"       { type = string }
+variable "project_name" { type = string }
+variable "environment" { type = string }
+variable "eks_cluster_name" { type = string }
+variable "rds_instance_id" { type = string }
 variable "elasticache_cluster_id" { type = string }
-variable "sns_alert_email"       { type = string }
+variable "sns_alert_email" { type = string }
 
 locals {
   name_prefix = "${var.project_name}-${var.environment}"
@@ -50,7 +50,7 @@ resource "aws_cloudwatch_metric_alarm" "rds_storage" {
   namespace           = "AWS/RDS"
   period              = 300
   statistic           = "Average"
-  threshold           = 10737418240  # 10 GB
+  threshold           = 10737418240 # 10 GB
   alarm_description   = "RDS free storage < 10 GB"
   alarm_actions       = [aws_sns_topic.alerts.arn]
   dimensions          = { DBInstanceIdentifier = var.rds_instance_id }
@@ -141,7 +141,7 @@ resource "aws_cloudwatch_dashboard" "main" {
         width  = 12
         height = 6
         properties = {
-          title   = "RDS Performance"
+          title = "RDS Performance"
           metrics = [
             ["AWS/RDS", "CPUUtilization", "DBInstanceIdentifier", var.rds_instance_id],
             ["AWS/RDS", "DatabaseConnections", "DBInstanceIdentifier", var.rds_instance_id],
@@ -160,7 +160,7 @@ resource "aws_cloudwatch_dashboard" "main" {
         width  = 12
         height = 6
         properties = {
-          title   = "Redis Performance"
+          title = "Redis Performance"
           metrics = [
             ["AWS/ElastiCache", "EngineCPUUtilization", "ReplicationGroupId", var.elasticache_cluster_id],
             ["AWS/ElastiCache", "DatabaseMemoryUsagePercentage", "ReplicationGroupId", var.elasticache_cluster_id],
@@ -179,7 +179,7 @@ resource "aws_cloudwatch_dashboard" "main" {
         width  = 24
         height = 6
         properties = {
-          title   = "EKS Cluster"
+          title = "EKS Cluster"
           metrics = [
             ["ContainerInsights", "node_cpu_utilization", "ClusterName", var.eks_cluster_name],
             ["ContainerInsights", "node_memory_utilization", "ClusterName", var.eks_cluster_name],
@@ -196,5 +196,5 @@ resource "aws_cloudwatch_dashboard" "main" {
 
 # ── Outputs ───────────────────────────────────────────────────────────────────
 
-output "sns_topic_arn"   { value = aws_sns_topic.alerts.arn }
-output "dashboard_name"  { value = aws_cloudwatch_dashboard.main.dashboard_name }
+output "sns_topic_arn" { value = aws_sns_topic.alerts.arn }
+output "dashboard_name" { value = aws_cloudwatch_dashboard.main.dashboard_name }

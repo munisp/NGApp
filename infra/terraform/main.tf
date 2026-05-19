@@ -75,57 +75,57 @@ module "iam" {
 module "eks" {
   source = "./modules/eks"
 
-  project_name       = var.project_name
-  environment        = var.environment
-  cluster_version    = var.eks_cluster_version
-  vpc_id             = module.vpc.vpc_id
-  private_subnet_ids = module.vpc.private_subnet_ids
+  project_name        = var.project_name
+  environment         = var.environment
+  cluster_version     = var.eks_cluster_version
+  vpc_id              = module.vpc.vpc_id
+  private_subnet_ids  = module.vpc.private_subnet_ids
   node_instance_types = var.eks_node_instance_types
-  node_desired_size  = var.eks_node_desired_size
-  node_min_size      = var.eks_node_min_size
-  node_max_size      = var.eks_node_max_size
-  node_disk_size     = var.eks_node_disk_size
-  cluster_role_arn   = module.iam.eks_cluster_role_arn
-  node_role_arn      = module.iam.eks_node_role_arn
+  node_desired_size   = var.eks_node_desired_size
+  node_min_size       = var.eks_node_min_size
+  node_max_size       = var.eks_node_max_size
+  node_disk_size      = var.eks_node_disk_size
+  cluster_role_arn    = module.iam.eks_cluster_role_arn
+  node_role_arn       = module.iam.eks_node_role_arn
 }
 
 module "rds" {
   source = "./modules/rds"
 
-  project_name       = var.project_name
-  environment        = var.environment
-  vpc_id             = module.vpc.vpc_id
-  private_subnet_ids = module.vpc.private_subnet_ids
-  instance_class     = var.rds_instance_class
-  allocated_storage  = var.rds_allocated_storage
+  project_name          = var.project_name
+  environment           = var.environment
+  vpc_id                = module.vpc.vpc_id
+  private_subnet_ids    = module.vpc.private_subnet_ids
+  instance_class        = var.rds_instance_class
+  allocated_storage     = var.rds_allocated_storage
   max_allocated_storage = var.rds_max_allocated_storage
-  engine_version     = var.rds_engine_version
-  database_name      = var.rds_database_name
-  master_username    = var.rds_master_username
-  multi_az           = var.environment == "production"
-  backup_retention   = var.environment == "production" ? 30 : 7
-  deletion_protection = var.environment == "production"
+  engine_version        = var.rds_engine_version
+  database_name         = var.rds_database_name
+  master_username       = var.rds_master_username
+  multi_az              = var.environment == "production"
+  backup_retention      = var.environment == "production" ? 30 : 7
+  deletion_protection   = var.environment == "production"
   eks_security_group_id = module.eks.cluster_security_group_id
 }
 
 module "elasticache" {
   source = "./modules/elasticache"
 
-  project_name       = var.project_name
-  environment        = var.environment
-  vpc_id             = module.vpc.vpc_id
-  private_subnet_ids = module.vpc.private_subnet_ids
-  node_type          = var.redis_node_type
-  num_cache_nodes    = var.redis_num_cache_nodes
-  engine_version     = var.redis_engine_version
+  project_name          = var.project_name
+  environment           = var.environment
+  vpc_id                = module.vpc.vpc_id
+  private_subnet_ids    = module.vpc.private_subnet_ids
+  node_type             = var.redis_node_type
+  num_cache_nodes       = var.redis_num_cache_nodes
+  engine_version        = var.redis_engine_version
   eks_security_group_id = module.eks.cluster_security_group_id
 }
 
 module "s3" {
   source = "./modules/s3"
 
-  project_name = var.project_name
-  environment  = var.environment
+  project_name      = var.project_name
+  environment       = var.environment
   enable_versioning = true
   enable_lifecycle  = true
 }
@@ -133,12 +133,12 @@ module "s3" {
 module "monitoring" {
   source = "./modules/monitoring"
 
-  project_name       = var.project_name
-  environment        = var.environment
-  eks_cluster_name   = module.eks.cluster_name
-  rds_instance_id    = module.rds.instance_id
+  project_name           = var.project_name
+  environment            = var.environment
+  eks_cluster_name       = module.eks.cluster_name
+  rds_instance_id        = module.rds.instance_id
   elasticache_cluster_id = module.elasticache.cluster_id
-  sns_alert_email    = var.alert_email
+  sns_alert_email        = var.alert_email
 }
 
 # ── Outputs ───────────────────────────────────────────────────────────────────

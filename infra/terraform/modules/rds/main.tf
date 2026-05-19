@@ -2,16 +2,16 @@
 # RDS Module — PostgreSQL with Multi-AZ, encryption, automated backups
 # ─────────────────────────────────────────────────────────────────────────────
 
-variable "project_name"           { type = string }
-variable "environment"            { type = string }
-variable "vpc_id"                 { type = string }
-variable "private_subnet_ids"     { type = list(string) }
-variable "instance_class"         { type = string }
-variable "allocated_storage"      { type = number }
-variable "max_allocated_storage"  { type = number }
-variable "engine_version"         { type = string }
-variable "database_name"          { type = string }
-variable "master_username"        { type = string }
+variable "project_name" { type = string }
+variable "environment" { type = string }
+variable "vpc_id" { type = string }
+variable "private_subnet_ids" { type = list(string) }
+variable "instance_class" { type = string }
+variable "allocated_storage" { type = number }
+variable "max_allocated_storage" { type = number }
+variable "engine_version" { type = string }
+variable "database_name" { type = string }
+variable "master_username" { type = string }
 variable "multi_az" {
   type    = bool
   default = true
@@ -24,7 +24,7 @@ variable "deletion_protection" {
   type    = bool
   default = true
 }
-variable "eks_security_group_id"  { type = string }
+variable "eks_security_group_id" { type = string }
 
 locals {
   name_prefix = "${var.project_name}-${var.environment}"
@@ -186,8 +186,8 @@ resource "aws_db_instance" "main" {
   storage_encrypted     = true
   kms_key_id            = aws_kms_key.rds.arn
 
-  db_name  = var.database_name
-  username = var.master_username
+  db_name                     = var.database_name
+  username                    = var.master_username
   manage_master_user_password = true
 
   multi_az               = var.multi_az
@@ -252,7 +252,7 @@ resource "aws_iam_role_policy_attachment" "rds_monitoring" {
 
 # ── Outputs ───────────────────────────────────────────────────────────────────
 
-output "endpoint"      { value = aws_db_instance.main.endpoint }
+output "endpoint" { value = aws_db_instance.main.endpoint }
 output "database_name" { value = aws_db_instance.main.db_name }
-output "instance_id"   { value = aws_db_instance.main.id }
-output "port"          { value = aws_db_instance.main.port }
+output "instance_id" { value = aws_db_instance.main.id }
+output "port" { value = aws_db_instance.main.port }

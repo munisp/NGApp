@@ -3,8 +3,8 @@
 # ─────────────────────────────────────────────────────────────────────────────
 
 variable "project_name" { type = string }
-variable "environment"  { type = string }
-variable "account_id"   { type = string }
+variable "environment" { type = string }
+variable "account_id" { type = string }
 
 locals {
   name_prefix = "${var.project_name}-${var.environment}"
@@ -94,8 +94,8 @@ resource "aws_iam_role_policy" "app_s3_access" {
     Version = "2012-10-17"
     Statement = [
       {
-        Effect   = "Allow"
-        Action   = ["s3:GetObject", "s3:PutObject", "s3:DeleteObject", "s3:ListBucket"]
+        Effect = "Allow"
+        Action = ["s3:GetObject", "s3:PutObject", "s3:DeleteObject", "s3:ListBucket"]
         Resource = [
           "arn:aws:s3:::${local.name_prefix}-storage",
           "arn:aws:s3:::${local.name_prefix}-storage/*"
@@ -164,7 +164,7 @@ resource "aws_iam_role_policy" "cicd_eks_access" {
 
 # ── Outputs ───────────────────────────────────────────────────────────────────
 
-output "eks_cluster_role_arn"    { value = aws_iam_role.eks_cluster.arn }
-output "eks_node_role_arn"       { value = aws_iam_role.eks_node.arn }
-output "app_sa_role_arn"         { value = aws_iam_role.app_service_account.arn }
-output "cicd_deploy_role_arn"    { value = aws_iam_role.cicd_deploy.arn }
+output "eks_cluster_role_arn" { value = aws_iam_role.eks_cluster.arn }
+output "eks_node_role_arn" { value = aws_iam_role.eks_node.arn }
+output "app_sa_role_arn" { value = aws_iam_role.app_service_account.arn }
+output "cicd_deploy_role_arn" { value = aws_iam_role.cicd_deploy.arn }

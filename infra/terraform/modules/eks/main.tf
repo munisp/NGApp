@@ -2,18 +2,18 @@
 # EKS Module — Managed Kubernetes cluster with auto-scaling node groups
 # ─────────────────────────────────────────────────────────────────────────────
 
-variable "project_name"        { type = string }
-variable "environment"         { type = string }
-variable "cluster_version"     { type = string }
-variable "vpc_id"              { type = string }
-variable "private_subnet_ids"  { type = list(string) }
+variable "project_name" { type = string }
+variable "environment" { type = string }
+variable "cluster_version" { type = string }
+variable "vpc_id" { type = string }
+variable "private_subnet_ids" { type = list(string) }
 variable "node_instance_types" { type = list(string) }
-variable "node_desired_size"   { type = number }
-variable "node_min_size"       { type = number }
-variable "node_max_size"       { type = number }
-variable "node_disk_size"      { type = number }
-variable "cluster_role_arn"    { type = string }
-variable "node_role_arn"       { type = string }
+variable "node_desired_size" { type = number }
+variable "node_min_size" { type = number }
+variable "node_max_size" { type = number }
+variable "node_disk_size" { type = number }
+variable "cluster_role_arn" { type = string }
+variable "node_role_arn" { type = string }
 
 locals {
   name_prefix  = "${var.project_name}-${var.environment}"
@@ -162,8 +162,8 @@ resource "aws_eks_addon" "ebs_csi" {
 
 # ── Outputs ───────────────────────────────────────────────────────────────────
 
-output "cluster_name"              { value = aws_eks_cluster.main.name }
-output "cluster_endpoint"          { value = aws_eks_cluster.main.endpoint }
-output "cluster_ca_certificate"    { value = aws_eks_cluster.main.certificate_authority[0].data }
+output "cluster_name" { value = aws_eks_cluster.main.name }
+output "cluster_endpoint" { value = aws_eks_cluster.main.endpoint }
+output "cluster_ca_certificate" { value = aws_eks_cluster.main.certificate_authority[0].data }
 output "cluster_security_group_id" { value = aws_security_group.cluster.id }
-output "oidc_issuer"               { value = aws_eks_cluster.main.identity[0].oidc[0].issuer }
+output "oidc_issuer" { value = aws_eks_cluster.main.identity[0].oidc[0].issuer }

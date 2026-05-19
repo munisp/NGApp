@@ -2,8 +2,8 @@
 # S3 Module — Encrypted buckets for uploads, backups, and data lake
 # ─────────────────────────────────────────────────────────────────────────────
 
-variable "project_name"      { type = string }
-variable "environment"       { type = string }
+variable "project_name" { type = string }
+variable "environment" { type = string }
 variable "enable_versioning" {
   type    = bool
   default = true
@@ -146,7 +146,7 @@ resource "aws_s3_bucket_public_access_block" "datalake" {
 
 # ── Outputs ───────────────────────────────────────────────────────────────────
 
-output "bucket_name"     { value = aws_s3_bucket.main.id }
-output "bucket_arn"      { value = aws_s3_bucket.main.arn }
-output "backup_bucket"   { value = aws_s3_bucket.backups.id }
+output "bucket_name" { value = aws_s3_bucket.main.id }
+output "bucket_arn" { value = aws_s3_bucket.main.arn }
+output "backup_bucket" { value = aws_s3_bucket.backups.id }
 output "datalake_bucket" { value = aws_s3_bucket.datalake.id }

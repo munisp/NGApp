@@ -2,13 +2,13 @@
 # ElastiCache Module — Redis cluster with replication, encryption, and failover
 # ─────────────────────────────────────────────────────────────────────────────
 
-variable "project_name"          { type = string }
-variable "environment"           { type = string }
-variable "vpc_id"                { type = string }
-variable "private_subnet_ids"    { type = list(string) }
-variable "node_type"             { type = string }
-variable "num_cache_nodes"       { type = number }
-variable "engine_version"        { type = string }
+variable "project_name" { type = string }
+variable "environment" { type = string }
+variable "vpc_id" { type = string }
+variable "private_subnet_ids" { type = list(string) }
+variable "node_type" { type = string }
+variable "num_cache_nodes" { type = number }
+variable "engine_version" { type = string }
 variable "eks_security_group_id" { type = string }
 
 locals {
@@ -96,6 +96,6 @@ resource "aws_elasticache_replication_group" "main" {
 }
 
 output "primary_endpoint" { value = aws_elasticache_replication_group.main.primary_endpoint_address }
-output "reader_endpoint"  { value = aws_elasticache_replication_group.main.reader_endpoint_address }
-output "cluster_id"       { value = aws_elasticache_replication_group.main.id }
-output "port"             { value = 6379 }
+output "reader_endpoint" { value = aws_elasticache_replication_group.main.reader_endpoint_address }
+output "cluster_id" { value = aws_elasticache_replication_group.main.id }
+output "port" { value = 6379 }
