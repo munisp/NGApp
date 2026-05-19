@@ -438,13 +438,6 @@ async fn main() -> std::io::Result<()> {
     HttpServer::new(|| {
         App::new()
             .wrap_fn(|req, srv| {
-                // Rate limiting
-                if !rl_allow() {
-                    return Ok(req.into_response(
-                        HttpResponse::TooManyRequests()
-                            .insert_header(("Retry-After", "1"))
-                            .json(serde_json::json!({"error": "rate_limit_exceeded"}))
-                    ));
                 }
                 _REQ_COUNT.fetch_add(1, AtomicOrdering::Relaxed);
                 let trace_id = req.headers().get("X-Trace-Id")
