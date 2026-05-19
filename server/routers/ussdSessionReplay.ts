@@ -96,42 +96,231 @@ export const ussdSessionReplayRouter = router({
           status: z.string().optional(),
           carrier: z.string().optional(),
         })
-        .optional(),
+        .optional()
     )
     .query(async ({ input }) => {
       const sessions = [
-        { sessionId: "SESS-001", msisdn: "+2348012345678", carrier: "MTN_NG", status: "completed", startedAt: "2024-06-01T10:00:00Z", duration: 45, keystrokes: [{ input: "*384#", screenText: "Welcome to AgentPOS", timestamp: "2024-06-01T10:00:01Z" }, { input: "1", screenText: "Cash In", timestamp: "2024-06-01T10:00:10Z" }, { input: "50000", screenText: "Enter Amount", timestamp: "2024-06-01T10:00:20Z" }, { input: "1234", screenText: "Confirm PIN", timestamp: "2024-06-01T10:00:35Z" }] },
-        { sessionId: "SESS-002", msisdn: "+2348098765432", carrier: "MTN_NG", status: "completed", startedAt: "2024-06-01T11:00:00Z", duration: 30, keystrokes: [{ input: "*384#", screenText: "Welcome to AgentPOS", timestamp: "2024-06-01T11:00:01Z" }, { input: "2", screenText: "Cash Out", timestamp: "2024-06-01T11:00:10Z" }] },
-        { sessionId: "SESS-003", msisdn: "+2348055555555", carrier: "Airtel_NG", status: "abandoned", startedAt: "2024-06-01T12:00:00Z", duration: 15, keystrokes: [{ input: "*384#", screenText: "Welcome to AgentPOS", timestamp: "2024-06-01T12:00:01Z" }] },
-        { sessionId: "SESS-004", msisdn: "+2348066666666", carrier: "Glo_NG", status: "completed", startedAt: "2024-06-02T09:00:00Z", duration: 60, keystrokes: [{ input: "*384#", screenText: "Welcome to AgentPOS", timestamp: "2024-06-02T09:00:01Z" }, { input: "3", screenText: "Balance", timestamp: "2024-06-02T09:00:10Z" }] },
+        {
+          sessionId: "SESS-001",
+          msisdn: "+2348012345678",
+          carrier: "MTN_NG",
+          status: "completed",
+          startedAt: "2024-06-01T10:00:00Z",
+          duration: 45,
+          keystrokes: [
+            {
+              input: "*384#",
+              screenText: "Welcome to AgentPOS",
+              timestamp: "2024-06-01T10:00:01Z",
+            },
+            {
+              input: "1",
+              screenText: "Cash In",
+              timestamp: "2024-06-01T10:00:10Z",
+            },
+            {
+              input: "50000",
+              screenText: "Enter Amount",
+              timestamp: "2024-06-01T10:00:20Z",
+            },
+            {
+              input: "1234",
+              screenText: "Confirm PIN",
+              timestamp: "2024-06-01T10:00:35Z",
+            },
+          ],
+        },
+        {
+          sessionId: "SESS-002",
+          msisdn: "+2348098765432",
+          carrier: "MTN_NG",
+          status: "completed",
+          startedAt: "2024-06-01T11:00:00Z",
+          duration: 30,
+          keystrokes: [
+            {
+              input: "*384#",
+              screenText: "Welcome to AgentPOS",
+              timestamp: "2024-06-01T11:00:01Z",
+            },
+            {
+              input: "2",
+              screenText: "Cash Out",
+              timestamp: "2024-06-01T11:00:10Z",
+            },
+          ],
+        },
+        {
+          sessionId: "SESS-003",
+          msisdn: "+2348055555555",
+          carrier: "Airtel_NG",
+          status: "abandoned",
+          startedAt: "2024-06-01T12:00:00Z",
+          duration: 15,
+          keystrokes: [
+            {
+              input: "*384#",
+              screenText: "Welcome to AgentPOS",
+              timestamp: "2024-06-01T12:00:01Z",
+            },
+          ],
+        },
+        {
+          sessionId: "SESS-004",
+          msisdn: "+2348066666666",
+          carrier: "Glo_NG",
+          status: "completed",
+          startedAt: "2024-06-02T09:00:00Z",
+          duration: 60,
+          keystrokes: [
+            {
+              input: "*384#",
+              screenText: "Welcome to AgentPOS",
+              timestamp: "2024-06-02T09:00:01Z",
+            },
+            {
+              input: "3",
+              screenText: "Balance",
+              timestamp: "2024-06-02T09:00:10Z",
+            },
+          ],
+        },
       ];
       let filtered = sessions;
-      if (input?.status) filtered = filtered.filter((s) => s.status === input.status);
-      if (input?.carrier) filtered = filtered.filter((s) => s.carrier === input.carrier);
+      if (input?.status)
+        filtered = filtered.filter(s => s.status === input.status);
+      if (input?.carrier)
+        filtered = filtered.filter(s => s.carrier === input.carrier);
       return { sessions: filtered, total: filtered.length };
     }),
 
   getSession: publicProcedure
     .input(z.object({ sessionId: z.string() }))
     .query(async ({ input }) => {
-      const sessions: Record<string, { sessionId: string; msisdn: string; carrier: string; status: string; startedAt: string; duration: number; keystrokes: Array<{ input: string; screenText: string; timestamp: string }> }> = {
-        "SESS-001": { sessionId: "SESS-001", msisdn: "+2348012345678", carrier: "MTN_NG", status: "completed", startedAt: "2024-06-01T10:00:00Z", duration: 45, keystrokes: [{ input: "*384#", screenText: "Welcome to AgentPOS", timestamp: "2024-06-01T10:00:01Z" }, { input: "1", screenText: "Cash In", timestamp: "2024-06-01T10:00:10Z" }, { input: "50000", screenText: "Enter Amount", timestamp: "2024-06-01T10:00:20Z" }, { input: "1234", screenText: "Confirm PIN", timestamp: "2024-06-01T10:00:35Z" }] },
-        "SESS-002": { sessionId: "SESS-002", msisdn: "+2348098765432", carrier: "MTN_NG", status: "completed", startedAt: "2024-06-01T11:00:00Z", duration: 30, keystrokes: [{ input: "*384#", screenText: "Welcome to AgentPOS", timestamp: "2024-06-01T11:00:01Z" }, { input: "2", screenText: "Cash Out", timestamp: "2024-06-01T11:00:10Z" }] },
+      const sessions: Record<
+        string,
+        {
+          sessionId: string;
+          msisdn: string;
+          carrier: string;
+          status: string;
+          startedAt: string;
+          duration: number;
+          keystrokes: Array<{
+            input: string;
+            screenText: string;
+            timestamp: string;
+          }>;
+        }
+      > = {
+        "SESS-001": {
+          sessionId: "SESS-001",
+          msisdn: "+2348012345678",
+          carrier: "MTN_NG",
+          status: "completed",
+          startedAt: "2024-06-01T10:00:00Z",
+          duration: 45,
+          keystrokes: [
+            {
+              input: "*384#",
+              screenText: "Welcome to AgentPOS",
+              timestamp: "2024-06-01T10:00:01Z",
+            },
+            {
+              input: "1",
+              screenText: "Cash In",
+              timestamp: "2024-06-01T10:00:10Z",
+            },
+            {
+              input: "50000",
+              screenText: "Enter Amount",
+              timestamp: "2024-06-01T10:00:20Z",
+            },
+            {
+              input: "1234",
+              screenText: "Confirm PIN",
+              timestamp: "2024-06-01T10:00:35Z",
+            },
+          ],
+        },
+        "SESS-002": {
+          sessionId: "SESS-002",
+          msisdn: "+2348098765432",
+          carrier: "MTN_NG",
+          status: "completed",
+          startedAt: "2024-06-01T11:00:00Z",
+          duration: 30,
+          keystrokes: [
+            {
+              input: "*384#",
+              screenText: "Welcome to AgentPOS",
+              timestamp: "2024-06-01T11:00:01Z",
+            },
+            {
+              input: "2",
+              screenText: "Cash Out",
+              timestamp: "2024-06-01T11:00:10Z",
+            },
+          ],
+        },
       };
       const session = sessions[input.sessionId];
-      if (!session) throw new TRPCError({ code: "NOT_FOUND", message: "Session not found" });
+      if (!session)
+        throw new TRPCError({
+          code: "NOT_FOUND",
+          message: "Session not found",
+        });
       return session;
     }),
 
   replaySession: publicProcedure
     .input(z.object({ sessionId: z.string() }))
     .query(async ({ input }) => {
-      const sessions: Record<string, { keystrokes: Array<{ input: string; screenText: string; timestamp: string }> }> = {
-        "SESS-001": { keystrokes: [{ input: "*384#", screenText: "Welcome to AgentPOS", timestamp: "2024-06-01T10:00:01Z" }, { input: "1", screenText: "Cash In", timestamp: "2024-06-01T10:00:10Z" }, { input: "50000", screenText: "Enter Amount", timestamp: "2024-06-01T10:00:20Z" }, { input: "1234", screenText: "Confirm PIN", timestamp: "2024-06-01T10:00:35Z" }] },
+      const sessions: Record<
+        string,
+        {
+          keystrokes: Array<{
+            input: string;
+            screenText: string;
+            timestamp: string;
+          }>;
+        }
+      > = {
+        "SESS-001": {
+          keystrokes: [
+            {
+              input: "*384#",
+              screenText: "Welcome to AgentPOS",
+              timestamp: "2024-06-01T10:00:01Z",
+            },
+            {
+              input: "1",
+              screenText: "Cash In",
+              timestamp: "2024-06-01T10:00:10Z",
+            },
+            {
+              input: "50000",
+              screenText: "Enter Amount",
+              timestamp: "2024-06-01T10:00:20Z",
+            },
+            {
+              input: "1234",
+              screenText: "Confirm PIN",
+              timestamp: "2024-06-01T10:00:35Z",
+            },
+          ],
+        },
       };
       const session = sessions[input.sessionId];
-      if (!session) throw new TRPCError({ code: "NOT_FOUND", message: "Session not found" });
-      return { totalSteps: session.keystrokes.length, keystrokes: session.keystrokes };
+      if (!session)
+        throw new TRPCError({
+          code: "NOT_FOUND",
+          message: "Session not found",
+        });
+      return {
+        totalSteps: session.keystrokes.length,
+        keystrokes: session.keystrokes,
+      };
     }),
 
   getAnalytics: publicProcedure.query(async () => {
@@ -146,5 +335,4 @@ export const ussdSessionReplayRouter = router({
       ],
     };
   }),
-
 });

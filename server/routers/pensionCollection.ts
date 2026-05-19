@@ -129,13 +129,41 @@ export const pensionCollectionRouter = router({
 
   // ── Sprint 28 domain procedures ──
   pfas: publicProcedure.query(async () => {
-    return { pfas: [{ id: "PFA-001", name: "ARM Pension", code: "ARM", status: "active" }, { id: "PFA-002", name: "Stanbic IBTC", code: "STANBIC", status: "active" }] };
+    return {
+      pfas: [
+        { id: "PFA-001", name: "ARM Pension", code: "ARM", status: "active" },
+        {
+          id: "PFA-002",
+          name: "Stanbic IBTC",
+          code: "STANBIC",
+          status: "active",
+        },
+      ],
+    };
   }),
   history: publicProcedure.query(async () => {
-    return { contributions: [{ id: "PC-001", pfaId: "PFA-001", amount: 50000, employeeName: "John Doe", status: "remitted" }], total: 1 };
+    return {
+      contributions: [
+        {
+          id: "PC-001",
+          pfaId: "PFA-001",
+          amount: 50000,
+          employeeName: "John Doe",
+          status: "remitted",
+        },
+      ],
+      total: 1,
+    };
   }),
   analytics: publicProcedure.query(async () => {
-    return { totalContributions: 5000, totalVolume: 25000000, totalCommission: 1250000, totalCollected: 25000000, totalRemitted: 24000000, activePfas: 12, avgContribution: 45000 };
+    return {
+      totalContributions: 5000,
+      totalVolume: 25000000,
+      totalCommission: 1250000,
+      totalCollected: 25000000,
+      totalRemitted: 24000000,
+      activePfas: 12,
+      avgContribution: 45000,
+    };
   }),
-
 });

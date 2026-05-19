@@ -96,9 +96,24 @@ export const _chains = [
     triggerSource: "fraud_alert" as const,
     severity: "critical" as const,
     levels: [
-      { level: 1, recipientType: "email" as const, recipient: "fraud-team@company.com", timeoutMinutes: 5 },
-      { level: 2, recipientType: "sms" as const, recipient: "+2341234567890", timeoutMinutes: 10 },
-      { level: 3, recipientType: "webhook" as const, recipient: "https://hooks.company.com/escalate", timeoutMinutes: 15 },
+      {
+        level: 1,
+        recipientType: "email" as const,
+        recipient: "fraud-team@company.com",
+        timeoutMinutes: 5,
+      },
+      {
+        level: 2,
+        recipientType: "sms" as const,
+        recipient: "+2341234567890",
+        timeoutMinutes: 10,
+      },
+      {
+        level: 3,
+        recipientType: "webhook" as const,
+        recipient: "https://hooks.company.com/escalate",
+        timeoutMinutes: 15,
+      },
     ],
   },
   {
@@ -107,8 +122,18 @@ export const _chains = [
     triggerSource: "system_alert" as const,
     severity: "high" as const,
     levels: [
-      { level: 1, recipientType: "push" as const, recipient: "ops-channel", timeoutMinutes: 3 },
-      { level: 2, recipientType: "email" as const, recipient: "ops@company.com", timeoutMinutes: 8 },
+      {
+        level: 1,
+        recipientType: "push" as const,
+        recipient: "ops-channel",
+        timeoutMinutes: 3,
+      },
+      {
+        level: 2,
+        recipientType: "email" as const,
+        recipient: "ops@company.com",
+        timeoutMinutes: 8,
+      },
     ],
   },
   {
@@ -117,8 +142,18 @@ export const _chains = [
     triggerSource: "threshold_alert" as const,
     severity: "medium" as const,
     levels: [
-      { level: 1, recipientType: "email" as const, recipient: "monitor@company.com", timeoutMinutes: 10 },
-      { level: 2, recipientType: "sms" as const, recipient: "+2349876543210", timeoutMinutes: 20 },
+      {
+        level: 1,
+        recipientType: "email" as const,
+        recipient: "monitor@company.com",
+        timeoutMinutes: 10,
+      },
+      {
+        level: 2,
+        recipientType: "sms" as const,
+        recipient: "+2349876543210",
+        timeoutMinutes: 20,
+      },
     ],
   },
   {
@@ -127,7 +162,12 @@ export const _chains = [
     triggerSource: "custom" as const,
     severity: "low" as const,
     levels: [
-      { level: 1, recipientType: "email" as const, recipient: "support@company.com", timeoutMinutes: 30 },
+      {
+        level: 1,
+        recipientType: "email" as const,
+        recipient: "support@company.com",
+        timeoutMinutes: 30,
+      },
     ],
   },
 ];
@@ -140,7 +180,12 @@ export const _activeEvents = [
     status: "escalating" as const,
     triggeredAt: new Date().toISOString(),
     history: [
-      { level: 1, action: "notified", timestamp: new Date().toISOString(), recipient: "fraud-team@company.com" },
+      {
+        level: 1,
+        action: "notified",
+        timestamp: new Date().toISOString(),
+        recipient: "fraud-team@company.com",
+      },
     ],
   },
   {
@@ -150,18 +195,38 @@ export const _activeEvents = [
     status: "acknowledged" as const,
     triggeredAt: new Date().toISOString(),
     history: [
-      { level: 1, action: "notified", timestamp: new Date().toISOString(), recipient: "ops-channel" },
-      { level: 2, action: "escalated", timestamp: new Date().toISOString(), recipient: "ops@company.com" },
+      {
+        level: 1,
+        action: "notified",
+        timestamp: new Date().toISOString(),
+        recipient: "ops-channel",
+      },
+      {
+        level: 2,
+        action: "escalated",
+        timestamp: new Date().toISOString(),
+        recipient: "ops@company.com",
+      },
     ],
   },
 ];
 
 export function dispatchEscalation(
-  level: { level: number; recipientType: string; recipient: string; timeoutMinutes: number },
+  level: {
+    level: number;
+    recipientType: string;
+    recipient: string;
+    timeoutMinutes: number;
+  },
   alertMessage: string
 ) {
-  console.log(`[Escalation] Dispatching via ${level.recipientType} to ${level.recipient}: ${alertMessage}`);
-  return { status: "sent" as const, message: `Dispatched via ${level.recipientType} to ${level.recipient}` };
+  console.log(
+    `[Escalation] Dispatching via ${level.recipientType} to ${level.recipient}: ${alertMessage}`
+  );
+  return {
+    status: "sent" as const,
+    message: `Dispatched via ${level.recipientType} to ${level.recipient}`,
+  };
 }
 
 export function checkAndEscalate() {
@@ -171,6 +236,8 @@ export function checkAndEscalate() {
     if (event.status === "escalating") escalated++;
     if (event.status === "acknowledged") acknowledged++;
   }
-  console.log(`[EscalationCheck] escalated=${escalated}, acknowledged=${acknowledged}`);
+  console.log(
+    `[EscalationCheck] escalated=${escalated}, acknowledged=${acknowledged}`
+  );
   return { escalated, acknowledged };
 }

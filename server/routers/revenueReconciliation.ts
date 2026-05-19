@@ -4,7 +4,13 @@ import { TRPCError } from "@trpc/server";
 
 export const revenueReconciliationRouter = router({
   list: protectedProcedure
-    .input(z.object({ limit: z.number().default(20), offset: z.number().default(0), search: z.string().optional() }))
+    .input(
+      z.object({
+        limit: z.number().default(20),
+        offset: z.number().default(0),
+        search: z.string().optional(),
+      })
+    )
     .query(async () => {
       return { data: [], total: 0, limit: 20, offset: 0 };
     }),
@@ -12,7 +18,11 @@ export const revenueReconciliationRouter = router({
   getById: protectedProcedure
     .input(z.object({ id: z.number() }))
     .query(async ({ input }) => {
-      return { id: input.id, status: "reconciled", createdAt: new Date().toISOString() };
+      return {
+        id: input.id,
+        status: "reconciled",
+        createdAt: new Date().toISOString(),
+      };
     }),
 
   getSummary: protectedProcedure.query(async () => {
@@ -20,18 +30,22 @@ export const revenueReconciliationRouter = router({
   }),
 
   getRecent: protectedProcedure
-    .input(z.object({ days: z.number().default(7), limit: z.number().default(10) }))
+    .input(
+      z.object({ days: z.number().default(7), limit: z.number().default(10) })
+    )
     .query(async () => {
       return [];
     }),
 
   runReconciliation: protectedProcedure
-    .input(z.object({
-      clientId: z.string(),
-      source: z.string(),
-      target: z.string(),
-      periodHours: z.number(),
-    }))
+    .input(
+      z.object({
+        clientId: z.string(),
+        source: z.string(),
+        target: z.string(),
+        periodHours: z.number(),
+      })
+    )
     .mutation(async ({ input }) => {
       const totalRecords = 500 + Math.floor(Math.random() * 100);
       const discrepantRecords = Math.floor(totalRecords * 0.003);
@@ -54,29 +68,64 @@ export const revenueReconciliationRouter = router({
     }),
 
   getBatches: protectedProcedure
-    .input(z.object({ clientId: z.string().optional(), limit: z.number().default(10) }))
+    .input(
+      z.object({
+        clientId: z.string().optional(),
+        limit: z.number().default(10),
+      })
+    )
     .query(async () => {
       return {
         batches: [
-          { id: "RB-001", clientId: "CLIENT-001", source: "tigerbeetle", target: "postgres", totalRecords: 500, matchedRecords: 498, matchRatePct: 99.6, status: "completed", createdAt: Date.now() - 86400000 },
+          {
+            id: "RB-001",
+            clientId: "CLIENT-001",
+            source: "tigerbeetle",
+            target: "postgres",
+            totalRecords: 500,
+            matchedRecords: 498,
+            matchRatePct: 99.6,
+            status: "completed",
+            createdAt: Date.now() - 86400000,
+          },
         ],
         total: 1,
       };
     }),
 
   getDiscrepancies: protectedProcedure
-    .input(z.object({ batchId: z.string(), page: z.number().default(1), pageSize: z.number().default(10) }))
+    .input(
+      z.object({
+        batchId: z.string(),
+        page: z.number().default(1),
+        pageSize: z.number().default(10),
+      })
+    )
     .query(async () => {
       return {
         entries: [
-          { id: "RE-001", batchId: "RB-001", type: "amount_mismatch", sourceAmount: 50000, targetAmount: 49500, diff: 500, status: "open" },
+          {
+            id: "RE-001",
+            batchId: "RB-001",
+            type: "amount_mismatch",
+            sourceAmount: 50000,
+            targetAmount: 49500,
+            diff: 500,
+            status: "open",
+          },
         ],
         total: 1,
       };
     }),
 
   resolveDiscrepancy: protectedProcedure
-    .input(z.object({ entryId: z.string(), resolution: z.string(), note: z.string().optional() }))
+    .input(
+      z.object({
+        entryId: z.string(),
+        resolution: z.string(),
+        note: z.string().optional(),
+      })
+    )
     .mutation(async ({ input }) => {
       return {
         entryId: input.entryId,

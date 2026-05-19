@@ -47,13 +47,14 @@ export const billingLedgerRouter = router({
     .mutation(async ({ input }) => {
       const grossFee = input.grossFee;
       const clientShare = input.clientShare ?? Math.round(grossFee * 0.72);
-      const platformShare = input.platformShare ?? (grossFee - clientShare);
+      const platformShare = input.platformShare ?? grossFee - clientShare;
       const netRevenue = platformShare - input.switchFee;
       const splitRatio = grossFee > 0 ? platformShare / grossFee : 0;
 
       return {
         id: "BL-" + Date.now(),
-        transactionId: input.transactionId || input.transactionRef || "TX-" + Date.now(),
+        transactionId:
+          input.transactionId || input.transactionRef || "TX-" + Date.now(),
         transactionType: input.transactionType,
         grossFee,
         clientShare,
@@ -78,7 +79,9 @@ export const billingLedgerRouter = router({
         clientId: z.string().optional(),
         tenantId: z.number().optional(),
         agentId: z.number().optional(),
-        billingModel: z.enum(["revenue_share", "subscription", "hybrid"]).optional(),
+        billingModel: z
+          .enum(["revenue_share", "subscription", "hybrid"])
+          .optional(),
         dateFrom: z.number().optional(),
         dateTo: z.number().optional(),
         transactionType: z.string().optional(),
@@ -146,7 +149,12 @@ export const billingLedgerRouter = router({
     }),
 
   getClientBillingConfig: protectedProcedure
-    .input(z.object({ clientId: z.string().optional(), tenantId: z.number().optional() }))
+    .input(
+      z.object({
+        clientId: z.string().optional(),
+        tenantId: z.number().optional(),
+      })
+    )
     .query(async ({ input }) => {
       return {
         clientId: input.clientId || "CLIENT-001",

@@ -177,62 +177,283 @@ export const carrierLivePricingRouter = router({
     .input(z.object({ country: z.string().optional() }).optional())
     .query(async ({ input }) => {
       const carriers = [
-        { carrierId: "mtn_ng", carrierName: "MTN Nigeria", country: "NG", smsRate: 4.0, ussdRate: 1.63, dataRatePerMb: 3.5, currency: "NGN", lastUpdated: "2024-06-01" },
-        { carrierId: "airtel_ng", carrierName: "Airtel Nigeria", country: "NG", smsRate: 3.8, ussdRate: 1.5, dataRatePerMb: 3.2, currency: "NGN", lastUpdated: "2024-06-01" },
-        { carrierId: "glo_ng", carrierName: "Glo Nigeria", country: "NG", smsRate: 3.5, ussdRate: 1.4, dataRatePerMb: 3.0, currency: "NGN", lastUpdated: "2024-06-01" },
-        { carrierId: "9mobile_ng", carrierName: "9mobile Nigeria", country: "NG", smsRate: 4.2, ussdRate: 1.7, dataRatePerMb: 3.8, currency: "NGN", lastUpdated: "2024-06-01" },
-        { carrierId: "safaricom_ke", carrierName: "Safaricom Kenya", country: "KE", smsRate: 1.0, ussdRate: 0.5, dataRatePerMb: 1.2, currency: "KES", lastUpdated: "2024-06-01" },
-        { carrierId: "airtel_ke", carrierName: "Airtel Kenya", country: "KE", smsRate: 0.9, ussdRate: 0.45, dataRatePerMb: 1.1, currency: "KES", lastUpdated: "2024-06-01" },
-        { carrierId: "vodacom_tz", carrierName: "Vodacom Tanzania", country: "TZ", smsRate: 50, ussdRate: 20, dataRatePerMb: 30, currency: "TZS", lastUpdated: "2024-06-01" },
-        { carrierId: "tigo_tz", carrierName: "Tigo Tanzania", country: "TZ", smsRate: 45, ussdRate: 18, dataRatePerMb: 28, currency: "TZS", lastUpdated: "2024-06-01" },
-        { carrierId: "mtn_gh", carrierName: "MTN Ghana", country: "GH", smsRate: 0.05, ussdRate: 0.02, dataRatePerMb: 0.04, currency: "GHS", lastUpdated: "2024-06-01" },
-        { carrierId: "vodafone_gh", carrierName: "Vodafone Ghana", country: "GH", smsRate: 0.048, ussdRate: 0.019, dataRatePerMb: 0.038, currency: "GHS", lastUpdated: "2024-06-01" },
-        { carrierId: "mtn_ug", carrierName: "MTN Uganda", country: "UG", smsRate: 100, ussdRate: 40, dataRatePerMb: 60, currency: "UGX", lastUpdated: "2024-06-01" },
-        { carrierId: "airtel_ug", carrierName: "Airtel Uganda", country: "UG", smsRate: 90, ussdRate: 35, dataRatePerMb: 55, currency: "UGX", lastUpdated: "2024-06-01" },
+        {
+          carrierId: "mtn_ng",
+          carrierName: "MTN Nigeria",
+          country: "NG",
+          smsRate: 4.0,
+          ussdRate: 1.63,
+          dataRatePerMb: 3.5,
+          currency: "NGN",
+          lastUpdated: "2024-06-01",
+        },
+        {
+          carrierId: "airtel_ng",
+          carrierName: "Airtel Nigeria",
+          country: "NG",
+          smsRate: 3.8,
+          ussdRate: 1.5,
+          dataRatePerMb: 3.2,
+          currency: "NGN",
+          lastUpdated: "2024-06-01",
+        },
+        {
+          carrierId: "glo_ng",
+          carrierName: "Glo Nigeria",
+          country: "NG",
+          smsRate: 3.5,
+          ussdRate: 1.4,
+          dataRatePerMb: 3.0,
+          currency: "NGN",
+          lastUpdated: "2024-06-01",
+        },
+        {
+          carrierId: "9mobile_ng",
+          carrierName: "9mobile Nigeria",
+          country: "NG",
+          smsRate: 4.2,
+          ussdRate: 1.7,
+          dataRatePerMb: 3.8,
+          currency: "NGN",
+          lastUpdated: "2024-06-01",
+        },
+        {
+          carrierId: "safaricom_ke",
+          carrierName: "Safaricom Kenya",
+          country: "KE",
+          smsRate: 1.0,
+          ussdRate: 0.5,
+          dataRatePerMb: 1.2,
+          currency: "KES",
+          lastUpdated: "2024-06-01",
+        },
+        {
+          carrierId: "airtel_ke",
+          carrierName: "Airtel Kenya",
+          country: "KE",
+          smsRate: 0.9,
+          ussdRate: 0.45,
+          dataRatePerMb: 1.1,
+          currency: "KES",
+          lastUpdated: "2024-06-01",
+        },
+        {
+          carrierId: "vodacom_tz",
+          carrierName: "Vodacom Tanzania",
+          country: "TZ",
+          smsRate: 50,
+          ussdRate: 20,
+          dataRatePerMb: 30,
+          currency: "TZS",
+          lastUpdated: "2024-06-01",
+        },
+        {
+          carrierId: "tigo_tz",
+          carrierName: "Tigo Tanzania",
+          country: "TZ",
+          smsRate: 45,
+          ussdRate: 18,
+          dataRatePerMb: 28,
+          currency: "TZS",
+          lastUpdated: "2024-06-01",
+        },
+        {
+          carrierId: "mtn_gh",
+          carrierName: "MTN Ghana",
+          country: "GH",
+          smsRate: 0.05,
+          ussdRate: 0.02,
+          dataRatePerMb: 0.04,
+          currency: "GHS",
+          lastUpdated: "2024-06-01",
+        },
+        {
+          carrierId: "vodafone_gh",
+          carrierName: "Vodafone Ghana",
+          country: "GH",
+          smsRate: 0.048,
+          ussdRate: 0.019,
+          dataRatePerMb: 0.038,
+          currency: "GHS",
+          lastUpdated: "2024-06-01",
+        },
+        {
+          carrierId: "mtn_ug",
+          carrierName: "MTN Uganda",
+          country: "UG",
+          smsRate: 100,
+          ussdRate: 40,
+          dataRatePerMb: 60,
+          currency: "UGX",
+          lastUpdated: "2024-06-01",
+        },
+        {
+          carrierId: "airtel_ug",
+          carrierName: "Airtel Uganda",
+          country: "UG",
+          smsRate: 90,
+          ussdRate: 35,
+          dataRatePerMb: 55,
+          currency: "UGX",
+          lastUpdated: "2024-06-01",
+        },
       ];
       let filtered = carriers;
-      if (input?.country) filtered = filtered.filter((c) => c.country === input.country);
+      if (input?.country)
+        filtered = filtered.filter(c => c.country === input.country);
       return { carriers: filtered, count: filtered.length };
     }),
 
   getCarrierRate: publicProcedure
     .input(z.object({ carrierId: z.string() }))
     .query(async ({ input }) => {
-      const rates: Record<string, { carrierName: string; smsRate: number; ussdRate: number; dataRatePerMb: number; currency: string; country: string }> = {
-        mtn_ng: { carrierName: "MTN Nigeria", smsRate: 4.0, ussdRate: 1.63, dataRatePerMb: 3.5, currency: "NGN", country: "NG" },
-        airtel_ng: { carrierName: "Airtel Nigeria", smsRate: 3.8, ussdRate: 1.5, dataRatePerMb: 3.2, currency: "NGN", country: "NG" },
-        glo_ng: { carrierName: "Glo Nigeria", smsRate: 3.5, ussdRate: 1.4, dataRatePerMb: 3.0, currency: "NGN", country: "NG" },
+      const rates: Record<
+        string,
+        {
+          carrierName: string;
+          smsRate: number;
+          ussdRate: number;
+          dataRatePerMb: number;
+          currency: string;
+          country: string;
+        }
+      > = {
+        mtn_ng: {
+          carrierName: "MTN Nigeria",
+          smsRate: 4.0,
+          ussdRate: 1.63,
+          dataRatePerMb: 3.5,
+          currency: "NGN",
+          country: "NG",
+        },
+        airtel_ng: {
+          carrierName: "Airtel Nigeria",
+          smsRate: 3.8,
+          ussdRate: 1.5,
+          dataRatePerMb: 3.2,
+          currency: "NGN",
+          country: "NG",
+        },
+        glo_ng: {
+          carrierName: "Glo Nigeria",
+          smsRate: 3.5,
+          ussdRate: 1.4,
+          dataRatePerMb: 3.0,
+          currency: "NGN",
+          country: "NG",
+        },
       };
       const rate = rates[input.carrierId];
-      if (!rate) throw new TRPCError({ code: "NOT_FOUND", message: "Carrier not found" });
+      if (!rate)
+        throw new TRPCError({
+          code: "NOT_FOUND",
+          message: "Carrier not found",
+        });
       return { carrierId: input.carrierId, ...rate };
     }),
 
   compareCarriers: publicProcedure
     .input(z.object({ carrierIds: z.array(z.string()) }))
     .query(async ({ input }) => {
-      const rates: Record<string, { carrierName: string; smsRate: number; ussdRate: number; dataRatePerMb: number; currency: string }> = {
-        mtn_ng: { carrierName: "MTN Nigeria", smsRate: 4.0, ussdRate: 1.63, dataRatePerMb: 3.5, currency: "NGN" },
-        airtel_ng: { carrierName: "Airtel Nigeria", smsRate: 3.8, ussdRate: 1.5, dataRatePerMb: 3.2, currency: "NGN" },
-        glo_ng: { carrierName: "Glo Nigeria", smsRate: 3.5, ussdRate: 1.4, dataRatePerMb: 3.0, currency: "NGN" },
+      const rates: Record<
+        string,
+        {
+          carrierName: string;
+          smsRate: number;
+          ussdRate: number;
+          dataRatePerMb: number;
+          currency: string;
+        }
+      > = {
+        mtn_ng: {
+          carrierName: "MTN Nigeria",
+          smsRate: 4.0,
+          ussdRate: 1.63,
+          dataRatePerMb: 3.5,
+          currency: "NGN",
+        },
+        airtel_ng: {
+          carrierName: "Airtel Nigeria",
+          smsRate: 3.8,
+          ussdRate: 1.5,
+          dataRatePerMb: 3.2,
+          currency: "NGN",
+        },
+        glo_ng: {
+          carrierName: "Glo Nigeria",
+          smsRate: 3.5,
+          ussdRate: 1.4,
+          dataRatePerMb: 3.0,
+          currency: "NGN",
+        },
       };
-      const comparison = input.carrierIds.map((id) => ({ carrierId: id, ...(rates[id] || { carrierName: id, smsRate: 0, ussdRate: 0, dataRatePerMb: 0, currency: "NGN" }) }));
+      const comparison = input.carrierIds.map(id => ({
+        carrierId: id,
+        ...(rates[id] || {
+          carrierName: id,
+          smsRate: 0,
+          ussdRate: 0,
+          dataRatePerMb: 0,
+          currency: "NGN",
+        }),
+      }));
       return { comparison };
     }),
 
   estimateCost: publicProcedure
-    .input(z.object({ carrierId: z.string(), smsCount: z.number(), ussdSessions: z.number(), dataMb: z.number() }))
+    .input(
+      z.object({
+        carrierId: z.string(),
+        smsCount: z.number(),
+        ussdSessions: z.number(),
+        dataMb: z.number(),
+      })
+    )
     .query(async ({ input }) => {
-      const rates: Record<string, { carrierName: string; smsRate: number; ussdRate: number; dataRatePerMb: number }> = {
-        mtn_ng: { carrierName: "MTN Nigeria", smsRate: 4.0, ussdRate: 1.63, dataRatePerMb: 3.5 },
-        airtel_ng: { carrierName: "Airtel Nigeria", smsRate: 3.8, ussdRate: 1.5, dataRatePerMb: 3.2 },
-        glo_ng: { carrierName: "Glo Nigeria", smsRate: 3.5, ussdRate: 1.4, dataRatePerMb: 3.0 },
+      const rates: Record<
+        string,
+        {
+          carrierName: string;
+          smsRate: number;
+          ussdRate: number;
+          dataRatePerMb: number;
+        }
+      > = {
+        mtn_ng: {
+          carrierName: "MTN Nigeria",
+          smsRate: 4.0,
+          ussdRate: 1.63,
+          dataRatePerMb: 3.5,
+        },
+        airtel_ng: {
+          carrierName: "Airtel Nigeria",
+          smsRate: 3.8,
+          ussdRate: 1.5,
+          dataRatePerMb: 3.2,
+        },
+        glo_ng: {
+          carrierName: "Glo Nigeria",
+          smsRate: 3.5,
+          ussdRate: 1.4,
+          dataRatePerMb: 3.0,
+        },
       };
-      const rate = rates[input.carrierId] || { carrierName: input.carrierId, smsRate: 0, ussdRate: 0, dataRatePerMb: 0 };
+      const rate = rates[input.carrierId] || {
+        carrierName: input.carrierId,
+        smsRate: 0,
+        ussdRate: 0,
+        dataRatePerMb: 0,
+      };
       const smsCost = input.smsCount * rate.smsRate;
       const ussdCost = Math.round(input.ussdSessions * rate.ussdRate);
       const dataCost = input.dataMb * rate.dataRatePerMb;
-      return { carrier: rate.carrierName, smsCost, ussdCost, dataCost, total: smsCost + ussdCost + dataCost };
+      return {
+        carrier: rate.carrierName,
+        smsCost,
+        ussdCost,
+        dataCost,
+        total: smsCost + ussdCost + dataCost,
+      };
     }),
 
   getCountries: publicProcedure.query(async () => {
@@ -245,5 +466,4 @@ export const carrierLivePricingRouter = router({
       { code: "ZA", name: "South Africa", carrierCount: 3, currency: "ZAR" },
     ];
   }),
-
 });

@@ -525,11 +525,31 @@ export const sprint15FeaturesRouter = router({
 // ── Sprint 15 test data exports ──────────────────────────────────────────────
 const channels = ["sms", "email", "push", "in_app", "webhook"] as const;
 function generateAnalyticsData() {
-  const data: Array<{ date: string; channel: string; sent: number; delivered: number; failed: number; opened: number; clicked: number; avgResponseTimeMs: number }> = [];
+  const data: Array<{
+    date: string;
+    channel: string;
+    sent: number;
+    delivered: number;
+    failed: number;
+    opened: number;
+    clicked: number;
+    avgResponseTimeMs: number;
+  }> = [];
   for (let d = 0; d < 30; d++) {
-    const date = new Date(Date.now() - d * 86400000).toISOString().split("T")[0];
+    const date = new Date(Date.now() - d * 86400000)
+      .toISOString()
+      .split("T")[0];
     for (const channel of channels) {
-      data.push({ date, channel, sent: 100 + d, delivered: 95 + d, failed: 5, opened: 60 + d, clicked: 30 + d, avgResponseTimeMs: 50 + d * 2 });
+      data.push({
+        date,
+        channel,
+        sent: 100 + d,
+        delivered: 95 + d,
+        failed: 5,
+        opened: 60 + d,
+        clicked: 30 + d,
+        avgResponseTimeMs: 50 + d * 2,
+      });
     }
   }
   return data;
@@ -537,9 +557,36 @@ function generateAnalyticsData() {
 export const _analyticsData = generateAnalyticsData();
 
 export const _quietHoursStore = [
-  { agentId: 1, enabled: true, startHour: 22, endHour: 7, startTime: "22:00", endTime: "07:00", timezone: "Africa/Lagos", daysOfWeek: [0, 1, 2, 3, 4, 5, 6] },
-  { agentId: 2, enabled: false, startHour: 23, endHour: 6, startTime: "23:00", endTime: "06:00", timezone: "UTC", daysOfWeek: [0, 6] },
-  { agentId: 3, enabled: true, startHour: 21, endHour: 8, startTime: "21:00", endTime: "08:00", timezone: "Africa/Lagos", daysOfWeek: [0, 1, 2, 3, 4] },
+  {
+    agentId: 1,
+    enabled: true,
+    startHour: 22,
+    endHour: 7,
+    startTime: "22:00",
+    endTime: "07:00",
+    timezone: "Africa/Lagos",
+    daysOfWeek: [0, 1, 2, 3, 4, 5, 6],
+  },
+  {
+    agentId: 2,
+    enabled: false,
+    startHour: 23,
+    endHour: 6,
+    startTime: "23:00",
+    endTime: "06:00",
+    timezone: "UTC",
+    daysOfWeek: [0, 6],
+  },
+  {
+    agentId: 3,
+    enabled: true,
+    startHour: 21,
+    endHour: 8,
+    startTime: "21:00",
+    endTime: "08:00",
+    timezone: "Africa/Lagos",
+    daysOfWeek: [0, 1, 2, 3, 4],
+  },
 ];
 
 export function isInQuietHours(config: Record<string, unknown>): boolean {
@@ -556,45 +603,148 @@ export function isInQuietHours(config: Record<string, unknown>): boolean {
 }
 
 export const _templates = [
-  { id: "tpl_001", name: "Welcome SMS", channel: "sms" as const, subject: "", body: "Welcome to our platform, {{name}}! Your account is ready.", variables: ["name"], createdAt: "2024-01-01" },
-  { id: "tpl_002", name: "Transaction Alert", channel: "push" as const, subject: "", body: "Transaction of {{amount}} {{currency}} processed for {{ref}}.", variables: ["amount", "currency", "ref"], createdAt: "2024-01-02" },
-  { id: "tpl_003", name: "KYC Reminder", channel: "email" as const, subject: "Complete your {{name}} KYC at {{link}}", body: "Dear {{name}}, please complete your KYC verification at {{link}}.", variables: ["name", "link"], createdAt: "2024-01-03" },
-  { id: "tpl_004", name: "Commission Credit", channel: "sms" as const, subject: "", body: "Commission of {{amount}} NGN credited to your wallet.", variables: ["amount"], createdAt: "2024-01-04" },
-  { id: "tpl_005", name: "System Maintenance", channel: "email" as const, subject: "Maintenance on {{date}} from {{start}} to {{end}}", body: "Scheduled maintenance on {{date}} from {{start}} to {{end}}.", variables: ["date", "start", "end"], createdAt: "2024-01-05" },
+  {
+    id: "tpl_001",
+    name: "Welcome SMS",
+    channel: "sms" as const,
+    subject: "",
+    body: "Welcome to our platform, {{name}}! Your account is ready.",
+    variables: ["name"],
+    createdAt: "2024-01-01",
+  },
+  {
+    id: "tpl_002",
+    name: "Transaction Alert",
+    channel: "push" as const,
+    subject: "",
+    body: "Transaction of {{amount}} {{currency}} processed for {{ref}}.",
+    variables: ["amount", "currency", "ref"],
+    createdAt: "2024-01-02",
+  },
+  {
+    id: "tpl_003",
+    name: "KYC Reminder",
+    channel: "email" as const,
+    subject: "Complete your {{name}} KYC at {{link}}",
+    body: "Dear {{name}}, please complete your KYC verification at {{link}}.",
+    variables: ["name", "link"],
+    createdAt: "2024-01-03",
+  },
+  {
+    id: "tpl_004",
+    name: "Commission Credit",
+    channel: "sms" as const,
+    subject: "",
+    body: "Commission of {{amount}} NGN credited to your wallet.",
+    variables: ["amount"],
+    createdAt: "2024-01-04",
+  },
+  {
+    id: "tpl_005",
+    name: "System Maintenance",
+    channel: "email" as const,
+    subject: "Maintenance on {{date}} from {{start}} to {{end}}",
+    body: "Scheduled maintenance on {{date}} from {{start}} to {{end}}.",
+    variables: ["date", "start", "end"],
+    createdAt: "2024-01-05",
+  },
 ];
 
 export const _campaigns = [
   {
-    id: "camp_001", name: "Q1 Onboarding Push", channel: "push", templateId: "tpl_001",
-    status: "completed" as const, recipientCount: 500, sentCount: 480, failedCount: 20, deliveredCount: 470, progress: 100,
-    scheduledAt: "2024-01-15T09:00:00Z", completedAt: "2024-01-15T09:05:00Z",
+    id: "camp_001",
+    name: "Q1 Onboarding Push",
+    channel: "push",
+    templateId: "tpl_001",
+    status: "completed" as const,
+    recipientCount: 500,
+    sentCount: 480,
+    failedCount: 20,
+    deliveredCount: 470,
+    progress: 100,
+    scheduledAt: "2024-01-15T09:00:00Z",
+    completedAt: "2024-01-15T09:05:00Z",
     segments: ["new_agents"],
   },
   {
-    id: "camp_002", name: "KYC Drive", channel: "email", templateId: "tpl_003",
-    status: "sending" as const, recipientCount: 1000, sentCount: 800, failedCount: 20, deliveredCount: 780, progress: 80,
-    scheduledAt: "2024-02-01T08:00:00Z", completedAt: null,
+    id: "camp_002",
+    name: "KYC Drive",
+    channel: "email",
+    templateId: "tpl_003",
+    status: "sending" as const,
+    recipientCount: 1000,
+    sentCount: 800,
+    failedCount: 20,
+    deliveredCount: 780,
+    progress: 80,
+    scheduledAt: "2024-02-01T08:00:00Z",
+    completedAt: null,
     segments: ["pending_kyc"],
   },
   {
-    id: "camp_003", name: "Holiday Promo", channel: "sms", templateId: "tpl_002",
-    status: "draft" as const, recipientCount: 2000, sentCount: 0, failedCount: 0, deliveredCount: 0, progress: 0,
-    scheduledAt: "2024-03-25T10:00:00Z", completedAt: null,
+    id: "camp_003",
+    name: "Holiday Promo",
+    channel: "sms",
+    templateId: "tpl_002",
+    status: "draft" as const,
+    recipientCount: 2000,
+    sentCount: 0,
+    failedCount: 0,
+    deliveredCount: 0,
+    progress: 0,
+    scheduledAt: "2024-03-25T10:00:00Z",
+    completedAt: null,
     segments: ["active_agents", "high_volume"],
   },
 ];
 
 export const _retryQueue = [
-  { id: "retry_001", channel: "sms", recipient: "+2341111111111", attempt: 2, maxAttempts: 5, status: "pending" as const, nextRetryAt: new Date(Date.now() + 60000).toISOString(), error: "Carrier timeout", createdAt: new Date().toISOString() },
-  { id: "retry_002", channel: "email", recipient: "user@example.com", attempt: 3, maxAttempts: 3, status: "dead_letter" as const, nextRetryAt: null, error: "Mailbox full", createdAt: new Date().toISOString() },
-  { id: "retry_003", channel: "webhook", recipient: "https://hooks.example.com/notify", attempt: 1, maxAttempts: 5, status: "pending" as const, nextRetryAt: new Date(Date.now() + 30000).toISOString(), error: "Connection refused", createdAt: new Date().toISOString() },
+  {
+    id: "retry_001",
+    channel: "sms",
+    recipient: "+2341111111111",
+    attempt: 2,
+    maxAttempts: 5,
+    status: "pending" as const,
+    nextRetryAt: new Date(Date.now() + 60000).toISOString(),
+    error: "Carrier timeout",
+    createdAt: new Date().toISOString(),
+  },
+  {
+    id: "retry_002",
+    channel: "email",
+    recipient: "user@example.com",
+    attempt: 3,
+    maxAttempts: 3,
+    status: "dead_letter" as const,
+    nextRetryAt: null,
+    error: "Mailbox full",
+    createdAt: new Date().toISOString(),
+  },
+  {
+    id: "retry_003",
+    channel: "webhook",
+    recipient: "https://hooks.example.com/notify",
+    attempt: 1,
+    maxAttempts: 5,
+    status: "pending" as const,
+    nextRetryAt: new Date(Date.now() + 30000).toISOString(),
+    error: "Connection refused",
+    createdAt: new Date().toISOString(),
+  },
 ];
 
-export function calculateBackoff(attempt: number, config: Record<string, number>): number {
+export function calculateBackoff(
+  attempt: number,
+  config: Record<string, number>
+): number {
   const baseMs = config.baseMs ?? config.initialBackoffMs ?? 1000;
   const maxBackoffMs = config.maxBackoffMs ?? 300000;
   const multiplier = config.multiplier ?? config.backoffMultiplier ?? 2;
-  const backoff = Math.min(baseMs * Math.pow(multiplier, attempt - 1), maxBackoffMs);
+  const backoff = Math.min(
+    baseMs * Math.pow(multiplier, attempt - 1),
+    maxBackoffMs
+  );
   const jitter = Math.floor(Math.random() * 1000);
   return backoff + jitter;
 }
@@ -607,44 +757,229 @@ export const _systemConfig = {
   sessionTimeoutMinutes: 30,
   maxLoginAttempts: 5,
   featureFlags: [
-    { key: "kyc_biometric", label: "KYC Biometric Verification", enabled: true, category: "kyc" },
-    { key: "offline_mode", label: "Offline Transaction Mode", enabled: true, category: "pos" },
-    { key: "bulk_disbursement", label: "Bulk Disbursement", enabled: true, category: "payments" },
-    { key: "ai_fraud_detection", label: "AI Fraud Detection", enabled: true, category: "security" },
-    { key: "multi_currency", label: "Multi-Currency Support", enabled: false, category: "payments" },
-    { key: "agent_gamification", label: "Agent Gamification", enabled: true, category: "agents" },
-    { key: "real_time_analytics", label: "Real-Time Analytics", enabled: true, category: "analytics" },
-    { key: "webhook_notifications", label: "Webhook Notifications", enabled: true, category: "notifications" },
-    { key: "two_factor_auth", label: "Two-Factor Authentication", enabled: true, category: "security" },
-    { key: "smart_routing", label: "Smart Transaction Routing", enabled: false, category: "payments" },
-    { key: "commission_tiers", label: "Commission Tier System", enabled: true, category: "agents" },
-    { key: "settlement_auto", label: "Auto Settlement", enabled: true, category: "settlement" },
-    { key: "escalation_chains", label: "Escalation Chains", enabled: true, category: "alerting" },
+    {
+      key: "kyc_biometric",
+      label: "KYC Biometric Verification",
+      enabled: true,
+      category: "kyc",
+    },
+    {
+      key: "offline_mode",
+      label: "Offline Transaction Mode",
+      enabled: true,
+      category: "pos",
+    },
+    {
+      key: "bulk_disbursement",
+      label: "Bulk Disbursement",
+      enabled: true,
+      category: "payments",
+    },
+    {
+      key: "ai_fraud_detection",
+      label: "AI Fraud Detection",
+      enabled: true,
+      category: "security",
+    },
+    {
+      key: "multi_currency",
+      label: "Multi-Currency Support",
+      enabled: false,
+      category: "payments",
+    },
+    {
+      key: "agent_gamification",
+      label: "Agent Gamification",
+      enabled: true,
+      category: "agents",
+    },
+    {
+      key: "real_time_analytics",
+      label: "Real-Time Analytics",
+      enabled: true,
+      category: "analytics",
+    },
+    {
+      key: "webhook_notifications",
+      label: "Webhook Notifications",
+      enabled: true,
+      category: "notifications",
+    },
+    {
+      key: "two_factor_auth",
+      label: "Two-Factor Authentication",
+      enabled: true,
+      category: "security",
+    },
+    {
+      key: "smart_routing",
+      label: "Smart Transaction Routing",
+      enabled: false,
+      category: "payments",
+    },
+    {
+      key: "commission_tiers",
+      label: "Commission Tier System",
+      enabled: true,
+      category: "agents",
+    },
+    {
+      key: "settlement_auto",
+      label: "Auto Settlement",
+      enabled: true,
+      category: "settlement",
+    },
+    {
+      key: "escalation_chains",
+      label: "Escalation Chains",
+      enabled: true,
+      category: "alerting",
+    },
   ],
 };
 
 export const _serviceHealthData = [
-  { name: "kafka", status: "healthy", latencyMs: 3, uptime: "99.99%", category: "messaging" },
-  { name: "redis", status: "healthy", latencyMs: 1, uptime: "99.98%", category: "cache" },
-  { name: "temporal", status: "healthy", latencyMs: 8, uptime: "99.95%", category: "workflow" },
-  { name: "keycloak", status: "healthy", latencyMs: 12, uptime: "99.90%", category: "auth" },
-  { name: "opensearch", status: "healthy", latencyMs: 15, uptime: "99.92%", category: "search" },
-  { name: "apisix", status: "healthy", latencyMs: 2, uptime: "99.99%", category: "gateway" },
-  { name: "tigerbeetle", status: "healthy", latencyMs: 1, uptime: "99.99%", category: "ledger" },
-  { name: "mojaloop", status: "healthy", latencyMs: 20, uptime: "99.85%", category: "interop" },
-  { name: "permify", status: "healthy", latencyMs: 5, uptime: "99.97%", category: "authorization" },
-  { name: "dapr", status: "healthy", latencyMs: 4, uptime: "99.96%", category: "sidecar" },
-  { name: "fluvio", status: "healthy", latencyMs: 6, uptime: "99.94%", category: "streaming" },
-  { name: "lakehouse", status: "healthy", latencyMs: 25, uptime: "99.80%", category: "data" },
-  { name: "postgresql", status: "healthy", latencyMs: 5, uptime: "99.99%", category: "database" },
+  {
+    name: "kafka",
+    status: "healthy",
+    latencyMs: 3,
+    uptime: "99.99%",
+    category: "messaging",
+  },
+  {
+    name: "redis",
+    status: "healthy",
+    latencyMs: 1,
+    uptime: "99.98%",
+    category: "cache",
+  },
+  {
+    name: "temporal",
+    status: "healthy",
+    latencyMs: 8,
+    uptime: "99.95%",
+    category: "workflow",
+  },
+  {
+    name: "keycloak",
+    status: "healthy",
+    latencyMs: 12,
+    uptime: "99.90%",
+    category: "auth",
+  },
+  {
+    name: "opensearch",
+    status: "healthy",
+    latencyMs: 15,
+    uptime: "99.92%",
+    category: "search",
+  },
+  {
+    name: "apisix",
+    status: "healthy",
+    latencyMs: 2,
+    uptime: "99.99%",
+    category: "gateway",
+  },
+  {
+    name: "tigerbeetle",
+    status: "healthy",
+    latencyMs: 1,
+    uptime: "99.99%",
+    category: "ledger",
+  },
+  {
+    name: "mojaloop",
+    status: "healthy",
+    latencyMs: 20,
+    uptime: "99.85%",
+    category: "interop",
+  },
+  {
+    name: "permify",
+    status: "healthy",
+    latencyMs: 5,
+    uptime: "99.97%",
+    category: "authorization",
+  },
+  {
+    name: "dapr",
+    status: "healthy",
+    latencyMs: 4,
+    uptime: "99.96%",
+    category: "sidecar",
+  },
+  {
+    name: "fluvio",
+    status: "healthy",
+    latencyMs: 6,
+    uptime: "99.94%",
+    category: "streaming",
+  },
+  {
+    name: "lakehouse",
+    status: "healthy",
+    latencyMs: 25,
+    uptime: "99.80%",
+    category: "data",
+  },
+  {
+    name: "postgresql",
+    status: "healthy",
+    latencyMs: 5,
+    uptime: "99.99%",
+    category: "database",
+  },
 ];
 
 export const _cacheEntries = [
-  { key: "agent_profiles", strategy: "ttl" as const, hitRate: 95, ttlSeconds: 300, sizeBytes: 102400 },
-  { key: "transaction_limits", strategy: "event_driven" as const, hitRate: 99, ttlSeconds: 3600, sizeBytes: 2048 },
-  { key: "exchange_rates", strategy: "ttl" as const, hitRate: 98, ttlSeconds: 60, sizeBytes: 4096 },
-  { key: "commission_rules", strategy: "write_through" as const, hitRate: 97, ttlSeconds: 1800, sizeBytes: 8192 },
-  { key: "kyc_status_cache", strategy: "manual" as const, hitRate: 90, ttlSeconds: 600, sizeBytes: 16384 },
-  { key: "session_tokens", strategy: "ttl" as const, hitRate: 92, ttlSeconds: 1200, sizeBytes: 32768 },
-  { key: "feature_flags", strategy: "event_driven" as const, hitRate: 99.5, ttlSeconds: 7200, sizeBytes: 1024 },
+  {
+    key: "agent_profiles",
+    strategy: "ttl" as const,
+    hitRate: 95,
+    ttlSeconds: 300,
+    sizeBytes: 102400,
+  },
+  {
+    key: "transaction_limits",
+    strategy: "event_driven" as const,
+    hitRate: 99,
+    ttlSeconds: 3600,
+    sizeBytes: 2048,
+  },
+  {
+    key: "exchange_rates",
+    strategy: "ttl" as const,
+    hitRate: 98,
+    ttlSeconds: 60,
+    sizeBytes: 4096,
+  },
+  {
+    key: "commission_rules",
+    strategy: "write_through" as const,
+    hitRate: 97,
+    ttlSeconds: 1800,
+    sizeBytes: 8192,
+  },
+  {
+    key: "kyc_status_cache",
+    strategy: "manual" as const,
+    hitRate: 90,
+    ttlSeconds: 600,
+    sizeBytes: 16384,
+  },
+  {
+    key: "session_tokens",
+    strategy: "ttl" as const,
+    hitRate: 92,
+    ttlSeconds: 1200,
+    sizeBytes: 32768,
+  },
+  {
+    key: "feature_flags",
+    strategy: "event_driven" as const,
+    hitRate: 99.5,
+    ttlSeconds: 7200,
+    sizeBytes: 1024,
+  },
 ];

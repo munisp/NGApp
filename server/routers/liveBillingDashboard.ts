@@ -4,7 +4,13 @@ import { TRPCError } from "@trpc/server";
 
 export const liveBillingDashboardRouter = router({
   list: protectedProcedure
-    .input(z.object({ limit: z.number().default(20), offset: z.number().default(0), search: z.string().optional() }))
+    .input(
+      z.object({
+        limit: z.number().default(20),
+        offset: z.number().default(0),
+        search: z.string().optional(),
+      })
+    )
     .query(async () => {
       return { data: [], total: 0, limit: 20, offset: 0 };
     }),
@@ -20,22 +26,47 @@ export const liveBillingDashboardRouter = router({
   }),
 
   getRecent: protectedProcedure
-    .input(z.object({ days: z.number().default(7), limit: z.number().default(10) }))
+    .input(
+      z.object({ days: z.number().default(7), limit: z.number().default(10) })
+    )
     .query(async () => {
       return [];
     }),
 
   getFinancialModelData: protectedProcedure
-    .input(z.object({
-      clientId: z.string(),
-      billingModel: z.string(),
-      projectionYears: z.number(),
-    }))
+    .input(
+      z.object({
+        clientId: z.string(),
+        billingModel: z.string(),
+        projectionYears: z.number(),
+      })
+    )
     .query(async () => {
       const actualMonthlyData = [
-        { month: "2024-01", agents: 120, transactions: 45000, grossRevenue: 6750000, platformRevenue: 1890000, clientRevenue: 4860000 },
-        { month: "2024-02", agents: 135, transactions: 52000, grossRevenue: 7800000, platformRevenue: 2184000, clientRevenue: 5616000 },
-        { month: "2024-03", agents: 150, transactions: 60000, grossRevenue: 9000000, platformRevenue: 2520000, clientRevenue: 6480000 },
+        {
+          month: "2024-01",
+          agents: 120,
+          transactions: 45000,
+          grossRevenue: 6750000,
+          platformRevenue: 1890000,
+          clientRevenue: 4860000,
+        },
+        {
+          month: "2024-02",
+          agents: 135,
+          transactions: 52000,
+          grossRevenue: 7800000,
+          platformRevenue: 2184000,
+          clientRevenue: 5616000,
+        },
+        {
+          month: "2024-03",
+          agents: 150,
+          transactions: 60000,
+          grossRevenue: 9000000,
+          platformRevenue: 2520000,
+          clientRevenue: 6480000,
+        },
       ];
       return {
         actualMonthlyData,
@@ -52,9 +83,21 @@ export const liveBillingDashboardRouter = router({
           grandTotal: 2800000,
         },
         modelComparison: {
-          revenueShare: { monthlyRevenue: 2520000, annualRevenue: 30240000, marginPct: 28 },
-          subscription: { monthlyRevenue: 2250000, annualRevenue: 27000000, marginPct: 25 },
-          hybrid: { monthlyRevenue: 2700000, annualRevenue: 32400000, marginPct: 30 },
+          revenueShare: {
+            monthlyRevenue: 2520000,
+            annualRevenue: 30240000,
+            marginPct: 28,
+          },
+          subscription: {
+            monthlyRevenue: 2250000,
+            annualRevenue: 27000000,
+            marginPct: 25,
+          },
+          hybrid: {
+            monthlyRevenue: 2700000,
+            annualRevenue: 32400000,
+            marginPct: 30,
+          },
         },
         kpis: {
           totalGrossRevenue: 23550000,
@@ -67,10 +110,12 @@ export const liveBillingDashboardRouter = router({
     }),
 
   getRevenueStream: protectedProcedure
-    .input(z.object({
-      clientId: z.string(),
-      intervalSeconds: z.number().optional(),
-    }))
+    .input(
+      z.object({
+        clientId: z.string(),
+        intervalSeconds: z.number().optional(),
+      })
+    )
     .query(async () => {
       return {
         timestamp: Date.now(),
@@ -90,10 +135,12 @@ export const liveBillingDashboardRouter = router({
     }),
 
   exportForFinancialModel: protectedProcedure
-    .input(z.object({
-      clientId: z.string(),
-      format: z.string().default("json"),
-    }))
+    .input(
+      z.object({
+        clientId: z.string(),
+        format: z.string().default("json"),
+      })
+    )
     .query(async ({ input }) => {
       return {
         exportedAt: Date.now(),
