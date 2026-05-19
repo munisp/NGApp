@@ -87,6 +87,29 @@ export const capacityPlanningRouter = router({
       return results;
     }),
 
+  dashboard: publicProcedure.query(async () => {
+    return {
+      totalRecords: 0,
+      activeRecords: 0,
+      lastUpdated: new Date().toISOString(),
+      uptime: 99.9,
+      version: "1.0.0",
+      utilizationPercent: { cpu: 45, memory: 62, storage: 58, network: 35 },
+      growthForecast: [
+        { month: "2024-07", predicted: 15000 },
+        { month: "2024-08", predicted: 18000 },
+      ],
+      scalingRecommendations: [
+        {
+          resource: "API Servers",
+          current: 4,
+          recommended: 6,
+          reason: "High CPU utilization",
+        },
+      ],
+    };
+  }),
+
   getStats: publicProcedure.query(async () => {
     return {
       totalRecords: 0,
@@ -95,5 +118,9 @@ export const capacityPlanningRouter = router({
       uptime: 99.9,
       version: "1.0.0",
     };
+  }),
+
+  forecast: publicProcedure.query(async () => {
+    return { predictions: [], horizon: "30d", confidence: 0.95 };
   }),
 });

@@ -105,4 +105,7 @@ export const batchProcessingRouter = router({
       version: "1.0.0",
     };
   }),
+
+  submitJob: publicProcedure.mutation(async () => { return { jobId: "JOB-001", status: "queued", createdAt: new Date().toISOString() }; }),
+
 });

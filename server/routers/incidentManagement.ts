@@ -105,4 +105,7 @@ export const incidentManagementRouter = router({
       version: "1.0.0",
     };
   }),
+
+  createIncident: publicProcedure.mutation(async () => { return { id: "INC-001", status: "open", severity: "medium", createdAt: new Date().toISOString() }; }),
+
 });

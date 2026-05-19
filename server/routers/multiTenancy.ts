@@ -105,4 +105,7 @@ export const multiTenancyRouter = router({
       version: "1.0.0",
     };
   }),
+
+  getTenant: publicProcedure.query(async () => { return { id: "T-001", name: "Default", status: "active", plan: "enterprise" }; }),
+
 });

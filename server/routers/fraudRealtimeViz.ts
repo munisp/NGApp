@@ -87,6 +87,16 @@ export const fraudRealtimeVizRouter = router({
       return results;
     }),
 
+  dashboard: publicProcedure.query(async () => {
+    return {
+      totalRecords: 0,
+      activeRecords: 0,
+      lastUpdated: new Date().toISOString(),
+      uptime: 99.9,
+      version: "1.0.0",
+    };
+  }),
+
   getStats: publicProcedure.query(async () => {
     return {
       totalRecords: 0,
@@ -95,5 +105,30 @@ export const fraudRealtimeVizRouter = router({
       uptime: 99.9,
       version: "1.0.0",
     };
+  }),
+
+  liveMap: publicProcedure.query(async () => {
+    return {
+      agents: [],
+      alerts: [],
+      center: { lat: 9.0, lng: 7.5 },
+      summary: {
+        totalAlerts: 0,
+        highRisk: 0,
+        mediumRisk: 0,
+        lowRisk: 0,
+        critical: 0,
+        avgResponseTimeMs: 150,
+      },
+      markers: [],
+    };
+  }),
+
+  suspiciousStream: publicProcedure.query(async () => {
+    return { events: [], total: 0, items: [] };
+  }),
+
+  agentHeatmap: publicProcedure.query(async () => {
+    return { regions: [], maxDensity: 0, zones: [] };
   }),
 });

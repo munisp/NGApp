@@ -105,4 +105,7 @@ export const automatedTestingFrameworkRouter = router({
       version: "1.0.0",
     };
   }),
+
+  runSuite: publicProcedure.mutation(async () => { return { suiteId: "TS-001", status: "running", tests: 0, passed: 0, failed: 0 }; }),
+
 });

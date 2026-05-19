@@ -1,5 +1,5 @@
 import { z } from "zod";
-import { protectedProcedure, router } from "../_core/trpc";
+import { protectedProcedure, router, publicProcedure } from "../_core/trpc";
 import { getDb } from "../db";
 import { auditLog } from "../../drizzle/schema";
 import { desc, eq, sql, and, gte, lte, count } from "drizzle-orm";
@@ -99,4 +99,7 @@ export const dataQualityRouter = router({
   getValidationRules: protectedProcedure.query(async () => {
     return { data: [], total: 0 };
   }),
+
+  runProfile: publicProcedure.mutation(async () => { return { profileId: "PF-001", status: "completed", columns: 0, issues: 0 }; }),
+
 });

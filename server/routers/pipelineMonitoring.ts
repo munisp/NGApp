@@ -87,6 +87,24 @@ export const pipelineMonitoringRouter = router({
       return results;
     }),
 
+  dashboard: publicProcedure.query(async () => {
+    return {
+      totalRecords: 0,
+      activeRecords: 0,
+      lastUpdated: new Date().toISOString(),
+      uptime: 99.9,
+      version: "1.0.0",
+      healthScore: 98.5,
+      activeAlerts: 3,
+      resolvedToday: 12,
+      slaBreaches: 1,
+      services: [
+        { name: "API Gateway", status: "healthy" },
+        { name: "Database", status: "healthy" },
+      ],
+    };
+  }),
+
   getStats: publicProcedure.query(async () => {
     return {
       totalRecords: 0,
@@ -95,5 +113,13 @@ export const pipelineMonitoringRouter = router({
       uptime: 99.9,
       version: "1.0.0",
     };
+  }),
+
+  activeAlerts: publicProcedure.query(async () => {
+    return { alerts: [], total: 0, critical: 0 };
+  }),
+
+  slaStatus: publicProcedure.query(async () => {
+    return { slas: [], overallCompliance: 99.5 };
   }),
 });

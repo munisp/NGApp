@@ -117,4 +117,10 @@ export const openTelemetryRouter = router({
       edges: [{ from: "billing", to: "postgres" }],
     };
   }),
+
+  searchTraces: publicProcedure.query(async () => { return { traces: [], total: 0 }; }),
+
+
+  serviceHealth: publicProcedure.query(async () => { return { services: [], healthy: 0, degraded: 0 }; }),
+
 });
