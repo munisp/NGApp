@@ -138,10 +138,7 @@ func createHandler(w http.ResponseWriter, r *http.Request) {
 	id := fmt.Sprintf("%s-%d", "trade_finance_go", time.Now().UnixNano())
 	dataBytes, _ := json.Marshal(body)
 	if err := dbInsert(id, "trade_finance_go", "default", "active", dataBytes); err != nil {
-		log.Printf("[%s] dbInsert failed: %v — in-memory fallback", serviceName, err)
-		mu.Lock()
-		records = append(records, map[string]interface{}{"id": id, "data": body, "created_at": time.Now().Format(time.RFC3339)})
-		mu.Unlock()
+		log.Printf("[%s] dbInsert failed: %v", serviceName, err)
 	}
 	// Inter-service call
 	upstreamURL := os.Getenv("AML_ENGINE_URL")

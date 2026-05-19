@@ -124,10 +124,7 @@ func createHandler(w http.ResponseWriter, r *http.Request) {
 	id := fmt.Sprintf("%s-%d", "core_banking_go", time.Now().UnixNano())
 	dataBytes, _ := json.Marshal(body)
 	if err := dbInsert(id, "core_banking_go", "default", "active", dataBytes); err != nil {
-		log.Printf("[%s] dbInsert failed: %v — in-memory fallback", serviceName, err)
-		mu.Lock()
-		records = append(records, map[string]interface{}{"id": id, "data": body, "created_at": time.Now().Format(time.RFC3339)})
-		mu.Unlock()
+		log.Printf("[%s] dbInsert failed: %v", serviceName, err)
 	}
 	// Inter-service call
 	upstreamURL := os.Getenv("GL_ENGINE_URL")
