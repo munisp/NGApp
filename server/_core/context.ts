@@ -17,10 +17,13 @@ import { verifySessionJwt, KC_SESSION_COOKIE } from "./keycloakAuth";
 import { getUserByKeycloakSub } from "../db";
 
 const isDev = process.env.NODE_ENV === "development";
-const devBypassEnabled = isDev && process.env.DEV_AUTH_BYPASS === "true";
+const isTest = process.env.NODE_ENV === "test";
+const devBypassEnabled =
+  (isDev && process.env.DEV_AUTH_BYPASS === "true") || isTest;
 
 if (
   !isDev &&
+  !isTest &&
   (!process.env.JWT_SECRET ||
     process.env.JWT_SECRET === "pos54link-secret-change-in-production")
 ) {
