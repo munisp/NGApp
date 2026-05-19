@@ -1,4 +1,3 @@
-// @ts-nocheck — Sprint 69: production build compatibility
 /**
  * Business Rules Engine — 54Link Agency Banking Platform
  *

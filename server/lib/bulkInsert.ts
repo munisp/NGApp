@@ -1,4 +1,3 @@
-// @ts-nocheck — Sprint 68: bulk TS error suppression for production build
 /**
  * Bulk Insert Module — PostgreSQL COPY Protocol
  * P1-2: 10-50x faster than individual INSERTs for batch settlement recording

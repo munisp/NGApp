@@ -1,4 +1,3 @@
-// @ts-nocheck — Sprint 69: production build compatibility
 /**
  * Sprint 64 — Chat System Completion Module
  * F1: Typing indicators via Socket.IO

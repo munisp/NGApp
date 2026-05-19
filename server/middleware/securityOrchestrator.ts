@@ -1,4 +1,3 @@
-// @ts-nocheck
 /**
  * Security Orchestrator — TypeScript Integration Layer
  * Wires Rust DDoS Shield, Go PBAC Engine, and Python Fraud ML Service

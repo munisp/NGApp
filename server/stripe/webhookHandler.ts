@@ -1,4 +1,3 @@
-// @ts-nocheck
 /**
  * Stripe Webhook Handler — 54Link POS Shell
  *

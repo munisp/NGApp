@@ -1,4 +1,3 @@
-// @ts-nocheck — Sprint 69
 import type { Request } from "express";
 import { jwtVerify } from "jose";
 import { getAgentById } from "../db";

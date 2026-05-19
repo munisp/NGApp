@@ -1,4 +1,3 @@
-// @ts-nocheck — Sprint 69
 /**
  * sidecarIntegration.ts — tRPC middleware that automatically integrates
  * all procedures with the Rust/Go/Python sidecars.

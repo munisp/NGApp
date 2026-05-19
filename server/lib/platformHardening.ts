@@ -1,4 +1,3 @@
-// @ts-nocheck — Sprint 69: production build compatibility
 /**
  * Sprint 64 — Platform Hardening Module
  * F16: Chat audit trail

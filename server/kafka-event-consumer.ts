@@ -1,4 +1,3 @@
-// @ts-nocheck — Sprint 86: Kafka Event Sourcing Consumer
 /**
  * Kafka Event Consumer (S86-29)
  *

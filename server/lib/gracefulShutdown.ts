@@ -1,4 +1,3 @@
-// @ts-nocheck
 import { Server } from "http";
 
 let isShuttingDown = false;

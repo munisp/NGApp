@@ -1,4 +1,3 @@
-// @ts-nocheck — Sprint 69: production build compatibility
 /**
  * Sprint 65 F6-F10: Business Rules & Domain Logic Completion
  * - F6: Transaction reversal workflow with approval chain

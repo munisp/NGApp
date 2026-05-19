@@ -1,4 +1,3 @@
-// @ts-nocheck — Sprint 69: production build compatibility
 /**
  * Sprint 64 — Chat Security Audit & Fixes
  * F24: Chat XSS prevention, message sanitization, rate limiting, CSRF

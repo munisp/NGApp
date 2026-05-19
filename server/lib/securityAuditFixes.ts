@@ -1,4 +1,3 @@
-// @ts-nocheck — Sprint 69: production build compatibility
 /**
  * Security Audit Fixes — 54Link Agency Banking Platform
  * Sprint 62: Comprehensive security hardening based on deep audit

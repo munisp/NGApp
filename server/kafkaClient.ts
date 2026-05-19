@@ -1,4 +1,3 @@
-// @ts-nocheck — Sprint 69
 /**
  * kafkaClient.ts — Kafka integration for 54Link POS Shell
  * ─────────────────────────────────────────────────────────────────────────────

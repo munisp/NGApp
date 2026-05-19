@@ -1,4 +1,3 @@
-// @ts-nocheck — Sprint 69: production build compatibility
 /**
  * sidecarBridge.ts — Unified client for Rust, Go, and Python sidecars.
  *

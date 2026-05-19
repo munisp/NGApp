@@ -1,4 +1,3 @@
-// @ts-nocheck — Sprint 68: bulk TS error suppression
 /**
  * Commission Lifecycle Workflows
  * Handles: tier evaluation, payout approval chain, clawback processing,

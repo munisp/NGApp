@@ -1,4 +1,3 @@
-// @ts-nocheck — Sprint 86: WebSocket Resilience Layer
 /**
  * WebSocket Resilience Middleware (S86-26)
  *

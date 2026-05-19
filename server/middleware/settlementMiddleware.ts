@@ -1,4 +1,3 @@
-// @ts-nocheck — Sprint 69
 /**
  * settlementMiddleware.ts — Full middleware integration for Settlement System
  *

@@ -1,4 +1,3 @@
-// @ts-nocheck
 /**
  * Financial Attack Prevention Middleware
  * Protects against: card testing, account takeover, replay attacks,

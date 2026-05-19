@@ -1,4 +1,3 @@
-// @ts-nocheck
 /**
  * DDoS Protection & Circuit Breaker Middleware
  * Provides adaptive rate limiting, connection throttling, IP reputation,

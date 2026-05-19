@@ -1,4 +1,3 @@
-// @ts-nocheck — Sprint 68: bulk TS error suppression for production build
 /**
  * Parquet Cold-Tier Archival Module
  * P2-1: Archive settlements/disputes older than N days to S3 as Parquet with zstd(3) compression

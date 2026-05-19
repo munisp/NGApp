@@ -1,4 +1,3 @@
-// @ts-nocheck — Sprint 69
 /**
  * commissionMiddleware.ts — Full middleware integration for Commission Engine
  *

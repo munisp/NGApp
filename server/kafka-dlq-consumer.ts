@@ -1,4 +1,3 @@
-// @ts-nocheck — Sprint 69
 /**
  * 54Link — Kafka Dead-Letter Queue (DLQ) Consumer
  *

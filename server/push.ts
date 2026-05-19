@@ -1,4 +1,3 @@
-// @ts-nocheck — Sprint 69
 /**
  * VAPID Web Push Notification Service
  * Sends push notifications to agents and admins via the Web Push Protocol.

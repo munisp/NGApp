@@ -1,4 +1,3 @@
-// @ts-nocheck — Sprint 69
 /**
  * lakehouseCron.ts — Daily lakehouse snapshot jobs
  *

@@ -1,4 +1,3 @@
-// @ts-nocheck — Sprint 69
 /**
  * Sprint 52 — RBAC Hardening
  * F06: Apply admin-only access to sensitive routers

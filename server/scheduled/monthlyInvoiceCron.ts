@@ -1,4 +1,3 @@
-// @ts-nocheck — Sprint 84: Monthly Invoice Generation Cron
 /**
  * Monthly Invoice Cron Handler — 54Link POS Shell
  *

@@ -1,4 +1,3 @@
-// @ts-nocheck — Sprint 69: production build compatibility
 /**
  * Sprint 64 — Agent Operations Module
  * F11: Agent availability/presence tracking

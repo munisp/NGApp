@@ -1,4 +1,3 @@
-// @ts-nocheck — Sprint 69: production build compatibility
 /**
  * Database Health Check & Connection Retry Logic
  * Provides health monitoring, connection pooling diagnostics, and automatic retry

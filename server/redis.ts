@@ -1,4 +1,3 @@
-// @ts-nocheck — Sprint 69
 /**
  * 54Link Redis Client
  * Provides connection-pooled ioredis client with typed cache helpers.

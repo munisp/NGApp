@@ -1,4 +1,3 @@
-// @ts-nocheck — Sprint 69: production build compatibility
 /**
  * mtlsAgent.ts — Mutual TLS HTTPS Agent for platform microservice calls
  * ─────────────────────────────────────────────────────────────────────────────

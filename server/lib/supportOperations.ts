@@ -1,4 +1,3 @@
-// @ts-nocheck — Sprint 69: production build compatibility
 /**
  * Sprint 64 — Support Operations Module
  * F6: Chat notification preferences

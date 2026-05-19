@@ -1,4 +1,3 @@
-// @ts-nocheck — Sprint 69
 /**
  * Tenant Scope Middleware — Production-Grade Tenant Data Isolation
  *

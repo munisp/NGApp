@@ -1,4 +1,3 @@
-// @ts-nocheck — Sprint 69: production build compatibility
 /**
  * Batch Progress Reporter
  * P2-3: Emit progress events every N settlements via Redis pub/sub

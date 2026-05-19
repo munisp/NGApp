@@ -1,4 +1,3 @@
-// @ts-nocheck — Sprint 69: production build compatibility
 /**
  * 54Link POS Shell — Fluvio Streaming Client
  *

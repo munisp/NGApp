@@ -1,4 +1,3 @@
-// @ts-nocheck — Sprint 86: Input Sanitization & SQL Injection Prevention
 /**
  * Input Sanitization Middleware (S86-25)
  *

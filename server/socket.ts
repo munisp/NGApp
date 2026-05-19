@@ -1,4 +1,3 @@
-// @ts-nocheck — Sprint 69
 import { Server as SocketIOServer } from "socket.io";
 import type { Server as HttpServer } from "http";
 import { jwtVerify } from "jose";

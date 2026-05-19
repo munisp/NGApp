@@ -1,4 +1,3 @@
-// @ts-nocheck — Sprint 69: production build compatibility
 /**
  * archivalCronWorker.ts
  * S60-3: Background cron worker that checks the archival schedule config

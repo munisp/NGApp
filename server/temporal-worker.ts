@@ -1,4 +1,3 @@
-// @ts-nocheck — Sprint 69
 /**
  * 54Link POS — Temporal Worker Process
  * Run: npx tsx server/temporal-worker.ts

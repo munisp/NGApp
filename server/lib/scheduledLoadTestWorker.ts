@@ -1,4 +1,3 @@
-// @ts-nocheck — Sprint 69: production build compatibility
 /**
  * Scheduled Load Test Worker — 54Link Agency Banking Platform
  *

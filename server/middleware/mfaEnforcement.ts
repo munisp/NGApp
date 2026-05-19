@@ -1,4 +1,3 @@
-// @ts-nocheck — Sprint 69
 /**
  * P0-C: MFA Enforcement Middleware
  *

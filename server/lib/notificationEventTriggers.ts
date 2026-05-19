@@ -1,4 +1,3 @@
-// @ts-nocheck — Sprint 69: production build compatibility
 /**
  * Notification Event Triggers — 54Link Agent Banking Platform
  *

@@ -1,4 +1,3 @@
-// @ts-nocheck — Sprint 69: production build compatibility
 /**
  * Deep Health Check & Circuit Breaker — 54Link Agency Banking Platform
  *

@@ -1,4 +1,3 @@
-// @ts-nocheck — Sprint 69: production build compatibility
 /**
  * Auto-Refresh Polling Module — 54Link Agency Banking Platform
  *

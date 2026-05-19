@@ -1,4 +1,3 @@
-// @ts-nocheck — Sprint 69
 /**
  * Stripe Products & Pricing Configuration
  *

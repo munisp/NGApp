@@ -1,4 +1,3 @@
-// @ts-nocheck — Sprint 69
 import { ENV } from "./_core/env";
 /**
  * TigerBeetle Sidecar Client

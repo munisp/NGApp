@@ -1,4 +1,3 @@
-// @ts-nocheck — Sprint 69
 /**
  * redisClient.ts — Redis integration for 54Link POS Shell
  * ─────────────────────────────────────────────────────────────────────────────

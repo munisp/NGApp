@@ -1,4 +1,3 @@
-// @ts-nocheck — Sprint 69: production build compatibility
 /**
  * Performance Tuning Module — Sprint 56
  * Response compression, query result caching, connection pool optimization,

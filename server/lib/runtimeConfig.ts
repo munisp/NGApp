@@ -1,4 +1,3 @@
-// @ts-nocheck — Sprint 68: bulk TS error suppression for production build
 /**
  * Runtime Configuration Module
  * P1-3: Runtime-configurable batch/concurrency parameters

@@ -1,4 +1,3 @@
-// @ts-nocheck — Sprint 69: production build compatibility
 /**
  * Threshold Alert Notification Dispatcher
  * Connects breach events from the data threshold alert system to email and SMS services.

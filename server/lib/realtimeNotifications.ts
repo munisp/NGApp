@@ -1,4 +1,3 @@
-// @ts-nocheck — Sprint 69: production build compatibility
 /**
  * Real-Time Notification System — 54Link Agency Banking Platform
  *

@@ -1,4 +1,3 @@
-// @ts-nocheck — Sprint 69
 /**
  * Kafka Event Bus Integration
  *

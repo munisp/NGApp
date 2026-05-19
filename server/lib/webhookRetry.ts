@@ -1,4 +1,3 @@
-// @ts-nocheck
 interface WebhookAttempt {
   attemptNumber: number;
   statusCode: number;

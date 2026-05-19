@@ -1,4 +1,3 @@
-// @ts-nocheck — Sprint 69
 /**
  * observabilityMiddleware.ts — tRPC middleware that automatically instruments
  * ALL procedures with Kafka event publishing, Redis caching, Fluvio streaming,

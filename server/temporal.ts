@@ -1,4 +1,3 @@
-// @ts-nocheck — Sprint 69
 /**
  * 54Link Temporal Client
  * Provides a Temporal client for scheduling and triggering workflows.

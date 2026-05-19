@@ -1,4 +1,3 @@
-// @ts-nocheck — Sprint 68: bulk TS error suppression
 /**
  * Webhook Delivery Service
  *

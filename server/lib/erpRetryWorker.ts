@@ -1,4 +1,3 @@
-// @ts-nocheck — Sprint 68: bulk TS error suppression
 /**
  * erpRetryWorker.ts
  * Background worker that retries failed ERP syncs with exponential backoff + jitter.

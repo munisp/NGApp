@@ -1,4 +1,3 @@
-// @ts-nocheck
 interface EmailOptions {
   to: string | string[];
   subject: string;

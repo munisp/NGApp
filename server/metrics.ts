@@ -1,4 +1,3 @@
-// @ts-nocheck — Sprint 69
 /**
  * metrics.ts — Prometheus metrics registry for the 54Link POS Shell
  * ─────────────────────────────────────────────────────────────────────────────

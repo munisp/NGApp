@@ -1,4 +1,3 @@
-// @ts-nocheck — Sprint 69: production build compatibility
 /**
  * High Availability Module — Sprint 56
  * Circuit breaker, retry with exponential backoff, structured health checks,
