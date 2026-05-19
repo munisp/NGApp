@@ -29,9 +29,9 @@ export const agentKycRouter = router({
       const database = await getDb();
       if (!database) return { items: [], total: 0, limit: input.limit, offset: input.offset };
       try {
-        const results = await database.select().from(kycSessions).orderBy(desc(kycSessions.id)).limit(input.limit);
-        const totalArr = await database.select({ total: count() }).from(kycSessions);
-        return { items: results, total: totalArr?.[0]?.total ?? 0, limit: input.limit, offset: input.offset };
+        const results = await database.select().from(kycSessions).orderBy(desc(kycSessions.id)).limit(input.limit).offset(input.offset);
+        const countArr = await database.select({ cnt: count() }).from(kycSessions).limit(1);
+        return { items: results, total: Number(countArr?.[0]?.cnt ?? 0), limit: input.limit, offset: input.offset };
       } catch { return { items: [], total: 0, limit: input.limit, offset: input.offset }; }
     }),
   getStats: protectedProcedure.query(async () => {

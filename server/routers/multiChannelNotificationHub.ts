@@ -46,10 +46,10 @@ export const multiChannelNotificationHubRouter = router({
         .where(eq(auditLog.id, input.id))
         .limit(1);
 
-      if (!record) {
+      if (!recordArr?.[0]) {
         throw new Error(`Record with id ${input.id} not found`);
       }
-      return record;
+      return recordArr[0];
     }),
 
   getSummary: protectedProcedure.query(async () => {

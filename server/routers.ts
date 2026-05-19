@@ -515,6 +515,7 @@ export const appRouter = router({
   commissionCascadeHistory: commissionCascadeHistoryRouter,
   customer_journey_events: customer_journey_eventsRouter,
   dataConsentRecords: dataConsentRecordsRouter,
+  dataConsentRecordsCrud: dataConsentRecordsRouter,
   emailDeliveryLog: emailDeliveryLogRouter,
   encryptedFields: encryptedFieldsRouter,
   floatReconciliations: floatReconciliationsRouter,
