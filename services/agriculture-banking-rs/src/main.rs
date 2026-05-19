@@ -21,7 +21,7 @@ fn seasonal_repayment(principal: f64, crop: &str) -> Vec<(u32, f64)> { let month
 fn anchor_borrower_eligible(farm_size_ha: f64, registered: bool) -> bool { farm_size_ha >= 0.5 && registered }
 
 async fn health() -> HttpResponse {
-    let _seasonal_repayment = seasonal_repayment(10000.0, 0.05);
+    let _seasonal_repayment = seasonal_repayment(10000.0, "maize");
     HttpResponse::Ok().insert_header(("content-security-policy", "default-src 'self'")).json(json!({"status": "healthy", "service": "agriculture-banking-rs"}))
 }
 

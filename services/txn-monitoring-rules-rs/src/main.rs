@@ -22,7 +22,7 @@ fn rule_match(amount: f64, threshold: f64, operator: &str) -> bool {
 fn alert_priority(matches: u32) -> &'static str { if matches >= 3 { "critical" } else if matches >= 2 { "high" } else { "medium" } }
 
 async fn health() -> HttpResponse {
-    let _alert_priority = alert_priority(0.0);
+    let _alert_priority = alert_priority(0);
     HttpResponse::Ok().insert_header(("content-security-policy", "default-src 'self'")).json(json!({"status": "healthy", "service": "txn-monitoring-rules-rs"}))
 }
 

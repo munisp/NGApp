@@ -21,7 +21,7 @@ fn compute_ndvi(nir: f64, red: f64) -> f64 { if nir + red == 0.0 { 0.0 } else { 
 fn irrigation_recommendation(moisture: f64, crop: &str) -> &str { if moisture < 30.0 { "irrigate_now" } else { "no_action" } }
 
 async fn health() -> HttpResponse {
-    let _irrigation_recommendation = irrigation_recommendation(0.0);
+    let _irrigation_recommendation = irrigation_recommendation(0.0, "maize");
     HttpResponse::Ok().insert_header(("content-security-policy", "default-src 'self'")).json(json!({"status": "healthy", "service": "agri-iot-sensor-rs"}))
 }
 
