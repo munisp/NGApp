@@ -6,7 +6,9 @@ import 'screens/admin_dashboard_screen.dart';
 import 'screens/agent_banking_screen.dart';
 import 'screens/agent_performance_screen.dart';
 import 'screens/agricultural_insurance_screen.dart';
+import 'screens/ai_agent_hub_screen.dart';
 import 'screens/ai_fraud_detection_screen.dart';
+import 'screens/stakeholder_kpi_dashboard_screen.dart';
 import 'screens/alert_rules_screen.dart';
 import 'screens/analytics_widgets_screen.dart';
 import 'screens/api_marketplace_screen.dart';
@@ -420,7 +422,9 @@ class BankApp extends StatelessWidget {
           '/agent-banking': (context) => const AgentBankingScreen(),
           '/agent-performance': (context) => const AgentPerformanceScreen(),
           '/agricultural-insurance': (context) => const AgriculturalInsuranceScreen(),
+          '/ai-agent-hub': (context) => const AiAgentHubScreen(),
           '/ai-fraud-detection': (context) => const AiFraudDetectionScreen(),
+          '/stakeholder-kpi-dashboard': (context) => const StakeholderKpiDashboardScreen(),
           '/alert-rules': (context) => const AlertRulesScreen(),
           '/analytics-widgets': (context) => const AnalyticsWidgetsScreen(),
           '/api-marketplace': (context) => const ApiMarketplaceScreen(),
@@ -831,6 +835,8 @@ class HomeScreen extends StatelessWidget {
             ListTile(title: const Text('Admin Dashboard'), onTap: () => Navigator.pushNamed(context, '/admin-dashboard')),
             ListTile(title: const Text('Agent Banking'), onTap: () => Navigator.pushNamed(context, '/agent-banking')),
             ListTile(title: const Text('Agent Performance'), onTap: () => Navigator.pushNamed(context, '/agent-performance')),
+            ListTile(leading: const Icon(Icons.smart_toy, color: Color(0xFF1A237E)), title: const Text('AI Agent Hub'), subtitle: const Text('10 AI banking agents'), onTap: () => Navigator.pushNamed(context, '/ai-agent-hub')),
+            ListTile(leading: const Icon(Icons.bar_chart, color: Color(0xFF1B5E20)), title: const Text('Stakeholder KPI Dashboard'), subtitle: const Text('Role-based KPI monitoring'), onTap: () => Navigator.pushNamed(context, '/stakeholder-kpi-dashboard')),
             ListTile(title: const Text('Agricultural Insurance'), onTap: () => Navigator.pushNamed(context, '/agricultural-insurance')),
             ListTile(title: const Text('Ai Fraud Detection'), onTap: () => Navigator.pushNamed(context, '/ai-fraud-detection')),
             ListTile(title: const Text('Alert Rules'), onTap: () => Navigator.pushNamed(context, '/alert-rules')),
