@@ -68,10 +68,22 @@ vi.mock("jose", () => ({
 }));
 
 // ─── Test context factory ─────────────────────────────────────────────────────
+const MOCK_USER = {
+  id: 1,
+  keycloakSub: "test-user-123",
+  name: "Test Admin",
+  email: "admin@54link.dev",
+  role: "admin" as const,
+  loginMethod: "keycloak",
+  lastSignedIn: new Date(),
+  createdAt: new Date(),
+  updatedAt: new Date(),
+};
+
 function makeCtx(cookieOverride?: string): TrpcContext {
   const cookies: string[] = [];
   return {
-    user: null,
+    user: MOCK_USER as any,
     req: {
       headers: { cookie: cookieOverride ?? "agent_session=mock.jwt.token" },
       ip: "127.0.0.1",

@@ -115,9 +115,8 @@ function authCtx(role: string = "agent"): TrpcContext {
 describe("A01: Broken Access Control", () => {
   it("rejects unauthenticated access to protected procedures", async () => {
     const caller = appRouter.createCaller(unauthCtx());
-    // agent.me should return null for unauthenticated users (not throw)
-    const result = await caller.agent.me();
-    expect(result).toBeNull();
+    // agent.me requires auth — should throw UNAUTHORIZED
+    await expect(caller.agent.me()).rejects.toThrow();
   });
 
   it("agent login rejects non-existent agent code", async () => {
@@ -177,14 +176,14 @@ describe("A03: Injection Prevention", () => {
 // ═══════════════════════════════════════════════════════════════════════════
 describe("A04: Insecure Design — Input Validation", () => {
   it("fraud.updateStatus rejects invalid status enum", async () => {
-    const caller = appRouter.createCaller(unauthCtx());
+    const caller = appRouter.createCaller(authCtx("admin"));
     await expect(
       caller.fraud.updateStatus({ id: 1, status: "hacked" as any })
     ).rejects.toThrow();
   });
 
   it("fraud.updateStatus rejects negative ID", async () => {
-    const caller = appRouter.createCaller(unauthCtx());
+    const caller = appRouter.createCaller(authCtx("admin"));
     // Negative IDs should either throw or be handled; verify input validation exists
     try {
       await caller.fraud.updateStatus({ id: -1, status: "investigating" });
@@ -196,8 +195,8 @@ describe("A04: Insecure Design — Input Validation", () => {
     }
   });
 
-  it("business rules CBN limits are accessible without auth", async () => {
-    const caller = appRouter.createCaller(unauthCtx());
+  it("business rules CBN limits require auth", async () => {
+    const caller = appRouter.createCaller(authCtx("admin"));
     const limits = await caller.businessRules.cbnLimits();
     expect(limits).toBeDefined();
     expect(Array.isArray(limits)).toBe(true);

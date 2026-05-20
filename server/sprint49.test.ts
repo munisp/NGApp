@@ -35,7 +35,7 @@ describe("Sprint 49: Production Readiness Features", () => {
     expect(m.pnlReportRouter).toBeDefined();
   });
   it("should import geoFencingRouter", async () => {
-    const m = await import("./routers/geoFencing");
+    const m = await import("./routers/geofencing");
     expect(m.geoFencingRouter).toBeDefined();
   });
   it("should import transactionLimitsEngineRouter", async () => {

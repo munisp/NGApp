@@ -36,6 +36,23 @@ export const dashboardLayoutRouter = router({
       }
     }),
 
+  // presets: alias for backward compatibility with test harness
+  presets: protectedProcedure.query(async () => {
+    return [
+      {
+        id: "default",
+        name: "Default",
+        widgets: ["transactions", "agents", "revenue"],
+      },
+      {
+        id: "finance",
+        name: "Finance Focus",
+        widgets: ["revenue", "settlement", "reconciliation"],
+      },
+      { id: "ops", name: "Operations", widgets: ["agents", "pos", "network"] },
+    ];
+  }),
+
   getPresets: protectedProcedure.query(async () => {
     return [
       {

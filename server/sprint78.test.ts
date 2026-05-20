@@ -7,13 +7,29 @@ import { describe, it, expect } from "vitest";
 //         Offline Queue, Vulnerability Middleware
 // ============================================================
 
+const mockCtx = {
+  user: {
+    id: 1,
+    keycloakSub: "test-user-123",
+    name: "Test Admin",
+    email: "admin@54link.dev",
+    role: "admin" as const,
+    loginMethod: "keycloak",
+    lastSignedIn: new Date(),
+    createdAt: new Date(),
+    updatedAt: new Date(),
+  },
+  req: { headers: { cookie: "" }, ip: "127.0.0.1", protocol: "http" } as any,
+  res: { cookie: () => {}, clearCookie: () => {} } as any,
+};
+
 // --- USSD Session Replay Router Tests ---
 describe("ussdSessionReplayRouter", () => {
   it("should list all sessions", async () => {
     const { ussdSessionReplayRouter } = await import(
       "./routers/ussdSessionReplay"
     );
-    const caller = ussdSessionReplayRouter.createCaller({});
+    const caller = ussdSessionReplayRouter.createCaller(mockCtx);
     const result = await caller.listSessions();
     expect(result.sessions.length).toBeGreaterThan(0);
     expect(result.total).toBeGreaterThan(0);
@@ -23,7 +39,7 @@ describe("ussdSessionReplayRouter", () => {
     const { ussdSessionReplayRouter } = await import(
       "./routers/ussdSessionReplay"
     );
-    const caller = ussdSessionReplayRouter.createCaller({});
+    const caller = ussdSessionReplayRouter.createCaller(mockCtx);
     const result = await caller.listSessions({ status: "completed" });
     expect(
       result.sessions.every((s: any) => s.status === undefined || true)
@@ -34,7 +50,7 @@ describe("ussdSessionReplayRouter", () => {
     const { ussdSessionReplayRouter } = await import(
       "./routers/ussdSessionReplay"
     );
-    const caller = ussdSessionReplayRouter.createCaller({});
+    const caller = ussdSessionReplayRouter.createCaller(mockCtx);
     const result = await caller.getSession({ sessionId: "SESS-001" });
     expect(result.sessionId).toBe("SESS-001");
     expect(result.keystrokes.length).toBeGreaterThan(0);
@@ -45,7 +61,7 @@ describe("ussdSessionReplayRouter", () => {
     const { ussdSessionReplayRouter } = await import(
       "./routers/ussdSessionReplay"
     );
-    const caller = ussdSessionReplayRouter.createCaller({});
+    const caller = ussdSessionReplayRouter.createCaller(mockCtx);
     const result = await caller.replaySession({ sessionId: "SESS-001" });
     expect(result.totalSteps).toBe(4);
     expect(result.keystrokes[0].screenText).toContain("Welcome");
@@ -55,7 +71,7 @@ describe("ussdSessionReplayRouter", () => {
     const { ussdSessionReplayRouter } = await import(
       "./routers/ussdSessionReplay"
     );
-    const caller = ussdSessionReplayRouter.createCaller({});
+    const caller = ussdSessionReplayRouter.createCaller(mockCtx);
     await expect(
       caller.getSession({ sessionId: "NONEXISTENT" })
     ).rejects.toThrow("Session not found");
@@ -65,7 +81,7 @@ describe("ussdSessionReplayRouter", () => {
     const { ussdSessionReplayRouter } = await import(
       "./routers/ussdSessionReplay"
     );
-    const caller = ussdSessionReplayRouter.createCaller({});
+    const caller = ussdSessionReplayRouter.createCaller(mockCtx);
     const result = await caller.getAnalytics();
     expect(result.totalSessions).toBeGreaterThan(0);
     expect(result.completionRate).toBeGreaterThanOrEqual(0);
@@ -77,7 +93,7 @@ describe("ussdSessionReplayRouter", () => {
     const { ussdSessionReplayRouter } = await import(
       "./routers/ussdSessionReplay"
     );
-    const caller = ussdSessionReplayRouter.createCaller({});
+    const caller = ussdSessionReplayRouter.createCaller(mockCtx);
     const result = await caller.listSessions({ carrier: "MTN_NG" });
     expect(result.total).toBeGreaterThan(0);
   });
@@ -89,7 +105,7 @@ describe("carrierLivePricingRouter", () => {
     const { carrierLivePricingRouter } = await import(
       "./routers/carrierLivePricing"
     );
-    const caller = carrierLivePricingRouter.createCaller({});
+    const caller = carrierLivePricingRouter.createCaller(mockCtx);
     const result = await caller.getAllRates();
     expect(result.carriers.length).toBeGreaterThanOrEqual(10);
     expect(result.count).toBe(result.carriers.length);
@@ -99,7 +115,7 @@ describe("carrierLivePricingRouter", () => {
     const { carrierLivePricingRouter } = await import(
       "./routers/carrierLivePricing"
     );
-    const caller = carrierLivePricingRouter.createCaller({});
+    const caller = carrierLivePricingRouter.createCaller(mockCtx);
     const result = await caller.getAllRates({ country: "NG" });
     expect(result.carriers.every((c: any) => c.country === "NG")).toBe(true);
     expect(result.carriers.length).toBeGreaterThanOrEqual(3);
@@ -109,7 +125,7 @@ describe("carrierLivePricingRouter", () => {
     const { carrierLivePricingRouter } = await import(
       "./routers/carrierLivePricing"
     );
-    const caller = carrierLivePricingRouter.createCaller({});
+    const caller = carrierLivePricingRouter.createCaller(mockCtx);
     const result = await caller.getCarrierRate({ carrierId: "mtn_ng" });
     expect(result.carrierName).toBe("MTN Nigeria");
     expect(result.smsRate).toBe(4.0);
@@ -120,7 +136,7 @@ describe("carrierLivePricingRouter", () => {
     const { carrierLivePricingRouter } = await import(
       "./routers/carrierLivePricing"
     );
-    const caller = carrierLivePricingRouter.createCaller({});
+    const caller = carrierLivePricingRouter.createCaller(mockCtx);
     const result = await caller.compareCarriers({
       carrierIds: ["mtn_ng", "airtel_ng", "glo_ng"],
     });
@@ -131,7 +147,7 @@ describe("carrierLivePricingRouter", () => {
     const { carrierLivePricingRouter } = await import(
       "./routers/carrierLivePricing"
     );
-    const caller = carrierLivePricingRouter.createCaller({});
+    const caller = carrierLivePricingRouter.createCaller(mockCtx);
     const result = await caller.estimateCost({
       carrierId: "mtn_ng",
       smsCount: 1000,
@@ -149,7 +165,7 @@ describe("carrierLivePricingRouter", () => {
     const { carrierLivePricingRouter } = await import(
       "./routers/carrierLivePricing"
     );
-    const caller = carrierLivePricingRouter.createCaller({});
+    const caller = carrierLivePricingRouter.createCaller(mockCtx);
     const result = await caller.getCountries();
     expect(result.length).toBeGreaterThanOrEqual(6);
     const ng = result.find((c: any) => c.code === "NG");
@@ -161,7 +177,7 @@ describe("carrierLivePricingRouter", () => {
     const { carrierLivePricingRouter } = await import(
       "./routers/carrierLivePricing"
     );
-    const caller = carrierLivePricingRouter.createCaller({});
+    const caller = carrierLivePricingRouter.createCaller(mockCtx);
     await expect(
       caller.getCarrierRate({ carrierId: "fake_carrier" })
     ).rejects.toThrow("Carrier not found");
@@ -172,7 +188,7 @@ describe("carrierLivePricingRouter", () => {
 describe("agentKycRouter", () => {
   it("should list all KYC profiles", async () => {
     const { agentKycRouter } = await import("./routers/agentKyc");
-    const caller = agentKycRouter.createCaller({});
+    const caller = agentKycRouter.createCaller(mockCtx);
     const result = await caller.listProfiles();
     expect(result.profiles.length).toBeGreaterThan(0);
     expect(result.total).toBe(result.profiles.length);
@@ -180,7 +196,7 @@ describe("agentKycRouter", () => {
 
   it("should filter profiles by status", async () => {
     const { agentKycRouter } = await import("./routers/agentKyc");
-    const caller = agentKycRouter.createCaller({});
+    const caller = agentKycRouter.createCaller(mockCtx);
     const result = await caller.listProfiles({ status: "complete" });
     expect(
       result.profiles.every((p: any) => p.overallStatus === "complete")
@@ -189,7 +205,7 @@ describe("agentKycRouter", () => {
 
   it("should get a specific agent profile", async () => {
     const { agentKycRouter } = await import("./routers/agentKyc");
-    const caller = agentKycRouter.createCaller({});
+    const caller = agentKycRouter.createCaller(mockCtx);
     const result = await caller.getProfile({ agentId: "AGT-001" });
     expect(result.agentName).toBe("Adebayo Okonkwo");
     expect(result.kycLevel).toBe(2);
@@ -198,7 +214,7 @@ describe("agentKycRouter", () => {
 
   it("should get a specific document", async () => {
     const { agentKycRouter } = await import("./routers/agentKyc");
-    const caller = agentKycRouter.createCaller({});
+    const caller = agentKycRouter.createCaller(mockCtx);
     const result = await caller.getDocument({ docId: "DOC-001A" });
     expect(result.docType).toBe("nin");
     expect(result.status).toBe("verified");
@@ -207,7 +223,7 @@ describe("agentKycRouter", () => {
 
   it("should submit and verify a NIN document", async () => {
     const { agentKycRouter } = await import("./routers/agentKyc");
-    const caller = agentKycRouter.createCaller({});
+    const caller = agentKycRouter.createCaller(mockCtx);
     const result = await caller.submitDocument({
       agentId: "AGT-005",
       docType: "nin",
@@ -225,7 +241,7 @@ describe("agentKycRouter", () => {
 
   it("should reject invalid document number", async () => {
     const { agentKycRouter } = await import("./routers/agentKyc");
-    const caller = agentKycRouter.createCaller({});
+    const caller = agentKycRouter.createCaller(mockCtx);
     const result = await caller.submitDocument({
       agentId: "AGT-005",
       docType: "nin",
@@ -243,7 +259,7 @@ describe("agentKycRouter", () => {
 
   it("should return KYC dashboard stats", async () => {
     const { agentKycRouter } = await import("./routers/agentKyc");
-    const caller = agentKycRouter.createCaller({});
+    const caller = agentKycRouter.createCaller(mockCtx);
     const result = await caller.getDashboard();
     expect(result.totalAgents).toBeGreaterThan(0);
     expect(result.verificationRate).toBeGreaterThanOrEqual(0);
@@ -255,7 +271,7 @@ describe("agentKycRouter", () => {
 describe("txMonitorRouter", () => {
   it("should return all alert rules", async () => {
     const { txMonitorRouter } = await import("./routers/txMonitor");
-    const caller = txMonitorRouter.createCaller({});
+    const caller = txMonitorRouter.createCaller(mockCtx);
     const result = await caller.getRules();
     expect(result.rules.length).toBeGreaterThanOrEqual(8);
     expect(result.activeCount).toBeGreaterThan(0);
@@ -263,7 +279,7 @@ describe("txMonitorRouter", () => {
 
   it("should return alerts", async () => {
     const { txMonitorRouter } = await import("./routers/txMonitor");
-    const caller = txMonitorRouter.createCaller({});
+    const caller = txMonitorRouter.createCaller(mockCtx);
     const result = await caller.getAlerts();
     expect(result.alerts.length).toBeGreaterThan(0);
     expect(result.total).toBe(result.alerts.length);
@@ -271,7 +287,7 @@ describe("txMonitorRouter", () => {
 
   it("should filter alerts by severity", async () => {
     const { txMonitorRouter } = await import("./routers/txMonitor");
-    const caller = txMonitorRouter.createCaller({});
+    const caller = txMonitorRouter.createCaller(mockCtx);
     const result = await caller.getAlerts({ severity: "critical" });
     expect(result.alerts.every((a: any) => a.severity === "critical")).toBe(
       true
@@ -280,14 +296,14 @@ describe("txMonitorRouter", () => {
 
   it("should acknowledge an alert", async () => {
     const { txMonitorRouter } = await import("./routers/txMonitor");
-    const caller = txMonitorRouter.createCaller({});
+    const caller = txMonitorRouter.createCaller(mockCtx);
     const result = await caller.acknowledgeAlert({ alertId: "ALT-001" });
     expect(result.success).toBe(true);
   });
 
   it("should resolve an alert", async () => {
     const { txMonitorRouter } = await import("./routers/txMonitor");
-    const caller = txMonitorRouter.createCaller({});
+    const caller = txMonitorRouter.createCaller(mockCtx);
     const result = await caller.resolveAlert({
       alertId: "ALT-002",
       resolution: "False positive",
@@ -297,7 +313,7 @@ describe("txMonitorRouter", () => {
 
   it("should return dashboard stats", async () => {
     const { txMonitorRouter } = await import("./routers/txMonitor");
-    const caller = txMonitorRouter.createCaller({});
+    const caller = txMonitorRouter.createCaller(mockCtx);
     const result = await caller.getDashboard();
     expect(result.totalAlerts).toBeGreaterThan(0);
     expect(result.rulesCount).toBeGreaterThanOrEqual(8);
@@ -311,7 +327,7 @@ describe("commissionCalculatorRouter", () => {
     const { commissionCalculatorRouter } = await import(
       "./routers/commissionCalculator"
     );
-    const caller = commissionCalculatorRouter.createCaller({});
+    const caller = commissionCalculatorRouter.createCaller(mockCtx);
     const result = await caller.getTiers();
     expect(result.tiers.length).toBe(5);
     expect(result.multipliers.cash_in).toBe(1.0);
@@ -322,7 +338,7 @@ describe("commissionCalculatorRouter", () => {
     const { commissionCalculatorRouter } = await import(
       "./routers/commissionCalculator"
     );
-    const caller = commissionCalculatorRouter.createCaller({});
+    const caller = commissionCalculatorRouter.createCaller(mockCtx);
     const result = await caller.calculate({
       agentId: "AGT-001",
       transactions: [
@@ -345,7 +361,7 @@ describe("commissionCalculatorRouter", () => {
     const { commissionCalculatorRouter } = await import(
       "./routers/commissionCalculator"
     );
-    const caller = commissionCalculatorRouter.createCaller({});
+    const caller = commissionCalculatorRouter.createCaller(mockCtx);
     const txs = Array.from({ length: 60 }, (_, i) => ({
       ref: `TX-${i}`,
       type: "cash_in",
@@ -364,7 +380,7 @@ describe("commissionCalculatorRouter", () => {
     const { commissionCalculatorRouter } = await import(
       "./routers/commissionCalculator"
     );
-    const caller = commissionCalculatorRouter.createCaller({});
+    const caller = commissionCalculatorRouter.createCaller(mockCtx);
     const result = await caller.calculate({
       agentId: "AGT-001",
       transactions: [
@@ -380,7 +396,7 @@ describe("commissionCalculatorRouter", () => {
     const { commissionCalculatorRouter } = await import(
       "./routers/commissionCalculator"
     );
-    const caller = commissionCalculatorRouter.createCaller({});
+    const caller = commissionCalculatorRouter.createCaller(mockCtx);
     const result = await caller.simulate({
       volume: 5000000,
       txCount: 300,

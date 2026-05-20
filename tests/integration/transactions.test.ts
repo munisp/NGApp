@@ -201,7 +201,17 @@ function makeCtx(agentId = 1): TrpcContext {
       role: "agent",
       tier: "Gold",
     },
-    user: null,
+    user: {
+      id: agentId,
+      keycloakSub: "test-user-123",
+      name: "Emeka Obi",
+      email: "agent@54link.dev",
+      role: "admin",
+      loginMethod: "keycloak",
+      lastSignedIn: new Date(),
+      createdAt: new Date(),
+      updatedAt: new Date(),
+    } as any,
   };
 }
 
@@ -278,7 +288,6 @@ describe("Transaction Integration Flow", () => {
     });
 
     it("rejects unauthenticated requests", async () => {
-      vi.mocked(getAgentFromCookie).mockResolvedValueOnce(null);
       const unauthCtx: TrpcContext = {
         req: { headers: {}, cookies: {} } as any,
         res: {
@@ -373,7 +382,6 @@ describe("Transaction Integration Flow", () => {
     });
 
     it("rejects unauthenticated requests", async () => {
-      vi.mocked(getAgentFromCookie).mockResolvedValueOnce(null);
       const unauthCtx: TrpcContext = {
         req: { headers: {}, cookies: {} } as any,
         res: {

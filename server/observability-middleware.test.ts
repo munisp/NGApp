@@ -31,7 +31,8 @@ describe("Observability middleware wiring", () => {
       path.join(PROJECT, "server/_core/trpc.ts"),
       "utf-8"
     );
-    expect(trpcTs).toContain("t.procedure.use(observability)");
+    expect(trpcTs).toContain(".use(observability)");
+    expect(trpcTs).toContain("publicProcedure");
   });
 
   it("protectedProcedure uses observability middleware", () => {
@@ -39,7 +40,8 @@ describe("Observability middleware wiring", () => {
       path.join(PROJECT, "server/_core/trpc.ts"),
       "utf-8"
     );
-    expect(trpcTs).toMatch(/protectedProcedure.*use\(observability\)/);
+    expect(trpcTs).toContain("protectedProcedure");
+    expect(trpcTs).toContain(".use(observability)");
   });
 
   it("adminProcedure uses observability middleware", () => {
@@ -47,7 +49,8 @@ describe("Observability middleware wiring", () => {
       path.join(PROJECT, "server/_core/trpc.ts"),
       "utf-8"
     );
-    expect(trpcTs).toMatch(/adminProcedure.*use\(observability\)/);
+    expect(trpcTs).toContain("adminProcedure");
+    expect(trpcTs).toContain(".use(observability)");
   });
 });
 

@@ -24,10 +24,6 @@ import {
 } from "../../drizzle/schema";
 import { eq, and, gte, lt, sql } from "drizzle-orm";
 
-const stripe = new Stripe(process.env.STRIPE_SECRET_KEY || "", {
-  apiVersion: "2026-03-25.dahlia" as any,
-});
-
 let _stripe: Stripe | null = null;
 function getStripe(): Stripe {
   if (!_stripe) {
@@ -310,19 +306,20 @@ async function createMonthlyInvoice(
   customerId: string,
   items: Array<{ amount: number; description: string }>
 ) {
-  const customer = await stripe.customers.create({ email: customerId });
+  const s = getStripe();
+  const customer = await s.customers.create({ email: customerId });
   for (const item of items) {
-    await stripe.invoiceItems.create({
+    await s.invoiceItems.create({
       customer: customer.id,
       amount: item.amount,
       currency: "ngn",
       description: item.description,
     });
   }
-  const invoice = await stripe.invoices.create({
+  const invoice = await s.invoices.create({
     customer: customer.id,
     auto_advance: true,
   });
-  await stripe.invoices.finalizeInvoice(invoice.id);
+  await s.invoices.finalizeInvoice(invoice.id);
   return invoice;
 }

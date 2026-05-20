@@ -22,7 +22,7 @@ import {
   writeAuditLog,
   getDb,
 } from "../db";
-import { protectedProcedure, router } from "../_core/trpc";
+import { protectedProcedure, publicProcedure, router } from "../_core/trpc";
 import { agents } from "../../drizzle/schema";
 import {
   eq,
@@ -44,7 +44,7 @@ const CBN_MIN_FLOAT = 5000; // NGN 5K minimum float
 
 export const agentRouter = router({
   // ── Login ─────────────────────────────────────────────────────────────────
-  login: protectedProcedure
+  login: publicProcedure
     .input(
       z.object({
         agentCode: z.string().min(3).max(32),

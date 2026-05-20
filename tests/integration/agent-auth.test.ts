@@ -117,7 +117,17 @@ function makeAuthCtx(): TrpcContext {
       role: "agent",
       tier: "Gold",
     },
-    user: null,
+    user: {
+      id: 1,
+      keycloakSub: "test-user-123",
+      name: "Emeka Obi",
+      email: "agent@54link.dev",
+      role: "admin",
+      loginMethod: "keycloak",
+      lastSignedIn: new Date(),
+      createdAt: new Date(),
+      updatedAt: new Date(),
+    } as any,
   };
 }
 
@@ -198,11 +208,10 @@ describe("Agent Authentication Flow", () => {
       );
     });
 
-    it("returns null when not logged in (no cookie)", async () => {
+    it("throws UNAUTHORIZED when not logged in (no cookie)", async () => {
       const caller = appRouter.createCaller(makePublicCtx());
-      // agent.me returns null gracefully (does not throw) when no cookie is present
-      const result = await caller.agent.me();
-      expect(result).toBeNull();
+      // agent.me requires auth — throws UNAUTHORIZED when no user
+      await expect(caller.agent.me()).rejects.toThrow();
     });
   });
 

@@ -145,8 +145,23 @@ function makeCaller(role: "agent" | "admin" = "agent") {
             name: "Admin",
             role: "admin",
             keycloakSub: "admin-sub",
+            email: "admin@54link.dev",
+            loginMethod: "keycloak",
+            lastSignedIn: new Date(),
+            createdAt: new Date(),
+            updatedAt: new Date(),
           } as any)
-        : null,
+        : ({
+            id: 1,
+            name: "Test Agent",
+            role: "user",
+            keycloakSub: "agent-sub",
+            email: "agent@54link.dev",
+            loginMethod: "keycloak",
+            lastSignedIn: new Date(),
+            createdAt: new Date(),
+            updatedAt: new Date(),
+          } as any),
   };
   return appRouter.createCaller(ctx);
 }
