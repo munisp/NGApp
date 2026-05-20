@@ -91,6 +91,10 @@ class Handler(BaseHTTPRequestHandler):
         self.send_header("Referrer-Policy", "strict-origin-when-cross-origin")
         self.end_headers()
         self.wfile.write(json.dumps(data).encode())
+    def get_tenant_id(self):
+        """Extract tenant_id from gateway-injected header."""
+        return self.headers.get("X-Tenant-Id", "platform")
+
     def check_jwt(self):
         path = self.path.split("?")[0]
         if path in ("/healthz", "/readyz", "/livez", "/metrics"): return True
@@ -131,7 +135,7 @@ class Handler(BaseHTTPRequestHandler):
             if not _rl_allow():
                 inc_errors(); self.respond(429, {"error": "rate_limit_exceeded"}); return
             result = db_insert(SERVICE_NAME, body)
-            cache_set("ask_last", json.dumps(body))
+            cache_set(self.get_tenant_id() + ":"+ask_last", json.dumps(body))
             gl_url = os.environ.get("GL_ENGINE_URL", "http://gl-engine-go:8080")
             call_service("POST", f"{gl_url}/v1/notify", {"source": SERVICE_NAME, "action": "ask"})
             self.respond(200, {"service": SERVICE_NAME, "endpoint": "ask", "result": body})
@@ -140,7 +144,7 @@ class Handler(BaseHTTPRequestHandler):
             if not _rl_allow():
                 inc_errors(); self.respond(429, {"error": "rate_limit_exceeded"}); return
             result = db_insert(SERVICE_NAME, body)
-            cache_set("sparql_last", json.dumps(body))
+            cache_set(self.get_tenant_id() + ":"+sparql_last", json.dumps(body))
             gl_url = os.environ.get("GL_ENGINE_URL", "http://gl-engine-go:8080")
             call_service("POST", f"{gl_url}/v1/notify", {"source": SERVICE_NAME, "action": "sparql"})
             self.respond(200, {"service": SERVICE_NAME, "endpoint": "sparql", "result": body})
@@ -149,12 +153,12 @@ class Handler(BaseHTTPRequestHandler):
             if not _rl_allow():
                 inc_errors(); self.respond(429, {"error": "rate_limit_exceeded"}); return
             result = db_insert(SERVICE_NAME, body)
-            cache_set("last_post", json.dumps(body))
+            cache_set(self.get_tenant_id() + ":"+last_post", json.dumps(body))
             self.respond(201, {"created": True})
 
         else:
             result = db_insert(SERVICE_NAME, body)
-            cache_set("last_post", json.dumps(body))
+            cache_set(self.get_tenant_id() + ":"+last_post", json.dumps(body))
             self.respond(201, {"created": True})
 
 if __name__ == "__main__":

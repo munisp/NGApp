@@ -96,6 +96,8 @@ func getByIdHandler(w http.ResponseWriter, r *http.Request) {
 }
 
 func createHandler(w http.ResponseWriter, r *http.Request) {
+	tenantID := r.Header.Get("X-Tenant-Id")
+	if tenantID == "" { tenantID = "platform" }
 	_ = vaLimitCheck(0.0, 1000000.0)
 	var body map[string]interface{}
 	json.NewDecoder(r.Body).Decode(&body)
@@ -120,7 +122,7 @@ func createHandler(w http.ResponseWriter, r *http.Request) {
 		log.Printf("virtual-accounts-go: kyc_check result: %v", result)
 	}
 
-	cacheSet("virtual_accounts_list", "", 1) // invalidate list cache
+	cacheSet(tenantID+":"+"virtual_accounts_list", "", 1) // invalidate list cache
 	jsonResp(w, 201, map[string]interface{}{"created": true, "id": id, "source": "database"})
 		return
 	}

@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import '../services/api_service.dart';
+import '../services/tenant_service.dart';
 
 class AiAgentHubScreen extends StatefulWidget {
   const AiAgentHubScreen({Key? key}) : super(key: key);
@@ -84,22 +85,37 @@ class _AiAgentHubScreenState extends State<AiAgentHubScreen> {
           itemCount: agents.length,
           itemBuilder: (ctx, i) {
             final agent = agents[i];
+            final tenant = TenantService();
+            final isAllowed = tenant.isAgentAllowed(agent['id']);
             return InkWell(
-              onTap: () => setState(() => selectedAgent = agent['id']),
-              child: Card(
-                elevation: 2,
-                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-                child: Padding(
-                  padding: const EdgeInsets.all(12),
-                  child: Column(mainAxisAlignment: MainAxisAlignment.center, children: [
-                    CircleAvatar(radius: 24, backgroundColor: agent['color'], child: Icon(agent['icon'], color: Colors.white, size: 24)),
-                    const SizedBox(height: 8),
-                    Text(agent['name'], textAlign: TextAlign.center, style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 13)),
-                    const SizedBox(height: 4),
-                    Text(agent['desc'], textAlign: TextAlign.center, style: const TextStyle(fontSize: 10, color: Colors.grey), maxLines: 2, overflow: TextOverflow.ellipsis),
-                  ]),
+              onTap: isAllowed
+                  ? () => setState(() => selectedAgent = agent['id'])
+                  : () => ScaffoldMessenger.of(context).showSnackBar(
+                      SnackBar(content: Text('${agent['name']} is not available on your ${tenant.tier} plan. Contact your administrator to upgrade.'), backgroundColor: Colors.orange)),
+              child: Stack(children: [
+                Card(
+                  elevation: 2,
+                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                  child: Opacity(
+                    opacity: isAllowed ? 1.0 : 0.45,
+                    child: Padding(
+                      padding: const EdgeInsets.all(12),
+                      child: Column(mainAxisAlignment: MainAxisAlignment.center, children: [
+                        CircleAvatar(radius: 24, backgroundColor: agent['color'], child: Icon(agent['icon'], color: Colors.white, size: 24)),
+                        const SizedBox(height: 8),
+                        Text(agent['name'], textAlign: TextAlign.center, style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 13)),
+                        const SizedBox(height: 4),
+                        Text(agent['desc'], textAlign: TextAlign.center, style: const TextStyle(fontSize: 10, color: Colors.grey), maxLines: 2, overflow: TextOverflow.ellipsis),
+                      ]),
+                    ),
+                  ),
                 ),
-              ),
+                if (!isAllowed) Positioned(top: 8, right: 8, child: Container(
+                  padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+                  decoration: BoxDecoration(color: Colors.orange, borderRadius: BorderRadius.circular(8)),
+                  child: const Text('Upgrade', style: TextStyle(color: Colors.white, fontSize: 9, fontWeight: FontWeight.bold)),
+                )),
+              ]),
             );
           },
         ),

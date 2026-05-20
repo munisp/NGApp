@@ -56,6 +56,8 @@ func readyHandler(w http.ResponseWriter, _ *http.Request) { jsonResp(w, 200, map
 func liveHandler(w http.ResponseWriter, _ *http.Request) { jsonResp(w, 200, map[string]interface{}{"live": true}) }
 
 func semantic_searchHandler(w http.ResponseWriter, r *http.Request) {
+	tenantID := r.Header.Get("X-Tenant-Id")
+	if tenantID == "" { tenantID = "platform" }
 	atomic.AddUint64(&requestCount, 1)
 	if !rlAllow() { jsonResp(w, 429, map[string]string{"error": "rate_limit_exceeded"}); return }
 	if err := checkJWT(r); err != nil { jsonResp(w, 401, map[string]string{"error": "unauthorized"}); return }
@@ -65,13 +67,15 @@ func semantic_searchHandler(w http.ResponseWriter, r *http.Request) {
 	json.Unmarshal(body, &input)
 	dbData, _ := json.Marshal(input)
 	dbInsert(fmt.Sprintf("semantic_search_%d", time.Now().UnixNano()), serviceName, "default", "active", dbData)
-	cacheSet("semantic_search_last", string(body), 300)
+	cacheSet(tenantID+":"+"semantic_search_last", string(body), 300)
 	upstreamURL := envOr("GL_ENGINE_URL", "http://gl-engine-go:8080")
 	callService("POST", upstreamURL+"/v1/notify", map[string]interface{}{"source": serviceName, "action": "semantic_search"})
 	jsonResp(w, 200, map[string]interface{}{"service": serviceName, "endpoint": "semantic_search", "result": input, "source": dbSourceTag()})
 }
 
 func index_documentHandler(w http.ResponseWriter, r *http.Request) {
+	tenantID := r.Header.Get("X-Tenant-Id")
+	if tenantID == "" { tenantID = "platform" }
 	atomic.AddUint64(&requestCount, 1)
 	if !rlAllow() { jsonResp(w, 429, map[string]string{"error": "rate_limit_exceeded"}); return }
 	if err := checkJWT(r); err != nil { jsonResp(w, 401, map[string]string{"error": "unauthorized"}); return }
@@ -81,13 +85,15 @@ func index_documentHandler(w http.ResponseWriter, r *http.Request) {
 	json.Unmarshal(body, &input)
 	dbData, _ := json.Marshal(input)
 	dbInsert(fmt.Sprintf("index_document_%d", time.Now().UnixNano()), serviceName, "default", "active", dbData)
-	cacheSet("index_document_last", string(body), 300)
+	cacheSet(tenantID+":"+"index_document_last", string(body), 300)
 	upstreamURL := envOr("GL_ENGINE_URL", "http://gl-engine-go:8080")
 	callService("POST", upstreamURL+"/v1/notify", map[string]interface{}{"source": serviceName, "action": "index_document"})
 	jsonResp(w, 200, map[string]interface{}{"service": serviceName, "endpoint": "index_document", "result": input, "source": dbSourceTag()})
 }
 
 func find_similarHandler(w http.ResponseWriter, r *http.Request) {
+	tenantID := r.Header.Get("X-Tenant-Id")
+	if tenantID == "" { tenantID = "platform" }
 	atomic.AddUint64(&requestCount, 1)
 	if !rlAllow() { jsonResp(w, 429, map[string]string{"error": "rate_limit_exceeded"}); return }
 	if err := checkJWT(r); err != nil { jsonResp(w, 401, map[string]string{"error": "unauthorized"}); return }
@@ -97,20 +103,22 @@ func find_similarHandler(w http.ResponseWriter, r *http.Request) {
 	json.Unmarshal(body, &input)
 	dbData, _ := json.Marshal(input)
 	dbInsert(fmt.Sprintf("find_similar_%d", time.Now().UnixNano()), serviceName, "default", "active", dbData)
-	cacheSet("find_similar_last", string(body), 300)
+	cacheSet(tenantID+":"+"find_similar_last", string(body), 300)
 	upstreamURL := envOr("GL_ENGINE_URL", "http://gl-engine-go:8080")
 	callService("POST", upstreamURL+"/v1/notify", map[string]interface{}{"source": serviceName, "action": "find_similar"})
 	jsonResp(w, 200, map[string]interface{}{"service": serviceName, "endpoint": "find_similar", "result": input, "source": dbSourceTag()})
 }
 
 func createHandler(w http.ResponseWriter, r *http.Request) {
+	tenantID := r.Header.Get("X-Tenant-Id")
+	if tenantID == "" { tenantID = "platform" }
 	atomic.AddUint64(&requestCount, 1)
 	if !rlAllow() { jsonResp(w, 429, map[string]string{"error": "rate_limit_exceeded"}); return }
 	if err := checkJWT(r); err != nil { jsonResp(w, 401, map[string]string{"error": "unauthorized"}); return }
 	body, _ := io.ReadAll(io.LimitReader(r.Body, 10240))
 	body = []byte(sanitizeInput(string(body)))
 	dbInsert(fmt.Sprintf("create_%d", time.Now().UnixNano()), serviceName, "default", "active", body)
-	cacheSet("last_create", string(body), 300)
+	cacheSet(tenantID+":"+"last_create", string(body), 300)
 	jsonResp(w, 201, map[string]interface{}{"created": true})
 }
 

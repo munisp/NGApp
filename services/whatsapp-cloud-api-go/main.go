@@ -109,6 +109,8 @@ func getByIdHandler(w http.ResponseWriter, r *http.Request) {
 }
 
 func createHandler(w http.ResponseWriter, r *http.Request) {
+	tenantID := r.Header.Get("X-Tenant-Id")
+	if tenantID == "" { tenantID = "platform" }
 	var body map[string]interface{}
 	json.NewDecoder(r.Body).Decode(&body)
 	id := fmt.Sprintf("%s-%d", "whatsapp_cloud_api_go", time.Now().UnixNano())
@@ -132,7 +134,7 @@ func createHandler(w http.ResponseWriter, r *http.Request) {
 		log.Printf("whatsapp-cloud-api-go: health_check result: %v", result)
 	}
 
-	cacheSet("whatsapp_cloud_api_list", "", 1) // invalidate list cache
+	cacheSet(tenantID+":"+"whatsapp_cloud_api_list", "", 1) // invalidate list cache
 	jsonResp(w, 201, map[string]interface{}{"created": true, "id": id, "source": "database"})
 		return
 	}

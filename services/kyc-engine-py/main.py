@@ -397,7 +397,7 @@ class Handler(BaseHTTPRequestHandler):
             _validate_bvn_result = validate_bvn(body.get("data", {}))
             _determine_tier_result = determine_tier(body.get("data", {}))
             _calculate_risk_result = calculate_risk(body.get("data", {}))
-            cache_set("last_post", str(body))
+            cache_set(self.get_tenant_id() + ":"+last_post", str(body))
             self.respond(201, {"created": True, "data": result})
         else:
             self.respond(404, {"error": "not_found", "path": path})

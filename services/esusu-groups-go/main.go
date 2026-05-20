@@ -97,6 +97,8 @@ func getByIdHandler(w http.ResponseWriter, r *http.Request) {
 }
 
 func createHandler(w http.ResponseWriter, r *http.Request) {
+	tenantID := r.Header.Get("X-Tenant-Id")
+	if tenantID == "" { tenantID = "platform" }
 	_ = defaultPenalty(1000.0, 0.05)
 	_ = payoutOrder(10, 1)
 	var body map[string]interface{}
@@ -122,7 +124,7 @@ func createHandler(w http.ResponseWriter, r *http.Request) {
 		log.Printf("esusu-groups-go: health_check result: %v", result)
 	}
 
-	cacheSet("esusu_groups_list", "", 1) // invalidate list cache
+	cacheSet(tenantID+":"+"esusu_groups_list", "", 1) // invalidate list cache
 	jsonResp(w, 201, map[string]interface{}{"created": true, "id": id, "source": "database"})
 		return
 	}

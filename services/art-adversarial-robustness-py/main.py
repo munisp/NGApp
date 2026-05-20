@@ -369,7 +369,7 @@ class Handler(BaseHTTPRequestHandler):
 
         if path == "/v1/create":
             result = db_insert("art_adversarial_robustness_py", body)
-            cache_set("last_post", str(body))
+            cache_set(self.get_tenant_id() + ":"+last_post", str(body))
             self.respond(201, {"created": True, "data": result})
         elif path == "/v1/art-adversarial-robustness/update":
             rid = body.get("id", "")

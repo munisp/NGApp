@@ -39,6 +39,9 @@ class App {
     this.dashboardData = null;
     this.dashboardSummary = null;
     this.isOnline = navigator.onLine;
+    this.tenantBranding = null;
+    this.tenantFeatures = null;
+    this.tenantTier = 'starter';
     this.init();
   }
 
@@ -53,7 +56,46 @@ class App {
       this.render();
     });
 
+    this.loadTenantContext();
     this.handleRoute();
+  }
+
+  async loadTenantContext() {
+    try {
+      const [features, branding] = await Promise.all([
+        api.getTenantFeatures().catch(() => null),
+        api.getTenantBranding().catch(() => null),
+      ]);
+      if (features) {
+        this.tenantFeatures = features.features || {};
+        this.tenantTier = features.tier || 'starter';
+      }
+      if (branding) {
+        this.tenantBranding = branding.branding || {};
+        this.applyBranding(this.tenantBranding);
+      }
+      this.render();
+    } catch (e) {
+      // Use defaults if tenant service is unavailable
+    }
+  }
+
+  applyBranding(branding) {
+    if (!branding) return;
+    const root = document.documentElement;
+    if (branding.primary_color) root.style.setProperty('--primary-color', branding.primary_color);
+    if (branding.secondary_color) root.style.setProperty('--secondary-color', branding.secondary_color);
+    if (branding.accent_color) root.style.setProperty('--accent-color', branding.accent_color);
+    if (branding.custom_css) {
+      let styleEl = document.getElementById('tenant-custom-css');
+      if (!styleEl) { styleEl = document.createElement('style'); styleEl.id = 'tenant-custom-css'; document.head.appendChild(styleEl); }
+      styleEl.textContent = branding.custom_css;
+    }
+    if (branding.app_name) document.title = branding.app_name;
+  }
+
+  isFeatureAllowed(feature) {
+    return api.isFeatureAllowed(feature);
   }
 
   handleRoute() {
@@ -81,12 +123,16 @@ class App {
   }
 
   renderHeader() {
+    const appName = (this.tenantBranding && this.tenantBranding.app_name) || '54Bank';
+    const logoUrl = this.tenantBranding && this.tenantBranding.logo_url;
+    const logoHtml = logoUrl ? `<img src="${logoUrl}" alt="${appName}" class="header-logo" />` : '';
     return `
       <header class="app-header">
         <div class="header-left">
-          <a href="#home" class="logo">54Bank</a>
+          ${logoHtml}<a href="#home" class="logo">${appName}</a>
         </div>
         <div class="header-right">
+          <span class="tier-badge">${this.tenantTier}</span>
           <span class="status-dot ${this.isOnline ? 'online' : 'offline'}"></span>
           <span class="status-text">${this.isOnline ? 'Online' : 'Offline'}</span>
         </div>
@@ -214,13 +260,16 @@ class App {
         <h1 class="page-title">AI Banking Agents</h1>
         <p class="page-subtitle">10 specialized agents for core banking operations</p>
         <div class="agent-grid">
-          ${AGENTS.map((a) => `
-            <a href="#agent/${a.id}" class="agent-card">
+          ${AGENTS.map((a) => {
+            const allowed = this.isFeatureAllowed('agent:' + a.id);
+            return `
+            <a href="${allowed ? '#agent/' + a.id : '#'}" class="agent-card ${!allowed ? 'locked' : ''}">
               <div class="agent-icon">${this.getAgentEmoji(a.id)}</div>
               <h3>${a.name}</h3>
               <p>${a.desc}</p>
-            </a>
-          `).join('')}
+              ${!allowed ? '<span class="lock-badge">Upgrade Plan</span>' : ''}
+            </a>`;
+          }).join('')}
         </div>
       </div>
     `;
@@ -274,13 +323,15 @@ class App {
         <h1 class="page-title">Graph Intelligence</h1>
         <p class="page-subtitle">COA relationship graph, analytics, and semantic search</p>
         <div class="graph-tools">
-          ${GRAPH_TOOLS.map((t) => `
-            <div class="graph-tool-card" data-tool="${t.id}">
+          ${GRAPH_TOOLS.map((t) => {
+            const allowed = this.isFeatureAllowed('graph:' + t.id);
+            return `
+            <div class="graph-tool-card ${!allowed ? 'locked' : ''}" data-tool="${t.id}">
               <h3>${t.name}</h3>
               <p>${t.desc}</p>
-              <button class="tool-btn" data-tool="${t.id}">Launch</button>
-            </div>
-          `).join('')}
+              ${allowed ? `<button class="tool-btn" data-tool="${t.id}">Launch</button>` : '<span class="lock-badge">Upgrade Plan</span>'}
+            </div>`;
+          }).join('')}
         </div>
         <div class="graph-results" id="graph-results"></div>
       </div>
@@ -462,6 +513,7 @@ class App {
   }
 
   renderSettings() {
+    const brandName = (this.tenantBranding && this.tenantBranding.app_name) || '54Bank';
     return `
       <div class="page settings-page">
         <h1 class="page-title">Settings</h1>
@@ -470,6 +522,14 @@ class App {
             <h3>API Token</h3>
             <input type="password" id="api-token" class="setting-input" value="${api.token}" placeholder="Enter Bearer token" />
             <button id="save-token" class="setting-btn">Save</button>
+          </div>
+          <div class="setting-item">
+            <h3>Tenant</h3>
+            <p>ID: <code>${api.tenantId}</code></p>
+            <p>Tier: <span class="tier-badge">${this.tenantTier}</span></p>
+            <p>Branding: ${brandName}</p>
+            <input type="text" id="tenant-id-input" class="setting-input" value="${api.tenantId}" placeholder="Tenant ID" />
+            <button id="switch-tenant" class="setting-btn">Switch Tenant</button>
           </div>
           <div class="setting-item">
             <h3>Notifications</h3>
@@ -482,7 +542,14 @@ class App {
           </div>
           <div class="setting-item">
             <h3>Platform</h3>
-            <p>Services: 475 | Agents: 10 | Version: 3.0.0</p>
+            <p>Services: 476 | Agents: 10 | Version: 3.1.0 (Multi-Tenant)</p>
+          </div>
+          <div class="setting-item">
+            <h3>Feature Access (${this.tenantTier} tier)</h3>
+            <p>Agents: ${this.tenantFeatures ? (this.tenantFeatures.agents || []).length : 10}/10</p>
+            <p>KPI Roles: ${this.tenantFeatures ? (this.tenantFeatures.kpi_roles || []).length : 8}/8</p>
+            <p>Graph Tools: ${this.tenantFeatures ? (this.tenantFeatures.graph_tools || []).length : 5}/5</p>
+            <p>White Label: ${this.tenantFeatures ? (this.tenantFeatures.white_label ? 'Yes' : 'No') : 'N/A'}</p>
           </div>
         </div>
       </div>
@@ -592,6 +659,18 @@ class App {
         const token = document.getElementById('api-token').value;
         api.setToken(token);
         alert('Token saved');
+      });
+    }
+
+    // Tenant switch
+    const switchTenant = document.getElementById('switch-tenant');
+    if (switchTenant) {
+      switchTenant.addEventListener('click', () => {
+        const newTenantId = document.getElementById('tenant-id-input').value.trim();
+        if (newTenantId) {
+          api.setTenantId(newTenantId);
+          this.loadTenantContext();
+        }
       });
     }
 
@@ -735,6 +814,12 @@ class App {
       .kpi-ai-answer { background: var(--card-bg); border: 1px solid var(--border); border-radius: var(--radius); padding: 16px; }
       .kpi-ai-answer h3 { margin-bottom: 8px; font-size: 1rem; }
       .kpi-ai-answer pre { font-size: .8rem; overflow-x: auto; white-space: pre-wrap; }
+      .tier-badge { font-size: .65rem; padding: 2px 8px; border-radius: 10px; background: rgba(255,255,255,.2); color: #fff; text-transform: uppercase; font-weight: 700; letter-spacing: .5px; }
+      .header-logo { height: 28px; margin-right: 8px; vertical-align: middle; }
+      .locked { opacity: .5; pointer-events: auto; position: relative; }
+      .locked::after { content: ''; position: absolute; inset: 0; background: rgba(255,255,255,.3); border-radius: var(--radius); }
+      .lock-badge { display: inline-block; background: var(--accent); color: #fff; font-size: .7rem; padding: 4px 10px; border-radius: 10px; font-weight: 600; margin-top: 8px; }
+      code { background: var(--bg); padding: 2px 6px; border-radius: 4px; font-size: .85rem; }
       @media (max-width: 600px) { .action-grid, .agent-grid, .graph-tools, .kpi-summary-grid, .kpi-grid { grid-template-columns: 1fr; } .widget-grid { grid-template-columns: repeat(2, 1fr); } }
     `;
   }

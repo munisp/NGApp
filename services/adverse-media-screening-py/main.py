@@ -370,7 +370,7 @@ class Handler(BaseHTTPRequestHandler):
 
         if path == "/v1/create":
             result = db_insert("adverse_media_screening_py", body)
-            cache_set("last_post", str(body))
+            cache_set(self.get_tenant_id() + ":"+last_post", str(body))
             self.respond(201, {"created": True, "data": result})
         elif path == "/v1/adverse-media-screening/update":
             rid = body.get("id", "")

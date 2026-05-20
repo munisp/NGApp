@@ -153,6 +153,8 @@ func dbInsert(id, service, typ, status string, data []byte) error {
 }
 
 func createHandler(w http.ResponseWriter, r *http.Request) {
+	tenantID := r.Header.Get("X-Tenant-Id")
+	if tenantID == "" { tenantID = "platform" }
 	_ = nowISO()
 	_ = lcStatus(true, false, false)
 	var body map[string]interface{}
@@ -173,7 +175,7 @@ func createHandler(w http.ResponseWriter, r *http.Request) {
 		log.Printf("trade-finance-go: aml_screening ok: %v", result)
 	}
 	
-	cacheSet("trade_finance_list", "", 1) // invalidate list cache
+	cacheSet(tenantID+":"+"trade_finance_list", "", 1) // invalidate list cache
 	jsonResp(w, 201, map[string]interface{}{"created": true, "id": id, "data": body, "source": dbSourceTag()})
 }
 func lcFee(amount float64, tenor int) float64 {

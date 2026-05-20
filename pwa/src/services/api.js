@@ -1,10 +1,18 @@
-// 54Bank API Client — handles auth, retries, offline queuing
+// 54Bank API Client — handles auth, retries, offline queuing, multi-tenant context
 const API_BASE = window.location.origin + '/api';
 
 class BankAPI {
   constructor() {
     this.token = localStorage.getItem('54bank_token') || '';
+    this.tenantId = localStorage.getItem('54bank_tenant_id') || 'platform';
+    this.tenantFeatures = null;
+    this.tenantBranding = null;
     this.offlineQueue = [];
+  }
+
+  setTenantId(tenantId) {
+    this.tenantId = tenantId;
+    localStorage.setItem('54bank_tenant_id', tenantId);
   }
 
   setToken(token) {
@@ -16,6 +24,7 @@ class BankAPI {
     const headers = {
       'Content-Type': 'application/json',
       'X-Trace-Id': crypto.randomUUID(),
+      'X-Tenant-Id': this.tenantId,
     };
     if (this.token) headers['Authorization'] = `Bearer ${this.token}`;
 
@@ -112,6 +121,33 @@ class BankAPI {
   async askDashboard(question, role) { return this.request('POST', '/dashboard/ask', { query: question, role }); }
   async exportDashboard(role, format) { return this.request('POST', '/dashboard/export', { role, format }); }
   async refreshDashboard() { return this.request('GET', '/dashboard/refresh'); }
+
+  // Tenant management
+  async getTenantFeatures() {
+    const data = await this.request('GET', '/tenant/v1/tenant/features');
+    this.tenantFeatures = data;
+    return data;
+  }
+  async getTenantBranding() {
+    const data = await this.request('GET', '/tenant/v1/tenant/branding');
+    this.tenantBranding = data;
+    return data;
+  }
+  async getTenantUsage() { return this.request('GET', '/tenant/v1/tenant/usage'); }
+  async getTiers() { return this.request('GET', '/tenant/v1/tiers'); }
+  async listTenants() { return this.request('GET', '/tenant/v1/tenants'); }
+  async createTenant(data) { return this.request('POST', '/tenant/v1/tenants', data); }
+  async updateTenantTier(tenantId, tier) { return this.request('POST', `/tenant/v1/tenants/${tenantId}/tier`, { tier }); }
+  async updateTenantBranding(tenantId, branding) { return this.request('POST', `/tenant/v1/tenants/${tenantId}/branding`, branding); }
+
+  isFeatureAllowed(feature) {
+    if (!this.tenantFeatures) return true;
+    const f = this.tenantFeatures.features || {};
+    if (feature.startsWith('agent:')) return (f.agents || []).includes(feature.slice(6));
+    if (feature.startsWith('kpi:')) return (f.kpi_roles || []).includes(feature.slice(4));
+    if (feature.startsWith('graph:')) return (f.graph_tools || []).includes(feature.slice(6));
+    return (f.features || []).includes(feature);
+  }
 
   // Core banking
   async getAccounts() { return this.request('GET', '/core-banking/list'); }

@@ -129,6 +129,8 @@ func dbInsert(id, service, typ, status string, data []byte) error {
 }
 
 func createHandler(w http.ResponseWriter, r *http.Request) {
+	tenantID := r.Header.Get("X-Tenant-Id")
+	if tenantID == "" { tenantID = "platform" }
 	_ = settlementBatch([]float64{})
 	var body map[string]interface{}
 	json.NewDecoder(r.Body).Decode(&body)
@@ -148,7 +150,7 @@ func createHandler(w http.ResponseWriter, r *http.Request) {
 		log.Printf("payments-hub-go: aml_screening ok: %v", result)
 	}
 	
-	cacheSet("payments_hub_list", "", 1) // invalidate list cache
+	cacheSet(tenantID+":"+"payments_hub_list", "", 1) // invalidate list cache
 	jsonResp(w, 201, map[string]interface{}{"created": true, "id": id, "data": body, "source": dbSourceTag()})
 }
 func routePayment(amount float64, channel string) PaymentRoute {

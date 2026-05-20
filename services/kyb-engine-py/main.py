@@ -371,7 +371,7 @@ class Handler(BaseHTTPRequestHandler):
             _validate_tin_result = validate_tin(body.get("data", {}))
             _validate_rc_result = validate_rc(body.get("data", {}))
             _calculate_business_risk_result = calculate_business_risk(body.get("data", {}))
-            cache_set("last_post", str(body))
+            cache_set(self.get_tenant_id() + ":"+last_post", str(body))
             self.respond(201, {"created": True, "data": result})
         else:
             self.respond(404, {"error": "not_found", "path": path})

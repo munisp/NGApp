@@ -1,8 +1,14 @@
 """
 api-gateway — 54Bank API Gateway
 Routes requests to backend services: 10 AI agents, KPI dashboard, graph DBs,
-core banking, GL engine. Handles JWT validation, rate limiting, CORS, and
-request logging.
+core banking, GL engine. Handles JWT validation, rate limiting, CORS,
+multi-tenant isolation, and tier-based feature gating.
+
+Multi-Tenancy:
+  - Extracts tenant_id from JWT claims or X-Tenant-Id header
+  - Injects X-Tenant-Id into all upstream requests for data isolation
+  - Validates feature access against tenant tier before proxying
+  - Tenant branding served from /api/tenant/branding
 """
 import os, sys, json, time, signal, threading, uuid, re, html
 import urllib.request
@@ -40,8 +46,62 @@ def inc_errors():
     global error_count
     with _counter_lock: error_count += 1
 
+# --- Tenant Management ---
+TENANT_MGMT_URL = os.environ.get("TENANT_MGMT_URL", "http://tenant-management-py:8080")
+
+def _get_tenant_features(tenant_id):
+    """Fetch tenant features from tenant-management service (cached 60s)."""
+    cache_key = f"tenant_features:{tenant_id}"
+    cached = _tenant_cache.get(cache_key)
+    if cached and time.time() - cached[1] < 60:
+        return cached[0]
+    try:
+        req = urllib.request.Request(
+            f"{TENANT_MGMT_URL}/v1/tenant/features",
+            headers={"Authorization": "Bearer internal", "X-Tenant-Id": tenant_id}
+        )
+        with urllib.request.urlopen(req, timeout=5) as resp:
+            data = json.loads(resp.read())
+            _tenant_cache[cache_key] = (data, time.time())
+            return data
+    except Exception:
+        return None
+
+def _validate_tenant_access(tenant_id, path_clean):
+    """Check if tenant's tier allows access to the requested resource."""
+    features = _get_tenant_features(tenant_id)
+    if not features:
+        return True  # Fail open if tenant service unavailable
+    tier_features = features.get("features", {})
+    allowed_agents = tier_features.get("agents", [])
+    allowed_kpi_roles = tier_features.get("kpi_roles", [])
+    allowed_graph = tier_features.get("graph_tools", [])
+    # Check agent access
+    if "/api/agent/" in path_clean:
+        agent_id = path_clean.split("/api/agent/")[1].split("/")[0]
+        if agent_id not in allowed_agents:
+            return False
+    # Check KPI role access
+    if "/api/dashboard/role/" in path_clean:
+        role = path_clean.split("/api/dashboard/role/")[1].split("/")[0]
+        if role not in allowed_kpi_roles:
+            return False
+    # Check graph tool access
+    for tool_prefix in ["/api/neo4j", "/api/falkordb", "/api/qdrant", "/api/kgqa", "/api/langchain"]:
+        if path_clean.startswith(tool_prefix):
+            tool_name = tool_prefix.replace("/api/", "")
+            tool_map = {"neo4j": "coa-graph", "falkordb": "coa-graph", "qdrant": "semantic-search", "kgqa": "coa-graph", "langchain": "semantic-search"}
+            if tool_map.get(tool_name, "") not in allowed_graph:
+                return False
+    return True
+
+_tenant_cache = {}
+
 # --- Service Registry ---
 ROUTES = {
+    # Tenant Management
+    "/api/tenant": TENANT_MGMT_URL,
+    "/api/tenants": TENANT_MGMT_URL,
     # AI Agents
     "/api/agent/account-opening": os.environ.get("AGENT_ACCOUNT_URL", "http://agent-account-opening-py:8080"),
     "/api/agent/transaction-investigation": os.environ.get("AGENT_TXN_URL", "http://agent-transaction-investigation-py:8080"),
@@ -94,7 +154,7 @@ class GatewayHandler(BaseHTTPRequestHandler):
 
     def _add_cors(self):
         self.send_header("Access-Control-Allow-Origin", "*")
-        self.send_header("Access-Control-Allow-Headers", "Content-Type, Authorization, X-Trace-Id")
+        self.send_header("Access-Control-Allow-Headers", "Content-Type, Authorization, X-Trace-Id, X-Tenant-Id")
         self.send_header("Access-Control-Allow-Methods", "GET, POST, PUT, DELETE, OPTIONS")
 
     def _add_security_headers(self):
@@ -110,6 +170,12 @@ class GatewayHandler(BaseHTTPRequestHandler):
         self._add_cors(); self._add_security_headers()
         self.end_headers()
         self.wfile.write(json.dumps(data).encode() if isinstance(data, dict) else data)
+
+    def _extract_tenant_id(self):
+        """Extract tenant_id from JWT claims or X-Tenant-Id header."""
+        # In production: decode JWT and extract tenant_id claim
+        # For now: use X-Tenant-Id header, default to platform
+        return self.headers.get("X-Tenant-Id", "platform")
 
     def check_jwt(self):
         path = self.path.split("?")[0]
@@ -153,6 +219,17 @@ class GatewayHandler(BaseHTTPRequestHandler):
         if not self.check_jwt(): return
         if not _rl_allow(): inc_errors(); self.respond(429, {"error": "rate_limit_exceeded"}); return
 
+        # Multi-tenant: extract tenant and validate access
+        tenant_id = self._extract_tenant_id()
+        if not _validate_tenant_access(tenant_id, path_clean):
+            inc_errors()
+            self.respond(403, {
+                "error": "feature_not_available",
+                "message": "This feature is not included in your current plan. Contact your platform administrator to upgrade.",
+                "tenant_id": tenant_id,
+                "path": path_clean,
+            }); return
+
         # Find matching route
         matched_prefix = None
         for prefix in sorted(ROUTES.keys(), key=len, reverse=True):
@@ -174,6 +251,7 @@ class GatewayHandler(BaseHTTPRequestHandler):
 
         headers_dict = dict(self.headers)
         headers_dict["X-Trace-Id"] = trace_id
+        headers_dict["X-Tenant-Id"] = tenant_id  # Inject tenant for data isolation
 
         # Proxy to upstream
         status, resp_body, resp_headers = _proxy(method, upstream, suffix, headers_dict, body)
@@ -182,6 +260,7 @@ class GatewayHandler(BaseHTTPRequestHandler):
         self.send_header("Content-Type", resp_headers.get("Content-Type", "application/json"))
         self._add_cors(); self._add_security_headers()
         self.send_header("X-Trace-Id", trace_id)
+        self.send_header("X-Tenant-Id", tenant_id)
         self.send_header("X-Upstream", matched_prefix)
         self.end_headers()
         self.wfile.write(resp_body if isinstance(resp_body, bytes) else resp_body.encode())

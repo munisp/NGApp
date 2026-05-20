@@ -56,6 +56,8 @@ func readyHandler(w http.ResponseWriter, _ *http.Request) { jsonResp(w, 200, map
 func liveHandler(w http.ResponseWriter, _ *http.Request) { jsonResp(w, 200, map[string]interface{}{"live": true}) }
 
 func agent_queryHandler(w http.ResponseWriter, r *http.Request) {
+	tenantID := r.Header.Get("X-Tenant-Id")
+	if tenantID == "" { tenantID = "platform" }
 	atomic.AddUint64(&requestCount, 1)
 	if !rlAllow() { jsonResp(w, 429, map[string]string{"error": "rate_limit_exceeded"}); return }
 	if err := checkJWT(r); err != nil { jsonResp(w, 401, map[string]string{"error": "unauthorized"}); return }
@@ -65,22 +67,26 @@ func agent_queryHandler(w http.ResponseWriter, r *http.Request) {
 	json.Unmarshal(body, &input)
 	dbData, _ := json.Marshal(input)
 	dbInsert(fmt.Sprintf("agent_query_%d", time.Now().UnixNano()), serviceName, "default", "active", dbData)
-	cacheSet("agent_query_last", string(body), 300)
+	cacheSet(tenantID+":"+"agent_query_last", string(body), 300)
 	upstreamURL := envOr("GL_ENGINE_URL", "http://gl-engine-go:8080")
 	callService("POST", upstreamURL+"/v1/notify", map[string]interface{}{"source": serviceName, "action": "agent_query"})
 	jsonResp(w, 200, map[string]interface{}{"service": serviceName, "endpoint": "agent_query", "result": input, "source": dbSourceTag()})
 }
 
 func list_toolsHandler(w http.ResponseWriter, r *http.Request) {
+	tenantID := r.Header.Get("X-Tenant-Id")
+	if tenantID == "" { tenantID = "platform" }
 	atomic.AddUint64(&requestCount, 1)
 	if !rlAllow() { jsonResp(w, 429, map[string]string{"error": "rate_limit_exceeded"}); return }
 	if err := checkJWT(r); err != nil { jsonResp(w, 401, map[string]string{"error": "unauthorized"}); return }
-	cached, _ := cacheGet("list_tools")
+	cached, _ := cacheGet(tenantID+":"+"list_tools")
 	_ = cached
 	jsonResp(w, 200, map[string]interface{}{"service": serviceName, "endpoint": "list_tools", "items": []interface{}{}, "source": dbSourceTag()})
 }
 
 func run_chainHandler(w http.ResponseWriter, r *http.Request) {
+	tenantID := r.Header.Get("X-Tenant-Id")
+	if tenantID == "" { tenantID = "platform" }
 	atomic.AddUint64(&requestCount, 1)
 	if !rlAllow() { jsonResp(w, 429, map[string]string{"error": "rate_limit_exceeded"}); return }
 	if err := checkJWT(r); err != nil { jsonResp(w, 401, map[string]string{"error": "unauthorized"}); return }
@@ -90,20 +96,22 @@ func run_chainHandler(w http.ResponseWriter, r *http.Request) {
 	json.Unmarshal(body, &input)
 	dbData, _ := json.Marshal(input)
 	dbInsert(fmt.Sprintf("run_chain_%d", time.Now().UnixNano()), serviceName, "default", "active", dbData)
-	cacheSet("run_chain_last", string(body), 300)
+	cacheSet(tenantID+":"+"run_chain_last", string(body), 300)
 	upstreamURL := envOr("GL_ENGINE_URL", "http://gl-engine-go:8080")
 	callService("POST", upstreamURL+"/v1/notify", map[string]interface{}{"source": serviceName, "action": "run_chain"})
 	jsonResp(w, 200, map[string]interface{}{"service": serviceName, "endpoint": "run_chain", "result": input, "source": dbSourceTag()})
 }
 
 func createHandler(w http.ResponseWriter, r *http.Request) {
+	tenantID := r.Header.Get("X-Tenant-Id")
+	if tenantID == "" { tenantID = "platform" }
 	atomic.AddUint64(&requestCount, 1)
 	if !rlAllow() { jsonResp(w, 429, map[string]string{"error": "rate_limit_exceeded"}); return }
 	if err := checkJWT(r); err != nil { jsonResp(w, 401, map[string]string{"error": "unauthorized"}); return }
 	body, _ := io.ReadAll(io.LimitReader(r.Body, 10240))
 	body = []byte(sanitizeInput(string(body)))
 	dbInsert(fmt.Sprintf("create_%d", time.Now().UnixNano()), serviceName, "default", "active", body)
-	cacheSet("last_create", string(body), 300)
+	cacheSet(tenantID+":"+"last_create", string(body), 300)
 	jsonResp(w, 201, map[string]interface{}{"created": true})
 }
 

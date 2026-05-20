@@ -2,6 +2,11 @@
 stakeholder-kpi-dashboard-py — Stakeholder KPI Dashboard Aggregation Service
 Aggregates KPI data from kpi-engine-go, all 10 AI agents, Neo4j graph, and GL engine.
 Provides role-based dashboards for Board, CFO, CRO, COO, CTO, Compliance, RM, Branch.
+
+Multi-Tenancy:
+  All KPI data, cache keys, and DB queries are scoped by tenant_id.
+  The X-Tenant-Id header is injected by the API gateway.
+  Each tenant sees only their own KPI values and agent insights.
 """
 import os, sys, json, time, signal, threading, uuid, math, re, html
 import socket as _socket
@@ -326,10 +331,14 @@ class Handler(BaseHTTPRequestHandler):
             self.respond(401, {"error": "unauthorized"}); return False
         return True
 
+    def get_tenant_id(self):
+        """Extract tenant_id from gateway-injected header."""
+        return self.headers.get("X-Tenant-Id", "platform")
+
     def do_OPTIONS(self):
         self.send_response(204)
         self.send_header("Access-Control-Allow-Origin", "*")
-        self.send_header("Access-Control-Allow-Headers", "Content-Type, Authorization, X-Trace-Id")
+        self.send_header("Access-Control-Allow-Headers", "Content-Type, Authorization, X-Trace-Id, X-Tenant-Id")
         self.send_header("Access-Control-Allow-Methods", "GET, POST, OPTIONS")
         self.end_headers()
 
@@ -352,16 +361,25 @@ class Handler(BaseHTTPRequestHandler):
         elif path == "/v1/dashboard/roles":
             if not self.check_jwt(): return
             if not _rl_allow(): inc_errors(); self.respond(429, {"error": "rate_limit_exceeded"}); return
+            tenant_id = self.get_tenant_id()
             roles = [{"id": k, "title": v["title"], "description": v["description"], "kpi_count": len(v["kpis"])} for k, v in STAKEHOLDER_KPIS.items()]
-            self.respond(200, {"roles": roles})
+            self.respond(200, {"roles": roles, "tenant_id": tenant_id})
 
         elif path.startswith("/v1/dashboard/role/"):
             if not self.check_jwt(): return
             if not _rl_allow(): inc_errors(); self.respond(429, {"error": "rate_limit_exceeded"}); return
+            tenant_id = self.get_tenant_id()
             role = path.split("/v1/dashboard/role/")[1].split("?")[0].split("/")[0]
             role_config = STAKEHOLDER_KPIS.get(role)
             if not role_config:
                 self.respond(404, {"error": f"Unknown role: {role}"}); return
+            # Tenant-scoped cache lookup
+            cached = cache_get(f"dashboard:{tenant_id}:{role}")
+            if cached:
+                try:
+                    self.respond(200, json.loads(cached)); return
+                except Exception:
+                    pass
             kpi_results = []
             for kpi_def in role_config["kpis"]:
                 value = _get_kpi_value(kpi_def["id"])
@@ -372,19 +390,22 @@ class Handler(BaseHTTPRequestHandler):
                     "unit": kpi_def["unit"], "status": status,
                     "source": kpi_def["source"],
                 })
-            db_insert("dashboard_view", {"role": role, "trace_id": trace_id})
-            cache_set(f"dashboard_{role}", json.dumps({"kpis": kpi_results}))
-            self.respond(200, {
+            db_insert("dashboard_view", {"tenant_id": tenant_id, "role": role, "trace_id": trace_id})
+            result = {
                 "role": role, "title": role_config["title"],
                 "description": role_config["description"],
                 "kpis": kpi_results,
+                "tenant_id": tenant_id,
                 "last_updated": _kpi_values.get("_last_updated", "unknown"),
                 "agent_insights_available": True,
-            })
+            }
+            cache_set(f"dashboard:{tenant_id}:{role}", json.dumps(result))
+            self.respond(200, result)
 
         elif path == "/v1/dashboard/summary":
             if not self.check_jwt(): return
             if not _rl_allow(): inc_errors(); self.respond(429, {"error": "rate_limit_exceeded"}); return
+            tenant_id = self.get_tenant_id()
             summary = {}
             for role, config in STAKEHOLDER_KPIS.items():
                 red_count = 0; amber_count = 0; green_count = 0
@@ -396,7 +417,7 @@ class Handler(BaseHTTPRequestHandler):
                     else: green_count += 1
                 summary[role] = {"title": config["title"], "red": red_count, "amber": amber_count, "green": green_count, "total": len(config["kpis"])}
             call_service("GET", f"{KPI_ENGINE_URL}/healthz")
-            self.respond(200, {"summary": summary, "last_updated": _kpi_values.get("_last_updated", "unknown")})
+            self.respond(200, {"summary": summary, "tenant_id": tenant_id, "last_updated": _kpi_values.get("_last_updated", "unknown")})
 
         elif path == "/v1/dashboard/agents":
             if not self.check_jwt(): return
@@ -435,13 +456,14 @@ class Handler(BaseHTTPRequestHandler):
         if path == "/v1/dashboard/ask":
             if not self.check_jwt(): return
             if not _rl_allow(): inc_errors(); self.respond(429, {"error": "rate_limit_exceeded"}); return
+            tenant_id = self.get_tenant_id()
             question = body.get("query", body.get("question", ""))
             role = body.get("role", "board")
-            # Route to NL reporting agent with KPI context
+            # Route to NL reporting agent with tenant-scoped KPI context
             role_config = STAKEHOLDER_KPIS.get(role, STAKEHOLDER_KPIS["board"])
             kpi_context = {kpi["id"]: _get_kpi_value(kpi["id"]) for kpi in role_config["kpis"]}
-            result = call_service("POST", f"{AGENT_NL_URL}/v1/agent/ask", {"query": question, "context": {"role": role, "kpis": kpi_context}})
-            db_insert("dashboard_query", {"question": question, "role": role, "trace_id": trace_id})
+            result = call_service("POST", f"{AGENT_NL_URL}/v1/agent/ask", {"query": question, "tenant_id": tenant_id, "context": {"role": role, "kpis": kpi_context}})
+            db_insert("dashboard_query", {"tenant_id": tenant_id, "question": question, "role": role, "trace_id": trace_id})
             self.respond(200, {"question": question, "role": role, "answer": result, "kpi_context": kpi_context})
 
         elif path == "/v1/dashboard/alert-config":

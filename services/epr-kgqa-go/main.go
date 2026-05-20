@@ -56,6 +56,8 @@ func readyHandler(w http.ResponseWriter, _ *http.Request) { jsonResp(w, 200, map
 func liveHandler(w http.ResponseWriter, _ *http.Request) { jsonResp(w, 200, map[string]interface{}{"live": true}) }
 
 func askHandler(w http.ResponseWriter, r *http.Request) {
+	tenantID := r.Header.Get("X-Tenant-Id")
+	if tenantID == "" { tenantID = "platform" }
 	atomic.AddUint64(&requestCount, 1)
 	if !rlAllow() { jsonResp(w, 429, map[string]string{"error": "rate_limit_exceeded"}); return }
 	if err := checkJWT(r); err != nil { jsonResp(w, 401, map[string]string{"error": "unauthorized"}); return }
@@ -65,31 +67,37 @@ func askHandler(w http.ResponseWriter, r *http.Request) {
 	json.Unmarshal(body, &input)
 	dbData, _ := json.Marshal(input)
 	dbInsert(fmt.Sprintf("ask_%d", time.Now().UnixNano()), serviceName, "default", "active", dbData)
-	cacheSet("ask_last", string(body), 300)
+	cacheSet(tenantID+":"+"ask_last", string(body), 300)
 	upstreamURL := envOr("GL_ENGINE_URL", "http://gl-engine-go:8080")
 	callService("POST", upstreamURL+"/v1/notify", map[string]interface{}{"source": serviceName, "action": "ask"})
 	jsonResp(w, 200, map[string]interface{}{"service": serviceName, "endpoint": "ask", "result": input, "source": dbSourceTag()})
 }
 
 func entitiesHandler(w http.ResponseWriter, r *http.Request) {
+	tenantID := r.Header.Get("X-Tenant-Id")
+	if tenantID == "" { tenantID = "platform" }
 	atomic.AddUint64(&requestCount, 1)
 	if !rlAllow() { jsonResp(w, 429, map[string]string{"error": "rate_limit_exceeded"}); return }
 	if err := checkJWT(r); err != nil { jsonResp(w, 401, map[string]string{"error": "unauthorized"}); return }
-	cached, _ := cacheGet("entities")
+	cached, _ := cacheGet(tenantID+":"+"entities")
 	_ = cached
 	jsonResp(w, 200, map[string]interface{}{"service": serviceName, "endpoint": "entities", "items": []interface{}{}, "source": dbSourceTag()})
 }
 
 func relationsHandler(w http.ResponseWriter, r *http.Request) {
+	tenantID := r.Header.Get("X-Tenant-Id")
+	if tenantID == "" { tenantID = "platform" }
 	atomic.AddUint64(&requestCount, 1)
 	if !rlAllow() { jsonResp(w, 429, map[string]string{"error": "rate_limit_exceeded"}); return }
 	if err := checkJWT(r); err != nil { jsonResp(w, 401, map[string]string{"error": "unauthorized"}); return }
-	cached, _ := cacheGet("relations")
+	cached, _ := cacheGet(tenantID+":"+"relations")
 	_ = cached
 	jsonResp(w, 200, map[string]interface{}{"service": serviceName, "endpoint": "relations", "items": []interface{}{}, "source": dbSourceTag()})
 }
 
 func sparqlHandler(w http.ResponseWriter, r *http.Request) {
+	tenantID := r.Header.Get("X-Tenant-Id")
+	if tenantID == "" { tenantID = "platform" }
 	atomic.AddUint64(&requestCount, 1)
 	if !rlAllow() { jsonResp(w, 429, map[string]string{"error": "rate_limit_exceeded"}); return }
 	if err := checkJWT(r); err != nil { jsonResp(w, 401, map[string]string{"error": "unauthorized"}); return }
@@ -99,20 +107,22 @@ func sparqlHandler(w http.ResponseWriter, r *http.Request) {
 	json.Unmarshal(body, &input)
 	dbData, _ := json.Marshal(input)
 	dbInsert(fmt.Sprintf("sparql_%d", time.Now().UnixNano()), serviceName, "default", "active", dbData)
-	cacheSet("sparql_last", string(body), 300)
+	cacheSet(tenantID+":"+"sparql_last", string(body), 300)
 	upstreamURL := envOr("GL_ENGINE_URL", "http://gl-engine-go:8080")
 	callService("POST", upstreamURL+"/v1/notify", map[string]interface{}{"source": serviceName, "action": "sparql"})
 	jsonResp(w, 200, map[string]interface{}{"service": serviceName, "endpoint": "sparql", "result": input, "source": dbSourceTag()})
 }
 
 func createHandler(w http.ResponseWriter, r *http.Request) {
+	tenantID := r.Header.Get("X-Tenant-Id")
+	if tenantID == "" { tenantID = "platform" }
 	atomic.AddUint64(&requestCount, 1)
 	if !rlAllow() { jsonResp(w, 429, map[string]string{"error": "rate_limit_exceeded"}); return }
 	if err := checkJWT(r); err != nil { jsonResp(w, 401, map[string]string{"error": "unauthorized"}); return }
 	body, _ := io.ReadAll(io.LimitReader(r.Body, 10240))
 	body = []byte(sanitizeInput(string(body)))
 	dbInsert(fmt.Sprintf("create_%d", time.Now().UnixNano()), serviceName, "default", "active", body)
-	cacheSet("last_create", string(body), 300)
+	cacheSet(tenantID+":"+"last_create", string(body), 300)
 	jsonResp(w, 201, map[string]interface{}{"created": true})
 }
 

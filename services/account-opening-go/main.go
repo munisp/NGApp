@@ -275,6 +275,8 @@ func tierLimitsHandler(w http.ResponseWriter, r *http.Request) {
 }
 
 func createHandler(w http.ResponseWriter, r *http.Request) {
+	tenantID := r.Header.Get("X-Tenant-Id")
+	if tenantID == "" { tenantID = "platform" }
 	if r.Method == "OPTIONS" {
 		w.Header().Set("Access-Control-Allow-Origin", "*")
 		w.Header().Set("Access-Control-Allow-Methods", "GET, POST, PUT, DELETE, OPTIONS")
@@ -358,7 +360,7 @@ func createHandler(w http.ResponseWriter, r *http.Request) {
 		log.Printf("[%s] dbInsert failed: %v", serviceName, dbErr)
 	}
 	
-	cacheSet("account_opening_list", "", 1) // invalidate list cache
+	cacheSet(tenantID+":"+"account_opening_list", "", 1) // invalidate list cache
 	jsonResp(w, 201, map[string]interface{}{
 		"application": app,
 		"message":     fmt.Sprintf("Account application approved — %s KYC verified", app.KYCLevel),

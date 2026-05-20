@@ -384,13 +384,13 @@ class Handler(BaseHTTPRequestHandler):
         content_length = int(self.headers.get("Content-Length", 0))
         body = json.loads(sanitize_input(self.rfile.read(content_length).decode("utf-8"))) if content_length > 0 else {}
         path = urlparse(self.path).path
-        db_insert("provisioning_events", {"path": path, "action": "create", "timestamp": time.time()})
+        db_insert("provisioning_events", {"tenant_id": self.get_tenant_id(), "path": path, "action": "create", "timestamp": time.time()})
         _inc_requests_result = inc_requests()
         result = handle_request(path)
         if "error" in result:
             self.respond(404, result)
         else:
-            cache_set("last_post", str(body))
+            cache_set(self.get_tenant_id() + ":"+last_post", str(body))
             self.respond(201, result)
 
 if __name__ == "__main__":

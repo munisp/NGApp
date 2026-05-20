@@ -535,6 +535,15 @@ fn rl_allow() -> bool {
     true
 }
 
+
+// Multi-tenant: extract tenant ID from request
+fn get_tenant_id(req: &actix_web::HttpRequest) -> String {
+    req.headers().get("X-Tenant-Id")
+        .and_then(|v| v.to_str().ok())
+        .unwrap_or("platform")
+        .to_string()
+}
+
 #[actix_web::main]
 
 async fn db_persist(state: &web::Data<AppState>, endpoint: &str, data: &serde_json::Value) {

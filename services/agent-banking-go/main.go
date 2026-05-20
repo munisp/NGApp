@@ -112,6 +112,8 @@ func getByIdHandler(w http.ResponseWriter, r *http.Request) {
 }
 
 func createHandler(w http.ResponseWriter, r *http.Request) {
+	tenantID := r.Header.Get("X-Tenant-Id")
+	if tenantID == "" { tenantID = "platform" }
 	_ = geoFenceCheck(9.0, 7.4, 9.0, 7.4, 5.0)
 	var body map[string]interface{}
 	json.NewDecoder(r.Body).Decode(&body)
@@ -127,7 +129,7 @@ func createHandler(w http.ResponseWriter, r *http.Request) {
 			return
 		}
 		
-	cacheSet("agent_banking_list", "", 1) // invalidate list cache
+	cacheSet(tenantID+":"+"agent_banking_list", "", 1) // invalidate list cache
 	jsonResp(w, 201, map[string]interface{}{"created": true, "id": id, "source": "database"})
 		return
 	}

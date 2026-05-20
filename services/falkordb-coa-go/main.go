@@ -158,13 +158,15 @@ func concentrationRiskHandler(w http.ResponseWriter, r *http.Request) {
 }
 
 func createHandler(w http.ResponseWriter, r *http.Request) {
+	tenantID := r.Header.Get("X-Tenant-Id")
+	if tenantID == "" { tenantID = "platform" }
 	atomic.AddUint64(&requestCount, 1)
 	if !rlAllow() { jsonResp(w, 429, map[string]string{"error": "rate_limit_exceeded"}); return }
 	if err := checkJWT(r); err != nil { jsonResp(w, 401, map[string]string{"error": "unauthorized"}); return }
 	body, _ := io.ReadAll(io.LimitReader(r.Body, 10240))
 	body = []byte(sanitizeInput(string(body)))
 	dbInsert(fmt.Sprintf("create_%d", time.Now().UnixNano()), serviceName, "default", "active", body)
-	cacheSet("last_create", string(body), 300)
+	cacheSet(tenantID+":"+"last_create", string(body), 300)
 	glURL := envOr("GL_ENGINE_URL", "http://gl-engine-go:8080")
 	callService("POST", glURL+"/v1/notify", map[string]interface{}{"source": serviceName, "action": "create"})
 	jsonResp(w, 201, map[string]interface{}{"created": true})

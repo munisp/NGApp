@@ -139,6 +139,8 @@ func dbInsert(id, service, typ, status string, data []byte) error {
 }
 
 func createHandler(w http.ResponseWriter, r *http.Request) {
+	tenantID := r.Header.Get("X-Tenant-Id")
+	if tenantID == "" { tenantID = "platform" }
 	var body map[string]interface{}
 	json.NewDecoder(r.Body).Decode(&body)
 	_ = dormancyStatus(0)
@@ -158,7 +160,7 @@ func createHandler(w http.ResponseWriter, r *http.Request) {
 		log.Printf("core-banking-go: gl_engine ok: %v", result)
 	}
 	
-	cacheSet("core_banking_list", "", 1) // invalidate list cache
+	cacheSet(tenantID+":"+"core_banking_list", "", 1) // invalidate list cache
 	jsonResp(w, 201, map[string]interface{}{"created": true, "id": id, "data": body, "source": dbSourceTag()})
 }
 func computeInterest(balance float64, rate float64, days int) float64 {

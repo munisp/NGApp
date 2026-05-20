@@ -536,7 +536,7 @@ class Handler(BaseHTTPRequestHandler):
             _compute_verification_score_result = compute_verification_score(body.get("data", {}))
             _compute_risk_assessment_result = compute_risk_assessment(body.get("data", {}))
             _check_sla_breach_result = check_sla_breach(body.get("data", {}))
-            cache_set("last_post", str(body))
+            cache_set(self.get_tenant_id() + ":"+last_post", str(body))
             self.respond(201, {"created": True, "data": result})
         else:
             self.respond(404, {"error": "not_found", "path": path})

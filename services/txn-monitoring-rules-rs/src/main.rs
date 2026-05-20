@@ -319,6 +319,15 @@ fn call_service_grpc(target: &str, method: &str, payload: &str) -> Result<String
     call_service_sync(target, payload)
 }
 
+
+// Multi-tenant: extract tenant ID from request
+fn get_tenant_id(req: &actix_web::HttpRequest) -> String {
+    req.headers().get("X-Tenant-Id")
+        .and_then(|v| v.to_str().ok())
+        .unwrap_or("platform")
+        .to_string()
+}
+
 #[actix_web::main]
 async fn main() -> std::io::Result<()> {
     let port: u16 = env::var("PORT").ok().and_then(|p| p.parse().ok()).unwrap_or(8193);

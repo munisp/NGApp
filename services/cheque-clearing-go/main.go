@@ -96,6 +96,8 @@ func getByIdHandler(w http.ResponseWriter, r *http.Request) {
 }
 
 func createHandler(w http.ResponseWriter, r *http.Request) {
+	tenantID := r.Header.Get("X-Tenant-Id")
+	if tenantID == "" { tenantID = "platform" }
 	var body map[string]interface{}
 	json.NewDecoder(r.Body).Decode(&body)
 	id := fmt.Sprintf("%s-%d", "cheque_clearing_go", time.Now().UnixNano())
@@ -119,7 +121,7 @@ func createHandler(w http.ResponseWriter, r *http.Request) {
 		log.Printf("cheque-clearing-go: aml_screening result: %v", result)
 	}
 
-	cacheSet("cheque_clearing_list", "", 1) // invalidate list cache
+	cacheSet(tenantID+":"+"cheque_clearing_list", "", 1) // invalidate list cache
 	jsonResp(w, 201, map[string]interface{}{"created": true, "id": id, "source": "database"})
 		return
 	}
