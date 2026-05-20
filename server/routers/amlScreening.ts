@@ -14,7 +14,7 @@ export const amlScreeningRouter = router({
       const db = await getDb();
       if (!db) return { items: [], total: 0, limit: input.limit, offset: input.offset };
       const rows = await db.select().from(complianceChecks).orderBy(desc(complianceChecks.id)).limit(input.limit).offset(input.offset);
-      const [{ total }] = await db.select({ total: count() }).from(complianceChecks);
+      const totalArr = await db.select({ total: count() }).from(complianceChecks); const total = totalArr?.[0]?.total ?? 0;
       return { items: rows, total, limit: input.limit, offset: input.offset };
     }),
   getById: protectedProcedure
@@ -28,7 +28,7 @@ export const amlScreeningRouter = router({
   getSummary: protectedProcedure.query(async () => {
     const db = await getDb();
     if (!db) return { totalChecks: 0, lastUpdated: new Date().toISOString() };
-    const [{ total }] = await db.select({ total: count() }).from(complianceChecks);
+    const totalArr = await db.select({ total: count() }).from(complianceChecks); const total = totalArr?.[0]?.total ?? 0;
     return { totalChecks: total, lastUpdated: new Date().toISOString() };
   }),
 });

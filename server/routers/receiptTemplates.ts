@@ -14,7 +14,7 @@ export const receiptTemplatesRouter = router({
       const db = await getDb();
       if (!db) return { items: [], total: 0, limit: input.limit, offset: input.offset };
       const rows = await db.select().from(systemConfig).orderBy(desc(systemConfig.id)).limit(input.limit).offset(input.offset);
-      const [{ total }] = await db.select({ total: count() }).from(systemConfig);
+      const totalArr = await db.select({ total: count() }).from(systemConfig); const total = totalArr?.[0]?.total ?? 0;
       return { items: rows, total, limit: input.limit, offset: input.offset };
     }),
   getById: protectedProcedure
@@ -28,7 +28,7 @@ export const receiptTemplatesRouter = router({
   getSummary: protectedProcedure.query(async () => {
     const db = await getDb();
     if (!db) return { totalTemplates: 0, lastUpdated: new Date().toISOString() };
-    const [{ total }] = await db.select({ total: count() }).from(systemConfig);
+    const totalArr = await db.select({ total: count() }).from(systemConfig); const total = totalArr?.[0]?.total ?? 0;
     return { totalTemplates: total, lastUpdated: new Date().toISOString() };
   }),
 });

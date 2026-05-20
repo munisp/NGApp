@@ -13,7 +13,7 @@ export const sharedLayoutsRouter = router({
       const db = await getDb();
       if (!db) return { items: [], total: 0, tags: ["finance", "operations", "analytics"] };
       const rows = await db.select().from(analyticsDashboards).orderBy(desc(analyticsDashboards.id)).limit(50);
-      const [{ total }] = await db.select({ total: count() }).from(analyticsDashboards);
+      const totalArr = await db.select({ total: count() }).from(analyticsDashboards); const total = totalArr?.[0]?.total ?? 0;
       return { items: rows, total, tags: ["finance", "operations", "analytics"] };
     }),
   share: protectedProcedure
@@ -35,7 +35,7 @@ export const sharedLayoutsRouter = router({
     const db = await getDb();
     if (!db) return { items: [], total: 0 };
     const rows = await db.select().from(analyticsDashboards).orderBy(desc(analyticsDashboards.id)).limit(50);
-    const [{ total }] = await db.select({ total: count() }).from(analyticsDashboards);
+    const totalArr = await db.select({ total: count() }).from(analyticsDashboards); const total = totalArr?.[0]?.total ?? 0;
     return { items: rows, total };
   }),
 });

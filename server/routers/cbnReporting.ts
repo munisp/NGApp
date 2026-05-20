@@ -14,7 +14,7 @@ export const cbnReportingRouter = router({
       const db = await getDb();
       if (!db) return { items: [], total: 0, limit: input.limit, offset: input.offset };
       const rows = await db.select().from(complianceReports).orderBy(desc(complianceReports.id)).limit(input.limit).offset(input.offset);
-      const [{ total }] = await db.select({ total: count() }).from(complianceReports);
+      const totalArr = await db.select({ total: count() }).from(complianceReports); const total = totalArr?.[0]?.total ?? 0;
       return { items: rows, total, limit: input.limit, offset: input.offset };
     }),
   getById: protectedProcedure
@@ -28,7 +28,7 @@ export const cbnReportingRouter = router({
   getSummary: protectedProcedure.query(async () => {
     const db = await getDb();
     if (!db) return { totalReports: 0, lastUpdated: new Date().toISOString() };
-    const [{ total }] = await db.select({ total: count() }).from(complianceReports);
+    const totalArr = await db.select({ total: count() }).from(complianceReports); const total = totalArr?.[0]?.total ?? 0;
     return { totalReports: total, lastUpdated: new Date().toISOString() };
   }),
   generate: protectedProcedure

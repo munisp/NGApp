@@ -20,7 +20,7 @@ export const dataThresholdAlertsRouter = router({
     const db = await getDb();
     if (!db) return { items: [], total: 0 };
     const rows = await db.select().from(rateAlerts).orderBy(desc(rateAlerts.id)).limit(50);
-    const [{ total }] = await db.select({ total: count() }).from(rateAlerts);
+    const totalArr = await db.select({ total: count() }).from(rateAlerts); const total = totalArr?.[0]?.total ?? 0;
     return { items: rows, total };
   }),
   create: protectedProcedure

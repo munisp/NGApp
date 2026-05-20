@@ -18,7 +18,7 @@ export const reportTemplateDesignerRouter = router({
     const db = await getDb();
     if (!db) return { items: [], total: 0 };
     const rows = await db.select().from(biReportDefinitions).orderBy(desc(biReportDefinitions.id)).limit(50);
-    const [{ total }] = await db.select({ total: count() }).from(biReportDefinitions);
+    const totalArr = await db.select({ total: count() }).from(biReportDefinitions); const total = totalArr?.[0]?.total ?? 0;
     return { items: rows, total };
   }),
   create: protectedProcedure
