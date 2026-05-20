@@ -21,10 +21,15 @@ export const systemRouter = router({
 
     // Database connectivity
     try {
-      const { db } = await import("../../server/db");
+      const { getDb } = await import("../db");
       const dbStart = Date.now();
-      await db.execute("SELECT 1");
-      checks.database = { status: "healthy", latencyMs: Date.now() - dbStart };
+      const db = await getDb();
+      if (db) {
+        await db.execute("SELECT 1" as any);
+        checks.database = { status: "healthy", latencyMs: Date.now() - dbStart };
+      } else {
+        checks.database = { status: "unconfigured", latencyMs: -1 };
+      }
     } catch {
       checks.database = { status: "unhealthy", latencyMs: -1 };
     }
