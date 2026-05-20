@@ -1,5 +1,8 @@
 import { z } from "zod";
 import { protectedProcedure, router } from "../_core/trpc";
+import { getDb } from "../db";
+import { notification_channels } from "../../drizzle/schema";
+import { desc, eq, count } from "drizzle-orm";
 
 const CATEGORIES = [
   { id: "txn_success", group: "Transactions", label: "Transaction Success" },
@@ -39,52 +42,31 @@ export const userNotifPreferencesRouter = router({
   }),
   update: protectedProcedure
     .input(z.object({ categoryId: z.string(), channels: channelSchema }))
-    .mutation(async ({ input }) => {
-      return { success: true, categoryId: input.categoryId };
-    }),
+    .mutation(async ({ input }) => { return { success: true, categoryId: input.categoryId }; }),
   bulkUpdate: protectedProcedure
-    .input(
-      z.object({
-        updates: z.array(
-          z.object({ categoryId: z.string(), channels: channelSchema })
-        ),
-      })
-    )
-    .mutation(async ({ input }) => {
-      return { success: true, updated: input.updates.length };
-    }),
-  resetToDefaults: protectedProcedure.mutation(async () => {
-    return { success: true };
-  }),
+    .input(z.object({ updates: z.array(z.object({ categoryId: z.string(), channels: channelSchema })) }))
+    .mutation(async ({ input }) => { return { success: true, updated: input.updates.length }; }),
+  resetToDefaults: protectedProcedure.mutation(async () => { return { success: true }; }),
   enableAllForChannel: protectedProcedure
     .input(z.object({ channel: z.enum(["email", "sms", "push", "inApp"]) }))
-    .mutation(async ({ input }) => {
-      return { success: true, channel: input.channel };
-    }),
+    .mutation(async ({ input }) => { return { success: true, channel: input.channel }; }),
   updateQuietHours: protectedProcedure
-    .input(
-      z.object({
-        enabled: z.boolean(),
-        start: z.string().optional(),
-        end: z.string().optional(),
-      })
-    )
-    .mutation(async ({ input }) => {
-      return { success: true };
-    }),
+    .input(z.object({ enabled: z.boolean(), start: z.string().optional(), end: z.string().optional() }))
+    .mutation(async () => { return { success: true }; }),
   updateDigestMode: protectedProcedure
     .input(z.object({ mode: z.enum(["instant", "hourly", "daily"]) }))
-    .mutation(async ({ input }) => {
-      return { success: true, mode: input.mode };
-    }),
-
+    .mutation(async ({ input }) => { return { success: true, mode: input.mode }; }),
   categories: protectedProcedure.query(async () => {
-    return { items: [], total: 0 };
+    const db = await getDb();
+    if (!db) return { items: CATEGORIES, total: CATEGORIES.length };
+    const rows = await db.select().from(notification_channels).orderBy(desc(notification_channels.id)).limit(50);
+    return { items: rows.length > 0 ? rows : CATEGORIES, total: rows.length || CATEGORIES.length };
   }),
   getPreferences: protectedProcedure.query(async () => {
-    return { items: [], total: 0 };
+    const db = await getDb();
+    if (!db) return { items: [], total: 0 };
+    const rows = await db.select().from(notification_channels).orderBy(desc(notification_channels.id)).limit(50);
+    return { items: rows, total: rows.length };
   }),
-  updateCategory: protectedProcedure.input(z.object({})).mutation(async () => {
-    return { success: true };
-  }),
+  updateCategory: protectedProcedure.input(z.object({})).mutation(async () => { return { success: true }; }),
 });
