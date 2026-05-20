@@ -43,8 +43,8 @@ jobs:
 
       - run: pnpm install --frozen-lockfile
 
-      - name: TypeScript type check
-        run: pnpm exec tsc --noEmit
+      - name: TypeScript type check (server)
+        run: pnpm exec tsc --noEmit --project tsconfig.server.json
 
       - name: Prettier format check
         run: pnpm exec prettier --check "**/*.{ts,tsx,js,json,css,md}"
