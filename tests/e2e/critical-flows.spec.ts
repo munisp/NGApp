@@ -158,32 +158,32 @@ test.describe("Performance", () => {
 
 // ─── Agent Workflows ─────────────────────────────────────────────────────────
 test.describe("Agent Workflows", () => {
-  test('agent login page renders', async ({ page }) => {
+  test("agent login page renders", async ({ page }) => {
     await page.goto(`${BASE_URL}/agent/login`);
     await expect(page.locator("body")).toBeVisible();
   });
 
-  test('agent dashboard accessible after auth', async ({ request }) => {
+  test("agent dashboard accessible after auth", async ({ request }) => {
     const res = await request.get(`${BASE_URL}/api/health`);
     expect(res.ok()).toBeTruthy();
   });
 
-  test('cash-in transaction form renders', async ({ page }) => {
+  test("cash-in transaction form renders", async ({ page }) => {
     await page.goto(`${BASE_URL}/agent/transactions`);
     await expect(page.locator("body")).toBeVisible();
   });
 
-  test('cash-out transaction form renders', async ({ page }) => {
+  test("cash-out transaction form renders", async ({ page }) => {
     await page.goto(`${BASE_URL}/agent/transactions`);
     await expect(page.locator("body")).toBeVisible();
   });
 
-  test('agent float balance displays', async ({ page }) => {
+  test("agent float balance displays", async ({ page }) => {
     await page.goto(`${BASE_URL}/agent/dashboard`);
     await expect(page.locator("body")).toBeVisible();
   });
 
-  test('transaction history loads', async ({ page }) => {
+  test("transaction history loads", async ({ page }) => {
     await page.goto(`${BASE_URL}/agent/history`);
     await expect(page.locator("body")).toBeVisible();
   });
@@ -191,72 +191,72 @@ test.describe("Agent Workflows", () => {
 
 // ─── Admin Workflows ─────────────────────────────────────────────────────────
 test.describe("Admin Workflows", () => {
-  test('admin dashboard loads', async ({ page }) => {
+  test("admin dashboard loads", async ({ page }) => {
     await page.goto(`${BASE_URL}/admin`);
     await expect(page.locator("body")).toBeVisible();
   });
 
-  test('agent management page renders', async ({ page }) => {
+  test("agent management page renders", async ({ page }) => {
     await page.goto(`${BASE_URL}/admin/agents`);
     await expect(page.locator("body")).toBeVisible();
   });
 
-  test('fraud alerts page renders', async ({ page }) => {
+  test("fraud alerts page renders", async ({ page }) => {
     await page.goto(`${BASE_URL}/admin/fraud`);
     await expect(page.locator("body")).toBeVisible();
   });
 
-  test('settlement page renders', async ({ page }) => {
+  test("settlement page renders", async ({ page }) => {
     await page.goto(`${BASE_URL}/admin/settlement`);
     await expect(page.locator("body")).toBeVisible();
   });
 
-  test('KYC review page renders', async ({ page }) => {
+  test("KYC review page renders", async ({ page }) => {
     await page.goto(`${BASE_URL}/admin/kyc`);
     await expect(page.locator("body")).toBeVisible();
   });
 
-  test('MDM device management renders', async ({ page }) => {
+  test("MDM device management renders", async ({ page }) => {
     await page.goto(`${BASE_URL}/admin/devices`);
     await expect(page.locator("body")).toBeVisible();
   });
 
-  test('reports page renders', async ({ page }) => {
+  test("reports page renders", async ({ page }) => {
     await page.goto(`${BASE_URL}/admin/reports`);
     await expect(page.locator("body")).toBeVisible();
   });
 
-  test('business rules page renders', async ({ page }) => {
+  test("business rules page renders", async ({ page }) => {
     await page.goto(`${BASE_URL}/admin/business-rules`);
     await expect(page.locator("body")).toBeVisible();
   });
 
-  test('billing dashboard renders', async ({ page }) => {
+  test("billing dashboard renders", async ({ page }) => {
     await page.goto(`${BASE_URL}/admin/billing`);
     await expect(page.locator("body")).toBeVisible();
   });
 
-  test('system settings page renders', async ({ page }) => {
+  test("system settings page renders", async ({ page }) => {
     await page.goto(`${BASE_URL}/admin/settings`);
     await expect(page.locator("body")).toBeVisible();
   });
 
-  test('audit log page renders', async ({ page }) => {
+  test("audit log page renders", async ({ page }) => {
     await page.goto(`${BASE_URL}/admin/audit`);
     await expect(page.locator("body")).toBeVisible();
   });
 
-  test('POS network map renders', async ({ page }) => {
+  test("POS network map renders", async ({ page }) => {
     await page.goto(`${BASE_URL}/admin/network`);
     await expect(page.locator("body")).toBeVisible();
   });
 
-  test('compliance dashboard renders', async ({ page }) => {
+  test("compliance dashboard renders", async ({ page }) => {
     await page.goto(`${BASE_URL}/admin/compliance`);
     await expect(page.locator("body")).toBeVisible();
   });
 
-  test('notifications page renders', async ({ page }) => {
+  test("notifications page renders", async ({ page }) => {
     await page.goto(`${BASE_URL}/admin/notifications`);
     await expect(page.locator("body")).toBeVisible();
   });

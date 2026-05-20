@@ -1,7 +1,7 @@
 # Architecture Decision Records
 
-| ADR | Title | Status | Date |
-| --- | ----- | ------ | ---- |
+| ADR     | Title                            | Status   | Date       |
+| ------- | -------------------------------- | -------- | ---------- |
 | ADR-001 | Use tRPC for API layer           | Accepted | 2024-01-15 |
 | ADR-002 | PostgreSQL as primary database   | Accepted | 2024-01-15 |
 | ADR-003 | Drizzle ORM for database access  | Accepted | 2024-02-01 |

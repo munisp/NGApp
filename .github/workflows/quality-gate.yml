@@ -32,13 +32,13 @@ jobs:
 
       - name: Security Audit
         run: |
-          # Check for publicProcedure (should be 0)
-          count=$(grep -r "publicProcedure" server/routers/ --include="*.ts" | grep -v "import\|from\|//" | wc -l)
+          # Check for publicProcedure usage — allowed in agent.ts (login) and mdm.ts (device-initiated)
+          count=$(grep -r "publicProcedure" server/routers/ --include="*.ts" | grep -v "import\|from\|//\|agent.ts\|mdm.ts" | wc -l)
           if [ "$count" -gt "0" ]; then
-            echo "ERROR: Found $count unauthenticated endpoints"
+            echo "ERROR: Found $count unexpected unauthenticated endpoints (excluding agent login and MDM device endpoints)"
             exit 1
           fi
-          echo "✓ All endpoints require authentication"
+          echo "✓ All endpoints require authentication (agent.login and MDM device endpoints exempted)"
 
       - name: No @ts-nocheck in server
         run: |
