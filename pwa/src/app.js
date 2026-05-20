@@ -299,14 +299,14 @@ class App {
   }
 
   async loadRoleDashboard(role) {
+    this.dashboardData = this.getDefaultRoleData(role);
     try {
       const data = await api.request('GET', `/dashboard/role/${role}`);
       this.dashboardData = data;
-      this.render();
     } catch (e) {
-      this.dashboardData = this.getDefaultRoleData(role);
-      this.render();
+      // Already set to defaults above
     }
+    this.render();
   }
 
   getDefaultSummary() {
