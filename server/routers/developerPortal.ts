@@ -601,7 +601,7 @@ export const developerPortalRouter = router({
       try {
         const db = (await getDb())!;
         if (!db) return { success: false };
-        await db.insert(apiKeyUsage).values(input as any);
+        await db.insert(apiKeyUsage).values(input);
         return { success: true };
       } catch (error) {
         if (error instanceof TRPCError) throw error;

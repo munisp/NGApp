@@ -90,7 +90,7 @@ const addAccount = protectedProcedure
         });
       const [row] = await db
         .insert(agentBankAccounts)
-        .values(input as any)
+        .values(input)
         .returning();
       return { ...row, message: "Bank account added" };
     } catch (error) {
@@ -162,7 +162,7 @@ export const bankAccountManagementRouter = router({
         const db = (await getDb())!;
         const [row] = await db
           .insert(agentBankAccounts)
-          .values(input as any)
+          .values(input)
           .returning();
         return { ...row, success: true };
       } catch (error) {

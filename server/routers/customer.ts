@@ -137,7 +137,7 @@ export const customerRouter = router({
             });
           const [customer] = await db
             .insert(customers)
-            .values(input as any)
+            .values(input)
             .returning();
           const { passwordHash: _, refreshToken: __, ...safe } = customer;
           return safe;

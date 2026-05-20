@@ -176,10 +176,7 @@ export const tenantBrandingRouter = router({
             .returning();
           return { ...row, message: "Branding updated" };
         }
-        const [row] = await db
-          .insert(tenantBranding)
-          .values(input as any)
-          .returning();
+        const [row] = await db.insert(tenantBranding).values(input).returning();
         return { ...row, message: "Branding created" };
       } catch (error) {
         if (error instanceof TRPCError) throw error;

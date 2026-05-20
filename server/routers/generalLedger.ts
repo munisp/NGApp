@@ -151,7 +151,7 @@ export const generalLedgerRouter = router({
         const db = (await getDb())!;
         if (!db)
           return {
-            accounts: [] as any[],
+            accounts: [] as unknown[],
             totalDebits: 0,
             totalCredits: 0,
             balanced: true,
@@ -205,7 +205,7 @@ export const generalLedgerRouter = router({
           0
         );
         return {
-          accounts: [] as any[],
+          accounts: [] as unknown[],
           totalDebits,
           totalCredits,
           balanced: Math.abs(totalDebits - totalCredits) < 0.01,

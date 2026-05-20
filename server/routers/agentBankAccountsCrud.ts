@@ -173,7 +173,7 @@ export const agentBankAccountsRouter = router({
       }
       const [row] = await db
         .insert(agentBankAccounts)
-        .values(input as any)
+        .values(input)
         .returning();
       return { ...row, maskedAccount: maskAccountNumber(row.accountNumber) };
     }),

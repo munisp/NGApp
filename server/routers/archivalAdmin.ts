@@ -207,7 +207,7 @@ export const archivalAdminRouter = router({
           error: err.message as string | null,
           totalArchived: 0,
           totalDeleted: 0,
-          tables: [] as any[],
+          tables: [] as unknown[],
           startedAt: new Date(),
           completedAt: new Date(),
           duration,

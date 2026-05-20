@@ -486,7 +486,7 @@ export const superAdminRouter = router({
           if (!db) throw new TRPCError({ code: "INTERNAL_SERVER_ERROR" });
           const [setting] = await db
             .insert(platformSettings)
-            .values(input as any)
+            .values(input)
             .onConflictDoUpdate({
               target: platformSettings.key,
               set: { value: input.value, updatedAt: new Date() },
