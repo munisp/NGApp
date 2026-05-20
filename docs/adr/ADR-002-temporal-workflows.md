@@ -14,15 +14,18 @@ We will use Temporal as a core component of our infrastructure because it provid
 ## Consequences
 
 ### Positive
+
 - Production-grade Temporal integration ensures reliability
 - Reduced development time through proven infrastructure
 - Better observability and monitoring capabilities
 
 ### Negative
+
 - Additional operational complexity
 - Team needs training on Temporal
 - Vendor lock-in considerations
 
 ### Risks
+
 - Temporal service availability dependency
 - Migration complexity if we need to switch later

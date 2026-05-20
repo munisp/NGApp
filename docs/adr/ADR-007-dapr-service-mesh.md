@@ -14,15 +14,18 @@ We will use Dapr as a core component of our infrastructure because it provides t
 ## Consequences
 
 ### Positive
+
 - Production-grade Dapr integration ensures reliability
 - Reduced development time through proven infrastructure
 - Better observability and monitoring capabilities
 
 ### Negative
+
 - Additional operational complexity
 - Team needs training on Dapr
 - Vendor lock-in considerations
 
 ### Risks
+
 - Dapr service availability dependency
 - Migration complexity if we need to switch later

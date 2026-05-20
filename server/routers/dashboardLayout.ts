@@ -82,13 +82,11 @@ export const dashboardLayoutRouter = router({
           .set({ value: JSON.stringify(input.layout) })
           .where(eq(systemConfig.key, key));
       } else {
-        await db
-          .insert(systemConfig)
-          .values({
-            key,
-            value: JSON.stringify(input.layout),
-            description: "Dashboard layout",
-          });
+        await db.insert(systemConfig).values({
+          key,
+          value: JSON.stringify(input.layout),
+          description: "Dashboard layout",
+        });
       }
       return { success: true };
     }),

@@ -14,15 +14,18 @@ We will use Polyglot as a core component of our infrastructure because it provid
 ## Consequences
 
 ### Positive
+
 - Production-grade Polyglot integration ensures reliability
 - Reduced development time through proven infrastructure
 - Better observability and monitoring capabilities
 
 ### Negative
+
 - Additional operational complexity
 - Team needs training on Polyglot
 - Vendor lock-in considerations
 
 ### Risks
+
 - Polyglot service availability dependency
 - Migration complexity if we need to switch later

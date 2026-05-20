@@ -14,15 +14,18 @@ We will use Permify as a core component of our infrastructure because it provide
 ## Consequences
 
 ### Positive
+
 - Production-grade Permify integration ensures reliability
 - Reduced development time through proven infrastructure
 - Better observability and monitoring capabilities
 
 ### Negative
+
 - Additional operational complexity
 - Team needs training on Permify
 - Vendor lock-in considerations
 
 ### Risks
+
 - Permify service availability dependency
 - Migration complexity if we need to switch later

@@ -14,15 +14,18 @@ We will use Stripe as a core component of our infrastructure because it provides
 ## Consequences
 
 ### Positive
+
 - Production-grade Stripe integration ensures reliability
 - Reduced development time through proven infrastructure
 - Better observability and monitoring capabilities
 
 ### Negative
+
 - Additional operational complexity
 - Team needs training on Stripe
 - Vendor lock-in considerations
 
 ### Risks
+
 - Stripe service availability dependency
 - Migration complexity if we need to switch later

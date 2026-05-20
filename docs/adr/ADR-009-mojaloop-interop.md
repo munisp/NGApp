@@ -14,15 +14,18 @@ We will use Mojaloop as a core component of our infrastructure because it provid
 ## Consequences
 
 ### Positive
+
 - Production-grade Mojaloop integration ensures reliability
 - Reduced development time through proven infrastructure
 - Better observability and monitoring capabilities
 
 ### Negative
+
 - Additional operational complexity
 - Team needs training on Mojaloop
 - Vendor lock-in considerations
 
 ### Risks
+
 - Mojaloop service availability dependency
 - Migration complexity if we need to switch later

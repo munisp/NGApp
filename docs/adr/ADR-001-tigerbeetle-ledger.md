@@ -14,15 +14,18 @@ We will use TigerBeetle as a core component of our infrastructure because it pro
 ## Consequences
 
 ### Positive
+
 - Production-grade TigerBeetle integration ensures reliability
 - Reduced development time through proven infrastructure
 - Better observability and monitoring capabilities
 
 ### Negative
+
 - Additional operational complexity
 - Team needs training on TigerBeetle
 - Vendor lock-in considerations
 
 ### Risks
+
 - TigerBeetle service availability dependency
 - Migration complexity if we need to switch later

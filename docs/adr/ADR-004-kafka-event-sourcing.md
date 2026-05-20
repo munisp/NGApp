@@ -14,15 +14,18 @@ We will use Kafka as a core component of our infrastructure because it provides 
 ## Consequences
 
 ### Positive
+
 - Production-grade Kafka integration ensures reliability
 - Reduced development time through proven infrastructure
 - Better observability and monitoring capabilities
 
 ### Negative
+
 - Additional operational complexity
 - Team needs training on Kafka
 - Vendor lock-in considerations
 
 ### Risks
+
 - Kafka service availability dependency
 - Migration complexity if we need to switch later
