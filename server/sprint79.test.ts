@@ -4,6 +4,7 @@
  * Validates the complete billing pipeline connecting financial model to live platform data
  */
 import { describe, expect, it } from "vitest";
+import * as path from "path";
 import { appRouter } from "./routers";
 import type { TrpcContext } from "./_core/context";
 
@@ -578,8 +579,10 @@ describe("Sprint 79: Real-Time Billing Engine", () => {
   describe("Financial Model Integration", () => {
     it("financial model v4 HTML file exists with Live Data tab", async () => {
       const fs = await import("fs");
-      const filePath =
-        "/home/ubuntu/54link-financial-model/54Link_Financial_Model_v4_OFFLINE.html";
+      const filePath = path.resolve(
+        __dirname,
+        "../docs/financial-model/54Link_Financial_Model_v4_OFFLINE.html"
+      );
       expect(fs.existsSync(filePath)).toBe(true);
 
       const content = fs.readFileSync(filePath, "utf-8");
@@ -595,7 +598,10 @@ describe("Sprint 79: Real-Time Billing Engine", () => {
     it("financial model retains all original tabs", async () => {
       const fs = await import("fs");
       const content = fs.readFileSync(
-        "/home/ubuntu/54link-financial-model/54Link_Financial_Model_v4_OFFLINE.html",
+        path.resolve(
+          __dirname,
+          "../docs/financial-model/54Link_Financial_Model_v4_OFFLINE.html"
+        ),
         "utf-8"
       );
       const tabs = [
@@ -617,7 +623,10 @@ describe("Sprint 79: Real-Time Billing Engine", () => {
     it("financial model has embedded Chart.js for offline operation", async () => {
       const fs = await import("fs");
       const content = fs.readFileSync(
-        "/home/ubuntu/54link-financial-model/54Link_Financial_Model_v4_OFFLINE.html",
+        path.resolve(
+          __dirname,
+          "../docs/financial-model/54Link_Financial_Model_v4_OFFLINE.html"
+        ),
         "utf-8"
       );
       expect(content).toContain("Chart.js v4.4.1");

@@ -306,20 +306,20 @@ async function createMonthlyInvoice(
   customerId: string,
   items: Array<{ amount: number; description: string }>
 ) {
-  const s = getStripe();
-  const customer = await s.customers.create({ email: customerId });
+  const stripe = getStripe();
+  const customer = await stripe.customers.create({ email: customerId });
   for (const item of items) {
-    await s.invoiceItems.create({
+    await stripe.invoiceItems.create({
       customer: customer.id,
       amount: item.amount,
       currency: "ngn",
       description: item.description,
     });
   }
-  const invoice = await s.invoices.create({
+  const invoice = await stripe.invoices.create({
     customer: customer.id,
     auto_advance: true,
   });
-  await s.invoices.finalizeInvoice(invoice.id);
+  await stripe.invoices.finalizeInvoice(invoice.id);
   return invoice;
 }

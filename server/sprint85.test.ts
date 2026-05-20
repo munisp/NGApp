@@ -186,7 +186,7 @@ describe("L3: Architecture Decision Records", () => {
     const readme = fs.readFileSync(path.join(adrDir, "README.md"), "utf-8");
     expect(readme).toContain("ADR-001");
     expect(readme).toContain("ADR-010");
-    expect(readme).toContain("| ADR |");
+    expect(readme).toMatch(/\| ADR\s+\|/);
   });
 });
 

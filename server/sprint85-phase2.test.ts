@@ -97,7 +97,7 @@ describe("H4: Playwright E2E Tests", () => {
     const testFile = path.join(ROOT, "tests/e2e/critical-flows.spec.ts");
     expect(fs.existsSync(testFile)).toBe(true);
     const content = fs.readFileSync(testFile, "utf-8");
-    const testCount = (content.match(/test\('/g) || []).length;
+    const testCount = (content.match(/test\(["']/g) || []).length;
     expect(testCount).toBeGreaterThanOrEqual(20);
   });
 

@@ -3,6 +3,7 @@
  */
 import { describe, it, expect } from "vitest";
 import fs from "fs";
+import path from "path";
 
 // ─── Guide Feedback System Tests ────────────────────────────────────────────
 describe("Sprint 25: Guide Feedback System", () => {
@@ -168,53 +169,38 @@ describe("Sprint 25: User Guide Feedback Integration", () => {
 
 // ─── Reusable Skill Tests ───────────────────────────────────────────────────
 describe("Sprint 25: Reusable Skill (54link-pos-builder)", () => {
+  const skillDir = path.resolve(__dirname, "../skills/54link-pos-builder");
+
   it("should have valid SKILL.md", () => {
-    const exists = fs.existsSync(
-      "/home/ubuntu/skills/54link-pos-builder/SKILL.md"
-    );
-    expect(exists).toBe(true);
-    const content = fs.readFileSync(
-      "/home/ubuntu/skills/54link-pos-builder/SKILL.md",
-      "utf-8"
-    );
+    const filePath = path.join(skillDir, "SKILL.md");
+    expect(fs.existsSync(filePath)).toBe(true);
+    const content = fs.readFileSync(filePath, "utf-8");
     expect(content).toContain("name: 54link-pos-builder");
     expect(content).toContain("description:");
     expect(content).not.toContain("[TODO");
   });
 
   it("should have schema-patterns reference", () => {
-    const exists = fs.existsSync(
-      "/home/ubuntu/skills/54link-pos-builder/references/schema-patterns.md"
-    );
-    expect(exists).toBe(true);
-    const content = fs.readFileSync(
-      "/home/ubuntu/skills/54link-pos-builder/references/schema-patterns.md",
-      "utf-8"
-    );
+    const filePath = path.join(skillDir, "references/schema-patterns.md");
+    expect(fs.existsSync(filePath)).toBe(true);
+    const content = fs.readFileSync(filePath, "utf-8");
     expect(content).toContain("agents");
     expect(content).toContain("transactions");
     expect(content).toContain("fraud_alerts");
   });
 
   it("should have router-patterns reference", () => {
-    const exists = fs.existsSync(
-      "/home/ubuntu/skills/54link-pos-builder/references/router-patterns.md"
-    );
-    expect(exists).toBe(true);
-    const content = fs.readFileSync(
-      "/home/ubuntu/skills/54link-pos-builder/references/router-patterns.md",
-      "utf-8"
-    );
+    const filePath = path.join(skillDir, "references/router-patterns.md");
+    expect(fs.existsSync(filePath)).toBe(true);
+    const content = fs.readFileSync(filePath, "utf-8");
     expect(content).toContain("CRUD Router");
     expect(content).toContain("Transaction Processing");
     expect(content).toContain("Fraud Scoring");
   });
 
   it("should cover core modules in SKILL.md", () => {
-    const content = fs.readFileSync(
-      "/home/ubuntu/skills/54link-pos-builder/SKILL.md",
-      "utf-8"
-    );
+    const filePath = path.join(skillDir, "SKILL.md");
+    const content = fs.readFileSync(filePath, "utf-8");
     expect(content).toContain("Agent Authentication");
     expect(content).toContain("POS Terminal");
     expect(content).toContain("Float Management");
