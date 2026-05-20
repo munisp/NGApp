@@ -1,0 +1,48 @@
+{
+  "rustc": 7458672600737419911,
+  "features": "[\"__tls\", \"charset\", \"default\", \"default-tls\", \"h2\", \"http2\", \"json\", \"system-proxy\"]",
+  "declared_features": "[\"__rustls\", \"__rustls-ring\", \"__tls\", \"blocking\", \"brotli\", \"charset\", \"cookies\", \"default\", \"default-tls\", \"deflate\", \"gzip\", \"h2\", \"hickory-dns\", \"http2\", \"http3\", \"json\", \"macos-system-configuration\", \"multipart\", \"native-tls\", \"native-tls-alpn\", \"native-tls-vendored\", \"rustls-tls\", \"rustls-tls-manual-roots\", \"rustls-tls-manual-roots-no-provider\", \"rustls-tls-native-roots\", \"rustls-tls-native-roots-no-provider\", \"rustls-tls-no-provider\", \"rustls-tls-webpki-roots\", \"rustls-tls-webpki-roots-no-provider\", \"socks\", \"stream\", \"system-proxy\", \"trust-dns\", \"zstd\"]",
+  "target": 8885864859914201979,
+  "profile": 447021486742529345,
+  "path": 8193140095771558749,
+  "deps": [
+    [302948626015856208, "futures_core", false, 8369049950044010184],
+    [784494742817713399, "tower_service", false, 6879358679868824533],
+    [1528297757488249563, "url", false, 5163918398028924386],
+    [1566171736144735121, "tokio", false, 11863087471671271269],
+    [2251399859588827949, "pin_project_lite", false, 10497190476052754648],
+    [2517136641825875337, "sync_wrapper", false, 2314670480959032213],
+    [2620434475832828286, "http", false, 13308464581607120040],
+    [3626672138398771397, "hyper", false, 881905804528651735],
+    [3632162862999675140, "tower", false, 1248539271081467228],
+    [3870702314125662939, "bytes", false, 6316577768012228871],
+    [5308207389380366964, "rustls_pki_types", false, 2328668227996062461],
+    [6803352382179706244, "percent_encoding", false, 7758527464508457870],
+    [9144560277883153344, "native_tls_crate", false, 4159607455289079897],
+    [10229185211513642314, "mime", false, 2739364180020361524],
+    [10630857666389190470, "log", false, 10879176556795780961],
+    [11976082518617474977, "hyper_util", false, 11806225873571459656],
+    [12186126227181294540, "tokio_native_tls", false, 5413293841550733390],
+    [13077212702700853852, "base64", false, 16469563345759721928],
+    [13456317631986937123, "tower_http", false, 8322351170752892206],
+    [13548984313718623784, "serde", false, 18294849230937051829],
+    [13795362694956882968, "serde_json", false, 3856165902317024885],
+    [14084095096285906100, "http_body", false, 5750051587804813680],
+    [14564311161534545801, "encoding_rs", false, 3324897745515654072],
+    [16043539852408933056, "h2", false, 11286280910336838285],
+    [16542808166767769916, "serde_urlencoded", false, 2442932376660518951],
+    [16900715236047033623, "http_body_util", false, 5286601824429610653],
+    [18273243456331255970, "hyper_tls", false, 16087112926542130908]
+  ],
+  "local": [
+    {
+      "CheckDepInfo": {
+        "dep_info": "debug/.fingerprint/reqwest-a9b18fb6fa7b7e44/dep-lib-reqwest",
+        "checksum": false
+      }
+    }
+  ],
+  "rustflags": [],
+  "config": 8247474407144887393,
+  "compile_kind": 0
+}

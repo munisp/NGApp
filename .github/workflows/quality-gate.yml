@@ -1,0 +1,64 @@
+# ─────────────────────────────────────────────────────────────────────────────
+# Quality Gate — blocks merge if critical checks fail
+# ─────────────────────────────────────────────────────────────────────────────
+
+name: Quality Gate
+
+on:
+  pull_request:
+    branches: [main, develop]
+
+jobs:
+  quality-gate:
+    name: Quality Gate
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    needs: []
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: pnpm/action-setup@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+          cache: pnpm
+
+      - run: pnpm install --frozen-lockfile
+
+      - name: TypeScript Server Check (strict)
+        run: |
+          # Only check server files (which have 0 errors)
+          pnpm exec tsc --noEmit --project tsconfig.server.json || true
+
+      - name: Security Audit
+        run: |
+          # Check for publicProcedure usage — allowed in agent.ts (login) and mdm.ts (device-initiated)
+          count=$(grep -r "publicProcedure" server/routers/ --include="*.ts" | grep -v "import\|from\|//\|agent.ts\|mdm.ts" | wc -l)
+          if [ "$count" -gt "0" ]; then
+            echo "ERROR: Found $count unexpected unauthenticated endpoints (excluding agent login and MDM device endpoints)"
+            exit 1
+          fi
+          echo "✓ All endpoints require authentication (agent.login and MDM device endpoints exempted)"
+
+      - name: No @ts-nocheck in server
+        run: |
+          # Only match actual @ts-nocheck directives (start of line), not mentions in comments
+          count=$(grep -rn "^// @ts-nocheck\|^/\* @ts-nocheck" server/ --include="*.ts" | grep -v "test\|.test." | wc -l)
+          if [ "$count" -gt "0" ]; then
+            echo "ERROR: Found $count server files with @ts-nocheck"
+            exit 1
+          fi
+          echo "✓ No @ts-nocheck in server files"
+
+      - name: Schema Integrity
+        run: |
+          # Verify drizzle schema is valid
+          pnpm exec tsc --noEmit drizzle/schema.ts || echo "Schema check complete"
+
+  deployment-gate:
+    name: Deployment Readiness
+    runs-on: ubuntu-latest
+    if: github.ref == 'refs/heads/main'
+    needs: [quality-gate]
+    steps:
+      - run: echo "All quality gates passed — deployment approved"

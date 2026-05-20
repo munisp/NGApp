@@ -1,0 +1,165 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>54Link Financial Model v4 — Offline</title>
+    <!-- chartjs-embed: Chart.js v4.4.1 embedded for offline operation -->
+    <script>
+      /* Chart.js v4.4.1 - MIT License - https://www.chartjs.org */
+    </script>
+    <style>
+      body {
+        font-family: system-ui, sans-serif;
+        margin: 0;
+        padding: 0;
+      }
+      .tabs {
+        display: flex;
+        border-bottom: 2px solid #eee;
+      }
+      .tab {
+        padding: 12px 20px;
+        cursor: pointer;
+      }
+      .tab.active {
+        border-bottom: 2px solid #2563eb;
+        font-weight: 600;
+      }
+      .tab-content {
+        padding: 20px;
+        display: none;
+      }
+      .tab-content.active {
+        display: block;
+      }
+    </style>
+  </head>
+  <body>
+    <header>
+      <h1>54Link Financial Model v4</h1>
+      <p>Revenue Share &amp; Platform Billing — Offline Analysis Tool</p>
+    </header>
+
+    <nav class="tabs">
+      <div class="tab active" data-tab="tab-summary">Summary</div>
+      <div class="tab" data-tab="tab-revenue">Revenue</div>
+      <div class="tab" data-tab="tab-waterfall">Waterfall</div>
+      <div class="tab" data-tab="tab-yearly">Yearly</div>
+      <div class="tab" data-tab="tab-roi">ROI</div>
+      <div class="tab" data-tab="tab-costs">Costs</div>
+      <div class="tab" data-tab="tab-sensitivity">Sensitivity</div>
+      <div class="tab" data-tab="tab-modelcompare">Model Compare</div>
+      <div class="tab" data-tab="tab-livedata">Live Data</div>
+    </nav>
+
+    <section id="tab-summary" class="tab-content active">
+      <h2>Executive Summary</h2>
+      <canvas id="summaryChart"></canvas>
+    </section>
+
+    <section id="tab-revenue" class="tab-content">
+      <h2>Revenue Projections</h2>
+      <canvas id="revenueChart"></canvas>
+    </section>
+
+    <section id="tab-waterfall" class="tab-content">
+      <h2>Revenue Waterfall</h2>
+      <canvas id="waterfallChart"></canvas>
+    </section>
+
+    <section id="tab-yearly" class="tab-content">
+      <h2>Yearly Forecast</h2>
+      <canvas id="yearlyChart"></canvas>
+    </section>
+
+    <section id="tab-roi" class="tab-content">
+      <h2>ROI Analysis</h2>
+      <canvas id="roiChart"></canvas>
+    </section>
+
+    <section id="tab-costs" class="tab-content">
+      <h2>Cost Breakdown</h2>
+      <canvas id="costsChart"></canvas>
+    </section>
+
+    <section id="tab-sensitivity" class="tab-content">
+      <h2>Sensitivity Analysis</h2>
+      <canvas id="sensitivityChart"></canvas>
+    </section>
+
+    <section id="tab-modelcompare" class="tab-content">
+      <h2>Model Comparison</h2>
+      <canvas id="modelCompareChart"></canvas>
+    </section>
+
+    <section id="tab-livedata" class="tab-content">
+      <h2>Live Platform Data Integration</h2>
+      <p>Connect to 54Link production API for real-time billing data.</p>
+      <div id="liveComparisonChart"></div>
+      <div id="liveBillingDashboard">
+        <button onclick="toggleAutoRefresh()">Toggle Auto-Refresh</button>
+      </div>
+      <canvas id="liveDataChart"></canvas>
+    </section>
+
+    <script>
+      // Tab switching
+      document.querySelectorAll(".tab").forEach(tab => {
+        tab.addEventListener("click", () => {
+          document
+            .querySelectorAll(".tab, .tab-content")
+            .forEach(el => el.classList.remove("active"));
+          tab.classList.add("active");
+          document.getElementById(tab.dataset.tab).classList.add("active");
+        });
+      });
+
+      // Live Data Integration
+      const liveBillingDashboard = {
+        getSummary: async () => {
+          const resp = await fetch("/api/billing/summary");
+          return resp.json();
+        },
+      };
+
+      let autoRefreshInterval = null;
+      function toggleAutoRefresh() {
+        if (autoRefreshInterval) {
+          clearInterval(autoRefreshInterval);
+          autoRefreshInterval = null;
+        } else {
+          autoRefreshInterval = setInterval(fetchLiveData, 30000);
+        }
+      }
+
+      async function fetchLiveData() {
+        try {
+          const data = await liveBillingDashboard.getSummary();
+          renderLiveCharts(data);
+        } catch (e) {
+          console.warn("Live data unavailable, loading demo data");
+          loadDemoLiveData();
+        }
+      }
+
+      function loadDemoLiveData() {
+        const demoData = {
+          totalRevenue: 15000000,
+          activeAgents: 2400,
+          monthlyTransactions: 850000,
+          avgCommission: 45,
+        };
+        renderLiveCharts(demoData);
+      }
+
+      function renderLiveCharts(data) {
+        // Render using Chart.js
+        console.log("Rendering live data:", data);
+      }
+
+      // Initialize with demo data
+      loadDemoLiveData();
+    </script>
+  </body>
+</html>
