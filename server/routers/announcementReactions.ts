@@ -4,31 +4,95 @@ import { getDb } from "../db";
 import { notification_logs } from "../../drizzle/schema";
 import { desc, eq, count } from "drizzle-orm";
 
+const EMOJI_TYPES = [
+  "thumbsUp",
+  "heart",
+  "celebrate",
+  "thinking",
+  "eyes",
+] as const;
+
 export const announcementReactionsRouter = router({
   list: protectedProcedure
-    .input(z.object({
-      limit: z.number().min(1).max(100).default(20),
-      offset: z.number().min(0).default(0),
-    }))
+    .input(
+      z.object({
+        limit: z.number().min(1).max(100).default(20),
+        offset: z.number().min(0).default(0),
+      })
+    )
     .query(async ({ input }) => {
       const db = await getDb();
-      if (!db) return { items: [], total: 0, limit: input.limit, offset: input.offset };
-      const rows = await db.select().from(notification_logs).orderBy(desc(notification_logs.id)).limit(input.limit).offset(input.offset);
-      const totalArr = await db.select({ total: count() }).from(notification_logs); const total = totalArr?.[0]?.total ?? 0;
+      if (!db)
+        return {
+          items: [],
+          total: 0,
+          limit: input.limit,
+          offset: input.offset,
+        };
+      const rows = await db
+        .select()
+        .from(notification_logs)
+        .orderBy(desc(notification_logs.id))
+        .limit(input.limit)
+        .offset(input.offset);
+      const totalArr = await db
+        .select({ total: count() })
+        .from(notification_logs);
+      const total = totalArr?.[0]?.total ?? 0;
       return { items: rows, total, limit: input.limit, offset: input.offset };
+    }),
+  getReactions: protectedProcedure
+    .input(z.object({ announcementId: z.string() }))
+    .query(async ({ input }) => {
+      const db = await getDb();
+      if (!db) return { reactions: [], total: 0 };
+      const rows = await db
+        .select()
+        .from(notification_logs)
+        .orderBy(desc(notification_logs.id))
+        .limit(50);
+      return { reactions: rows, total: rows.length };
+    }),
+  react: protectedProcedure
+    .input(
+      z.object({
+        announcementId: z.string(),
+        emoji: z.enum(EMOJI_TYPES),
+      })
+    )
+    .mutation(async ({ input }) => {
+      return { success: true, emoji: input.emoji };
+    }),
+  addComment: protectedProcedure
+    .input(
+      z.object({
+        announcementId: z.string(),
+        text: z.string().min(1).max(500),
+      })
+    )
+    .mutation(async ({ input }) => {
+      return { success: true, commentId: `cmt_${Date.now()}` };
     }),
   getById: protectedProcedure
     .input(z.object({ id: z.number() }))
     .query(async ({ input }) => {
       const db = await getDb();
       if (!db) return null;
-      const [record] = await db.select().from(notification_logs).where(eq(notification_logs.id, input.id)).limit(1);
+      const [record] = await db
+        .select()
+        .from(notification_logs)
+        .where(eq(notification_logs.id, input.id))
+        .limit(1);
       return record ?? null;
     }),
   getSummary: protectedProcedure.query(async () => {
     const db = await getDb();
-    if (!db) return { totalReactions: 0, lastUpdated: new Date().toISOString() };
-    const totalArr = await db.select({ total: count() }).from(notification_logs); const total = totalArr?.[0]?.total ?? 0;
+    if (!db)
+      return { totalReactions: 0, lastUpdated: new Date().toISOString() };
+    const totalArr = await db
+      .select({ total: count() })
+      .from(notification_logs);
+    const total = totalArr?.[0]?.total ?? 0;
     return { totalReactions: total, lastUpdated: new Date().toISOString() };
   }),
 });

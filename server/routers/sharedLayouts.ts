@@ -8,16 +8,38 @@ const PERMISSION_LEVELS = ["view-only", "can-edit", "can-fork"] as const;
 
 export const sharedLayoutsRouter = router({
   gallery: protectedProcedure
-    .input(z.object({ search: z.string().optional(), tag: z.string().optional() }).optional())
+    .input(
+      z
+        .object({ search: z.string().optional(), tag: z.string().optional() })
+        .optional()
+    )
     .query(async () => {
       const db = await getDb();
-      if (!db) return { items: [], total: 0, tags: ["finance", "operations", "analytics"] };
-      const rows = await db.select().from(analyticsDashboards).orderBy(desc(analyticsDashboards.id)).limit(50);
-      const totalArr = await db.select({ total: count() }).from(analyticsDashboards); const total = totalArr?.[0]?.total ?? 0;
-      return { items: rows, total, tags: ["finance", "operations", "analytics"] };
+      if (!db)
+        return {
+          items: [],
+          total: 0,
+          tags: ["finance", "operations", "analytics"],
+        };
+      const rows = await db
+        .select()
+        .from(analyticsDashboards)
+        .orderBy(desc(analyticsDashboards.id))
+        .limit(50);
+      const totalArr = await db
+        .select({ total: count() })
+        .from(analyticsDashboards);
+      const total = totalArr?.[0]?.total ?? 0;
+      return {
+        items: rows,
+        total,
+        tags: ["finance", "operations", "analytics"],
+      };
     }),
   share: protectedProcedure
-    .input(z.object({ layoutId: z.string(), permission: z.enum(PERMISSION_LEVELS) }))
+    .input(
+      z.object({ layoutId: z.string(), permission: z.enum(PERMISSION_LEVELS) })
+    )
     .mutation(async ({ input }) => {
       return { success: true, shareUrl: `/shared/${input.layoutId}` };
     }),
@@ -34,8 +56,15 @@ export const sharedLayoutsRouter = router({
   list: protectedProcedure.query(async () => {
     const db = await getDb();
     if (!db) return { items: [], total: 0 };
-    const rows = await db.select().from(analyticsDashboards).orderBy(desc(analyticsDashboards.id)).limit(50);
-    const totalArr = await db.select({ total: count() }).from(analyticsDashboards); const total = totalArr?.[0]?.total ?? 0;
+    const rows = await db
+      .select()
+      .from(analyticsDashboards)
+      .orderBy(desc(analyticsDashboards.id))
+      .limit(50);
+    const totalArr = await db
+      .select({ total: count() })
+      .from(analyticsDashboards);
+    const total = totalArr?.[0]?.total ?? 0;
     return { items: rows, total };
   }),
 });
