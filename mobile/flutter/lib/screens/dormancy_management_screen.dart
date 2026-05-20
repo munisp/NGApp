@@ -1,0 +1,19 @@
+import 'package:flutter/material.dart';
+import '../widgets/api_list_screen.dart';
+
+class DormancyManagementScreen extends StatelessWidget {
+  const DormancyManagementScreen({super.key});
+  @override
+  Widget build(BuildContext context) {
+    return ApiListScreen(
+      title: 'Dormancy Management',
+      apiEndpoint: '/api/production/missing-domains/list',
+      columnKeys: const ['id', 'status'],
+      columnLabels: const ['ID', 'Status'],
+      seedData: const [
+        {'id': 'DORMANCY_MANAGEMENT_SCREEN-001', 'status': 'active'},
+        {'id': 'DORMANCY_MANAGEMENT_SCREEN-002', 'status': 'pending'},
+      ],
+    );
+  }
+}

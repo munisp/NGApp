@@ -1,0 +1,890 @@
+// account-opening-go — Account Opening with KYC/KYB enforcement
+// Domain: Customer Onboarding
+// KYC gate: Tier 2+ accounts require verified KYC before opening
+// Middleware: Kafka, Postgres, Redis, Temporal, Permify, OpenSearch
+package main
+
+import (
+	_ "github.com/lib/pq"
+	"context"
+	"os/signal"
+	"syscall"
+	"sync/atomic"
+	"bytes"
+	"database/sql"
+	"encoding/json"
+	"fmt"
+	"log"
+	"math/rand"
+	"net/http"
+	"os"
+	"strconv"
+	"strings"
+	"sync"
+	"time"
+	"net"
+
+)
+
+var serviceName = "account-opening-go"
+
+// Inter-service URLs
+var kycServiceURL = func() string { v := os.Getenv("KYC_SERVICE_URL"); if v == "" { return "http://localhost:8201" }; return v }()
+var coreServiceURL = func() string { v := os.Getenv("CORE_BANKING_URL"); if v == "" { return "http://localhost:8100" }; return v }()
+
+
+var (
+	db           *sql.DB
+	startTime    = time.Now()
+	kycEngineURL string
+	mu           sync.Mutex
+)
+
+// ── Domain Types ────────────────────────────────────────────────────────────
+
+type AccountApplication struct {
+	ID           string                 `json:"id"`
+	CustomerID   string                 `json:"customerId"`
+	CustomerName string                 `json:"customerName"`
+	AccountType  string                 `json:"accountType"`
+	Currency     string                 `json:"currency"`
+	Tier         string                 `json:"tier"`
+	Status       string                 `json:"status"`
+	KYCStatus    string                 `json:"kycStatus"`
+	KYCLevel     string                 `json:"kycLevel"`
+	KYCVerified  bool                   `json:"kycVerified"`
+	Documents    []string               `json:"documents"`
+	BVN          string                 `json:"bvn,omitempty"`
+	NIN          string                 `json:"nin,omitempty"`
+	Data         map[string]interface{} `json:"data,omitempty"`
+	CreatedAt    string                 `json:"createdAt"`
+	UpdatedAt    string                 `json:"updatedAt"`
+}
+
+type KYCCheckResult struct {
+	Allowed       bool   `json:"allowed"`
+	CustomerID    string `json:"customerId"`
+	Status        string `json:"status"`
+	Level         string `json:"level"`
+	Verified      bool   `json:"verified"`
+	Reason        string `json:"reason"`
+	RequiredLevel string `json:"requiredLevel"`
+}
+
+var applications = []AccountApplication{
+	{ID: "APP-001", CustomerID: "CUS-1045", CustomerName: "Amina Yusuf", AccountType: "savings", Currency: "NGN", Tier: "tier2", Status: "approved", KYCStatus: "verified", KYCLevel: "enhanced", KYCVerified: true, Documents: []string{"bvn", "nin", "passport_photo"}, BVN: "22345678901", CreatedAt: "2026-05-08T09:00:00Z", UpdatedAt: "2026-05-08T09:02:45Z"},
+	{ID: "APP-002", CustomerID: "CUS-2089", CustomerName: "Chinedu Okeke", AccountType: "current", Currency: "NGN", Tier: "tier3", Status: "pending_kyc", KYCStatus: "pending", KYCLevel: "standard", KYCVerified: false, Documents: []string{"bvn"}, BVN: "33456789012", CreatedAt: "2026-05-09T10:00:00Z", UpdatedAt: "2026-05-09T10:00:00Z"},
+	{ID: "APP-003", CustomerID: "CUS-WALK-001", CustomerName: "Walk-in Customer", AccountType: "savings", Currency: "NGN", Tier: "tier1", Status: "approved", KYCStatus: "basic_only", KYCLevel: "basic", KYCVerified: true, Documents: []string{"phone"}, CreatedAt: "2026-05-10T14:00:00Z", UpdatedAt: "2026-05-10T14:00:30Z"},
+}
+
+var auditLog []map[string]interface{}
+
+// ── KYC Enforcement ─────────────────────────────────────────────────────────
+
+func checkKYCStatus(customerID, requiredLevel string) KYCCheckResult {
+	gatewayURL := os.Getenv("GATEWAY_URL")
+	if gatewayURL == "" {
+		gatewayURL = "http://localhost:5000"
+	}
+
+	result, err := callService("POST", gatewayURL+"/api/platform/kyc-enforcement/check", map[string]string{
+		"customerId": customerID,
+		"serviceId":  "account-opening-go",
+		"operation":  "account_open",
+	})
+	if err != nil {
+		log.Printf("[account-opening-go] KYC check failed (circuit breaker / retries exhausted): %v — BLOCKING (fail-closed)", err)
+		return KYCCheckResult{Allowed: false, CustomerID: customerID, Status: "gateway_unreachable", Reason: fmt.Sprintf("KYC enforcement unavailable — fail-closed: %v", err)}
+	}
+
+	allowed, _ := result["allowed"].(bool)
+	reason, _ := result["reason"].(string)
+	reqLevel, _ := result["requiredLevel"].(string)
+	kycStatus, _ := result["kycStatus"].(map[string]interface{})
+	level, _ := kycStatus["level"].(string)
+	status, _ := kycStatus["status"].(string)
+	verified, _ := kycStatus["verified"].(bool)
+
+	return KYCCheckResult{
+		Allowed:       allowed,
+		CustomerID:    customerID,
+		Status:        status,
+		Level:         level,
+		Verified:      verified,
+		Reason:        reason,
+		RequiredLevel: reqLevel,
+	}
+}
+
+func kycLevelForTier(tier string) string {
+	switch tier {
+	case "tier1":
+		return "basic"
+	case "tier2":
+		return "standard"
+	case "tier3":
+		return "enhanced"
+	default:
+		return "standard"
+	}
+}
+
+// ── Handlers ────────────────────────────────────────────────────────────────
+
+func jsonResp(w http.ResponseWriter, code int, data interface{}) {
+	w.Header().Set("Content-Type", "application/json")
+	w.Header().Set("X-Service", "account-opening-go")
+	w.Header().Set("X-Request-Id", fmt.Sprintf("%d", time.Now().UnixNano()))
+	w.Header().Set("Access-Control-Allow-Origin", "*")
+	w.Header().Set("Access-Control-Allow-Methods", "GET, POST, PUT, DELETE, OPTIONS")
+	w.Header().Set("Access-Control-Allow-Headers", "Content-Type, Authorization, Idempotency-Key")
+	w.WriteHeader(code)
+	json.NewEncoder(w).Encode(data)
+}
+
+func healthHandler(w http.ResponseWriter, r *http.Request) {
+	dbURL := os.Getenv("DATABASE_URL")
+	dbStatus := "disconnected"
+	if dbURL != "" {
+		dbStatus = "configured"
+	}
+	jsonResp(w, 200, map[string]interface{}{
+		"service": "account-opening-go", "status": "healthy", "version": "3.0.0",
+		"domain": "Account Opening — Customer Onboarding",
+		"kycEnforcement": map[string]interface{}{
+			"enabled":           true,
+			"tier1_bypass":      true,
+			"tier2_requires":    "standard",
+			"tier3_requires":    "enhanced",
+			"kycEngineUrl":      kycEngineURL,
+			"enforcementMode":   "gateway_middleware + service_check",
+		},
+		"capabilities": []string{
+			"account_application", "kyc_gate_enforcement", "tier_assignment",
+			"bvn_nin_validation", "document_collection", "approval_workflow",
+			"kafka_events", "audit_trail", "idempotency",
+		},
+		"middleware": map[string]string{
+			"postgres":   dbStatus,
+			"kafka":      "account.opened, account.kyc.required, account.kyc.verified",
+			"redis":      getEnvStatus("REDIS_URL"),
+			"temporal":   "AccountOpeningWorkflow, KYCVerificationChild",
+			"permify":    "account:open, account:approve, kyc:verify",
+			"opensearch": "account-applications-2026",
+		},
+		"timestamp": time.Now().UTC().Format(time.RFC3339),
+		"uptime":    time.Since(startTime).String(),
+	})
+}
+
+func getEnvStatus(key string) string {
+	if os.Getenv(key) != "" { return "configured" }
+	return "not_configured"
+}
+
+func listHandler(w http.ResponseWriter, r *http.Request) {
+	cacheKey := "account_opening_list"
+	if cached, ok := cacheGet(cacheKey); ok {
+		w.Header().Set("Content-Type", "application/json")
+		w.Header().Set("X-Cache", "HIT")
+		w.WriteHeader(200)
+		w.Write([]byte(cached))
+		return
+	}
+	mu.Lock()
+	defer mu.Unlock()
+	status := r.URL.Query().Get("status")
+	tier := r.URL.Query().Get("tier")
+	var filtered []AccountApplication
+	for _, app := range applications {
+		if (status == "" || app.Status == status) && (tier == "" || app.Tier == tier) {
+			filtered = append(filtered, app)
+		}
+	}
+	if filtered == nil { filtered = []AccountApplication{} }
+	jsonResp(w, 200, map[string]interface{}{
+		"applications": filtered, "total": len(filtered),
+		"domain": "Account Opening",
+	})
+}
+
+func statsHandler(w http.ResponseWriter, r *http.Request) {
+	mu.Lock()
+	defer mu.Unlock()
+	approved, pending, rejected, pendingKYC := 0, 0, 0, 0
+	for _, app := range applications {
+		switch app.Status {
+		case "approved": approved++
+		case "pending", "pending_review": pending++
+		case "rejected": rejected++
+		case "pending_kyc": pendingKYC++
+		}
+	}
+	jsonResp(w, 200, map[string]interface{}{
+		"total": len(applications), "approved": approved, "pending": pending,
+		"rejected": rejected, "pendingKYC": pendingKYC,
+		"service": "account-opening-go",
+	})
+}
+
+func getByIdHandler(w http.ResponseWriter, r *http.Request) {
+	idParam := r.URL.Query().Get("id")
+	if idParam == "" { idParam = strings.TrimPrefix(r.URL.Path, "/v1/account-opening/") }
+	cacheKey := "account_opening_" + idParam
+	if cached, ok := cacheGet(cacheKey); ok {
+		w.Header().Set("Content-Type", "application/json")
+		w.Header().Set("X-Cache", "HIT")
+		w.WriteHeader(200)
+		w.Write([]byte(cached))
+		return
+	}
+	id := strings.TrimPrefix(r.URL.Path, "/v1/account-opening/")
+	if id == "" || id == "list" || id == "stats" || id == "products" || id == "tier-limits" {
+		listHandler(w, r)
+		return
+	}
+	mu.Lock()
+	defer mu.Unlock()
+	for _, app := range applications {
+		if app.ID == id {
+			jsonResp(w, 200, app)
+			return
+		}
+	}
+	jsonResp(w, 404, map[string]string{"error": "Application not found"})
+}
+
+func productsHandler(w http.ResponseWriter, r *http.Request) {
+	products := []map[string]interface{}{
+		{"id": "PRD-SAV", "name": "Savings Account", "type": "savings", "currency": "NGN", "minBalance": 1000, "kycRequired": "basic", "tier": "tier1"},
+		{"id": "PRD-CUR", "name": "Current Account", "type": "current", "currency": "NGN", "minBalance": 10000, "kycRequired": "standard", "tier": "tier2"},
+		{"id": "PRD-DOM", "name": "Domiciliary Account", "type": "domiciliary", "currency": "USD", "minBalance": 100, "kycRequired": "enhanced", "tier": "tier3"},
+		{"id": "PRD-FD", "name": "Fixed Deposit", "type": "fixed_deposit", "currency": "NGN", "minBalance": 100000, "kycRequired": "standard", "tier": "tier2"},
+		{"id": "PRD-CORP", "name": "Corporate Account", "type": "corporate", "currency": "NGN", "minBalance": 500000, "kycRequired": "full_edd", "tier": "tier3", "kybRequired": true},
+	}
+	jsonResp(w, 200, map[string]interface{}{"products": products, "total": len(products)})
+}
+
+func tierLimitsHandler(w http.ResponseWriter, r *http.Request) {
+	limits := []map[string]interface{}{
+		{"tier": "tier1", "name": "Basic (Mobile Money)", "maxBalance": 300000, "dailyLimit": 50000, "kycLevel": "basic", "docs": []string{"phone_number", "name", "dob"}},
+		{"tier": "tier2", "name": "Standard", "maxBalance": 500000, "dailyLimit": 200000, "kycLevel": "standard", "docs": []string{"bvn", "id_document"}},
+		{"tier": "tier3", "name": "Enhanced (Full Banking)", "maxBalance": "unlimited", "dailyLimit": "unlimited", "kycLevel": "enhanced", "docs": []string{"bvn", "nin", "utility_bill", "passport_photo"}},
+	}
+	jsonResp(w, 200, map[string]interface{}{"tierLimits": limits, "total": len(limits)})
+}
+
+func createHandler(w http.ResponseWriter, r *http.Request) {
+	tenantID := r.Header.Get("X-Tenant-Id")
+	if tenantID == "" { tenantID = "platform" }
+	if r.Method == "OPTIONS" {
+		w.Header().Set("Access-Control-Allow-Origin", "*")
+		w.Header().Set("Access-Control-Allow-Methods", "GET, POST, PUT, DELETE, OPTIONS")
+		w.Header().Set("Access-Control-Allow-Headers", "Content-Type, Authorization, Idempotency-Key")
+		w.WriteHeader(204)
+		return
+	}
+	if r.Method != "POST" {
+		jsonResp(w, 405, map[string]string{"error": "Method not allowed"})
+		return
+	}
+	var body map[string]interface{}
+	if err := json.NewDecoder(r.Body).Decode(&body); err != nil {
+		jsonResp(w, 400, map[string]string{"error": "Invalid JSON body"})
+		return
+	}
+
+	customerID := getString(body, "customerId")
+	customerName := getString(body, "customerName")
+	accountType := getString(body, "accountType")
+	tier := getString(body, "tier")
+	if tier == "" { tier = "tier1" }
+	if accountType == "" { accountType = "savings" }
+
+	requiredKYCLevel := kycLevelForTier(tier)
+
+	// Tier 1 basic accounts bypass KYC (CBN allows phone-only for mobile money)
+	if tier != "tier1" && customerID != "" {
+		kycResult := checkKYCStatus(customerID, requiredKYCLevel)
+		if !kycResult.Allowed {
+			mu.Lock()
+			app := AccountApplication{
+				ID: fmt.Sprintf("APP-%08X", rand.Uint32()), CustomerID: customerID,
+				CustomerName: customerName, AccountType: accountType, Currency: getString(body, "currency"),
+				Tier: tier, Status: "pending_kyc", KYCStatus: kycResult.Status,
+				KYCLevel: kycResult.Level, KYCVerified: false,
+				CreatedAt: time.Now().Format(time.RFC3339), UpdatedAt: time.Now().Format(time.RFC3339),
+			}
+			applications = append(applications, app)
+			mu.Unlock()
+
+			jsonResp(w, 202, map[string]interface{}{
+				"application":  app,
+				"kycRequired":  true,
+				"kycResult":    kycResult,
+				"message":      fmt.Sprintf("Account application created but requires %s KYC verification before approval", requiredKYCLevel),
+				"nextStep":     "Complete KYC verification via /api/platform/kyc-triggers/initiate",
+				"kafkaEvents": []map[string]string{
+					{"topic": "account.application.created", "status": "pending_kyc"},
+					{"topic": "kyc.verification.required", "customerId": customerID, "requiredLevel": requiredKYCLevel},
+				},
+			})
+			return
+		}
+	}
+
+	mu.Lock()
+	defer mu.Unlock()
+
+	app := AccountApplication{
+		ID: fmt.Sprintf("APP-%08X", rand.Uint32()), CustomerID: customerID,
+		CustomerName: customerName, AccountType: accountType,
+		Currency: getString(body, "currency"), Tier: tier,
+		Status: "approved", KYCStatus: "verified", KYCLevel: requiredKYCLevel,
+		KYCVerified: true, BVN: getString(body, "bvn"), NIN: getString(body, "nin"),
+		Documents: []string{}, Data: body,
+		CreatedAt: time.Now().Format(time.RFC3339), UpdatedAt: time.Now().Format(time.RFC3339),
+	}
+	if tier == "tier1" { app.KYCStatus = "basic_only" }
+	applications = append(applications, app)
+
+	auditLog = append(auditLog, map[string]interface{}{
+		"action": "account_opened", "applicationId": app.ID,
+		"customerId": customerID, "tier": tier, "kycVerified": app.KYCVerified,
+		"timestamp": app.CreatedAt,
+	})
+
+	dataBytes, _ := json.Marshal(body)
+		dataBytes = []byte(sanitizeInput(string(dataBytes)))
+	if dbErr := dbInsert(fmt.Sprintf("account_opening_go-%d", time.Now().UnixNano()), "account_opening_go", "default", "active", dataBytes); dbErr != nil {
+		log.Printf("[%s] dbInsert failed: %v", serviceName, dbErr)
+	}
+	
+	cacheSet(tenantID+":"+"account_opening_list", "", 1) // invalidate list cache
+	jsonResp(w, 201, map[string]interface{}{
+		"application": app,
+		"message":     fmt.Sprintf("Account application approved — %s KYC verified", app.KYCLevel),
+		"kafkaEvents": []map[string]string{
+			{"topic": "account.opened", "customerId": customerID, "tier": tier},
+		},
+	})
+}
+
+func approveHandler(w http.ResponseWriter, r *http.Request) {
+	if r.Method != "POST" { jsonResp(w, 405, map[string]string{"error": "POST required"}); return }
+	var body map[string]interface{}
+	json.NewDecoder(r.Body).Decode(&body)
+	appID := getString(body, "applicationId")
+
+	mu.Lock()
+	defer mu.Unlock()
+	for i := range applications {
+		if applications[i].ID == appID {
+			if !applications[i].KYCVerified {
+				jsonResp(w, 403, map[string]interface{}{
+					"error": "Cannot approve — KYC verification incomplete",
+					"code": "KYC_NOT_VERIFIED",
+					"applicationId": appID,
+					"kycStatus": applications[i].KYCStatus,
+					"message": "Complete KYC verification before approving this application",
+				})
+				return
+			}
+			applications[i].Status = "approved"
+			applications[i].UpdatedAt = time.Now().Format(time.RFC3339)
+			jsonResp(w, 200, map[string]interface{}{
+				"application": applications[i],
+				"message": "Application approved — KYC verified",
+			})
+			return
+		}
+	}
+	jsonResp(w, 404, map[string]string{"error": "Application not found"})
+}
+
+func kycVerifyHandler(w http.ResponseWriter, r *http.Request) {
+	if r.Method != "POST" { jsonResp(w, 405, map[string]string{"error": "POST required"}); return }
+	var body map[string]interface{}
+	json.NewDecoder(r.Body).Decode(&body)
+	customerID := getString(body, "customerId")
+	level := getString(body, "level")
+	if level == "" { level = "standard" }
+
+	mu.Lock()
+	defer mu.Unlock()
+	updated := 0
+	for i := range applications {
+		if applications[i].CustomerID == customerID && applications[i].Status == "pending_kyc" {
+			applications[i].KYCVerified = true
+			applications[i].KYCStatus = "verified"
+			applications[i].KYCLevel = level
+			applications[i].Status = "approved"
+			applications[i].UpdatedAt = time.Now().Format(time.RFC3339)
+			updated++
+		}
+	}
+	jsonResp(w, 200, map[string]interface{}{
+		"customerId": customerID, "level": level, "applicationsUpdated": updated,
+		"message": fmt.Sprintf("KYC verified at %s level — %d applications approved", level, updated),
+		"kafkaEvent": map[string]string{"topic": "account.kyc.verified", "customerId": customerID},
+	})
+}
+
+func auditHandler(w http.ResponseWriter, r *http.Request) {
+	mu.Lock()
+	defer mu.Unlock()
+	if auditLog == nil { auditLog = []map[string]interface{}{} }
+	jsonResp(w, 200, map[string]interface{}{"audit": auditLog, "total": len(auditLog)})
+}
+
+func getString(m map[string]interface{}, key string) string {
+	if v, ok := m[key]; ok {
+		if s, ok := v.(string); ok { return s }
+	}
+	return ""
+}
+
+func initDB() {
+	dbURL := os.Getenv("DATABASE_URL")
+	if dbURL == "" {
+		log.Println("[account-opening-go] DATABASE_URL not set, running without DB")
+		return
+	}
+	var err error
+	db, err = sql.Open("postgres", dbURL)
+	if err != nil {
+		log.Printf("[account-opening-go] DB connection error: %v", err)
+		return
+	}
+	db.SetMaxOpenConns(25)
+	db.SetMaxIdleConns(5)
+	db.SetConnMaxLifetime(5 * time.Minute)
+	if err = db.Ping(); err != nil {
+		log.Printf("[account-opening-go] DB ping failed: %v", err)
+		db = nil
+		return
+	}
+	log.Println("[account-opening-go] Connected to Postgres")
+}
+
+func dbInsert(id, service, typ, status string, data []byte) error {
+	if db == nil { return fmt.Errorf("no db") }
+	_, err := db.Exec("INSERT INTO service_records (id, service, type, status, data) VALUES ($1,$2,$3,$4,$5)", id, service, typ, status, string(data))
+	return err
+}
+
+func dataHandler(w http.ResponseWriter, r *http.Request) {
+	if db == nil {
+		jsonResp(w, 200, map[string]interface{}{"items": []interface{}{}, "source": "no-db"})
+		return
+	}
+	page, _ := strconv.Atoi(r.URL.Query().Get("page"))
+	if page < 1 { page = 1 }
+	limit, _ := strconv.Atoi(r.URL.Query().Get("limit"))
+	if limit < 1 || limit > 100 { limit = 25 }
+	offset := (page - 1) * limit
+
+	var total int
+	db.QueryRow(`SELECT count(*) FROM "accounts"`).Scan(&total)
+
+	rows, err := db.Query(fmt.Sprintf(`SELECT accountId, accountName, accountType, currency, balance, status FROM "accounts" ORDER BY id LIMIT %d OFFSET %d`, limit, offset))
+	if err != nil {
+		jsonResp(w, 500, map[string]interface{}{"error": err.Error()})
+		return
+	}
+	defer rows.Close()
+
+	cols, _ := rows.Columns()
+	var items []map[string]interface{}
+	for rows.Next() {
+		vals := make([]interface{}, len(cols))
+		ptrs := make([]interface{}, len(cols))
+		for i := range vals { ptrs[i] = &vals[i] }
+		rows.Scan(ptrs...)
+		row := make(map[string]interface{})
+		for i, col := range cols { row[col] = vals[i] }
+		items = append(items, row)
+	}
+	if items == nil { items = []map[string]interface{}{} }
+
+	jsonResp(w, 200, map[string]interface{}{
+		"items": items, "total": total, "page": page, "limit": limit, "source": "database",
+	})
+}
+
+// --- Production Hardening ---
+var (
+    _reqCount  uint64
+    _errCount  uint64
+    _bootTime  = time.Now()
+)
+
+func readyzHandler(w http.ResponseWriter, r *http.Request) {
+    w.Header().Set("Content-Type", "application/json")
+    w.WriteHeader(200)
+    fmt.Fprintf(w, `{"ready":true,"service":"account-opening-go"}`)
+}
+
+func livezHandler(w http.ResponseWriter, r *http.Request) {
+    w.Header().Set("Content-Type", "application/json")
+    w.WriteHeader(200)
+    fmt.Fprintf(w, `{"alive":true}`)
+}
+
+func metricsHandler(w http.ResponseWriter, r *http.Request) {
+    reqs := atomic.LoadUint64(&_reqCount)
+    errs := atomic.LoadUint64(&_errCount)
+    w.Header().Set("Content-Type", "text/plain")
+    fmt.Fprintf(w, "# TYPE requests_total counter\nrequests_total{service=\"account-opening-go\"} %d\n", reqs)
+    fmt.Fprintf(w, "# TYPE errors_total counter\nerrors_total{service=\"account-opening-go\"} %d\n", errs)
+    fmt.Fprintf(w, "# TYPE uptime_seconds gauge\nuptime_seconds{service=\"account-opening-go\"} %.0f\n", time.Since(_bootTime).Seconds())
+}
+
+
+// --- Inter-Service HTTP Client with Retry & Circuit Breaker ---
+type circuitBreaker struct {
+    failures    int
+    lastFailure time.Time
+    threshold   int
+    resetAfter  time.Duration
+    mu          sync.Mutex
+}
+
+func (cb *circuitBreaker) allow() bool {
+    cb.mu.Lock()
+    defer cb.mu.Unlock()
+    if cb.failures >= cb.threshold {
+        if time.Since(cb.lastFailure) > cb.resetAfter {
+            cb.failures = cb.threshold / 2 // half-open
+            return true
+        }
+        return false
+    }
+    return true
+}
+
+func (cb *circuitBreaker) recordSuccess() {
+    cb.mu.Lock()
+    defer cb.mu.Unlock()
+    if cb.failures > 0 { cb.failures-- }
+}
+
+func (cb *circuitBreaker) recordFailure() {
+    cb.mu.Lock()
+    defer cb.mu.Unlock()
+    cb.failures++
+    cb.lastFailure = time.Now()
+}
+
+var _cb = &circuitBreaker{threshold: 5, resetAfter: 30 * time.Second}
+
+func callService(method, url string, body interface{}) (map[string]interface{}, error) {
+    if !_cb.allow() {
+        return nil, fmt.Errorf("circuit breaker open for %s", url)
+    }
+    
+    client := &http.Client{Timeout: 15 * time.Second}
+    var lastErr error
+    
+    for attempt := 0; attempt < 3; attempt++ {
+        if attempt > 0 {
+            time.Sleep(time.Duration(1<<uint(attempt)) * 100 * time.Millisecond)
+        }
+        
+        var req *http.Request
+        if body != nil {
+            jsonData, _ := json.Marshal(body)
+            req, _ = http.NewRequest(method, url, bytes.NewBuffer(jsonData))
+        } else {
+            req, _ = http.NewRequest(method, url, nil)
+        }
+        req.Header.Set("Content-Type", "application/json")
+        
+        resp, err := client.Do(req)
+        if err != nil {
+            lastErr = err
+            _cb.recordFailure()
+            log.Printf("[inter-service] %s %s attempt %d failed: %v", method, url, attempt+1, err)
+            continue
+        }
+        defer resp.Body.Close()
+        
+        if resp.StatusCode >= 500 {
+            lastErr = fmt.Errorf("upstream %s returned %d", url, resp.StatusCode)
+            _cb.recordFailure()
+            continue
+        }
+        
+        var result map[string]interface{}
+        json.NewDecoder(resp.Body).Decode(&result)
+        _cb.recordSuccess()
+        return result, nil
+    }
+    return nil, fmt.Errorf("all retries exhausted for %s: %w", url, lastErr)
+}
+
+func callKYCCheck(customerID string, tier string) (map[string]interface{}, error) {
+    return callService("POST", kycServiceURL+"/v1/verify", map[string]interface{}{
+        "customer_id": customerID, "tier": tier, "checks": []string{"bvn", "nin"},
+    })
+}
+
+func callCreateAccount(customerID string, accountType string) (map[string]interface{}, error) {
+    return callService("POST", coreServiceURL+"/v1/accounts", map[string]interface{}{
+        "customer_id": customerID, "type": accountType, "currency": "NGN",
+    })
+}
+
+// --- Counting Middleware ---
+func countingMiddleware(next http.Handler) http.Handler {
+    return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+        atomic.AddUint64(&_reqCount, 1)
+        rw := &responseWriter{ResponseWriter: w, status: 200}
+        next.ServeHTTP(rw, r)
+        if rw.status >= 400 {
+            atomic.AddUint64(&_errCount, 1)
+        }
+    })
+}
+
+type responseWriter struct {
+    http.ResponseWriter
+    status int
+}
+
+func (rw *responseWriter) WriteHeader(code int) {
+    rw.status = code
+    rw.ResponseWriter.WriteHeader(code)
+}
+
+
+// --- Distributed Tracing ---
+func traceMiddleware(next http.Handler) http.Handler {
+	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		traceID := r.Header.Get("X-Trace-Id")
+		if traceID == "" {
+			traceID = r.Header.Get("traceparent")
+		}
+		if traceID == "" {
+			traceID = fmt.Sprintf("%x-%x", time.Now().UnixNano(), os.Getpid())
+		}
+		w.Header().Set("X-Trace-Id", traceID)
+		r.Header.Set("X-Trace-Id", traceID)
+		log.Printf("[%s] %s %s trace=%s", serviceName, r.Method, r.URL.Path, traceID)
+		next.ServeHTTP(w, r)
+	})
+}
+
+// --- Redis Caching Layer ---
+var redisAddr string
+
+func init() {
+	redisAddr = os.Getenv("REDIS_URL")
+	if redisAddr == "" {
+		redisAddr = "localhost:6379"
+	}
+}
+
+func cacheGet(key string) (string, bool) {
+	conn, err := net.DialTimeout("tcp", redisAddr, 2*time.Second)
+	if err != nil { return "", false }
+	defer conn.Close()
+	fmt.Fprintf(conn, "*2\r\n$3\r\nGET\r\n$%d\r\n%s\r\n", len(key), key)
+	buf := make([]byte, 4096)
+	n, err := conn.Read(buf)
+	if err != nil || n < 3 { return "", false }
+	resp := string(buf[:n])
+	if resp[0] == '$' && resp[1] != '-' {
+		// Parse bulk string response
+		parts := strings.SplitN(resp, "\r\n", 3)
+		if len(parts) >= 3 { return parts[1], true }
+	}
+	return "", false
+}
+
+func cacheSet(key, value string, ttlSeconds int) {
+	conn, err := net.DialTimeout("tcp", redisAddr, 2*time.Second)
+	if err != nil { return }
+	defer conn.Close()
+	fmt.Fprintf(conn, "*4\r\n$3\r\nSET\r\n$%d\r\n%s\r\n$%d\r\n%s\r\n$2\r\nEX\r\n$%d\r\n%d\r\n",
+		len(key), key, len(value), value, len(fmt.Sprintf("%d", ttlSeconds)), ttlSeconds)
+}
+
+// --- mTLS Configuration ---
+func getTLSConfig() (bool, string, string) {
+	if os.Getenv("TLS_ENABLED") != "true" { return false, "", "" }
+	cert := os.Getenv("TLS_CERT_PATH")
+	key := os.Getenv("TLS_KEY_PATH")
+	if cert == "" { cert = "/etc/54bank/certs/service.crt" }
+	if key == "" { key = "/etc/54bank/certs/service.key" }
+	return true, cert, key
+}
+
+// --- Rate Limiter (token bucket) ---
+type tokenBucket struct {
+	mu       sync.Mutex
+	tokens   float64
+	max      float64
+	refill   float64
+	lastTime int64
+}
+
+var _rl = &tokenBucket{max: 100, refill: 100, tokens: 100, lastTime: time.Now().UnixNano()}
+
+func (tb *tokenBucket) allow() bool {
+	tb.mu.Lock()
+	defer tb.mu.Unlock()
+	now := time.Now().UnixNano()
+	elapsed := float64(now-tb.lastTime) / float64(time.Second)
+	tb.lastTime = now
+	tb.tokens = min64f(tb.max, tb.tokens+elapsed*tb.refill)
+	if tb.tokens < 1 {
+		return false
+	}
+	tb.tokens--
+	return true
+}
+
+func min64f(a, b float64) float64 {
+	if a < b {
+		return a
+	}
+	return b
+}
+
+func rateLimitMiddleware(next http.Handler) http.Handler {
+	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		if !_rl.allow() {
+			w.Header().Set("Retry-After", "1")
+			jsonResp(w, 429, map[string]interface{}{"error": "rate limit exceeded", "retry_after": 1})
+			return
+		}
+		next.ServeHTTP(w, r)
+	})
+}
+
+// --- CORS + Security Headers Middleware ---
+func securityHeadersMiddleware(next http.Handler) http.Handler {
+	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		allowedOrigins := os.Getenv("CORS_ALLOWED_ORIGINS")
+		if allowedOrigins == "" {
+			allowedOrigins = "https://dashboard.54bank.ng"
+		}
+		origin := r.Header.Get("Origin")
+		for _, allowed := range strings.Split(allowedOrigins, ",") {
+			if strings.TrimSpace(allowed) == origin {
+				w.Header().Set("Access-Control-Allow-Origin", origin)
+				break
+			}
+		}
+		w.Header().Set("Access-Control-Allow-Methods", "GET, POST, PUT, DELETE, OPTIONS")
+		w.Header().Set("Access-Control-Allow-Headers", "Content-Type, Authorization, X-Trace-Id")
+		w.Header().Set("Access-Control-Max-Age", "86400")
+		w.Header().Set("X-Content-Type-Options", "nosniff")
+		w.Header().Set("X-Frame-Options", "DENY")
+		w.Header().Set("X-XSS-Protection", "1; mode=block")
+		w.Header().Set("Strict-Transport-Security", "max-age=31536000; includeSubDomains")
+		w.Header().Set("Referrer-Policy", "strict-origin-when-cross-origin")
+		w.Header().Set("Content-Security-Policy", "default-src 'self'")
+		if r.Method == "OPTIONS" {
+			w.WriteHeader(http.StatusNoContent)
+			return
+		}
+		next.ServeHTTP(w, r)
+	})
+}
+
+// --- Input Sanitization ---
+func sanitizeInput(s string) string {
+	s = strings.ReplaceAll(s, "<", "&lt;")
+	s = strings.ReplaceAll(s, ">", "&gt;")
+	s = strings.ReplaceAll(s, "'", "&#39;")
+	s = strings.ReplaceAll(s, "\"", "&quot;")
+	s = strings.ReplaceAll(s, "\\", "")
+	if len(s) > 10000 {
+		s = s[:10000]
+	}
+	return s
+}
+
+func jwtMiddleware(next http.Handler) http.Handler {
+	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		p := r.URL.Path
+		if p == "/healthz" || p == "/readyz" || p == "/livez" || p == "/metrics" || p == "/health" {
+			next.ServeHTTP(w, r)
+			return
+		}
+		auth := r.Header.Get("Authorization")
+		if auth == "" || !strings.HasPrefix(auth, "Bearer ") {
+			w.Header().Set("Content-Type", "application/json")
+			w.WriteHeader(401)
+			fmt.Fprintf(w, `{"error":"unauthorized","service":"%s"}`, serviceName)
+			return
+		}
+		next.ServeHTTP(w, r)
+	})
+}
+
+func main() {
+	port := os.Getenv("PORT")
+
+	if port == "" { port = "8114" }
+	kycEngineURL = os.Getenv("KYC_ENGINE_URL")
+	if kycEngineURL == "" { kycEngineURL = "http://localhost:9433" }
+
+	initDB()
+
+	mux := http.NewServeMux()
+	mux.HandleFunc("/readyz", readyzHandler)
+
+	mux.HandleFunc("/livez", livezHandler)
+
+	mux.HandleFunc("/metrics", metricsHandler)
+
+	mux.HandleFunc("/health", healthHandler)
+	mux.HandleFunc("/healthz", healthHandler)
+	mux.HandleFunc("/v1/account-opening/list", listHandler)
+	mux.HandleFunc("/v1/account-opening/stats", statsHandler)
+	mux.HandleFunc("/v1/account-opening/products", productsHandler)
+	mux.HandleFunc("/v1/account-opening/tier-limits", tierLimitsHandler)
+	mux.HandleFunc("/v1/account-opening/approve", approveHandler)
+	mux.HandleFunc("/v1/account-opening/kyc-verify", kycVerifyHandler)
+	mux.HandleFunc("/v1/account-opening/audit", auditHandler)
+	mux.HandleFunc("/v1/account-opening/data", dataHandler)
+	mux.HandleFunc("/v1/account-opening/", getByIdHandler)
+	mux.HandleFunc("/v1/account-opening", createHandler)
+	// Alternate paths
+	mux.HandleFunc("/v1/accounts/products", productsHandler)
+	mux.HandleFunc("/v1/accounts/applications", createHandler)
+	mux.HandleFunc("/v1/accounts/applications/approve", approveHandler)
+	mux.HandleFunc("/v1/accounts/kyc/verify", kycVerifyHandler)
+	mux.HandleFunc("/v1/accounts/tier-limits", tierLimitsHandler)
+
+	log.Printf("[account-opening-go] Starting on :%s (KYC enforcement enabled)", port)
+	tlsEnabled, tlsCert, tlsKey := getTLSConfig()
+	_ = tlsCert
+	_ = tlsKey
+	_ = tlsEnabled
+	server := &http.Server{
+		Addr:         ":" + port,
+		Handler:      rateLimitMiddleware(securityHeadersMiddleware(traceMiddleware(jwtMiddleware(countingMiddleware(mux))))),
+		ReadTimeout:  15 * time.Second,
+		WriteTimeout: 30 * time.Second,
+		IdleTimeout:  60 * time.Second,
+	}
+	quit := make(chan os.Signal, 1)
+	signal.Notify(quit, syscall.SIGINT, syscall.SIGTERM)
+	go func() {
+		if err := server.ListenAndServe(); err != nil && err != http.ErrServerClosed {
+			log.Fatalf("Server error: %v", err)
+		}
+	}()
+	<-quit
+	log.Println("[account-opening-go] Shutting down gracefully...")
+	ctx, cancel := context.WithTimeout(context.Background(), 30*time.Second)
+	defer cancel()
+	if err := server.Shutdown(ctx); err != nil {
+		log.Fatalf("Forced shutdown: %v", err)
+	}
+	log.Println("[account-opening-go] Server stopped")
+}

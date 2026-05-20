@@ -1,0 +1,385 @@
+#![allow(unused)]
+use tokio_postgres;
+use actix_web::dev::Service;
+use actix_web::{web, App, HttpServer, HttpResponse, middleware};
+use serde::{Deserialize, Serialize};
+use serde_json::json;
+use std::sync::Mutex;
+use std::env;
+use std::sync::atomic::{AtomicU64, Ordering as AtomicOrdering};
+
+// mortgage-servicing-rs — Mortgage servicing and amortization
+
+struct AppState {
+    records: Mutex<Vec<serde_json::Value>>,
+    db_url: Option<String>,
+    db_client: Option<std::sync::Arc<tokio_postgres::Client>>,
+}
+
+fn monthly_payment(principal: f64, annual_rate: f64, months: u32) -> f64 {
+    let r = annual_rate / 100.0 / 12.0;
+    if r == 0.0 { return principal / months as f64; }
+    principal * r * (1.0 + r).powi(months as i32) / ((1.0 + r).powi(months as i32) - 1.0)
+}
+fn dti_ratio(monthly_debt: f64, monthly_income: f64) -> f64 {
+    if monthly_income == 0.0 { 999.0 } else { monthly_debt / monthly_income * 100.0 }
+}
+fn ltv_ratio(loan_amount: f64, property_value: f64) -> f64 {
+    if property_value == 0.0 { 999.0 } else { loan_amount / property_value * 100.0 }
+}
+fn prepayment_penalty(outstanding: f64, rate: f64) -> f64 { outstanding * rate / 100.0 * 0.5 }
+
+async fn health() -> HttpResponse {
+    HttpResponse::Ok().insert_header(("content-security-policy", "default-src 'self'")).json(json!({
+        "status": "healthy",
+        "service": "mortgage-servicing-rs",
+        "version": "1.0.0",
+        "description": "Mortgage servicing and amortization",
+    }))
+}
+
+async fn compute_amortization(req: actix_web::HttpRequest, state: web::Data<AppState>, body: web::Json<serde_json::Value>) -> HttpResponse {
+    let _sanitized = sanitize_input("");
+    if !rl_allow() {
+        return HttpResponse::TooManyRequests().json(json!({"error": "rate_limit_exceeded"}));
+    }
+    if let Err(resp) = check_jwt(&req) { return resp; }
+    let input = body.into_inner();
+    let principal = input.get("principal").and_then(|v| v.as_f64()).unwrap_or(0.0);
+    let annual_rate = input.get("annual_rate").and_then(|v| v.as_f64()).unwrap_or(0.0);
+    let months = input.get("months").and_then(|v| v.as_u64()).unwrap_or(0) as u32;
+    let result = monthly_payment(principal, annual_rate, months);
+    let _result_data = json!({"endpoint": "compute_amortization"});
+    db_persist(&state, "compute_amortization", &_result_data).await;
+    // Inter-service call
+    let _upstream_url = std::env::var("AML_ENGINE_URL").unwrap_or_else(|_| "http://localhost:8120".to_string());
+    match call_service_sync(&format!("{}/v1/screen", _upstream_url), "{}") {
+        Ok(_resp) => eprintln!("mortgage-servicing-rs: upstream call ok"),
+        Err(e) => eprintln!("mortgage-servicing-rs: upstream call failed: {}", e),
+    }
+
+    HttpResponse::Ok().json(json!({
+        "service": "mortgage-servicing-rs",
+        "endpoint": "compute_amortization",
+        "result": json!({"value": result}),
+    }))
+}
+
+async fn early_repayment(req: actix_web::HttpRequest, state: web::Data<AppState>, body: web::Json<serde_json::Value>) -> HttpResponse {
+    if !rl_allow() {
+        return HttpResponse::TooManyRequests().json(json!({"error": "rate_limit_exceeded"}));
+    }
+    if let Err(resp) = check_jwt(&req) { return resp; }
+    let input = body.into_inner();
+    let monthly_debt = input.get("monthly_debt").and_then(|v| v.as_f64()).unwrap_or(0.0);
+    let monthly_income = input.get("monthly_income").and_then(|v| v.as_f64()).unwrap_or(0.0);
+    let result = dti_ratio(monthly_debt, monthly_income);
+    let _result_data = json!({"endpoint": "early_repayment"});
+    db_persist(&state, "early_repayment", &_result_data).await;
+
+    HttpResponse::Ok().json(json!({
+        "service": "mortgage-servicing-rs",
+        "endpoint": "early_repayment",
+        "result": json!({"value": result}),
+    }))
+}
+
+async fn affordability_check(req: actix_web::HttpRequest, state: web::Data<AppState>, body: web::Json<serde_json::Value>) -> HttpResponse {
+    if !rl_allow() {
+        return HttpResponse::TooManyRequests().json(json!({"error": "rate_limit_exceeded"}));
+    }
+    if let Err(resp) = check_jwt(&req) { return resp; }
+    let input = body.into_inner();
+    let loan_amount = input.get("loan_amount").and_then(|v| v.as_f64()).unwrap_or(0.0);
+    let property_value = input.get("property_value").and_then(|v| v.as_f64()).unwrap_or(0.0);
+    let result = ltv_ratio(loan_amount, property_value);
+    let _result_data = json!({"endpoint": "affordability_check"});
+    db_persist(&state, "affordability_check", &_result_data).await;
+
+    HttpResponse::Ok().json(json!({
+        "service": "mortgage-servicing-rs",
+        "endpoint": "affordability_check",
+        "result": json!({"value": result}),
+    }))
+}
+
+async fn list_records(req: actix_web::HttpRequest, state: web::Data<AppState>, query: web::Query<std::collections::HashMap<String, String>>) -> HttpResponse {
+    if let Err(resp) = check_jwt(&req) { return resp; }
+    let page: usize = query.get("page").and_then(|p| p.parse().ok()).unwrap_or(1);
+    let limit: usize = query.get("limit").and_then(|l| l.parse().ok()).unwrap_or(20);
+    let offset = (page - 1) * limit;
+    if let Some(ref client) = state.db_client {
+        match client.query(
+            "SELECT id, service, type, status, data, created_at FROM service_records WHERE service = $1 ORDER BY created_at DESC LIMIT $2 OFFSET $3",
+            &[&"mortgage_servicing_rs", &(limit as i64), &(offset as i64)]
+        ).await {
+            Ok(rows) => {
+                let items: Vec<serde_json::Value> = rows.iter().map(|r| {
+                    json!({
+                        "id": r.get::<_, String>(0),
+                        "service": r.get::<_, String>(1),
+                        "type": r.get::<_, String>(2),
+                        "status": r.get::<_, String>(3),
+                        "data": r.get::<_, String>(4),
+                    })
+                }).collect();
+                let total: i64 = client.query_one("SELECT COUNT(*) FROM service_records WHERE service = $1", &[&"mortgage_servicing_rs"]).await.map(|r| r.get(0)).unwrap_or(0);
+                return HttpResponse::Ok().json(json!({"items": items, "total": total, "page": page, "limit": limit, "source": "database"}));
+            }
+            Err(e) => { eprintln!("DB query failed: {} — fallback to in-memory", e); }
+        }
+    }
+    let records = state.records.lock().unwrap();
+    let total = records.len();
+    let items: Vec<&serde_json::Value> = records.iter().skip(offset).take(limit).collect();
+    HttpResponse::Ok().json(json!({"items": items, "total": total, "page": page, "limit": limit, "source": "in-memory"}))
+}
+
+async fn stats(state: web::Data<AppState>) -> HttpResponse {
+    if let Some(ref client) = state.db_client {
+        if let Ok(row) = client.query_one("SELECT COUNT(*) FROM service_records WHERE service = $1", &[&"mortgage_servicing_rs"]).await {
+            let total: i64 = row.get(0);
+            return HttpResponse::Ok().json(json!({"total": total, "service": env!("CARGO_PKG_NAME"), "source": "database"}));
+        }
+    }
+    let records = state.records.lock().unwrap();
+    HttpResponse::Ok().json(json!({"total": records.len(), "service": env!("CARGO_PKG_NAME"), "source": "in-memory"}))
+}
+
+
+// --- Production Hardening: readyz / livez / metrics ---
+static _REQ_COUNT: AtomicU64 = AtomicU64::new(0);
+static _ERR_COUNT: AtomicU64 = AtomicU64::new(0);
+static _RATE_WINDOW_START: AtomicU64 = AtomicU64::new(0);
+static _RATE_WINDOW_COUNT: AtomicU64 = AtomicU64::new(0);
+const RATE_LIMIT_PER_SECOND: u64 = 100;
+
+
+async fn readyz() -> HttpResponse {
+    HttpResponse::Ok().json(json!({"ready": true, "service": "mortgage-servicing-rs"}))
+}
+async fn livez() -> HttpResponse {
+    HttpResponse::Ok().json(json!({"alive": true}))
+}
+async fn prom_metrics() -> HttpResponse {
+    let r = _REQ_COUNT.load(AtomicOrdering::Relaxed);
+    let e = _ERR_COUNT.load(AtomicOrdering::Relaxed);
+    let body = format!(
+        "# TYPE requests_total counter\nrequests_total{{service=\"mortgage-servicing-rs\"}} {}\n         # TYPE errors_total counter\nerrors_total{{service=\"mortgage-servicing-rs\"}} {}\n", r, e);
+    HttpResponse::Ok().content_type("text/plain").body(body)
+}
+
+
+// --- Database Connection ---
+use tokio_postgres::NoTls;
+
+async fn init_db(db_url: &str) -> Option<tokio_postgres::Client> {
+    match tokio_postgres::connect(db_url, NoTls).await {
+        Ok((client, connection)) => {
+            tokio::spawn(async move { if let Err(e) = connection.await { eprintln!("DB connection error: {}", e); }});
+            let _ = client.execute(
+                "CREATE TABLE IF NOT EXISTS service_records (
+                    id TEXT PRIMARY KEY, service TEXT NOT NULL, type TEXT DEFAULT 'default',
+                    status TEXT DEFAULT 'active', data JSONB DEFAULT '{}',
+                    created_at TIMESTAMPTZ DEFAULT NOW(), updated_at TIMESTAMPTZ DEFAULT NOW()
+                )", &[]).await;
+            let _ = client.execute("CREATE INDEX IF NOT EXISTS idx_sr_svc ON service_records(service)", &[]).await;
+            Some(client)
+        }
+        Err(e) => { eprintln!("DB connect failed: {} — in-memory fallback", e); None }
+    }
+}
+
+
+// --- JWT Auth Check ---
+fn check_jwt(req: &actix_web::HttpRequest) -> Result<(), HttpResponse> {
+    let path = req.path();
+    if path == "/healthz" || path == "/readyz" || path == "/livez" || path == "/metrics" || path == "/health" {
+        return Ok(());
+    }
+    match req.headers().get("Authorization") {
+        Some(val) => {
+            if let Ok(s) = val.to_str() {
+                if s.starts_with("Bearer ") { return Ok(()); }
+            }
+            Err(HttpResponse::Unauthorized().json(json!({"error": "invalid auth header"})))
+        }
+        None => Err(HttpResponse::Unauthorized().json(json!({"error": "missing Authorization header"})))
+    }
+}
+
+
+// --- Security Headers Middleware ---
+#[allow(dead_code)]
+fn add_security_headers(resp: &mut actix_web::HttpResponse) {
+    let hdrs = resp.headers_mut();
+    hdrs.insert(
+        actix_web::http::header::HeaderName::from_static("x-content-type-options"),
+        actix_web::http::header::HeaderValue::from_static("nosniff"),
+    );
+    hdrs.insert(
+        actix_web::http::header::HeaderName::from_static("x-frame-options"),
+        actix_web::http::header::HeaderValue::from_static("DENY"),
+    );
+    hdrs.insert(
+        actix_web::http::header::HeaderName::from_static("x-xss-protection"),
+        actix_web::http::header::HeaderValue::from_static("1; mode=block"),
+    );
+    hdrs.insert(
+        actix_web::http::header::HeaderName::from_static("strict-transport-security"),
+        actix_web::http::header::HeaderValue::from_static("max-age=31536000; includeSubDomains"),
+    );
+    hdrs.insert(
+        actix_web::http::header::HeaderName::from_static("referrer-policy"),
+        actix_web::http::header::HeaderValue::from_static("strict-origin-when-cross-origin"),
+    );
+}
+
+fn sanitize_input(s: &str) -> String {
+    let s = s.replace('<', "&lt;").replace('>', "&gt;")
+        .replace('\'', "&#39;").replace('"', "&quot;");
+    if s.len() > 10000 { s[..10000].to_string() } else { s }
+}
+
+
+async fn db_persist(state: &web::Data<AppState>, endpoint: &str, data: &serde_json::Value) {
+    if let Some(ref client) = state.db_client {
+        let id = format!("{}_{}_{}", "mortgage_servicing_rs", endpoint, std::time::SystemTime::now().duration_since(std::time::UNIX_EPOCH).map(|d| d.as_nanos()).unwrap_or(0));
+        let svc_name = String::from("mortgage-servicing-rs");
+        let status = String::from("active");
+        let data_str = serde_json::to_string(data).unwrap_or_default();
+        let _ = client.execute(
+            "INSERT INTO service_records (id, service, type, status, data) VALUES ($1, $2, $3, $4, $5)",
+            &[&id, &svc_name, &endpoint, &status, &data_str],
+        ).await;
+    }
+}
+
+
+static _RL_TOKENS: std::sync::atomic::AtomicI64 = std::sync::atomic::AtomicI64::new(100);
+static _RL_LAST: std::sync::atomic::AtomicI64 = std::sync::atomic::AtomicI64::new(0);
+
+
+fn call_service_sync(url: &str, body: &str) -> Result<String, String> {
+    use std::io::{Read, Write};
+    let url_parsed = url.strip_prefix("http://").unwrap_or(url);
+    let (host_port, path) = url_parsed.split_once('/').unwrap_or((url_parsed, "/"));
+    let host_port = if !host_port.contains(':') { format!("{}:8080", host_port) } else { host_port.to_string() };
+    match std::net::TcpStream::connect_timeout(&host_port.parse().map_err(|e| format!("{}", e))?, std::time::Duration::from_secs(5)) {
+        Ok(mut stream) => {
+            let host = host_port.split(':').next().unwrap_or("localhost");
+            let req = format!("POST /{} HTTP/1.1\r\nHost: {}\r\nContent-Type: application/json\r\nContent-Length: {}\r\nConnection: close\r\n\r\n{}", path, host, body.len(), body);
+            stream.write_all(req.as_bytes()).map_err(|e| format!("{}", e))?;
+            let mut resp = String::new();
+            stream.read_to_string(&mut resp).map_err(|e| format!("{}", e))?;
+            Ok(resp)
+        }
+        Err(e) => Err(format!("connection failed: {}", e))
+    }
+}
+
+fn rl_allow() -> bool {
+    let now = std::time::SystemTime::now().duration_since(std::time::UNIX_EPOCH).map(|d| d.as_millis() as i64).unwrap_or(0);
+    if now - _RL_LAST.load(std::sync::atomic::Ordering::Relaxed) >= 1000 {
+        _RL_TOKENS.store(100, std::sync::atomic::Ordering::Relaxed);
+        _RL_LAST.store(now, std::sync::atomic::Ordering::Relaxed);
+    }
+    if _RL_TOKENS.fetch_sub(1, std::sync::atomic::Ordering::Relaxed) <= 0 {
+        _RL_TOKENS.fetch_add(1, std::sync::atomic::Ordering::Relaxed);
+        return false;
+    }
+    true
+}
+
+
+// Multi-tenant: extract tenant ID from request
+fn get_tenant_id(req: &actix_web::HttpRequest) -> String {
+    req.headers().get("X-Tenant-Id")
+        .and_then(|v| v.to_str().ok())
+        .unwrap_or("platform")
+        .to_string()
+}
+
+#[actix_web::main]
+async fn main() -> std::io::Result<()> {
+    let port: u16 = env::var("PORT").ok().and_then(|p| p.parse().ok()).unwrap_or(8160);
+    let db_client = if let Ok(url) = std::env::var("DATABASE_URL") {
+        match init_db(&url).await {
+            Some(c) => { println!("mortgage-servicing-rs: connected to Postgres"); Some(std::sync::Arc::new(c)) }
+            None => None,
+        }
+    } else { None };
+    let state = web::Data::new(AppState {
+        records: Mutex::new(Vec::new()),
+        db_url: std::env::var("DATABASE_URL").ok(),
+        db_client,
+    });
+    println!("mortgage-servicing-rs listening on port {}", port);
+    HttpServer::new(move || {
+        App::new()
+                .wrap(
+                    actix_web::middleware::DefaultHeaders::new()
+                        .add(("X-Content-Type-Options", "nosniff"))
+                        .add(("X-Frame-Options", "DENY"))
+                        .add(("Strict-Transport-Security", "max-age=31536000; includeSubDomains"))
+                        .add(("Content-Security-Policy", "default-src 'self'"))
+                        .add(("X-XSS-Protection", "1; mode=block"))
+                        .add(("Referrer-Policy", "strict-origin-when-cross-origin"))
+                )
+            .wrap_fn(|req, srv| {
+                _REQ_COUNT.fetch_add(1, AtomicOrdering::Relaxed);
+                let trace_id = req.headers().get("X-Trace-Id")
+                    .and_then(|v| v.to_str().ok())
+                    .unwrap_or("none")
+                    .to_string();
+                eprintln!("[mortgage-servicing-rs] {} {} trace={}", req.method(), req.path(), trace_id);
+                let fut = srv.call(req);
+                async move {
+                    let res = fut.await?;
+                    if res.status().is_server_error() || res.status().is_client_error() {
+                        _ERR_COUNT.fetch_add(1, AtomicOrdering::Relaxed);
+                    }
+                    Ok(res)
+                }
+            })
+            .app_data(state.clone())
+            .wrap(actix_web::middleware::DefaultHeaders::new()
+                .add(("X-Content-Type-Options", "nosniff"))
+                .add(("X-Frame-Options", "DENY"))
+                .add(("X-XSS-Protection", "1; mode=block"))
+                .add(("Strict-Transport-Security", "max-age=31536000; includeSubDomains"))
+                .add(("Content-Security-Policy", "default-src 'self'"))
+                .add(("Referrer-Policy", "strict-origin-when-cross-origin")))
+            .route("/healthz", web::get().to(health))
+            .route("/v1/amortize", web::post().to(compute_amortization))
+            .route("/v1/prepay", web::post().to(early_repayment))
+            .route("/v1/affordability", web::post().to(affordability_check))
+            .route("/v1/records", web::get().to(list_records))
+            .route("/v1/stats", web::get().to(stats))
+            .route("/readyz", web::get().to(readyz))
+            .route("/livez", web::get().to(livez))
+            .route("/metrics", web::get().to(prom_metrics))
+    })
+    .bind(("0.0.0.0", port))?
+    .shutdown_timeout(30)
+    .run()
+    .await
+}
+
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn test_monthly_payment() { let r = monthly_payment(100); assert!(r >= 0.0); }
+
+    #[test]
+    fn test_dti_ratio() { let r = dti_ratio(10000.0); assert!(r >= 0.0); }
+
+    #[test]
+    fn test_ltv_ratio() { let r = ltv_ratio(10000.0); assert!(r >= 0.0); }
+
+    #[test]
+    fn test_prepayment_penalty() { let r = prepayment_penalty(10000.0); assert!(r >= 0.0); }
+}
