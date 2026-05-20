@@ -16,15 +16,27 @@ export const reportTemplateDesignerRouter = router({
   list: protectedProcedure.query(async () => {
     return { items: [], total: 0 };
   }),
-  create: protectedProcedure.input(z.object({ name: z.string(), widgets: z.array(z.any()) })).mutation(async ({ input }) => {
-    return { id: `tmpl_${Date.now()}`, name: input.name };
-  }),
-  update: protectedProcedure.input(z.object({ id: z.string(), name: z.string().optional(), widgets: z.array(z.any()).optional() })).mutation(async ({ input }) => {
-    return { success: true };
-  }),
-  delete: protectedProcedure.input(z.object({ id: z.string() })).mutation(async ({ input }) => {
-    return { success: true };
-  }),
+  create: protectedProcedure
+    .input(z.object({ name: z.string(), widgets: z.array(z.any()) }))
+    .mutation(async ({ input }) => {
+      return { id: `tmpl_${Date.now()}`, name: input.name };
+    }),
+  update: protectedProcedure
+    .input(
+      z.object({
+        id: z.string(),
+        name: z.string().optional(),
+        widgets: z.array(z.any()).optional(),
+      })
+    )
+    .mutation(async ({ input }) => {
+      return { success: true };
+    }),
+  delete: protectedProcedure
+    .input(z.object({ id: z.string() }))
+    .mutation(async ({ input }) => {
+      return { success: true };
+    }),
 
   setDefault: protectedProcedure.input(z.object({})).mutation(async () => {
     return { success: true };

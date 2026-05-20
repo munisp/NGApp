@@ -388,7 +388,9 @@ export async function executeCommissionCascade(params: {
         agentCode: entry.recipientAgentCode,
         amount: entry.commissionAmount,
         entryType:
-          entry.recipientAgentId === originAgentId ? "direct" : "hierarchy_split",
+          entry.recipientAgentId === originAgentId
+            ? "direct"
+            : "hierarchy_split",
         hierarchyLevel: entry.recipientHierarchyLevel,
       });
     }
@@ -412,7 +414,7 @@ export async function executeCommissionCascade(params: {
       totalDistributed,
       platformShare,
     };
-  // @ts-ignore - drizzle overload
+    // @ts-ignore - drizzle overload
   } catch (err) {
     // @ts-expect-error - logger overload
     logger.error("[CommissionCascade] Error:", err);

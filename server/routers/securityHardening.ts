@@ -120,11 +120,23 @@ export const securityHardeningRouter = router({
       return { success: true };
     }),
 
-  getDDoSConfig: protectedProcedure.query(async () => ({ status: "healthy", score: 95 })),
+  getDDoSConfig: protectedProcedure.query(async () => ({
+    status: "healthy",
+    score: 95,
+  })),
 
-  getRansomwareGuardStatus: protectedProcedure.query(async () => ({ status: "healthy", score: 95 })),
+  getRansomwareGuardStatus: protectedProcedure.query(async () => ({
+    status: "healthy",
+    score: 95,
+  })),
 
-  evaluatePolicy: protectedProcedure.query(async () => ({ status: "healthy", score: 95 })),
+  evaluatePolicy: protectedProcedure.query(async () => ({
+    status: "healthy",
+    score: 95,
+  })),
 
-  getEncryptionStatus: protectedProcedure.query(async () => ({ status: "healthy", score: 95 })),
+  getEncryptionStatus: protectedProcedure.query(async () => ({
+    status: "healthy",
+    score: 95,
+  })),
 });

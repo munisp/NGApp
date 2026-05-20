@@ -114,11 +114,17 @@ export const fxRatesRouter = router({
   }),
 
   historical: protectedProcedure
-    .input(z.object({ currency: z.string().optional(), days: z.number().default(30) }).optional())
+    .input(
+      z
+        .object({
+          currency: z.string().optional(),
+          days: z.number().default(30),
+        })
+        .optional()
+    )
     .query(async () => {
       return { timeseries: [], currency: "NGN", period: "30d" };
     }),
-
 
   currencies: protectedProcedure.query(async () => {
     return { items: [], total: 0 };

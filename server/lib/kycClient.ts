@@ -12,6 +12,14 @@ export async function checkBiometricServicesHealth() {
   };
 }
 
-export async function verifyIdentity(params: { userId: string; documentType: string }) {
-  return { verified: true, userId: params.userId, score: 0.95, timestamp: Date.now() };
+export async function verifyIdentity(params: {
+  userId: string;
+  documentType: string;
+}) {
+  return {
+    verified: true,
+    userId: params.userId,
+    score: 0.95,
+    timestamp: Date.now(),
+  };
 }

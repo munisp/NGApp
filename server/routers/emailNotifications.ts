@@ -87,17 +87,32 @@ export const emailNotificationsRouter = router({
       return results;
     }),
   getPreferences: protectedProcedure.query(async () => {
-    return { emailEnabled: true, frequency: "daily", categories: ["alerts", "reports", "system"] };
+    return {
+      emailEnabled: true,
+      frequency: "daily",
+      categories: ["alerts", "reports", "system"],
+    };
   }),
-  updatePreferences: protectedProcedure.input(z.object({ emailEnabled: z.boolean().optional(), frequency: z.string().optional() })).mutation(async ({ input }) => {
-    return { success: true };
-  }),
-  sendTest: protectedProcedure.input(z.object({ to: z.string(), template: z.string().optional() })).mutation(async ({ input }) => {
-    return { sent: true, to: input.to };
-  }),
-  sendCustom: protectedProcedure.input(z.object({ to: z.string(), subject: z.string(), body: z.string() })).mutation(async ({ input }) => {
-    return { sent: true };
-  }),
+  updatePreferences: protectedProcedure
+    .input(
+      z.object({
+        emailEnabled: z.boolean().optional(),
+        frequency: z.string().optional(),
+      })
+    )
+    .mutation(async ({ input }) => {
+      return { success: true };
+    }),
+  sendTest: protectedProcedure
+    .input(z.object({ to: z.string(), template: z.string().optional() }))
+    .mutation(async ({ input }) => {
+      return { sent: true, to: input.to };
+    }),
+  sendCustom: protectedProcedure
+    .input(z.object({ to: z.string(), subject: z.string(), body: z.string() }))
+    .mutation(async ({ input }) => {
+      return { sent: true };
+    }),
   getDeliveryLog: protectedProcedure.query(async () => {
     return { items: [], total: 0 };
   }),

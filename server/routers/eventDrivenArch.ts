@@ -87,13 +87,23 @@ export const eventDrivenArchRouter = router({
       return results;
     }),
 
-  dashboard: protectedProcedure.query(async () => ({ totalTopics: 24, totalEvents: 1250000, deadLetterCount: 12 })),
+  dashboard: protectedProcedure.query(async () => ({
+    totalTopics: 24,
+    totalEvents: 1250000,
+    deadLetterCount: 12,
+  })),
 
   listTopics: protectedProcedure.query(async () => ({ topics: [] })),
 
-  getDeadLetterQueue: protectedProcedure.query(async () => ({ items: [], total: 0 })),
+  getDeadLetterQueue: protectedProcedure.query(async () => ({
+    items: [],
+    total: 0,
+  })),
 
-  retryDeadLetter: protectedProcedure.mutation(async () => ({ retried: true, count: 0 })),
+  retryDeadLetter: protectedProcedure.mutation(async () => ({
+    retried: true,
+    count: 0,
+  })),
 
   recentEvents: protectedProcedure.query(async () => ({ events: [] })),
 });

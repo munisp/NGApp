@@ -25,9 +25,7 @@ export const agentHierarchyRouter = router({
   getSummary: protectedProcedure.query(async () => {
     const database = await getDb();
     if (!database) return { data: [], total: 0, limit: 0, offset: 0 };
-    const totalArr = await database
-      .select({ total: count() })
-      .from(agents);
+    const totalArr = await database.select({ total: count() }).from(agents);
 
     return {
       totalRecords: (Array.isArray(totalArr) && totalArr[0]?.total) ?? 0,
@@ -72,15 +70,15 @@ export const agentHierarchyRouter = router({
     )
     .query(async () => {
       const data = [
-          {
-            id: "AGT-001",
-            name: "Adebayo Okonkwo",
-            role: "super_agent",
-            territory: "Lagos",
-            status: "active",
-            subAgents: 12,
-          },
-        ];
+        {
+          id: "AGT-001",
+          name: "Adebayo Okonkwo",
+          role: "super_agent",
+          territory: "Lagos",
+          status: "active",
+          subAgents: 12,
+        },
+      ];
       return {
         items: data,
         agents: data,
@@ -114,7 +112,13 @@ export const agentHierarchyRouter = router({
       byTerritory: { Lagos: 45, Abuja: 30, Kano: 25 },
     };
   }),
-  reassignParent: protectedProcedure.input(z.object({ agentId: z.string(), newParentId: z.string() })).mutation(async ({ input }) => {
-    return { success: true, agentId: input.agentId, newParentId: input.newParentId };
-  }),
+  reassignParent: protectedProcedure
+    .input(z.object({ agentId: z.string(), newParentId: z.string() }))
+    .mutation(async ({ input }) => {
+      return {
+        success: true,
+        agentId: input.agentId,
+        newParentId: input.newParentId,
+      };
+    }),
 });

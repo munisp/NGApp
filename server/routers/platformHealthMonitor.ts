@@ -268,5 +268,4 @@ export const platformHealthMonitorRouter = router({
   getIncidents,
   getUptimeReport,
   createIncident,
-
 });

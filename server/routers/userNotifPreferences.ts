@@ -29,26 +29,54 @@ const channelSchema = z.object({
 
 export const userNotifPreferencesRouter = router({
   list: protectedProcedure.query(async () => {
-    return { categories: CATEGORIES, preferences: CATEGORIES.map(c => ({ categoryId: c.id, channels: { email: true, sms: true, push: true, inApp: true } })) };
+    return {
+      categories: CATEGORIES,
+      preferences: CATEGORIES.map(c => ({
+        categoryId: c.id,
+        channels: { email: true, sms: true, push: true, inApp: true },
+      })),
+    };
   }),
-  update: protectedProcedure.input(z.object({ categoryId: z.string(), channels: channelSchema })).mutation(async ({ input }) => {
-    return { success: true, categoryId: input.categoryId };
-  }),
-  bulkUpdate: protectedProcedure.input(z.object({ updates: z.array(z.object({ categoryId: z.string(), channels: channelSchema })) })).mutation(async ({ input }) => {
-    return { success: true, updated: input.updates.length };
-  }),
+  update: protectedProcedure
+    .input(z.object({ categoryId: z.string(), channels: channelSchema }))
+    .mutation(async ({ input }) => {
+      return { success: true, categoryId: input.categoryId };
+    }),
+  bulkUpdate: protectedProcedure
+    .input(
+      z.object({
+        updates: z.array(
+          z.object({ categoryId: z.string(), channels: channelSchema })
+        ),
+      })
+    )
+    .mutation(async ({ input }) => {
+      return { success: true, updated: input.updates.length };
+    }),
   resetToDefaults: protectedProcedure.mutation(async () => {
     return { success: true };
   }),
-  enableAllForChannel: protectedProcedure.input(z.object({ channel: z.enum(["email", "sms", "push", "inApp"]) })).mutation(async ({ input }) => {
-    return { success: true, channel: input.channel };
-  }),
-  updateQuietHours: protectedProcedure.input(z.object({ enabled: z.boolean(), start: z.string().optional(), end: z.string().optional() })).mutation(async ({ input }) => {
-    return { success: true };
-  }),
-  updateDigestMode: protectedProcedure.input(z.object({ mode: z.enum(["instant", "hourly", "daily"]) })).mutation(async ({ input }) => {
-    return { success: true, mode: input.mode };
-  }),
+  enableAllForChannel: protectedProcedure
+    .input(z.object({ channel: z.enum(["email", "sms", "push", "inApp"]) }))
+    .mutation(async ({ input }) => {
+      return { success: true, channel: input.channel };
+    }),
+  updateQuietHours: protectedProcedure
+    .input(
+      z.object({
+        enabled: z.boolean(),
+        start: z.string().optional(),
+        end: z.string().optional(),
+      })
+    )
+    .mutation(async ({ input }) => {
+      return { success: true };
+    }),
+  updateDigestMode: protectedProcedure
+    .input(z.object({ mode: z.enum(["instant", "hourly", "daily"]) }))
+    .mutation(async ({ input }) => {
+      return { success: true, mode: input.mode };
+    }),
 
   categories: protectedProcedure.query(async () => {
     return { items: [], total: 0 };

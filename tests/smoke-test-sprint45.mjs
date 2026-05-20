@@ -31,7 +31,12 @@ async function fetchJSON(path, opts = {}) {
     ...opts,
   });
   if (!res.ok && !opts.allowFail) throw new Error(`HTTP ${res.status}`);
-  return { status: res.status, data: res.headers.get("content-type")?.includes("json") ? await res.json() : await res.text() };
+  return {
+    status: res.status,
+    data: res.headers.get("content-type")?.includes("json")
+      ? await res.json()
+      : await res.text(),
+  };
 }
 
 // ═══════════════════════════════════════════════════════════════════════════
@@ -63,7 +68,8 @@ console.log("\n📦 Static Assets");
 await test("Vite client bundle loads", async () => {
   const res = await fetch(BASE);
   const html = await res.text();
-  if (!html.includes("src=") && !html.includes("script")) throw new Error("No script tags");
+  if (!html.includes("src=") && !html.includes("script"))
+    throw new Error("No script tags");
 });
 
 await test("Favicon exists", async () => {
@@ -77,7 +83,8 @@ await test("Favicon exists", async () => {
 console.log("\n🔐 Authentication");
 await test("Login redirect works", async () => {
   const res = await fetch(`${BASE}/api/auth/login`, { redirect: "manual" });
-  if (res.status !== 302 && res.status !== 200) throw new Error(`Status ${res.status}`);
+  if (res.status !== 302 && res.status !== 200)
+    throw new Error(`Status ${res.status}`);
 });
 
 await test("Logout endpoint exists", async () => {
@@ -157,9 +164,21 @@ await test("Stripe webhook endpoint exists", async () => {
 // ═══════════════════════════════════════════════════════════════════════════
 console.log("\n🐳 Sidecar Health Checks");
 const sidecars = [
-  { name: "TB Commission Sidecar (Go)", url: process.env.TB_SIDECAR_URL || "http://localhost:8086", path: "/health" },
-  { name: "Fluvio Producer (Rust)", url: process.env.FLUVIO_PRODUCER_URL || "http://localhost:8087", path: "/health" },
-  { name: "Lakehouse-Mojaloop (Python)", url: process.env.LAKEHOUSE_MOJALOOP_URL || "http://localhost:8088", path: "/health" },
+  {
+    name: "TB Commission Sidecar (Go)",
+    url: process.env.TB_SIDECAR_URL || "http://localhost:8086",
+    path: "/health",
+  },
+  {
+    name: "Fluvio Producer (Rust)",
+    url: process.env.FLUVIO_PRODUCER_URL || "http://localhost:8087",
+    path: "/health",
+  },
+  {
+    name: "Lakehouse-Mojaloop (Python)",
+    url: process.env.LAKEHOUSE_MOJALOOP_URL || "http://localhost:8088",
+    path: "/health",
+  },
 ];
 
 for (const sc of sidecars) {
@@ -172,7 +191,10 @@ for (const sc of sidecars) {
 console.log("\n🐋 Docker Compose Validation");
 await test("docker-compose.yml exists", async () => {
   const fs = await import("fs");
-  if (!fs.existsSync("docker-compose.yml") && !fs.existsSync("docker-compose.production.yml")) {
+  if (
+    !fs.existsSync("docker-compose.yml") &&
+    !fs.existsSync("docker-compose.production.yml")
+  ) {
     throw new Error("No docker-compose file found");
   }
 });
@@ -200,7 +222,8 @@ await test("Seed script is syntactically valid", async () => {
   const content = fs.readFileSync("scripts/seed-production.mjs", "utf-8");
   if (content.length < 1000) throw new Error("Seed script too small");
   const tableCount = (content.match(/INSERT INTO/g) || []).length;
-  if (tableCount < 30) throw new Error(`Only ${tableCount} tables seeded (need 30+)`);
+  if (tableCount < 30)
+    throw new Error(`Only ${tableCount} tables seeded (need 30+)`);
 });
 
 // ═══════════════════════════════════════════════════════════════════════════
@@ -230,7 +253,9 @@ for (const file of requiredFiles) {
 // SUMMARY
 // ═══════════════════════════════════════════════════════════════════════════
 console.log("\n" + "═".repeat(60));
-console.log(`🏁 Smoke Test Results: ${results.pass} passed, ${results.fail} failed, ${results.skip} skipped`);
+console.log(
+  `🏁 Smoke Test Results: ${results.pass} passed, ${results.fail} failed, ${results.skip} skipped`
+);
 if (results.errors.length > 0) {
   console.log("\n❌ Failures:");
   results.errors.forEach(e => console.log(`   ${e.name}: ${e.error}`));

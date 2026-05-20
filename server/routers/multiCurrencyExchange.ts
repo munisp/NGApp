@@ -7,19 +7,44 @@ import { TRPCError } from "@trpc/server";
 
 export const multiCurrencyExchangeRouter = router({
   list: protectedProcedure
-    .input(z.object({ limit: z.number().min(1).max(100).default(10), offset: z.number().min(0).default(0) }))
+    .input(
+      z.object({
+        limit: z.number().min(1).max(100).default(10),
+        offset: z.number().min(0).default(0),
+      })
+    )
     .query(async ({ input }) => {
       const db = await getDb();
-      if (!db) return { items: [], total: 0, limit: input.limit, offset: input.offset };
+      if (!db)
+        return {
+          items: [],
+          total: 0,
+          limit: input.limit,
+          offset: input.offset,
+        };
       try {
-        const rows = await db.select().from(transactions).orderBy(desc(transactions.id)).limit(input.limit).offset(input.offset);
-        const countArr = await db.select({ cnt: count() }).from(transactions).limit(1);
-        return { items: rows, total: Number(countArr?.[0]?.cnt ?? 0), limit: input.limit, offset: input.offset };
+        const rows = await db
+          .select()
+          .from(transactions)
+          .orderBy(desc(transactions.id))
+          .limit(input.limit)
+          .offset(input.offset);
+        const countArr = await db
+          .select({ cnt: count() })
+          .from(transactions)
+          .limit(1);
+        return {
+          items: rows,
+          total: Number(countArr?.[0]?.cnt ?? 0),
+          limit: input.limit,
+          offset: input.offset,
+        };
       } catch (error) {
         if (error instanceof TRPCError) throw error;
         throw new TRPCError({
           code: "INTERNAL_SERVER_ERROR",
-          message: error instanceof Error ? error.message : "Internal server error",
+          message:
+            error instanceof Error ? error.message : "Internal server error",
         });
       }
     }),
@@ -33,11 +58,13 @@ export const multiCurrencyExchangeRouter = router({
   }),
 
   convert: protectedProcedure
-    .input(z.object({
-      fromCurrency: z.string(),
-      toCurrency: z.string(),
-      amount: z.number().positive(),
-    }))
+    .input(
+      z.object({
+        fromCurrency: z.string(),
+        toCurrency: z.string(),
+        amount: z.number().positive(),
+      })
+    )
     .mutation(async ({ input }) => {
       return {
         fromCurrency: input.fromCurrency,

@@ -118,7 +118,14 @@ export const dataExportRouter = router({
   }),
 
   transactionsCsv: protectedProcedure
-    .input(z.object({ startDate: z.string().optional(), endDate: z.string().optional() }).optional())
+    .input(
+      z
+        .object({
+          startDate: z.string().optional(),
+          endDate: z.string().optional(),
+        })
+        .optional()
+    )
     .query(async () => {
       return { csv: "id,amount,type,date\n", rows: 0 };
     }),

@@ -87,9 +87,11 @@ export const escalationChainsRouter = router({
       return results;
     }),
 
-  acknowledgeEvent: protectedProcedure.input(z.object({})).mutation(async () => {
-    return { success: true };
-  }),
+  acknowledgeEvent: protectedProcedure
+    .input(z.object({}))
+    .mutation(async () => {
+      return { success: true };
+    }),
   listChains: protectedProcedure.query(async () => {
     return { items: [], total: 0 };
   }),
@@ -99,9 +101,11 @@ export const escalationChainsRouter = router({
   resolveEvent: protectedProcedure.input(z.object({})).mutation(async () => {
     return { success: true };
   }),
-  runEscalationCheck: protectedProcedure.input(z.object({})).mutation(async () => {
-    return { success: true };
-  }),
+  runEscalationCheck: protectedProcedure
+    .input(z.object({}))
+    .mutation(async () => {
+      return { success: true };
+    }),
   toggleChain: protectedProcedure.input(z.object({})).mutation(async () => {
     return { success: true };
   }),

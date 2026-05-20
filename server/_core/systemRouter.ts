@@ -26,7 +26,10 @@ export const systemRouter = router({
       const db = await getDb();
       if (db) {
         await db.execute("SELECT 1" as any);
-        checks.database = { status: "healthy", latencyMs: Date.now() - dbStart };
+        checks.database = {
+          status: "healthy",
+          latencyMs: Date.now() - dbStart,
+        };
       } else {
         checks.database = { status: "unconfigured", latencyMs: -1 };
       }
@@ -43,9 +46,12 @@ export const systemRouter = router({
 
     // Auth service connectivity
     try {
-      const authUrl = process.env.AUTH_SERVICE_URL || "http://auth-service:8080";
+      const authUrl =
+        process.env.AUTH_SERVICE_URL || "http://auth-service:8080";
       const authStart = Date.now();
-      const resp = await fetch(`${authUrl}/health`, { signal: AbortSignal.timeout(3000) });
+      const resp = await fetch(`${authUrl}/health`, {
+        signal: AbortSignal.timeout(3000),
+      });
       checks.authService = {
         status: resp.ok ? "healthy" : "degraded",
         latencyMs: Date.now() - authStart,
@@ -54,7 +60,7 @@ export const systemRouter = router({
       checks.authService = { status: "unreachable", latencyMs: -1 };
     }
 
-    const allHealthy = Object.values(checks).every((c) => c.status === "healthy");
+    const allHealthy = Object.values(checks).every(c => c.status === "healthy");
     return {
       ok: allHealthy,
       status: allHealthy ? "healthy" : "degraded",

@@ -206,7 +206,22 @@ export function createNotification(params: {
 
 // Seed demo notifications
 export const SEED_NOTIFICATIONS = [
-  createNotification({ channel: "in_app", category: "system", title: "Welcome", body: "Welcome to the platform" }),
-  createNotification({ channel: "sms", category: "transaction", title: "Payment received", body: "NGN 5,000 received" }),
-  createNotification({ channel: "email", category: "security", title: "Login alert", body: "New login from Lagos" }),
+  createNotification({
+    channel: "in_app",
+    category: "system",
+    title: "Welcome",
+    body: "Welcome to the platform",
+  }),
+  createNotification({
+    channel: "sms",
+    category: "transaction",
+    title: "Payment received",
+    body: "NGN 5,000 received",
+  }),
+  createNotification({
+    channel: "email",
+    category: "security",
+    title: "Login alert",
+    body: "New login from Lagos",
+  }),
 ];

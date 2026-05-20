@@ -87,43 +87,103 @@ export const billingProductionRouter = router({
       return results;
     }),
 
-  generateMonthlyInvoices: protectedProcedure.query(async () => ({ success: true, data: [] })),
+  generateMonthlyInvoices: protectedProcedure.query(async () => ({
+    success: true,
+    data: [],
+  })),
 
-  getPaymentMethods: protectedProcedure.query(async () => ({ success: true, data: [] })),
+  getPaymentMethods: protectedProcedure.query(async () => ({
+    success: true,
+    data: [],
+  })),
 
-  addPaymentMethod: protectedProcedure.query(async () => ({ success: true, data: [] })),
+  addPaymentMethod: protectedProcedure.query(async () => ({
+    success: true,
+    data: [],
+  })),
 
-  getBillingAlerts: protectedProcedure.query(async () => ({ success: true, data: [] })),
+  getBillingAlerts: protectedProcedure.query(async () => ({
+    success: true,
+    data: [],
+  })),
 
-  configureBillingAlerts: protectedProcedure.query(async () => ({ success: true, data: [] })),
+  configureBillingAlerts: protectedProcedure.query(async () => ({
+    success: true,
+    data: [],
+  })),
 
-  getDunningStatus: protectedProcedure.query(async () => ({ success: true, data: [] })),
+  getDunningStatus: protectedProcedure.query(async () => ({
+    success: true,
+    data: [],
+  })),
 
-  applyGracePeriod: protectedProcedure.query(async () => ({ success: true, data: [] })),
+  applyGracePeriod: protectedProcedure.query(async () => ({
+    success: true,
+    data: [],
+  })),
 
-  getReconciliationSchedule: protectedProcedure.query(async () => ({ success: true, data: [] })),
+  getReconciliationSchedule: protectedProcedure.query(async () => ({
+    success: true,
+    data: [],
+  })),
 
-  triggerReconciliation: protectedProcedure.query(async () => ({ success: true, data: [] })),
+  triggerReconciliation: protectedProcedure.query(async () => ({
+    success: true,
+    data: [],
+  })),
 
-  getRateLimits: protectedProcedure.query(async () => ({ success: true, data: [] })),
+  getRateLimits: protectedProcedure.query(async () => ({
+    success: true,
+    data: [],
+  })),
 
-  updateRateLimits: protectedProcedure.query(async () => ({ success: true, data: [] })),
+  updateRateLimits: protectedProcedure.query(async () => ({
+    success: true,
+    data: [],
+  })),
 
-  createDispute: protectedProcedure.query(async () => ({ success: true, data: [] })),
+  createDispute: protectedProcedure.query(async () => ({
+    success: true,
+    data: [],
+  })),
 
-  getDisputes: protectedProcedure.query(async () => ({ success: true, data: [] })),
+  getDisputes: protectedProcedure.query(async () => ({
+    success: true,
+    data: [],
+  })),
 
-  getRevenueForecast: protectedProcedure.query(async () => ({ success: true, data: [] })),
+  getRevenueForecast: protectedProcedure.query(async () => ({
+    success: true,
+    data: [],
+  })),
 
-  calculateTax: protectedProcedure.query(async () => ({ success: true, data: [] })),
+  calculateTax: protectedProcedure.query(async () => ({
+    success: true,
+    data: [],
+  })),
 
-  migratePlan: protectedProcedure.query(async () => ({ success: true, data: [] })),
+  migratePlan: protectedProcedure.query(async () => ({
+    success: true,
+    data: [],
+  })),
 
-  generateInvoicePdf: protectedProcedure.query(async () => ({ success: true, data: [] })),
+  generateInvoicePdf: protectedProcedure.query(async () => ({
+    success: true,
+    data: [],
+  })),
 
-  getCohortAnalytics: protectedProcedure.query(async () => ({ success: true, data: [] })),
+  getCohortAnalytics: protectedProcedure.query(async () => ({
+    success: true,
+    data: [],
+  })),
 
-  getCreditBalance: protectedProcedure.query(async () => ({ success: true, data: [] })),
+  getCreditBalance: protectedProcedure.query(async () => ({
+    success: true,
+    data: [],
+  })),
 
-  topUpCredits: protectedProcedure.query(async () => ({ success: true, data: [] })),
+  topUpCredits: protectedProcedure.query(async () => ({
+    success: true,
+    data: [],
+  })),
 });

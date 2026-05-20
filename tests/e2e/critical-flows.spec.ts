@@ -37,9 +37,12 @@ test.describe("Authentication", () => {
   });
 
   test("unauthenticated API returns 401", async ({ request }) => {
-    const res = await request.post(`${BASE_URL}/api/trpc/agentOnboarding.submit`, {
-      data: { name: "test" },
-    });
+    const res = await request.post(
+      `${BASE_URL}/api/trpc/agentOnboarding.submit`,
+      {
+        data: { name: "test" },
+      }
+    );
     expect([401, 400]).toContain(res.status());
   });
 
@@ -56,7 +59,7 @@ test.describe("Authentication", () => {
 test.describe("Core Pages", () => {
   test("homepage renders without errors", async ({ page }) => {
     const errors: string[] = [];
-    page.on("pageerror", (err) => errors.push(err.message));
+    page.on("pageerror", err => errors.push(err.message));
     await page.goto(BASE_URL);
     await page.waitForLoadState("networkidle");
     // Allow max 2 console errors (React dev warnings)
@@ -65,7 +68,7 @@ test.describe("Core Pages", () => {
 
   test("static assets load (JS bundles)", async ({ page }) => {
     const responses: number[] = [];
-    page.on("response", (res) => {
+    page.on("response", res => {
       if (res.url().endsWith(".js") || res.url().endsWith(".css")) {
         responses.push(res.status());
       }

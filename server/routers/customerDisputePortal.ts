@@ -178,7 +178,9 @@ export const customerDisputePortalRouter = router({
       const db = (await getDb())!;
       const rows = await db.select().from(disputes).limit(50);
       return { disputes: rows, total: rows.length };
-    } catch { return { disputes: [], total: 0 }; }
+    } catch {
+      return { disputes: [], total: 0 };
+    }
   }),
 
   escalateDispute: protectedProcedure.input(z.object({})).mutation(async () => {

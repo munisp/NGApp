@@ -252,5 +252,4 @@ export const paymentNotificationSystemRouter = router({
   getChannelConfig,
   testNotification,
   getDeliveryLog,
-
 });

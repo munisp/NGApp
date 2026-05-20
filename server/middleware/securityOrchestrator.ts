@@ -205,10 +205,12 @@ async function scoreFraud(
       user_agent: req.headers["user-agent"] || "",
       geo_country: req.headers["x-geo-country"] || "",
       timestamp: Date.now(),
-      session_age_seconds: parseInt((String(req.headers["x-session-age"] || "")) || "0"),
-      kyc_level: parseInt((String(req.headers["x-kyc-level"] || "")) || "0"),
-      is_new_recipient: (String(req.headers["x-new-recipient"] || "")) === "true",
-      is_international: (String(req.headers["x-international"] || "")) === "true",
+      session_age_seconds: parseInt(
+        String(req.headers["x-session-age"] || "") || "0"
+      ),
+      kyc_level: parseInt(String(req.headers["x-kyc-level"] || "") || "0"),
+      is_new_recipient: String(req.headers["x-new-recipient"] || "") === "true",
+      is_international: String(req.headers["x-international"] || "") === "true",
     }),
   });
 

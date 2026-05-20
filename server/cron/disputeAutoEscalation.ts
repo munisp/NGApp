@@ -35,7 +35,7 @@ export async function runDisputeAutoEscalation() {
       const escalationResult = shouldAutoEscalate(
         hoursOpen,
         amount,
-    // @ts-ignore - argument overload
+        // @ts-ignore - argument overload
         (dispute.priority as any) ?? "medium",
         0 // responseCount — would need to query messages
       );

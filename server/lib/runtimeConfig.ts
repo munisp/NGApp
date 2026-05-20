@@ -203,7 +203,7 @@ export async function setConfig(
     logger.info(
       `[RuntimeConfig] Updated ${key} = ${value} (by ${updatedBy ?? "system"})`
     );
-  // @ts-ignore - drizzle overload
+    // @ts-ignore - drizzle overload
   } catch (error) {
     // @ts-expect-error - drizzle overload
     logger.error(`[RuntimeConfig] Failed to set ${key}:`, error);
@@ -325,7 +325,7 @@ export async function seedDefaults(): Promise<number> {
       logger.info(
         `[RuntimeConfig] Seeded ${seeded} default configuration values`
       );
-    // @ts-ignore - drizzle overload
+      // @ts-ignore - drizzle overload
     }
   } catch (error) {
     // @ts-expect-error - drizzle overload

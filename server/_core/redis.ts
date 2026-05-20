@@ -16,17 +16,23 @@ export function getRedis(): Redis {
       enableReadyCheck: true,
       connectTimeout: 10000,
     });
-    redisClient.on("error", (err) => {
+    redisClient.on("error", err => {
       console.error("[Redis] Connection error:", err.message);
     });
     redisClient.on("connect", () => {
-      console.log("[Redis] Connected to", REDIS_URL.replace(/\/\/.*@/, "//***@"));
+      console.log(
+        "[Redis] Connected to",
+        REDIS_URL.replace(/\/\/.*@/, "//***@")
+      );
     });
   }
   return redisClient;
 }
 
-export async function redisHealthCheck(): Promise<{ status: string; latencyMs: number }> {
+export async function redisHealthCheck(): Promise<{
+  status: string;
+  latencyMs: number;
+}> {
   try {
     const redis = getRedis();
     const start = Date.now();
@@ -44,7 +50,11 @@ export async function cacheGet<T>(key: string): Promise<T | null> {
   return JSON.parse(val) as T;
 }
 
-export async function cacheSet(key: string, value: unknown, ttlSeconds = 300): Promise<void> {
+export async function cacheSet(
+  key: string,
+  value: unknown,
+  ttlSeconds = 300
+): Promise<void> {
   const redis = getRedis();
   await redis.set(key, JSON.stringify(value), "EX", ttlSeconds);
 }

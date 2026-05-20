@@ -96,22 +96,43 @@ export const disputeRefundRouter = router({
     }),
 
   listAll: protectedProcedure
-    .input(z.object({ status: z.string().optional(), page: z.number().default(1), limit: z.number().default(20) }).optional())
+    .input(
+      z
+        .object({
+          status: z.string().optional(),
+          page: z.number().default(1),
+          limit: z.number().default(20),
+        })
+        .optional()
+    )
     .query(async ({ ctx, input }) => {
-      if (!ctx.user || (ctx.user.role !== "admin" && ctx.user.role !== "supervisor")) {
+      if (
+        !ctx.user ||
+        (ctx.user.role !== "admin" && ctx.user.role !== "supervisor")
+      ) {
         throw new TRPCError({ code: "FORBIDDEN", message: "Unauthorized" });
       }
       try {
         const db = (await getDb())!;
-        const rows = await db.select().from(disputes).limit(input?.limit ?? 20);
+        const rows = await db
+          .select()
+          .from(disputes)
+          .limit(input?.limit ?? 20);
         return { disputes: rows, total: rows.length };
-      } catch { return { disputes: [], total: 0 }; }
+      } catch {
+        return { disputes: [], total: 0 };
+      }
     }),
 
   resolve: protectedProcedure
-    .input(z.object({ disputeRef: z.string(), resolution: z.string().optional() }))
+    .input(
+      z.object({ disputeRef: z.string(), resolution: z.string().optional() })
+    )
     .mutation(async ({ ctx, input }) => {
-      if (!ctx.user || (ctx.user.role !== "admin" && ctx.user.role !== "supervisor")) {
+      if (
+        !ctx.user ||
+        (ctx.user.role !== "admin" && ctx.user.role !== "supervisor")
+      ) {
         throw new TRPCError({ code: "FORBIDDEN", message: "Unauthorized" });
       }
       return { resolved: true, ref: input.disputeRef };

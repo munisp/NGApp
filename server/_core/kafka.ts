@@ -1,6 +1,8 @@
 import { Kafka, Producer, Consumer, logLevel } from "kafkajs";
 
-const KAFKA_BROKERS = (process.env.KAFKA_BROKERS || "localhost:9092").split(",");
+const KAFKA_BROKERS = (process.env.KAFKA_BROKERS || "localhost:9092").split(
+  ","
+);
 const KAFKA_CLIENT_ID = process.env.KAFKA_CLIENT_ID || "pos54link-platform";
 
 let kafka: Kafka | null = null;
@@ -26,11 +28,17 @@ export async function getProducer(): Promise<Producer> {
   return producer;
 }
 
-export async function publishEvent(topic: string, key: string, value: unknown): Promise<void> {
+export async function publishEvent(
+  topic: string,
+  key: string,
+  value: unknown
+): Promise<void> {
   const p = await getProducer();
   await p.send({
     topic,
-    messages: [{ key, value: JSON.stringify(value), timestamp: Date.now().toString() }],
+    messages: [
+      { key, value: JSON.stringify(value), timestamp: Date.now().toString() },
+    ],
   });
 }
 
@@ -38,13 +46,19 @@ export function createConsumer(groupId: string): Consumer {
   return getKafka().consumer({ groupId });
 }
 
-export async function kafkaHealthCheck(): Promise<{ status: string; brokers: string[] }> {
+export async function kafkaHealthCheck(): Promise<{
+  status: string;
+  brokers: string[];
+}> {
   try {
     const admin = getKafka().admin();
     await admin.connect();
     const cluster = await admin.describeCluster();
     await admin.disconnect();
-    return { status: "healthy", brokers: cluster.brokers.map((b) => `${b.host}:${b.port}`) };
+    return {
+      status: "healthy",
+      brokers: cluster.brokers.map(b => `${b.host}:${b.port}`),
+    };
   } catch {
     return { status: "unhealthy", brokers: [] };
   }

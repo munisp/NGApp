@@ -1,7 +1,7 @@
 #!/usr/bin/env node
 /**
  * Sprint 10 Smoke Test — 54Link Agency Banking Platform
- * 
+ *
  * Tests all new endpoints from Sprints 8-10:
  * - Email notification service
  * - SMS notification service
@@ -28,7 +28,10 @@ async function test(name, fn) {
     console.log(`  ✅ ${name}`);
   } catch (err) {
     // If connection refused, skip (server not running)
-    if (err.cause?.code === "ECONNREFUSED" || err.message?.includes("ECONNREFUSED")) {
+    if (
+      err.cause?.code === "ECONNREFUSED" ||
+      err.message?.includes("ECONNREFUSED")
+    ) {
       skipped++;
       results.push({ name, status: "SKIP", reason: "Server not running" });
       console.log(`  ⏭️  ${name} (server not running)`);
@@ -45,7 +48,11 @@ async function fetchJSON(path, options = {}) {
     headers: { "Content-Type": "application/json", ...options.headers },
     ...options,
   });
-  return { status: res.status, headers: res.headers, body: await res.json().catch(() => null) };
+  return {
+    status: res.status,
+    headers: res.headers,
+    body: await res.json().catch(() => null),
+  };
 }
 
 function assert(condition, message) {
@@ -56,10 +63,16 @@ function assert(condition, message) {
 // tRPC Batch Helper
 // ═══════════════════════════════════════════════════════════════════════════════
 async function trpcQuery(procedure, input = undefined) {
-  const params = input !== undefined ? `?input=${encodeURIComponent(JSON.stringify({ "0": { json: input } }))}` : "";
-  const res = await fetch(`${BASE_URL}/api/trpc/${procedure}?batch=1${params ? "&" + params.slice(1) : ""}`, {
-    headers: { "Content-Type": "application/json" },
-  });
+  const params =
+    input !== undefined
+      ? `?input=${encodeURIComponent(JSON.stringify({ 0: { json: input } }))}`
+      : "";
+  const res = await fetch(
+    `${BASE_URL}/api/trpc/${procedure}?batch=1${params ? "&" + params.slice(1) : ""}`,
+    {
+      headers: { "Content-Type": "application/json" },
+    }
+  );
   return { status: res.status, body: await res.json().catch(() => null) };
 }
 
@@ -76,12 +89,18 @@ console.log("── Security Headers ──");
 await test("Security headers present on root", async () => {
   const res = await fetch(`${BASE_URL}/`);
   // These may or may not be present depending on middleware wiring
-  assert(res.status === 200 || res.status === 304, `Expected 200/304, got ${res.status}`);
+  assert(
+    res.status === 200 || res.status === 304,
+    `Expected 200/304, got ${res.status}`
+  );
 });
 
 await test("API responds to health check", async () => {
   const res = await fetch(`${BASE_URL}/api/trpc/system.health?batch=1`);
-  assert(res.status === 200 || res.status === 401, `Expected 200/401, got ${res.status}`);
+  assert(
+    res.status === 200 || res.status === 401,
+    `Expected 200/401, got ${res.status}`
+  );
 });
 
 console.log("\n── tRPC Endpoints ──");
@@ -152,25 +171,50 @@ await test("Root page loads", async () => {
   const res = await fetch(`${BASE_URL}/`);
   assert(res.status === 200, `Expected 200, got ${res.status}`);
   const html = await res.text();
-  assert(html.includes("<!DOCTYPE html>") || html.includes("<html"), "Expected HTML response");
+  assert(
+    html.includes("<!DOCTYPE html>") || html.includes("<html"),
+    "Expected HTML response"
+  );
 });
 
 await test("Favicon exists", async () => {
   const res = await fetch(`${BASE_URL}/favicon.ico`);
-  assert(res.status === 200 || res.status === 304 || res.status === 404, `Unexpected status ${res.status}`);
+  assert(
+    res.status === 200 || res.status === 304 || res.status === 404,
+    `Unexpected status ${res.status}`
+  );
 });
 
 console.log("\n── Route Accessibility ──");
 
 const routes = [
-  "/", "/hub", "/admin", "/supervisor", "/management", "/agent",
-  "/customer", "/merchant", "/developer", "/multi-currency",
-  "/rate-alerts", "/notification-inbox", "/notification-preferences",
-  "/webhook-deliveries", "/api-keys", "/kyc-workflow",
-  "/batch-operations", "/webhook-config", "/notification-preference-matrix",
-  "/system-health", "/agent-performance", "/customer-wallet",
-  "/compliance-scheduling", "/audit-export", "/geofence-editor",
-  "/onboarding-wizard", "/commission-config",
+  "/",
+  "/hub",
+  "/admin",
+  "/supervisor",
+  "/management",
+  "/agent",
+  "/customer",
+  "/merchant",
+  "/developer",
+  "/multi-currency",
+  "/rate-alerts",
+  "/notification-inbox",
+  "/notification-preferences",
+  "/webhook-deliveries",
+  "/api-keys",
+  "/kyc-workflow",
+  "/batch-operations",
+  "/webhook-config",
+  "/notification-preference-matrix",
+  "/system-health",
+  "/agent-performance",
+  "/customer-wallet",
+  "/compliance-scheduling",
+  "/audit-export",
+  "/geofence-editor",
+  "/onboarding-wizard",
+  "/commission-config",
 ];
 
 for (const route of routes) {
@@ -184,25 +228,37 @@ console.log("\n── Error Handling ──");
 
 await test("404 for unknown API route", async () => {
   const res = await fetch(`${BASE_URL}/api/nonexistent`);
-  assert(res.status === 404 || res.status === 200, `Expected 404/200, got ${res.status}`);
+  assert(
+    res.status === 404 || res.status === 200,
+    `Expected 404/200, got ${res.status}`
+  );
 });
 
 await test("Invalid tRPC procedure returns error", async () => {
   const res = await fetch(`${BASE_URL}/api/trpc/nonexistent.procedure?batch=1`);
-  assert(res.status === 404 || res.status === 500 || res.status === 200, `Expected error status, got ${res.status}`);
+  assert(
+    res.status === 404 || res.status === 500 || res.status === 200,
+    `Expected error status, got ${res.status}`
+  );
 });
 
 // ═══════════════════════════════════════════════════════════════════════════════
 // Summary
 // ═══════════════════════════════════════════════════════════════════════════════
 console.log("\n═══════════════════════════════════════════════════════");
-console.log(`  Results: ${passed} passed, ${failed} failed, ${skipped} skipped`);
+console.log(
+  `  Results: ${passed} passed, ${failed} failed, ${skipped} skipped`
+);
 console.log(`  Total:   ${passed + failed + skipped} tests`);
-console.log(`  Score:   ${((passed / (passed + failed)) * 100 || 0).toFixed(1)}%`);
+console.log(
+  `  Score:   ${((passed / (passed + failed)) * 100 || 0).toFixed(1)}%`
+);
 console.log("═══════════════════════════════════════════════════════\n");
 
 if (failed > 0) {
   console.log("Failed tests:");
-  results.filter(r => r.status === "FAIL").forEach(r => console.log(`  - ${r.name}: ${r.error}`));
+  results
+    .filter(r => r.status === "FAIL")
+    .forEach(r => console.log(`  - ${r.name}: ${r.error}`));
   process.exit(1);
 }

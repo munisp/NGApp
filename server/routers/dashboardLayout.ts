@@ -30,15 +30,24 @@ export const dashboardLayoutRouter = router({
         if (error instanceof TRPCError) throw error;
         throw new TRPCError({
           code: "INTERNAL_SERVER_ERROR",
-          message: error instanceof Error ? error.message : "Internal server error",
+          message:
+            error instanceof Error ? error.message : "Internal server error",
         });
       }
     }),
 
   getPresets: protectedProcedure.query(async () => {
     return [
-      { id: "default", name: "Default", widgets: ["transactions", "agents", "revenue"] },
-      { id: "finance", name: "Finance Focus", widgets: ["revenue", "settlement", "reconciliation"] },
+      {
+        id: "default",
+        name: "Default",
+        widgets: ["transactions", "agents", "revenue"],
+      },
+      {
+        id: "finance",
+        name: "Finance Focus",
+        widgets: ["revenue", "settlement", "reconciliation"],
+      },
       { id: "ops", name: "Operations", widgets: ["agents", "pos", "network"] },
     ];
   }),
@@ -56,13 +65,30 @@ export const dashboardLayoutRouter = router({
     )
     .mutation(async ({ input }) => {
       const db = await getDb();
-      if (!db) throw new TRPCError({ code: "INTERNAL_SERVER_ERROR", message: "Database unavailable" });
+      if (!db)
+        throw new TRPCError({
+          code: "INTERNAL_SERVER_ERROR",
+          message: "Database unavailable",
+        });
       const key = "dashboard_layout_" + input.userId;
-      const existing = await db.select().from(systemConfig).where(eq(systemConfig.key, key)).limit(1);
+      const existing = await db
+        .select()
+        .from(systemConfig)
+        .where(eq(systemConfig.key, key))
+        .limit(1);
       if (existing.length > 0) {
-        await db.update(systemConfig).set({ value: JSON.stringify(input.layout) }).where(eq(systemConfig.key, key));
+        await db
+          .update(systemConfig)
+          .set({ value: JSON.stringify(input.layout) })
+          .where(eq(systemConfig.key, key));
       } else {
-        await db.insert(systemConfig).values({ key, value: JSON.stringify(input.layout), description: "Dashboard layout" });
+        await db
+          .insert(systemConfig)
+          .values({
+            key,
+            value: JSON.stringify(input.layout),
+            description: "Dashboard layout",
+          });
       }
       return { success: true };
     }),
@@ -71,8 +97,14 @@ export const dashboardLayoutRouter = router({
     .input(z.object({ userId: z.string() }))
     .mutation(async ({ input }) => {
       const db = await getDb();
-      if (!db) throw new TRPCError({ code: "INTERNAL_SERVER_ERROR", message: "Database unavailable" });
-      await db.delete(systemConfig).where(eq(systemConfig.key, "dashboard_layout_" + input.userId));
+      if (!db)
+        throw new TRPCError({
+          code: "INTERNAL_SERVER_ERROR",
+          message: "Database unavailable",
+        });
+      await db
+        .delete(systemConfig)
+        .where(eq(systemConfig.key, "dashboard_layout_" + input.userId));
       return { success: true };
     }),
 });

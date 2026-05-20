@@ -142,9 +142,20 @@ export const advancedNotificationsRouter = router({
     return { data: [], total: 0 };
   }),
 
-  sendNotification: protectedProcedure.mutation(async () => ({ sent: true, notificationId: "notif_" + Date.now() })),
+  sendNotification: protectedProcedure.mutation(async () => ({
+    sent: true,
+    notificationId: "notif_" + Date.now(),
+  })),
 
-  listHistory: protectedProcedure.query(async () => ({ notifications: [], total: 0 })),
+  listHistory: protectedProcedure.query(async () => ({
+    notifications: [],
+    total: 0,
+  })),
 
-  getPreferences: protectedProcedure.query(async () => ({ email: true, sms: true, push: true, inApp: true })),
+  getPreferences: protectedProcedure.query(async () => ({
+    email: true,
+    sms: true,
+    push: true,
+    inApp: true,
+  })),
 });

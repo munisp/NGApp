@@ -3,7 +3,8 @@ import { jwtVerify } from "jose";
 import { getAgentById } from "../db";
 import type { Agent } from "../../drizzle/schema";
 
-const AUTH_SERVICE_URL = process.env.AUTH_SERVICE_URL || "http://auth-service:8080";
+const AUTH_SERVICE_URL =
+  process.env.AUTH_SERVICE_URL || "http://auth-service:8080";
 
 export interface AgentSession {
   id: number;
@@ -29,7 +30,17 @@ export async function getAgentFromCookie(
       signal: AbortSignal.timeout(3000),
     });
     if (resp.ok) {
-      const data = await resp.json() as { valid: boolean; user?: { sub: string; email: string; name: string; tier: string; roles: string[]; agent_code: string } };
+      const data = (await resp.json()) as {
+        valid: boolean;
+        user?: {
+          sub: string;
+          email: string;
+          name: string;
+          tier: string;
+          roles: string[];
+          agent_code: string;
+        };
+      };
       if (data.valid && data.user) {
         return {
           id: Number(data.user.sub) || 0,

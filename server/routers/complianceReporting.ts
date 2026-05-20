@@ -238,5 +238,4 @@ export const complianceReportingRouter = router({
   getComplianceScore,
   generateReport,
   createSchedule,
-
 });

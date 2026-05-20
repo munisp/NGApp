@@ -98,9 +98,15 @@ export const websocketServiceRouter = router({
 
   listConnections: protectedProcedure.query(async () => ({ connections: [] })),
 
-  broadcastMessage: protectedProcedure.mutation(async () => ({ sent: true, recipients: 0 })),
+  broadcastMessage: protectedProcedure.mutation(async () => ({
+    sent: true,
+    recipients: 0,
+  })),
 
-  channelStats: protectedProcedure.query(async () => ({ channels: [], totalSubscribers: 0 })),
+  channelStats: protectedProcedure.query(async () => ({
+    channels: [],
+    totalSubscribers: 0,
+  })),
 
   recentMessages: protectedProcedure.query(async () => ({ messages: [] })),
 });

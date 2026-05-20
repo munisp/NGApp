@@ -87,9 +87,11 @@ export const aiMonitoringRouter = router({
       return results;
     }),
 
-  acknowledgeAlert: protectedProcedure.input(z.object({})).mutation(async () => {
-    return { success: true };
-  }),
+  acknowledgeAlert: protectedProcedure
+    .input(z.object({}))
+    .mutation(async () => {
+      return { success: true };
+    }),
   alerts: protectedProcedure.query(async () => {
     return { items: [], total: 0 };
   }),

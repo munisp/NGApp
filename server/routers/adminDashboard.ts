@@ -227,11 +227,24 @@ export const adminDashboardRouter = router({
   }),
 
   systemStats: protectedProcedure.query(async () => {
-    return { totalUsers: 1250, totalTransactions: 58000, revenue: 4500000, serverUptime: process.uptime(), timestamp: new Date().toISOString() };
+    return {
+      totalUsers: 1250,
+      totalTransactions: 58000,
+      revenue: 4500000,
+      serverUptime: process.uptime(),
+      timestamp: new Date().toISOString(),
+    };
   }),
 
   auditLog: protectedProcedure
-    .input(z.object({ limit: z.number().default(20), offset: z.number().default(0) }).optional())
+    .input(
+      z
+        .object({
+          limit: z.number().default(20),
+          offset: z.number().default(0),
+        })
+        .optional()
+    )
     .query(async () => {
       return { entries: [], total: 0 };
     }),

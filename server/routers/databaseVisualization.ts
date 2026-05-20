@@ -261,5 +261,4 @@ export const databaseVisualizationRouter = router({
   getRelationships,
   exportTable,
   runHealthCheck,
-
 });

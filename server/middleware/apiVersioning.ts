@@ -9,7 +9,8 @@ export const DEPRECATED_VERSIONS = ["v1"];
 
 export function apiVersioningMiddleware() {
   return (req: any, res: any, next: any) => {
-    const version = (req.headers["x-api-version"] as string) || CURRENT_API_VERSION;
+    const version =
+      (req.headers["x-api-version"] as string) || CURRENT_API_VERSION;
     if (!SUPPORTED_VERSIONS.includes(version)) {
       res.status(400).json({ error: `Unsupported API version: ${version}` });
       return;

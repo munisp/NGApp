@@ -144,11 +144,16 @@ export const apacheAirflowRouter = router({
         status: "queued",
       };
     }),
-  listTaskInstances: protectedProcedure.input(z.object({ dagId: z.string() }).optional()).query(async () => {
-    return { items: [], total: 0 };
-  }),
+  listTaskInstances: protectedProcedure
+    .input(z.object({ dagId: z.string() }).optional())
+    .query(async () => {
+      return { items: [], total: 0 };
+    }),
   listPools: protectedProcedure.query(async () => {
-    return { items: [{ name: "default_pool", slots: 128, used: 42 }], total: 1 };
+    return {
+      items: [{ name: "default_pool", slots: 128, used: 42 }],
+      total: 1,
+    };
   }),
 
   getDag: protectedProcedure

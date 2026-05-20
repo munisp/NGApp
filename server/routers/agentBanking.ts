@@ -33,15 +33,23 @@ const agentProcedure = protectedProcedure.use(async ({ ctx, next }) => {
 
 export const agentBankingRouter = router({
   list: protectedProcedure
-    .input(z.object({ limit: z.number().default(10), offset: z.number().default(0) }))
+    .input(
+      z.object({ limit: z.number().default(10), offset: z.number().default(0) })
+    )
     .query(async ({ input }) => {
       try {
         const db = (await getDb())!;
         if (!db) return { items: [], total: 0 };
-        const rows = await db.select().from(agents).limit(input.limit).offset(input.offset);
+        const rows = await db
+          .select()
+          .from(agents)
+          .limit(input.limit)
+          .offset(input.offset);
         const [tot] = await db.select({ total: count() }).from(agents);
         return { items: rows, total: tot?.total ?? 0 };
-      } catch { return { items: [], total: 0 }; }
+      } catch {
+        return { items: [], total: 0 };
+      }
     }),
   // ── Dashboard ──────────────────────────────────────────────────────────────
   dashboard: router({

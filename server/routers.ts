@@ -1069,6 +1069,6 @@ export const appRouter = router({
   geoFencing: geofencingRouter,
   geoFencingDedicated: geoFencingDedicatedRouter,
   receiptTemplates: receiptTemplatesRouter,
-})
+});
 
 export type AppRouter = typeof appRouter;

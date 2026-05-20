@@ -239,5 +239,9 @@ export const apiDocsRouter = router({
     };
   }),
 
-  getSpec: protectedProcedure.query(async () => ({ openapi: "3.0.0", info: { title: "54Link POS Shell API", version: "1.0.0" }, paths: {} })),
+  getSpec: protectedProcedure.query(async () => ({
+    openapi: "3.0.0",
+    info: { title: "54Link POS Shell API", version: "1.0.0" },
+    paths: {},
+  })),
 });

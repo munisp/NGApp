@@ -245,5 +245,9 @@ export const customerOnboardingPipelineRouter = router({
     };
   }),
 
-  getStats: protectedProcedure.query(async () => ({ total: 1250, active: 980, completed: 270 })),
+  getStats: protectedProcedure.query(async () => ({
+    total: 1250,
+    active: 980,
+    completed: 270,
+  })),
 });

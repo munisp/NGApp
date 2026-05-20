@@ -23,9 +23,7 @@ export const currencyHedgingRouter = router({
         .limit(input.limit)
         .offset(input.offset);
 
-      const totalArr = await database
-        .select({ total: count() })
-        .from(auditLog);
+      const totalArr = await database.select({ total: count() }).from(auditLog);
 
       return {
         items: results,
@@ -55,9 +53,7 @@ export const currencyHedgingRouter = router({
   getSummary: protectedProcedure.query(async () => {
     const database = await getDb();
     if (!database) return { data: [], total: 0, limit: 0, offset: 0 };
-    const totalArr = await database
-      .select({ total: count() })
-      .from(auditLog);
+    const totalArr = await database.select({ total: count() }).from(auditLog);
 
     return {
       totalRecords: totalArr?.[0]?.total ?? 0,
@@ -87,5 +83,9 @@ export const currencyHedgingRouter = router({
       return results;
     }),
 
-  getStats: protectedProcedure.query(async () => ({ totalPositions: 45, hedgedAmount: 2500000, exposure: 150000 })),
+  getStats: protectedProcedure.query(async () => ({
+    totalPositions: 45,
+    hedgedAmount: 2500000,
+    exposure: 150000,
+  })),
 });

@@ -89,18 +89,41 @@ export const disputesRouter = router({
     }),
 
   raise: protectedProcedure
-    .input(z.object({ transactionRef: z.string(), reason: z.string(), description: z.string().optional() }))
+    .input(
+      z.object({
+        transactionRef: z.string(),
+        reason: z.string(),
+        description: z.string().optional(),
+      })
+    )
     .mutation(async ({ input, ctx }) => {
       const ref = `DSP-${Date.now()}`;
-      return { ref, transactionRef: input.transactionRef, reason: input.reason, status: "open", createdAt: new Date() };
+      return {
+        ref,
+        transactionRef: input.transactionRef,
+        reason: input.reason,
+        status: "open",
+        createdAt: new Date(),
+      };
     }),
 
   myDisputes: protectedProcedure
-    .input(z.object({ status: z.string().optional(), limit: z.number().default(20) }).optional())
+    .input(
+      z
+        .object({
+          status: z.string().optional(),
+          limit: z.number().default(20),
+        })
+        .optional()
+    )
     .query(async ({ ctx }) => {
       const database = await getDb();
       if (!database) return { disputes: [] };
-      const rows = await database.select().from(disputes).orderBy(desc(disputes.id)).limit(20);
+      const rows = await database
+        .select()
+        .from(disputes)
+        .orderBy(desc(disputes.id))
+        .limit(20);
       return { disputes: rows };
     }),
 
@@ -108,22 +131,47 @@ export const disputesRouter = router({
     .input(z.object({ ref: z.string() }))
     .query(async ({ input }) => {
       const database = await getDb();
-      if (!database) throw new TRPCError({ code: "NOT_FOUND", message: "Dispute not found" });
-      const [row] = await database.select().from(disputes).where(eq(disputes.id, 1)).limit(1);
-      if (!row) throw new TRPCError({ code: "NOT_FOUND", message: "Dispute not found" });
+      if (!database)
+        throw new TRPCError({
+          code: "NOT_FOUND",
+          message: "Dispute not found",
+        });
+      const [row] = await database
+        .select()
+        .from(disputes)
+        .where(eq(disputes.id, 1))
+        .limit(1);
+      if (!row)
+        throw new TRPCError({
+          code: "NOT_FOUND",
+          message: "Dispute not found",
+        });
       return row;
     }),
 
   listAll: protectedProcedure
-    .input(z.object({ status: z.string().default("all"), page: z.number().default(1), limit: z.number().default(20) }))
+    .input(
+      z.object({
+        status: z.string().default("all"),
+        page: z.number().default(1),
+        limit: z.number().default(20),
+      })
+    )
     .query(async ({ ctx, input }) => {
       const user = ctx.user;
       if (!user || (user.role !== "admin" && user.role !== "supervisor")) {
-        throw new TRPCError({ code: "FORBIDDEN", message: "FORBIDDEN: admin or supervisor role required" });
+        throw new TRPCError({
+          code: "FORBIDDEN",
+          message: "FORBIDDEN: admin or supervisor role required",
+        });
       }
       const database = await getDb();
       if (!database) return { disputes: [], total: 0 };
-      const rows = await database.select().from(disputes).orderBy(desc(disputes.id)).limit(input.limit);
+      const rows = await database
+        .select()
+        .from(disputes)
+        .orderBy(desc(disputes.id))
+        .limit(input.limit);
       return { disputes: rows, total: rows.length };
     }),
 
@@ -132,9 +180,17 @@ export const disputesRouter = router({
     .mutation(async ({ ctx, input }) => {
       const user = ctx.user;
       if (!user || (user.role !== "admin" && user.role !== "supervisor")) {
-        throw new TRPCError({ code: "FORBIDDEN", message: "FORBIDDEN: admin or supervisor role required" });
+        throw new TRPCError({
+          code: "FORBIDDEN",
+          message: "FORBIDDEN: admin or supervisor role required",
+        });
       }
-      return { ref: input.disputeRef, resolution: input.resolution, status: "resolved", resolvedAt: new Date() };
+      return {
+        ref: input.disputeRef,
+        resolution: input.resolution,
+        status: "resolved",
+        resolvedAt: new Date(),
+      };
     }),
 
   addMessage: protectedProcedure.input(z.object({})).mutation(async () => {

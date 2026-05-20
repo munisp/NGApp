@@ -18,7 +18,9 @@ export const middleware = t.middleware;
 const observability = createObservabilityMiddleware(t);
 const sidecarMiddleware = createSidecarMiddleware(t);
 
-export const publicProcedure = t.procedure.use(observability).use(sidecarMiddleware);
+export const publicProcedure = t.procedure
+  .use(observability)
+  .use(sidecarMiddleware);
 
 // ── requireUser: verify JWT session ──────────────────────────────────────────
 const requireUser = t.middleware(async opts => {
@@ -71,10 +73,17 @@ const requirePermify = t.middleware(async opts => {
 });
 
 // ── protectedProcedure: JWT auth + Permify base access check ─────────────────
-export const protectedProcedure = t.procedure.use(observability).use(sidecarMiddleware).use(requireUser).use(requirePermify);
+export const protectedProcedure = t.procedure
+  .use(observability)
+  .use(sidecarMiddleware)
+  .use(requireUser)
+  .use(requirePermify);
 
 // ── adminProcedure: JWT auth + role=admin + Permify admin check ───────────────
-export const adminProcedure = t.procedure.use(observability).use(sidecarMiddleware).use(
+export const adminProcedure = t.procedure
+  .use(observability)
+  .use(sidecarMiddleware)
+  .use(
     t.middleware(async opts => {
       const { ctx, next } = opts;
 

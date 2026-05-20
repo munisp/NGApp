@@ -204,7 +204,9 @@ export function circuitBreaker(serviceName: string) {
     // Intercept response to track success/failure
     const originalEnd = res.end;
     // @ts-ignore - Express write overload
-    res.end = function (...args: [chunk: any, encoding: BufferEncoding, cb?: () => void]) {
+    res.end = function (
+      ...args: [chunk: any, encoding: BufferEncoding, cb?: () => void]
+    ) {
       if (res.statusCode >= 500) {
         circuit.failures++;
         circuit.lastFailure = Date.now();

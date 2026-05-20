@@ -87,17 +87,38 @@ export const resilienceHardeningRouter = router({
       return results;
     }),
 
-  getConnectionProfile: protectedProcedure.query(async () => ({ enabled: true, status: "active" })),
+  getConnectionProfile: protectedProcedure.query(async () => ({
+    enabled: true,
+    status: "active",
+  })),
 
-  getWebSocketConfig: protectedProcedure.query(async () => ({ enabled: true, status: "active" })),
+  getWebSocketConfig: protectedProcedure.query(async () => ({
+    enabled: true,
+    status: "active",
+  })),
 
-  getOfflineQueueStatus: protectedProcedure.query(async () => ({ enabled: true, status: "active" })),
+  getOfflineQueueStatus: protectedProcedure.query(async () => ({
+    enabled: true,
+    status: "active",
+  })),
 
-  getCompressionConfig: protectedProcedure.query(async () => ({ enabled: true, status: "active" })),
+  getCompressionConfig: protectedProcedure.query(async () => ({
+    enabled: true,
+    status: "active",
+  })),
 
-  getDegradationConfig: protectedProcedure.query(async () => ({ enabled: true, status: "active" })),
+  getDegradationConfig: protectedProcedure.query(async () => ({
+    enabled: true,
+    status: "active",
+  })),
 
-  getResilienceMetrics: protectedProcedure.query(async () => ({ enabled: true, status: "active" })),
+  getResilienceMetrics: protectedProcedure.query(async () => ({
+    enabled: true,
+    status: "active",
+  })),
 
-  getServiceWorkerConfig: protectedProcedure.query(async () => ({ enabled: true, status: "active" })),
+  getServiceWorkerConfig: protectedProcedure.query(async () => ({
+    enabled: true,
+    status: "active",
+  })),
 });
