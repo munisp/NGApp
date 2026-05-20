@@ -6,7 +6,7 @@
  * TigerBeetle (double-entry ledger), APISIX (gateway routes)
  */
 import { z } from "zod";
-import { protectedProcedure, protectedProcedure, router } from "../_core/trpc";
+import { protectedProcedure, router } from "../_core/trpc";
 import { getDb, writeAuditLog } from "../db";
 import { transactions, agents, merchants } from "../../drizzle/schema";
 import { eq, desc, and, sql, gte, like } from "drizzle-orm";

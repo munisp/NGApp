@@ -22,7 +22,7 @@ import {
   writeAuditLog,
   getDb,
 } from "../db";
-import { protectedProcedure, protectedProcedure, router } from "../_core/trpc";
+import { protectedProcedure, router } from "../_core/trpc";
 import { agents } from "../../drizzle/schema";
 import {
   eq,

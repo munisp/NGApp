@@ -1,6 +1,6 @@
 // Sprint 90: Production biometric auth router with real microservice integration
 import { z } from "zod";
-import { protectedProcedure, protectedProcedure, router } from "../_core/trpc";
+import { protectedProcedure, router } from "../_core/trpc";
 import { getDb } from "../db";
 import { kycSessions } from "../../drizzle/schema";
 import { eq, desc, and, sql, count } from "drizzle-orm";

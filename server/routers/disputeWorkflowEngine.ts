@@ -3,7 +3,7 @@
  * Sprint 54: Full PostgreSQL + middleware integration
  */
 import { z } from "zod";
-import { protectedProcedure, router, protectedProcedure } from "../_core/trpc";
+import { protectedProcedure, router } from "../_core/trpc";
 import { getDb } from "../db";
 import { disputes, disputeMessages, sla_breaches } from "../../drizzle/schema";
 import { eq, desc, count, sql } from "drizzle-orm";

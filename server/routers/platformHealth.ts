@@ -3,7 +3,7 @@
  * Aggregates health checks from all microservices into a single endpoint.
  */
 import { z } from "zod";
-import { protectedProcedure, protectedProcedure, router } from "../_core/trpc";
+import { protectedProcedure, router } from "../_core/trpc";
 import { logger } from "../_core/logger";
 import { TRPCError } from "@trpc/server";
 

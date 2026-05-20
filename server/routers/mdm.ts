@@ -10,7 +10,7 @@
  */
 
 import { z } from "zod";
-import { protectedProcedure, protectedProcedure, router } from "../_core/trpc";
+import { protectedProcedure, router } from "../_core/trpc";
 import { TRPCError } from "@trpc/server";
 import { drizzle } from "drizzle-orm/node-postgres";
 import { getDb } from "../db";

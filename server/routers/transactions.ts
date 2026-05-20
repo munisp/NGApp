@@ -27,7 +27,7 @@ import {
   createFraudAlert,
   getDb,
 } from "../db";
-import { protectedProcedure, router, protectedProcedure} from "../_core/trpc";
+import { protectedProcedure, router } from "../_core/trpc";
 import { getAgentFromCookie } from "../middleware/agentAuth";
 import { ENV } from "../_core/env";
 import {

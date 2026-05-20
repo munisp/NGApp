@@ -20,7 +20,7 @@ import {
   addLoyaltyHistory,
   writeAuditLog,
 } from "../db";
-import { protectedProcedure, router, protectedProcedure} from "../_core/trpc";
+import { protectedProcedure, router } from "../_core/trpc";
 import { getAgentFromCookie } from "../middleware/agentAuth";
 import { agents, loyaltyHistory } from "../../drizzle/schema";
 import { eq, desc, asc, sql, gte, and, ilike, isNull } from "drizzle-orm";

@@ -13,7 +13,7 @@
  */
 
 import { z } from "zod";
-import { protectedProcedure, router, protectedProcedure} from "../_core/trpc";
+import { protectedProcedure, router } from "../_core/trpc";
 import { notifyOwner } from "../_core/notification";
 import { ENV } from "../_core/env";
 import { getFluvioStatus } from "../lib/fluvioClient";

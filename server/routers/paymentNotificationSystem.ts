@@ -1,6 +1,6 @@
 // Sprint 87: Upgraded from mock data to real DB queries — paymentNotificationSystem
 import { z } from "zod";
-import { protectedProcedure, router, protectedProcedure } from "../_core/trpc";
+import { protectedProcedure, router } from "../_core/trpc";
 import { getDb } from "../db";
 import { notificationDispatchLog } from "../../drizzle/schema";
 import { eq, desc, and, sql, count } from "drizzle-orm";

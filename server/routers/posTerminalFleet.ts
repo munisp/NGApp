@@ -6,7 +6,7 @@
  * Dapr (service invocation), OpenSearch (fleet search)
  */
 import { z } from "zod";
-import { protectedProcedure, protectedProcedure, router } from "../_core/trpc";
+import { protectedProcedure, router } from "../_core/trpc";
 import { getDb, writeAuditLog } from "../db";
 import {
   posTerminals,

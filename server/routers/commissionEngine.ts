@@ -20,7 +20,7 @@
  * 13. Open Source — Drizzle ORM, tRPC, Zod
  */
 import { z } from "zod";
-import { router, protectedProcedure, protectedProcedure } from "../_core/trpc";
+import { router, protectedProcedure } from "../_core/trpc";
 import { getDb } from "../db";
 import {
   commissionTiers,

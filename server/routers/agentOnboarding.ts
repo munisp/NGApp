@@ -4,7 +4,7 @@
  * Tracks progress in agent_onboarding_progress table.
  */
 import { z } from "zod";
-import { router, protectedProcedure, protectedProcedure} from "../_core/trpc";
+import { router, protectedProcedure } from "../_core/trpc";
 import { TRPCError } from "@trpc/server";
 import { getDb } from "../db";
 import {

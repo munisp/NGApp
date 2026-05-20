@@ -1,6 +1,6 @@
 // Sprint 87: GDPR/NDPR compliance, consent expiry, withdrawal workflow
 import { z } from "zod";
-import { protectedProcedure, router, protectedProcedure} from "../_core/trpc";
+import { protectedProcedure, router } from "../_core/trpc";
 import { getDb } from "../db";
 import { dataConsentRecords } from "../../drizzle/schema";
 import { eq, desc, and, count, lt } from "drizzle-orm";

@@ -432,8 +432,8 @@ export async function BillingProvisioningWorkflow(
         status: "completed",
         details: result,
       });
-      if (step.name === "create_billing_config" && result?.configId) {
-        configId = result.configId;
+      if (step.name === "create_billing_config" && (result as any)?.configId) {
+        configId = (result as any).configId;
       }
     } catch (error) {
       const errMsg = (error as Error).message || "Unknown error";

@@ -1,5 +1,5 @@
 import { z } from "zod";
-import { protectedProcedure, protectedProcedure, router } from "../_core/trpc";
+import { protectedProcedure, router } from "../_core/trpc";
 
 export const geoFenceDedicatedRouter = router({
   zones: protectedProcedure.query(async () => {

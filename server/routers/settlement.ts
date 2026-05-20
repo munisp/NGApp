@@ -22,7 +22,7 @@ import { getDb } from "../db";
 import { auditLog, agents, transactions } from "../../drizzle/schema";
 import { desc, eq, and, gte, lte, sql } from "drizzle-orm";
 import { runDailySettlement } from "../settlementCron";
-import { router, protectedProcedure , protectedProcedure } from "../_core/trpc";
+import { router, protectedProcedure } from "../_core/trpc";
 import { getAgentFromCookie } from "../middleware/agentAuth";
 import { settlementPlatform, PlatformError } from "../_core/platformClient.js";
 import {
