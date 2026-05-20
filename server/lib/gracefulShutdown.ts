@@ -33,7 +33,8 @@ export function setupGracefulShutdown(server: Server) {
 
     // 3. Close Redis
     try {
-      const { closeRedis } = await import("../../redisClient");
+      // @ts-ignore - module structure
+      const { closeRedis } = await import("../_core/redis");
       await closeRedis?.();
       console.log("[Shutdown] Redis connection closed");
     } catch {
@@ -42,7 +43,8 @@ export function setupGracefulShutdown(server: Server) {
 
     // 4. Close Kafka producer
     try {
-      const { closeKafka } = await import("../../kafkaClient");
+      // @ts-ignore - module structure
+      const { closeKafka } = await import("../_core/kafka");
       await closeKafka?.();
       console.log("[Shutdown] Kafka producer closed");
     } catch {

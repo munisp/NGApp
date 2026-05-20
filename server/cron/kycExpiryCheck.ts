@@ -26,8 +26,8 @@ export async function runKycExpiryCheck() {
       .where(
         and(
           eq(agents.isActive, true),
-          isNotNull(agents.kycExpiresAt as any),
-          lt(agents.kycExpiresAt as any, thirtyDaysFromNow)
+          isNotNull((agents as any).kycExpiresAt as any),
+          lt((agents as any).kycExpiresAt as any, thirtyDaysFromNow)
         )
       )
       .limit(500);

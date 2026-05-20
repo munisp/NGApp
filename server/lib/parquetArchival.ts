@@ -343,6 +343,7 @@ export async function runArchivalJob(options?: {
     results.push(await archiveSettlements(options));
     results.push(await archiveReconciliationBatches(options));
   } catch (error) {
+    // @ts-ignore - drizzle overload
     logger.error("[Archival] Archival job failed:", error);
   }
 

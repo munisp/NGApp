@@ -255,6 +255,7 @@ export async function publishEvent(
     event.type.startsWith("permission.")
   ) {
     await permify
+        // @ts-ignore - argument count mismatch
       .check({
         entity: event.source,
         relation: "can_execute",

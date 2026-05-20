@@ -212,7 +212,7 @@ export function registerHealthEndpoints(app: Express) {
     try {
       const { getPool } = await import("../db");
       const pool = getPool();
-      const result = await pool.query("SELECT 1 as ok");
+      const result = await (await pool)?.query("SELECT 1 as ok");
       checks.database = { status: "healthy", connected: true };
     } catch (e: any) {
       checks.database = { status: "unhealthy", error: e.message };
@@ -252,7 +252,7 @@ export function registerGracefulShutdown(server: any) {
     try {
       const { getPool } = await import("../db");
       const pool = getPool();
-      await pool.end();
+      await (await pool)?.end();
       console.log("[SHUTDOWN] Database pool closed.");
     } catch (e) {
       console.log("[SHUTDOWN] DB pool close error:", e);

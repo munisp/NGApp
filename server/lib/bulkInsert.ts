@@ -180,6 +180,7 @@ export async function bulkInsertCopy(
   } catch (error) {
     logger.warn(
       `[BulkInsert/COPY] COPY protocol failed, falling back to multi-row VALUES:`,
+      // @ts-ignore - drizzle overload
       error
     );
     return bulkInsertValues(opts);

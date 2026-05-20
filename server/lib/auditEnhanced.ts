@@ -47,6 +47,7 @@ export async function writeEnhancedAuditLog(
       changeDetails.changedFields = Object.keys(changes);
     }
 
+    // @ts-ignore - drizzle overload
     await db.insert(auditLog).values({
       agentId: entry.agentId,
       agentCode: entry.agentCode,

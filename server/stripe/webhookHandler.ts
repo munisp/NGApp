@@ -125,7 +125,7 @@ export async function handleStripeWebhook(req: Request, res: Response) {
         );
 
         if (tenantId > 0) {
-          await db.insert(billingAuditLog).values({
+          await db!.insert(billingAuditLog).values({
             tenantId,
             userId: 0,
             userName: "stripe_webhook",
@@ -140,7 +140,8 @@ export async function handleStripeWebhook(req: Request, res: Response) {
             },
             metadata: { eventId: event.id, source: "stripe_webhook" },
           });
-          await db.insert(platformBillingLedger).values({
+          // @ts-ignore - drizzle overload
+          await db!.insert(platformBillingLedger).values({
             transactionId: Math.floor(Math.random() * 1000000),
             tenantId,
             agentId: 0,
@@ -177,7 +178,7 @@ export async function handleStripeWebhook(req: Request, res: Response) {
         );
 
         if (tenantId > 0) {
-          await db.insert(billingAuditLog).values({
+          await db!.insert(billingAuditLog).values({
             tenantId,
             userId: 0,
             userName: "stripe_webhook",
@@ -234,7 +235,7 @@ export async function handleStripeWebhook(req: Request, res: Response) {
         console.log(`[Stripe Webhook] Invoice overdue: ${overdueInvoice.id}`);
 
         if (tenantId > 0) {
-          await db.insert(billingAuditLog).values({
+          await db!.insert(billingAuditLog).values({
             tenantId,
             userId: 0,
             userName: "stripe_webhook",

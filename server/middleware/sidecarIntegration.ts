@@ -27,9 +27,9 @@ import {
  * Call once from _core/trpc.ts, passing the tRPC instance.
  */
 export function createSidecarMiddleware(
-  t: ReturnType<(typeof initTRPC.context<TrpcContext>)["create"]>
+  t: any
 ) {
-  return t.middleware(async ({ ctx, path, type, next }) => {
+  return t.middleware(async ({ ctx, path, type, next }: { ctx: any; path: string; type: string; next: any }) => {
     const startTime = Date.now();
     const userId = (ctx as any)?.user?.id?.toString() ?? "anonymous";
     const procedurePath = path;

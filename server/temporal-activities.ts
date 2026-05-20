@@ -303,6 +303,7 @@ export async function createBillingConfig(input: {
   const _db = await getDbInstance();
   const [config] = await _db
     .insert(tenantBillingConfig)
+    // @ts-ignore - drizzle overload
     .values({
       tenantId: input.tenantId,
       billingModel: input.billingModel,

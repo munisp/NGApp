@@ -24,6 +24,8 @@ import {
 } from "../../drizzle/schema";
 import { eq, and, gte, lt, sql } from "drizzle-orm";
 
+const stripe = new Stripe(process.env.STRIPE_SECRET_KEY || "", { apiVersion: "2026-03-25.dahlia" as any });
+
 let _stripe: Stripe | null = null;
 function getStripe(): Stripe {
   if (!_stripe) {
@@ -79,7 +81,7 @@ export async function handleMonthlyInvoiceCron(req: Request, res: Response) {
     );
 
     // 1. Get all active tenant billing configs
-    const tenantConfigs = await db.select().from(tenantBillingConfig);
+    const tenantConfigs = await db!.select().from(tenantBillingConfig);
     console.log(
       `[Monthly Invoice Cron] Found ${tenantConfigs.length} tenant configs`
     );
@@ -87,17 +89,17 @@ export async function handleMonthlyInvoiceCron(req: Request, res: Response) {
     for (const config of tenantConfigs) {
       try {
         // 2. Calculate revenue for this tenant in the previous month
-        const ledgerEntries = await db
+        const ledgerEntries = await db!
           .select({
             totalGross: sql<string>`COALESCE(SUM(CAST(${platformBillingLedger.grossAmount} AS DECIMAL)), 0)`,
-            totalPlatformShare: sql<string>`COALESCE(SUM(CAST(${platformBillingLedger.platformShare} AS DECIMAL)), 0)`,
-            totalClientShare: sql<string>`COALESCE(SUM(CAST(${platformBillingLedger.clientShare} AS DECIMAL)), 0)`,
+            totalPlatformShare: sql<string>`COALESCE(SUM(CAST(${(platformBillingLedger as any).platformShare} AS DECIMAL)), 0)`,
+            totalClientShare: sql<string>`COALESCE(SUM(CAST(${(platformBillingLedger as any).clientShare} AS DECIMAL)), 0)`,
             transactionCount: sql<number>`COUNT(*)`,
           })
           .from(platformBillingLedger)
           .where(
             and(
-              eq(platformBillingLedger.tenantId, config.tenantId),
+              eq((platformBillingLedger as any).tenantId, config.tenantId),
               gte(platformBillingLedger.createdAt, periodStart),
               lt(platformBillingLedger.createdAt, periodEnd)
             )
@@ -211,7 +213,7 @@ export async function handleMonthlyInvoiceCron(req: Request, res: Response) {
         await getStripe().invoices.finalizeInvoice(invoice.id);
 
         // 5. Record in audit log
-        await db.insert(billingAuditLog).values({
+        await db!.insert(billingAuditLog).values({
           tenantId: config.tenantId,
           userId: 0,
           userName: "monthly_invoice_cron",

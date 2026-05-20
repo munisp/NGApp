@@ -1,4 +1,3 @@
-import { protectedProcedure } from "../_core/trpc";
 /**
  * KYC Router — tRPC procedures bridging POS Shell to the open-source KYC/KYB engines
  *

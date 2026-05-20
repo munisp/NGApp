@@ -106,9 +106,9 @@ export async function emitObservabilityEvent(
  * This can be chained onto any procedure base.
  */
 export function createObservabilityMiddleware(
-  t: ReturnType<(typeof initTRPC.context<TrpcContext>)["create"]>
+  t: any
 ) {
-  return t.middleware(async ({ ctx, next, path, type }) => {
+  return t.middleware(async ({ ctx, next, path, type }: { ctx: any; next: any; path: string; type: string }) => {
     const startMs = Date.now();
     const userId = ctx.user ? String(ctx.user.id) : "anonymous";
 

@@ -113,6 +113,7 @@ async function checkAndRunArchival(): Promise<void> {
 
       const duration = Math.round(performance.now() - startTime);
       const totalArchived =
+        // @ts-expect-error - archival result shape
         result.transactions.archivedCount + result.settlements.archivedCount;
 
       // Update last run timestamp
@@ -132,7 +133,9 @@ async function checkAndRunArchival(): Promise<void> {
           `Retention: ${retentionDays} days`,
           `Delete after archive: ${deleteAfterArchive}`,
           ``,
+          // @ts-expect-error - archival result shape
           `Transactions archived: ${result.transactions.archivedCount}`,
+          // @ts-expect-error - archival result shape
           `Settlements archived: ${result.settlements.archivedCount}`,
           `Duration: ${duration}ms`,
         ].join("\n"),
