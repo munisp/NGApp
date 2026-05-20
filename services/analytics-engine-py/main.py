@@ -469,7 +469,7 @@ class Handler(BaseHTTPRequestHandler):
             result = db_insert("analytics_engine_py", body)
             _generate_report_result = generate_report(body.get("data", {}))
             _compute_metrics_result = compute_metrics(body.get("data", {}))
-            cache_set(self.get_tenant_id() + ":"+last_post", str(body))
+            cache_set(f"{self.get_tenant_id()}:last_post", str(body))
             self.respond(201, {"created": True, "data": result})
         else:
             self.respond(404, {"error": "not_found", "path": path})

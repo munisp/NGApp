@@ -362,7 +362,7 @@ class Handler(BaseHTTPRequestHandler):
         if path == "/v1/create":
             result = db_insert("corporate_doc_verification_py", body)
             _process_request_result = process_request(body.get("data", {}))
-            cache_set(self.get_tenant_id() + ":"+last_post", str(body))
+            cache_set(f"{self.get_tenant_id()}:last_post", str(body))
             self.respond(201, {"created": True, "data": result})
         else:
             self.respond(404, {"error": "not_found", "path": path})

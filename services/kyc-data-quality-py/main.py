@@ -536,7 +536,7 @@ class Handler(BaseHTTPRequestHandler):
             result = db_insert("kyc_data_quality_py", body)
             _check_dup_result = check_dup(body.get("data", {}))
             _assess_result = assess(body.get("data", {}))
-            cache_set(self.get_tenant_id() + ":"+last_post", str(body))
+            cache_set(f"{self.get_tenant_id()}:last_post", str(body))
             self.respond(201, {"created": True, "data": result})
         else:
             self.respond(404, {"error": "not_found", "path": path})

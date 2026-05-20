@@ -369,7 +369,7 @@ class Handler(BaseHTTPRequestHandler):
 
         if path == "/v1/create":
             result = db_insert("kyc_self_service_py", body)
-            cache_set(self.get_tenant_id() + ":"+last_post", str(body))
+            cache_set(f"{self.get_tenant_id()}:last_post", str(body))
             self.respond(201, {"created": True, "data": result})
         elif path == "/v1/kyc-self-service/update":
             rid = body.get("id", "")

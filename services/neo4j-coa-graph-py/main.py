@@ -387,7 +387,7 @@ errors_total{{service="{SERVICE_NAME}"}} {error_count}
             with coa_graph.lock:
                 coa_graph.edges.append({"from": body.get("debit_account", ""), "to": body.get("credit_account", ""), "type": "TRANSACTION", "weight": body.get("amount", 0), "meta": {"narration": body.get("narration", "")}})
             db_insert(SERVICE_NAME, body)
-            cache_set(self.get_tenant_id() + ":"+last_txn", json.dumps(body))
+            cache_set(f"{self.get_tenant_id()}:last_txn", json.dumps(body))
             gl_url = os.environ.get("GL_ENGINE_URL", "http://gl-engine-go:8080")
             call_service("POST", f"{gl_url}/v1/gl/post-journal", {"glAccountCode": body.get("debit_account"), "amount": body.get("amount"), "entryType": "debit"})
             self.respond(201, {"recorded": True, "debit": body.get("debit_account"), "credit": body.get("credit_account"), "amount": body.get("amount")})
@@ -397,7 +397,7 @@ errors_total{{service="{SERVICE_NAME}"}} {error_count}
                 self.respond(429, {"error": "rate_limit_exceeded"})
                 return
             result = db_insert(SERVICE_NAME, body)
-            cache_set(self.get_tenant_id() + ":"+last_post", json.dumps(body))
+            cache_set(f"{self.get_tenant_id()}:last_post", json.dumps(body))
             with coa_graph.lock:
                 if "code" in body:
                     coa_graph.nodes[body["code"]] = body

@@ -130,7 +130,7 @@ class Handler(BaseHTTPRequestHandler):
             if not _rl_allow():
                 inc_errors(); self.respond(429, {"error": "rate_limit_exceeded"}); return
             result = db_insert(SERVICE_NAME, body)
-            cache_set(self.get_tenant_id() + ":"+semantic_search_last", json.dumps(body))
+            cache_set(f"{self.get_tenant_id()}:semantic_search_last", json.dumps(body))
             gl_url = os.environ.get("GL_ENGINE_URL", "http://gl-engine-go:8080")
             call_service("POST", f"{gl_url}/v1/notify", {"source": SERVICE_NAME, "action": "semantic_search"})
             self.respond(200, {"service": SERVICE_NAME, "endpoint": "semantic_search", "result": body})
@@ -139,7 +139,7 @@ class Handler(BaseHTTPRequestHandler):
             if not _rl_allow():
                 inc_errors(); self.respond(429, {"error": "rate_limit_exceeded"}); return
             result = db_insert(SERVICE_NAME, body)
-            cache_set(self.get_tenant_id() + ":"+index_document_last", json.dumps(body))
+            cache_set(f"{self.get_tenant_id()}:index_document_last", json.dumps(body))
             gl_url = os.environ.get("GL_ENGINE_URL", "http://gl-engine-go:8080")
             call_service("POST", f"{gl_url}/v1/notify", {"source": SERVICE_NAME, "action": "index_document"})
             self.respond(200, {"service": SERVICE_NAME, "endpoint": "index_document", "result": body})
@@ -148,7 +148,7 @@ class Handler(BaseHTTPRequestHandler):
             if not _rl_allow():
                 inc_errors(); self.respond(429, {"error": "rate_limit_exceeded"}); return
             result = db_insert(SERVICE_NAME, body)
-            cache_set(self.get_tenant_id() + ":"+find_similar_last", json.dumps(body))
+            cache_set(f"{self.get_tenant_id()}:find_similar_last", json.dumps(body))
             gl_url = os.environ.get("GL_ENGINE_URL", "http://gl-engine-go:8080")
             call_service("POST", f"{gl_url}/v1/notify", {"source": SERVICE_NAME, "action": "find_similar"})
             self.respond(200, {"service": SERVICE_NAME, "endpoint": "find_similar", "result": body})
@@ -157,12 +157,12 @@ class Handler(BaseHTTPRequestHandler):
             if not _rl_allow():
                 inc_errors(); self.respond(429, {"error": "rate_limit_exceeded"}); return
             result = db_insert(SERVICE_NAME, body)
-            cache_set(self.get_tenant_id() + ":"+last_post", json.dumps(body))
+            cache_set(f"{self.get_tenant_id()}:last_post", json.dumps(body))
             self.respond(201, {"created": True})
 
         else:
             result = db_insert(SERVICE_NAME, body)
-            cache_set(self.get_tenant_id() + ":"+last_post", json.dumps(body))
+            cache_set(f"{self.get_tenant_id()}:last_post", json.dumps(body))
             self.respond(201, {"created": True})
 
 if __name__ == "__main__":

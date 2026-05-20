@@ -474,7 +474,7 @@ class Handler(http.server.BaseHTTPRequestHandler):
 
         elif path == "/v1/create":
             result = db_insert(SERVICE_NAME, body)
-            cache_set(self.get_tenant_id() + ":"+last_post", json.dumps(body))
+            cache_set(f"{self.get_tenant_id()}:last_post", json.dumps(body))
             self.respond(201, {"created": True, "service": SERVICE_NAME})
 
         else:

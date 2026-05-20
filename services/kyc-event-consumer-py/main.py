@@ -524,7 +524,7 @@ class Handler(BaseHTTPRequestHandler):
             result = db_insert("kyc_event_consumer_py", body)
             _process_event_result = process_event(body.get("data", {}))
             _kafka_consumer_loop_result = kafka_consumer_loop()
-            cache_set(self.get_tenant_id() + ":"+last_post", str(body))
+            cache_set(f"{self.get_tenant_id()}:last_post", str(body))
             self.respond(201, {"created": True, "data": result})
         else:
             self.respond(404, {"error": "not_found", "path": path})

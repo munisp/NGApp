@@ -465,7 +465,7 @@ class Handler(BaseHTTPRequestHandler):
         if path == "/v1/create":
             result = db_insert("kyc_analytics_dashboard_py", body)
             _compute_trend_result = compute_trend(body.get("data", {}))
-            cache_set(self.get_tenant_id() + ":"+last_post", str(body))
+            cache_set(f"{self.get_tenant_id()}:last_post", str(body))
             self.respond(201, {"created": True, "data": result})
         else:
             self.respond(404, {"error": "not_found", "path": path})

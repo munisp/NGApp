@@ -390,7 +390,7 @@ class Handler(BaseHTTPRequestHandler):
         if "error" in result:
             self.respond(404, result)
         else:
-            cache_set(self.get_tenant_id() + ":"+last_post", str(body))
+            cache_set(f"{self.get_tenant_id()}:last_post", str(body))
             self.respond(201, result)
 
 if __name__ == "__main__":
