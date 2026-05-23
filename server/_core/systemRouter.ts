@@ -215,6 +215,11 @@ export const systemRouter = router({
         { port: 8143, name: "Fluvio Telemetry",     lang: "Python" },
         { port: 8144, name: "Egeria Lineage",       lang: "Python" },
         { port: 8145, name: "Falco Steampipe",      lang: "Python" },
+        // NOC subsystems
+        { port: 8190, name: "NOC Collector",         lang: "Rust"   },
+        { port: 8191, name: "NOC Escalation",        lang: "Go"     },
+        { port: 8192, name: "NOC Correlator",        lang: "Python" },
+        { port: 8193, name: "NOC Uptime Tracker",    lang: "Rust"   },
       ];
       const results = await Promise.allSettled(
         defaultPorts.map(async (w) => {

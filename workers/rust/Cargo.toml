@@ -17,6 +17,8 @@ members = [
     "tigerbeetle_ledger",
     "offline_resilience",
     "wiredigg",
+    "noc_collector",
+    "noc_uptime",
 ]
 resolver = "2"
 

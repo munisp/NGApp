@@ -198,6 +198,7 @@ const LLMStudioPage = lazy(() => import("@/pages/ai/LLMStudioPage"));
 const CocoIndexPage = lazy(() => import("@/pages/ai/CocoIndexPage"));
 const AnomalyAlertsPage = lazy(() => import("@/pages/ai/AnomalyAlertsPage"));
 const NetworkIntelligencePage = lazy(() => import("@/pages/NetworkIntelligencePage"));
+const NocDashboard = lazy(() => import("@/pages/NocDashboard"));
 const DataPipeline = lazy(() => import("@/pages/DataPipeline"));
 const DataLineage = lazy(() => import("@/pages/DataLineage"));
 const RegulatoryIntelligence = lazy(() => import("@/pages/RegulatoryIntelligence"));
@@ -265,6 +266,7 @@ function Router() {
         <Route path="/workers" component={WorkerProcesses} />
         <Route path="/bgp" component={BgpRoutes} />
         <Route path="/network-intelligence" component={NetworkIntelligencePage} />
+        <Route path="/noc" component={NocDashboard} />
         <Route path="/platform-intelligence" component={PlatformIntelligence} />
         <Route path="/temporal" component={TemporalWorkflows} />
         <Route path="/metrics" component={PrometheusMetrics} />
