@@ -234,6 +234,7 @@ const AccreditationWorkflow = lazy(() => import("@/pages/AccreditationWorkflow")
 const SecurityDashboard = lazy(() => import("@/pages/SecurityDashboard"));
 const MiddlewareHealth = lazy(() => import("@/pages/MiddlewareHealth"));
 const PlatformIntelligence = lazy(() => import("@/pages/PlatformIntelligence"));
+const DigitalTwin = lazy(() => import("@/pages/DigitalTwin"));
 
 function Router() {
   return (
@@ -270,6 +271,7 @@ function Router() {
         <Route path="/noc" component={NocDashboard} />
         <Route path="/noc-agent" component={NocAgentDashboard} />
         <Route path="/platform-intelligence" component={PlatformIntelligence} />
+        <Route path="/digital-twin" component={DigitalTwin} />
         <Route path="/temporal" component={TemporalWorkflows} />
         <Route path="/metrics" component={PrometheusMetrics} />
         <Route path="/pcap" component={ArkimePcap} />
