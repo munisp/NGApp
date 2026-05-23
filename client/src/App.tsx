@@ -472,6 +472,10 @@ function Router() {
         <Route path="/accreditation-workflow" component={AccreditationWorkflow} />
         {/* Security — wired from PR#19 */}
         <Route path="/security-dashboard" component={SecurityDashboard} />
+        {/* Route aliases — common alternative URLs */}
+        <Route path="/noc-dashboard" component={NocDashboard} />
+        <Route path="/liveness-verification" component={LivenessVerification} />
+        <Route path="/wiredigg" component={NetworkIntelligencePage} />
         {/* Catch-all — must be last */}
         <Route component={NotFound} />
       </Switch>

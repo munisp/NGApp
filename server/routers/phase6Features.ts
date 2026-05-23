@@ -5,7 +5,7 @@
  */
 import { router, protectedProcedure, publicProcedure } from "../_core/trpc";
 import { z } from "zod";
-import { getDb } from "../db";
+import { getDb, getSharedPool } from "../db";
 import { notifyOwner } from "../_core/notification";
 import { ENV } from "../_core/env";
 import { emitEvent, logAuditEvent, broadcastEvent, cacheGetJson, cacheSetJson, cacheDel, triggerWorkflow } from "../middlewareHelpers";
@@ -15,9 +15,9 @@ import { autoDecryptRows } from "../encryptionMiddleware";
 import { logger } from "../logger";
 
 async function exec(sql: string, params: unknown[] = []): Promise<any[]> {
-  const db = await getDb();
-  const [rows] = await (db as any).execute(sql, params);
-  return autoDecryptRows(sql, rows as any[]);
+  const pool = getSharedPool();
+  const result = await pool.query(sql, params);
+  return autoDecryptRows(sql, result.rows as any[]);
 }
 
 // ── Onboarding checklist steps ────────────────────────────────────────────────
@@ -216,7 +216,7 @@ export const onboardingChecklistRouter = router({
   // Get checklist for current user's org
   getChecklist: protectedProcedure.query(async ({ ctx }) => {
     const progress = await exec(
-      `SELECT step_id, completed_at FROM onboarding_checklists WHERE user_id = ?`,
+      `SELECT step_id, completed_at FROM onboarding_checklists WHERE user_id = $1`,
       [ctx.user.id]
     );
     const completedIds = new Set(progress.map((p: any) => p.step_id));
@@ -237,13 +237,13 @@ export const onboardingChecklistRouter = router({
     .mutation(async ({ ctx, input }) => {
       const now = Date.now();
       await exec(
-        `INSERT INTO onboarding_checklists (user_id, step_id, completed_at) VALUES (?, ?, ?)
-         ON DUPLICATE KEY UPDATE completed_at = ?`,
-        [ctx.user.id, input.stepId, now, now]
+        `INSERT INTO onboarding_checklists (user_id, step_id, completed_at) VALUES ($1, $2, $3)
+         ON CONFLICT (user_id, step_id) DO UPDATE SET completed_at = $3`,
+        [ctx.user.id, input.stepId, now]
       );
       // Check if all steps complete
       const progress = await exec(
-        `SELECT COUNT(*) as cnt FROM onboarding_checklists WHERE user_id = ?`,
+        `SELECT COUNT(*) as cnt FROM onboarding_checklists WHERE user_id = $1`,
         [ctx.user.id]
       );
       const allDone = progress[0]?.cnt >= ONBOARDING_STEPS.length;
@@ -263,9 +263,9 @@ export const onboardingChecklistRouter = router({
     // Mark "profile" and "assets" steps as complete (wizard covers these)
     for (const stepId of ["profile", "assets"]) {
       await exec(
-        `INSERT INTO onboarding_checklists (user_id, step_id, completed_at) VALUES (?, ?, ?)
-         ON DUPLICATE KEY UPDATE completed_at = ?`,
-        [ctx.user.id, stepId, now, now]
+        `INSERT INTO onboarding_checklists (user_id, step_id, completed_at) VALUES ($1, $2, $3)
+         ON CONFLICT (user_id, step_id) DO UPDATE SET completed_at = $3`,
+        [ctx.user.id, stepId, now]
       );
     }
     emitMutationEvent("ndsep.compliance.mutation", { action: "phase6Features", ts: new Date().toISOString() }).catch((e: unknown) => logger.debug({ err: e instanceof Error ? e.message : String(e) }, "fire-and-forget failed"));
@@ -275,9 +275,9 @@ export const onboardingChecklistRouter = router({
   // Dismiss banner (user has seen it)
   dismissBanner: protectedProcedure.mutation(async ({ ctx }) => {
     await exec(
-      `INSERT INTO onboarding_checklists (user_id, step_id, completed_at) VALUES (?, 'banner_dismissed', ?)
-       ON DUPLICATE KEY UPDATE completed_at = ?`,
-      [ctx.user.id, Date.now(), Date.now()]
+      `INSERT INTO onboarding_checklists (user_id, step_id, completed_at) VALUES ($1, 'banner_dismissed', $2)
+       ON CONFLICT (user_id, step_id) DO UPDATE SET completed_at = $2`,
+      [ctx.user.id, Date.now()]
     );
     emitMutationEvent("ndsep.compliance.mutation", { action: "phase6Features", ts: new Date().toISOString() }).catch((e: unknown) => logger.debug({ err: e instanceof Error ? e.message : String(e) }, "fire-and-forget failed"));
     return { success: true };
@@ -286,12 +286,12 @@ export const onboardingChecklistRouter = router({
   // Check if banner should be shown
   shouldShowBanner: protectedProcedure.query(async ({ ctx }) => {
     const dismissed = await exec(
-      `SELECT 1 FROM onboarding_checklists WHERE user_id = ? AND step_id = 'banner_dismissed' LIMIT 1`,
+      `SELECT 1 FROM onboarding_checklists WHERE user_id = $1 AND step_id = 'banner_dismissed' LIMIT 1`,
       [ctx.user.id]
     );
     if (dismissed.length > 0) return { show: false };
     const progress = await exec(
-      `SELECT COUNT(*) as cnt FROM onboarding_checklists WHERE user_id = ? AND step_id != 'banner_dismissed'`,
+      `SELECT COUNT(*) as cnt FROM onboarding_checklists WHERE user_id = $1 AND step_id != 'banner_dismissed'`,
       [ctx.user.id]
     );
     const completedCount = progress[0]?.cnt ?? 0;
