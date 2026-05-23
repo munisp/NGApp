@@ -816,6 +816,53 @@ async function startServer() {
     }
   }
 
+  // ── Initialize next-generation modules ──
+  try {
+    const { initEventStore } = await import("../eventstore");
+    await initEventStore();
+    logger.info("[Startup] Event store initialized — CQRS backbone ready");
+  } catch (err) {
+    logger.warn({ err }, "[Startup] Event store init skipped");
+  }
+
+  try {
+    const { initProjections } = await import("../cqrs");
+    await initProjections();
+    logger.info("[Startup] CQRS projections initialized");
+  } catch (err) {
+    logger.warn({ err }, "[Startup] CQRS projections init skipped");
+  }
+
+  try {
+    const { initMultiTenancy } = await import("../multitenancy");
+    await initMultiTenancy();
+  } catch (err) {
+    logger.warn({ err }, "[Startup] Multi-tenancy init skipped");
+  }
+
+  try {
+    const { initMarketplace, mountDeveloperPortal } = await import("../marketplace");
+    await initMarketplace();
+    mountDeveloperPortal(app);
+  } catch (err) {
+    logger.warn({ err }, "[Startup] API marketplace init skipped");
+  }
+
+  try {
+    const { initFeatureFlags } = await import("../featureFlags/index");
+    await initFeatureFlags();
+  } catch (err) {
+    logger.warn({ err }, "[Startup] Feature flags init skipped");
+  }
+
+  try {
+    const { initRealtimeServer } = await import("../realtime");
+    initRealtimeServer(server);
+    logger.info("[Startup] Real-time WebSocket/SSE engine initialized");
+  } catch (err) {
+    logger.warn({ err }, "[Startup] Real-time engine init skipped");
+  }
+
   server.listen(port, () => {
     logger.info({ port, env: process.env.NODE_ENV, replicaEnabled }, "🚀 NDSEP API server started");
     logEncryptionStatus();

@@ -31,6 +31,7 @@ const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const WORKERS_DIR = path.join(__dirname, "..", "workers");
 const BIN_DIR = path.join(WORKERS_DIR, "bin");
 const PYTHON_DIR = path.join(WORKERS_DIR, "python");
+const GO_DIR = path.join(WORKERS_DIR, "go", "bin");
 
 // ─────────────────────────────────────────────────────────────────────────────
 // Worker Definitions
@@ -307,6 +308,84 @@ export const WORKER_DEFS: WorkerDef[] = [
     description:
       "Real-time packet capture, deep protocol dissection (40+ protocols), ML anomaly detection (Isolation Forest + Z-score), threat classification (27 types, MITRE ATT&CK mapped), IoT device fingerprinting, and NDPA compliance monitoring.",
     technology: "Rust · pnet · etherparse · Axum · Aho-Corasick · ndarray · Tokio",
+  },
+  {
+    id: "audit-chain",
+    name: "Blockchain Audit Trail",
+    layer: "L1",
+    language: "Rust",
+    command: path.join(BIN_DIR, "audit_chain"),
+    args: [],
+    port: 8165,
+    env: { AUDIT_CHAIN_PORT: "8165", WORKER_DATABASE_URL: DB_URL },
+    description:
+      "Tamper-proof audit logging with SHA-256 hash chains, Merkle tree aggregation, blockchain anchoring interface (Ethereum L2), and cryptographic proof generation for regulatory evidence.",
+    technology: "Rust · Axum · SHA-256 · Merkle Trees · AES-256-GCM · Tokio",
+  },
+  {
+    id: "quantum-crypto",
+    name: "Post-Quantum Cryptography",
+    layer: "L1",
+    language: "Rust",
+    command: path.join(BIN_DIR, "quantum_crypto"),
+    args: [],
+    port: 8185,
+    env: { QUANTUM_CRYPTO_PORT: "8185" },
+    description:
+      "NIST-standardized post-quantum cryptographic operations: CRYSTALS-Kyber-768 key encapsulation, CRYSTALS-Dilithium3 digital signatures, hybrid encryption (ECDH+Kyber), and crypto-agility layer.",
+    technology: "Rust · CRYSTALS-Kyber · CRYSTALS-Dilithium · AES-256-GCM · SHA3-256 · Axum",
+  },
+  {
+    id: "ai-compliance-engine",
+    name: "AI Compliance Engine",
+    layer: "L2",
+    language: "Python",
+    command: "python3",
+    args: [path.join(PYTHON_DIR, "ai_compliance_engine.py")],
+    port: 8155,
+    env: { AI_COMPLIANCE_PORT: "8155", OLLAMA_URL: process.env.OLLAMA_URL ?? "http://localhost:11434", WORKER_DATABASE_URL: DB_URL },
+    description:
+      "LLM-powered regulatory reasoning: natural language NDPA compliance queries, automated DPIA generation, AI-assisted gap analysis, regulatory change impact analysis. Uses Ollama (Llama 3.1) with Nigerian data residency.",
+    technology: "Python · FastAPI · Ollama · Llama 3.1 · httpx · Pydantic",
+  },
+  {
+    id: "federated-learning",
+    name: "Federated Learning Service",
+    layer: "L2",
+    language: "Python",
+    command: "python3",
+    args: [path.join(PYTHON_DIR, "federated_learning.py")],
+    port: 8170,
+    env: { FEDERATED_LEARNING_PORT: "8170", WORKER_DATABASE_URL: DB_URL },
+    description:
+      "Privacy-preserving cross-organization threat intelligence via Federated Averaging (FedAvg) with differential privacy noise injection. Organizations share only model gradients, never raw data.",
+    technology: "Python · FastAPI · Federated Averaging · Differential Privacy · Pydantic",
+  },
+  {
+    id: "sovereign-ai",
+    name: "Sovereign AI Infrastructure",
+    layer: "L2",
+    language: "Python",
+    command: "python3",
+    args: [path.join(PYTHON_DIR, "sovereign_ai.py")],
+    port: 8180,
+    env: { SOVEREIGN_AI_PORT: "8180", OLLAMA_URL: process.env.OLLAMA_URL ?? "http://localhost:11434" },
+    description:
+      "On-premises AI with Nigerian data residency guarantees: model provenance tracking, AI fairness monitoring, Nigerian language support (Yoruba, Hausa, Igbo, Pidgin), and model red-teaming framework.",
+    technology: "Python · FastAPI · Ollama · i18n · Fairness Metrics · Pydantic",
+  },
+  {
+    id: "digital-twin",
+    name: "Digital Twin Engine",
+    layer: "L2",
+    language: "Go",
+    command: path.join(GO_DIR, "digital_twin"),
+    args: [],
+    port: 8175,
+    env: { DIGITAL_TWIN_PORT: "8175", WORKER_DATABASE_URL: DB_URL },
+    description:
+      "Digital twin of Nigeria's data ecosystem: sector-by-sector simulation, regulatory impact analysis (what-if scenarios), breach probability prediction, and cross-border data flow visualization.",
+    technology: "Go · net/http · Simulation Engine · Monte Carlo · JSON",
   },
   {
     id: "bgp-validator",

@@ -189,6 +189,7 @@ import {
   aiHealthRouter,
 } from "./routers/aimlRouter";
 import { wirediggRouter } from "./routers/wiredigg";
+import { platformIntelligenceRouter } from "./routers/platformIntelligence";
 import { changelogAdminRouter, complianceTrendRouter } from "./routers/phase8Features";
 import {
   securityAuditRouter,
@@ -3339,6 +3340,7 @@ export const appRouter = router({
   rssFeed: rssFeedRouter,
   aiHealth: aiHealthRouter,
   wiredigg: wirediggRouter,
+  platformIntelligence: platformIntelligenceRouter,
   rssFeedP11: p11RssFeedRouter,
   dsarAutomation: dsarAutomationRouter,
   breachLifecycle: breachLifecycleRouter,

@@ -70,6 +70,7 @@ const menuSections: MenuSection[] = [
       { icon: Radio, label: "Network Intelligence", path: "/network-intelligence" },
       { icon: GitBranch, label: "BGP Routes", path: "/bgp" },
       { icon: HardDrive, label: "Arkime PCAP", path: "/pcap" },
+      { icon: Shield, label: "Platform Intelligence", path: "/platform-intelligence" },
     ],
   },
   {

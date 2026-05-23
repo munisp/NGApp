@@ -231,6 +231,7 @@ const HealthDashboard = lazy(() => import("@/pages/HealthDashboard"));
 const AccreditationWorkflow = lazy(() => import("@/pages/AccreditationWorkflow"));
 const SecurityDashboard = lazy(() => import("@/pages/SecurityDashboard"));
 const MiddlewareHealth = lazy(() => import("@/pages/MiddlewareHealth"));
+const PlatformIntelligence = lazy(() => import("@/pages/PlatformIntelligence"));
 
 function Router() {
   return (
@@ -264,6 +265,7 @@ function Router() {
         <Route path="/workers" component={WorkerProcesses} />
         <Route path="/bgp" component={BgpRoutes} />
         <Route path="/network-intelligence" component={NetworkIntelligencePage} />
+        <Route path="/platform-intelligence" component={PlatformIntelligence} />
         <Route path="/temporal" component={TemporalWorkflows} />
         <Route path="/metrics" component={PrometheusMetrics} />
         <Route path="/pcap" component={ArkimePcap} />
