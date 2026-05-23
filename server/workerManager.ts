@@ -296,6 +296,19 @@ export const WORKER_DEFS: WorkerDef[] = [
     technology: "Rust · Tokio · PostgreSQL · SLA Management · Warp",
   },
   {
+    id: "wiredigg",
+    name: "Network Intelligence Engine",
+    layer: "L1",
+    language: "Rust",
+    command: path.join(BIN_DIR, "wiredigg"),
+    args: [],
+    port: 8160,
+    env: { WIREDIGG_PORT: "8160", WORKER_DATABASE_URL: DB_URL, WORKER_RELAY_URL: RELAY_URL },
+    description:
+      "Real-time packet capture, deep protocol dissection (40+ protocols), ML anomaly detection (Isolation Forest + Z-score), threat classification (27 types, MITRE ATT&CK mapped), IoT device fingerprinting, and NDPA compliance monitoring.",
+    technology: "Rust · pnet · etherparse · Axum · Aho-Corasick · ndarray · Tokio",
+  },
+  {
     id: "bgp-validator",
     name: "BGP Route Validator",
     layer: "L1",

@@ -67,6 +67,7 @@ const menuSections: MenuSection[] = [
       { icon: Scale, label: "Compliance Engine", path: "/compliance" },
       { icon: Shield, label: "SIEM & Audit", path: "/siem" },
       { icon: Network, label: "Network DPI", path: "/network" },
+      { icon: Radio, label: "Network Intelligence", path: "/network-intelligence" },
       { icon: GitBranch, label: "BGP Routes", path: "/bgp" },
       { icon: HardDrive, label: "Arkime PCAP", path: "/pcap" },
     ],

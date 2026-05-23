@@ -188,6 +188,7 @@ import {
   rssFeedRouter,
   aiHealthRouter,
 } from "./routers/aimlRouter";
+import { wirediggRouter } from "./routers/wiredigg";
 import { changelogAdminRouter, complianceTrendRouter } from "./routers/phase8Features";
 import {
   securityAuditRouter,
@@ -3337,6 +3338,7 @@ export const appRouter = router({
   cocoIndex: cocoIndexRouter,
   rssFeed: rssFeedRouter,
   aiHealth: aiHealthRouter,
+  wiredigg: wirediggRouter,
   rssFeedP11: p11RssFeedRouter,
   dsarAutomation: dsarAutomationRouter,
   breachLifecycle: breachLifecycleRouter,

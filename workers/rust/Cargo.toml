@@ -16,6 +16,7 @@ members = [
     "portability_exporter",
     "tigerbeetle_ledger",
     "offline_resilience",
+    "wiredigg",
 ]
 resolver = "2"
 
