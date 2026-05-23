@@ -190,6 +190,7 @@ import {
 } from "./routers/aimlRouter";
 import { wirediggRouter } from "./routers/wiredigg";
 import { nocRouter } from "./routers/noc";
+import { nocAgentRouter } from "./routers/nocAgent";
 import { platformIntelligenceRouter } from "./routers/platformIntelligence";
 import { changelogAdminRouter, complianceTrendRouter } from "./routers/phase8Features";
 import {
@@ -3342,6 +3343,7 @@ export const appRouter = router({
   aiHealth: aiHealthRouter,
   wiredigg: wirediggRouter,
   noc: nocRouter,
+  nocAgent: nocAgentRouter,
   platformIntelligence: platformIntelligenceRouter,
   rssFeedP11: p11RssFeedRouter,
   dsarAutomation: dsarAutomationRouter,

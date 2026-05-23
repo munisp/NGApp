@@ -19,6 +19,7 @@ members = [
     "wiredigg",
     "noc_collector",
     "noc_uptime",
+    "noc_agent_perception",
 ]
 resolver = "2"
 

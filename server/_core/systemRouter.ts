@@ -220,6 +220,10 @@ export const systemRouter = router({
         { port: 8191, name: "NOC Escalation",        lang: "Go"     },
         { port: 8192, name: "NOC Correlator",        lang: "Python" },
         { port: 8193, name: "NOC Uptime Tracker",    lang: "Rust"   },
+        // AI NOC Agents
+        { port: 8194, name: "AI Perception Engine",  lang: "Rust"   },
+        { port: 8195, name: "AI Reasoning Engine",   lang: "Python" },
+        { port: 8196, name: "AI Action Engine",      lang: "Go"     },
       ];
       const results = await Promise.allSettled(
         defaultPorts.map(async (w) => {
