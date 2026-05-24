@@ -71,11 +71,16 @@ import { getSessionCookieOptions } from "./cookies";
 const STARTUP_TIME = Date.now();
 
 // ─── Unhandled rejection / exception handlers ─────────────────────────────────
+import { captureError } from "../errorMonitoring";
+import { startHealthMonitor, stopHealthMonitor } from "../middlewareConnector";
+
 process.on("uncaughtException", (err) => {
+  captureError(err, "uncaughtException");
   logger.fatal({ err }, "Uncaught exception — shutting down");
   process.exit(1);
 });
 process.on("unhandledRejection", (reason) => {
+  captureError(reason instanceof Error ? reason : new Error(String(reason)), "unhandledRejection");
   logger.error({ reason }, "Unhandled promise rejection");
 });
 
@@ -264,6 +269,18 @@ async function startServer() {
       uptime: Math.floor((Date.now() - STARTUP_TIME) / 1000),
       timestamp: new Date().toISOString(),
     });
+  });
+
+  // /api/errors/summary — production error monitoring dashboard
+  app.get("/api/errors/summary", requireSession, async (_req, res) => {
+    const { getErrorSummary } = await import("../errorMonitoring");
+    res.json(getErrorSummary());
+  });
+
+  // /api/middleware/health — aggregated middleware health with circuit breakers
+  app.get("/api/middleware/health", requireSession, async (_req, res) => {
+    const { getAllMiddlewareStatuses } = await import("../middlewareConnector");
+    res.json(await getAllMiddlewareStatuses());
   });
 
   // /api/demo-login — creates a session for the built-in demo user (no OAuth required)
@@ -871,6 +888,7 @@ async function startServer() {
   setBroadcastFn((event: string, data: unknown) => broadcast(event, data as Record<string, unknown>));
 
   if (process.env.NODE_ENV !== "test") {
+    startHealthMonitor();
     setTimeout(() => startAllWorkers(), 3000);
     const portalBaseUrl = process.env.VITE_OAUTH_PORTAL_URL ?? `http://localhost:${port}`;
     startDigestScheduler(portalBaseUrl);

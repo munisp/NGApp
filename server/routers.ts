@@ -244,6 +244,7 @@ import {
 } from "./routers/phase11Features";
 import { phase12Router } from "./routers/phase12Features";
 import { phase13Router } from "./routers/phase13Features";
+import { productionReadinessRouter } from "./routers/productionReadiness";
 import { logger } from "./logger";
 
 export const appRouter = router({
@@ -3359,6 +3360,7 @@ export const appRouter = router({
   apiGateway: apiGatewayRouter,
   phase12: phase12Router,
   phase13: phase13Router,
+  productionReadiness: productionReadinessRouter,
   sectorEvents: router({
     list: protectedProcedure
       .input(z.object({
