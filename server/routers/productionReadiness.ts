@@ -11,6 +11,11 @@ import { getErrorSummary, getErrorMetrics } from "../errorMonitoring";
 import { getKeycloakConfig, getKeycloakHealthStatus, isKeycloakEnabled } from "../keycloakAuth";
 import { getAllMiddlewareStatuses, getCachedStatus } from "../middlewareConnector";
 import { getBuildStatus } from "../workerBuilder";
+import { getEventBusMetrics } from "../eventBus";
+import { getWorkflowDefinitions, getWorkflowHealth } from "../workflows";
+import { getAutoStartStatus, getServiceDefinitions } from "../serviceAutoStart";
+import { getModelDefinitions, getPipelineStatus } from "../mlPipeline";
+import { checkK8sReadiness } from "../k8sReadiness";
 
 export const productionReadinessRouter = router({
   // ─── Error Monitoring ────────────────────────────────────────────────────
@@ -100,5 +105,42 @@ export const productionReadinessRouter = router({
       tablesWithData: tables.filter((t: { rows: number }) => t.rows > 0).length,
       tablesEmpty: tables.filter((t: { rows: number }) => t.rows === 0).length,
     };
+  }),
+
+  // ─── Event Bus (TIER 2) ─────────────────────────────────────────────────
+  eventBusMetrics: protectedProcedure.query(() => {
+    return getEventBusMetrics();
+  }),
+
+  // ─── Temporal Workflows (TIER 2) ────────────────────────────────────────
+  workflowDefinitions: protectedProcedure.query(() => {
+    return getWorkflowDefinitions();
+  }),
+
+  workflowHealth: protectedProcedure.query(() => {
+    return getWorkflowHealth();
+  }),
+
+  // ─── Service Auto-Start (TIER 2) ───────────────────────────────────────
+  serviceStatus: protectedProcedure.query(() => {
+    return getAutoStartStatus();
+  }),
+
+  serviceDefinitions: protectedProcedure.query(() => {
+    return getServiceDefinitions();
+  }),
+
+  // ─── ML Pipeline (TIER 3) ──────────────────────────────────────────────
+  mlModels: protectedProcedure.query(() => {
+    return getModelDefinitions();
+  }),
+
+  mlPipelineStatus: protectedProcedure.query(async () => {
+    return getPipelineStatus();
+  }),
+
+  // ─── K8s Readiness (TIER 3) ────────────────────────────────────────────
+  k8sReadiness: protectedProcedure.query(() => {
+    return checkK8sReadiness();
   }),
 });
