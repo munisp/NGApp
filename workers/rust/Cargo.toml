@@ -20,6 +20,9 @@ members = [
     "noc_collector",
     "noc_uptime",
     "noc_agent_perception",
+    "monte_carlo",
+    "agent_sim",
+    "system_dynamics",
 ]
 resolver = "2"
 

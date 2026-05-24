@@ -140,26 +140,254 @@ export const platformIntelligenceRouter = router({
     return serviceFetch(FED_URL, "/api/v1/federated/history");
   }),
 
-  // ── Digital Twin ────────────────────────────────────────────────────────
+  // ── Digital Twin V2 ─────────────────────────────────────────────────────
   twinState: protectedProcedure.query(async () => {
     return serviceFetch(TWIN_URL, "/api/v1/twin/state");
   }),
 
   twinSimulate: protectedProcedure
-    .input(z.object({ scenario: z.string(), parameters: z.record(z.string(), z.number()), durationMonths: z.number().default(12) }))
+    .input(z.object({
+      scenario: z.string(),
+      parameters: z.record(z.string(), z.number()),
+      durationMonths: z.number().default(12),
+      jurisdictions: z.array(z.string()).default(["NG"]),
+      policyIds: z.array(z.number()).default([]),
+      type: z.string().default("scenario"),
+      iterations: z.number().default(1),
+    }))
     .mutation(async ({ input }) => {
       return serviceFetch(TWIN_URL, "/api/v1/twin/simulate", "POST", {
-        scenario: input.scenario, parameters: input.parameters, duration_months: input.durationMonths,
+        scenario: input.scenario, parameters: input.parameters,
+        duration_months: input.durationMonths, jurisdictions: input.jurisdictions,
+        policy_ids: input.policyIds, type: input.type, iterations: input.iterations,
       });
     }),
 
-  twinPredictBreaches: protectedProcedure.query(async () => {
-    return serviceFetch(TWIN_URL, "/api/v1/twin/predict-breaches");
+  twinMonteCarlo: protectedProcedure
+    .input(z.object({
+      scenario: z.string(),
+      parameters: z.record(z.string(), z.number()),
+      durationMonths: z.number().default(12),
+      jurisdictions: z.array(z.string()).default(["NG"]),
+      policyIds: z.array(z.number()).default([]),
+      iterations: z.number().default(1000),
+    }))
+    .mutation(async ({ input }) => {
+      return serviceFetch(TWIN_URL, "/api/v1/twin/monte-carlo", "POST", {
+        scenario: input.scenario, parameters: input.parameters,
+        duration_months: input.durationMonths, jurisdictions: input.jurisdictions,
+        policy_ids: input.policyIds, iterations: input.iterations,
+      });
+    }),
+
+  twinPredictBreaches: protectedProcedure
+    .input(z.object({
+      jurisdictions: z.array(z.string()).default(["NG"]),
+      count: z.number().default(30),
+    }).optional())
+    .query(async ({ input }) => {
+      const params = new URLSearchParams();
+      if (input?.jurisdictions) params.set("jurisdictions", input.jurisdictions.join(","));
+      if (input?.count) params.set("count", String(input.count));
+      return serviceFetch(TWIN_URL, `/api/v1/twin/predict-breaches?${params}`);
+    }),
+
+  twinHistory: protectedProcedure
+    .input(z.object({ limit: z.number().default(50) }).optional())
+    .query(async ({ input }) => {
+      return serviceFetch(TWIN_URL, `/api/v1/twin/history?limit=${input?.limit ?? 50}`);
+    }),
+
+  twinJurisdictions: protectedProcedure.query(async () => {
+    return serviceFetch(TWIN_URL, "/api/v1/twin/jurisdictions");
   }),
 
-  twinHistory: protectedProcedure.query(async () => {
-    return serviceFetch(TWIN_URL, "/api/v1/twin/history");
+  twinPolicies: protectedProcedure
+    .input(z.object({ jurisdictions: z.array(z.string()).optional() }).optional())
+    .query(async ({ input }) => {
+      const params = input?.jurisdictions ? `?jurisdictions=${input.jurisdictions.join(",")}` : "";
+      return serviceFetch(TWIN_URL, `/api/v1/twin/policies${params}`);
+    }),
+
+  twinPolicyCompose: protectedProcedure
+    .input(z.object({ policyIds: z.array(z.number()) }))
+    .mutation(async ({ input }) => {
+      return serviceFetch(TWIN_URL, "/api/v1/twin/policies/compose", "POST", { policy_ids: input.policyIds });
+    }),
+
+  twinPolicyCreate: protectedProcedure
+    .input(z.object({
+      jurisdictionCode: z.string(),
+      code: z.string(),
+      name: z.string(),
+      category: z.string(),
+      status: z.string().default("draft"),
+      effectiveDate: z.string().optional(),
+      rules: z.array(z.record(z.string(), z.unknown())).default([]),
+      parameters: z.record(z.string(), z.number()).default({}),
+    }))
+    .mutation(async ({ input }) => {
+      return serviceFetch(TWIN_URL, "/api/v1/twin/policies/create", "POST", {
+        jurisdiction_code: input.jurisdictionCode, code: input.code, name: input.name,
+        category: input.category, status: input.status, effective_date: input.effectiveDate,
+        rules: input.rules, parameters: input.parameters,
+      });
+    }),
+
+  twinCounterfactual: protectedProcedure
+    .input(z.object({
+      scenario: z.string(),
+      parameters: z.record(z.string(), z.number()),
+      durationMonths: z.number().default(12),
+      jurisdictions: z.array(z.string()).default(["NG"]),
+      policyIds: z.array(z.number()).default([]),
+      counterfactualYear: z.number().optional(),
+    }))
+    .mutation(async ({ input }) => {
+      return serviceFetch(TWIN_URL, "/api/v1/twin/counterfactual", "POST", {
+        scenario: input.scenario, parameters: input.parameters,
+        duration_months: input.durationMonths, jurisdictions: input.jurisdictions,
+        policy_ids: input.policyIds, counterfactual_year: input.counterfactualYear,
+      });
+    }),
+
+  twinSandboxes: protectedProcedure.query(async () => {
+    return serviceFetch(TWIN_URL, "/api/v1/twin/sandboxes");
   }),
+
+  twinSandboxCreate: protectedProcedure
+    .input(z.object({ name: z.string(), description: z.string().optional(), policyIds: z.array(z.number()).default([]) }))
+    .mutation(async ({ input }) => {
+      return serviceFetch(TWIN_URL, "/api/v1/twin/sandboxes", "POST", {
+        name: input.name, description: input.description, policy_ids: input.policyIds,
+      });
+    }),
+
+  twinEconomics: protectedProcedure
+    .input(z.object({ jurisdiction: z.string().default("NG") }).optional())
+    .query(async ({ input }) => {
+      return serviceFetch(TWIN_URL, `/api/v1/twin/economics?jurisdiction=${input?.jurisdiction ?? "NG"}`);
+    }),
+
+  twinAgreements: protectedProcedure.query(async () => {
+    return serviceFetch(TWIN_URL, "/api/v1/twin/agreements");
+  }),
+
+  // ── ML Breach Prediction (Python :8176) ─────────────────────────────
+  twinMLPredict: protectedProcedure
+    .input(z.object({ jurisdictions: z.array(z.string()).default(["NG"]), count: z.number().default(30) }).optional())
+    .query(async ({ input }) => {
+      const mlUrl = process.env.ML_PREDICTION_URL ?? "http://localhost:8176";
+      return serviceFetch(mlUrl, "/api/v1/predict", "POST", {
+        jurisdictions: input?.jurisdictions ?? ["NG"], count: input?.count ?? 30,
+      });
+    }),
+
+  twinMLEconomicImpact: protectedProcedure
+    .input(z.object({
+      jurisdiction: z.string().default("NG"),
+      policyChanges: z.record(z.string(), z.number()).default({}),
+      durationMonths: z.number().default(12),
+    }))
+    .mutation(async ({ input }) => {
+      const mlUrl = process.env.ML_PREDICTION_URL ?? "http://localhost:8176";
+      return serviceFetch(mlUrl, "/api/v1/economic-impact", "POST", {
+        jurisdiction: input.jurisdiction, policy_changes: input.policyChanges,
+        duration_months: input.durationMonths,
+      });
+    }),
+
+  twinMLNetworkEffects: protectedProcedure
+    .input(z.object({
+      jurisdiction: z.string().default("NG"),
+      triggerOrg: z.string(),
+      triggerEvent: z.string().default("breach"),
+      propagationSteps: z.number().default(3),
+    }))
+    .mutation(async ({ input }) => {
+      const mlUrl = process.env.ML_PREDICTION_URL ?? "http://localhost:8176";
+      return serviceFetch(mlUrl, "/api/v1/network-effects", "POST", {
+        jurisdiction: input.jurisdiction, trigger_org: input.triggerOrg,
+        trigger_event: input.triggerEvent, propagation_steps: input.propagationSteps,
+      });
+    }),
+
+  twinMLModelInfo: protectedProcedure.query(async () => {
+    const mlUrl = process.env.ML_PREDICTION_URL ?? "http://localhost:8176";
+    return serviceFetch(mlUrl, "/api/v1/model-info");
+  }),
+
+  // ── Rust Simulation Engines ─────────────────────────────────────────
+  twinMonteCarloEngine: protectedProcedure
+    .input(z.object({
+      sectors: z.array(z.object({
+        sector: z.string(), jurisdiction: z.string(), organizations: z.number(),
+        avg_compliance: z.number(), breach_rate: z.number(), avg_penalty_local: z.number(),
+        avg_budget_usd: z.number(), staff_count_avg: z.number(), tech_maturity: z.number(),
+      })),
+      iterations: z.number().default(1000),
+      durationMonths: z.number().default(12),
+      breachSlaHours: z.number().default(72),
+      penaltyMultiplier: z.number().default(1.0),
+      complianceThreshold: z.number().default(70),
+    }))
+    .mutation(async ({ input }) => {
+      const mcUrl = process.env.MONTE_CARLO_URL ?? "http://localhost:8177";
+      return serviceFetch(mcUrl, "/api/v1/monte-carlo/run", "POST", {
+        sectors: input.sectors, iterations: input.iterations,
+        duration_months: input.durationMonths, breach_sla_hours: input.breachSlaHours,
+        penalty_multiplier: input.penaltyMultiplier, compliance_threshold: input.complianceThreshold,
+      });
+    }),
+
+  twinAgentSim: protectedProcedure
+    .input(z.object({
+      agents: z.array(z.object({
+        id: z.number(), name: z.string(), sector: z.string(), jurisdiction: z.string(),
+        compliance_score: z.number(), security_budget: z.number(), infosec_staff: z.number(),
+        tech_maturity: z.number(), risk_appetite: z.number(), breach_history: z.number(),
+        data_volume_gb: z.number(), cross_border: z.boolean(),
+      })),
+      durationMonths: z.number().default(12),
+      breachSlaHours: z.number().default(72),
+      penaltyMultiplier: z.number().default(1.0),
+      complianceThreshold: z.number().default(70),
+      peerPressureWeight: z.number().default(0.3),
+      networkEffects: z.boolean().default(true),
+    }))
+    .mutation(async ({ input }) => {
+      const abmUrl = process.env.AGENT_MODEL_URL ?? "http://localhost:8178";
+      return serviceFetch(abmUrl, "/api/v1/agent-sim/run", "POST", {
+        agents: input.agents, duration_months: input.durationMonths,
+        breach_sla_hours: input.breachSlaHours, penalty_multiplier: input.penaltyMultiplier,
+        compliance_threshold: input.complianceThreshold,
+        peer_pressure_weight: input.peerPressureWeight, network_effects: input.networkEffects,
+      });
+    }),
+
+  twinSystemDynamics: protectedProcedure
+    .input(z.object({
+      initialStocks: z.object({
+        compliance_level: z.number(), breach_rate: z.number(), penalty_pool: z.number(),
+        compliance_investment: z.number(), public_trust: z.number(), regulatory_capacity: z.number(),
+        data_economy_growth: z.number(), cross_border_volume: z.number(),
+        fdi_confidence: z.number(), insurance_cost_index: z.number(),
+      }),
+      durationMonths: z.number().default(12),
+      policyParams: z.object({
+        breach_sla_hours: z.number(), penalty_multiplier: z.number(),
+        enforcement_budget_increase: z.number(), awareness_campaign: z.boolean(),
+        mandatory_audit: z.boolean(), cross_border_restriction: z.number(),
+      }),
+      jurisdiction: z.string().default("NG"),
+    }))
+    .mutation(async ({ input }) => {
+      const sdUrl = process.env.SYSTEM_DYNAMICS_URL ?? "http://localhost:8179";
+      return serviceFetch(sdUrl, "/api/v1/system-dynamics/run", "POST", {
+        initial_stocks: input.initialStocks, duration_months: input.durationMonths,
+        policy_params: input.policyParams, jurisdiction: input.jurisdiction,
+      });
+    }),
 
   // ── Sovereign AI ────────────────────────────────────────────────────────
   sovereignLanguages: protectedProcedure.query(async () => {
