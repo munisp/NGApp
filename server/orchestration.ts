@@ -56,7 +56,7 @@ import { logger } from "./logger";
 const ORCHESTRATION_SERVICES = {
   // ── Core microservices ──────────────────────────────────────────────────────────────────────────────
   mlPipeline:       process.env.ML_SERVICE_URL        || "http://localhost:8200",
-  lakehouse:        process.env.LAKEHOUSE_URL          || "http://localhost:8210",
+  lakehouse:        process.env.LAKEHOUSE_URL          || "http://localhost:8140",
   daprBindings:     process.env.DAPR_APP_URL           || "http://localhost:8220",
   iamService:       process.env.IAM_SERVICE_URL        || "http://localhost:8150",
   eventBus:         process.env.EVENT_BUS_URL          || "http://localhost:8160",

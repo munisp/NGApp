@@ -780,6 +780,38 @@ async function startServer() {
     } catch (err: unknown) { res.json({ tables: [], error: (err instanceof Error ? err.message : String(err)) }); }
   });
 
+  app.get("/api/lakehouse/lineage", requireSession, async (_req, res) => {
+    try {
+      const url = process.env.LAKEHOUSE_ANALYTICS_URL || "http://localhost:8140";
+      const resp = await fetch(`${url}/lineage`, { signal: AbortSignal.timeout(5000) });
+      res.json(await resp.json());
+    } catch (err: unknown) { res.json({ lineage: [], error: (err instanceof Error ? err.message : String(err)) }); }
+  });
+
+  app.get("/api/lakehouse/incremental/status", requireSession, async (_req, res) => {
+    try {
+      const url = process.env.LAKEHOUSE_ANALYTICS_URL || "http://localhost:8140";
+      const resp = await fetch(`${url}/incremental/status`, { signal: AbortSignal.timeout(5000) });
+      res.json(await resp.json());
+    } catch (err: unknown) { res.json({ sync_timestamps: {}, error: (err instanceof Error ? err.message : String(err)) }); }
+  });
+
+  app.post("/api/lakehouse/etl/reset", requireSession, async (_req, res) => {
+    try {
+      const url = process.env.LAKEHOUSE_ANALYTICS_URL || "http://localhost:8140";
+      const resp = await fetch(`${url}/etl/reset`, { method: "POST", signal: AbortSignal.timeout(5000) });
+      res.json(await resp.json());
+    } catch (err: unknown) { res.json({ error: (err instanceof Error ? err.message : String(err)) }); }
+  });
+
+  app.get("/api/lakehouse/snapshots", requireSession, async (_req, res) => {
+    try {
+      const url = process.env.LAKEHOUSE_ANALYTICS_URL || "http://localhost:8140";
+      const resp = await fetch(`${url}/snapshots`, { signal: AbortSignal.timeout(5000) });
+      res.json(await resp.json());
+    } catch (err: unknown) { res.json({ snapshots: [], error: (err instanceof Error ? err.message : String(err)) }); }
+  });
+
   // ── ML Production Engine Endpoints ──────────────────────────────────────────
   app.get("/api/ml/health", requireSession, async (_req, res) => {
     try {

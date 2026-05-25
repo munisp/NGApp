@@ -755,9 +755,31 @@ async fn publish_to_fluvio<T: Serialize>(_url: &str, topic: &str, _data: &T) {
     log::debug!("[Fluvio] Published to {topic}");
 }
 
-async fn publish_to_lakehouse<T: Serialize>(_url: &str, table: &str, _data: &T) {
-    // In production: POST /ingest/{table} with Arrow/Parquet batch
-    log::debug!("[Lakehouse] Written batch to {table}");
+async fn publish_to_lakehouse<T: Serialize>(url: &str, table: &str, data: &T) {
+    if url.is_empty() {
+        return;
+    }
+    let client = reqwest::Client::new();
+    let payload = serde_json::json!({
+        "namespace": "ndsep",
+        "table": table,
+        "records": [data],
+    });
+    match client.post(format!("{}/ingest", url))
+        .json(&payload)
+        .timeout(std::time::Duration::from_secs(5))
+        .send().await
+    {
+        Ok(resp) if resp.status().is_success() => {
+            log::debug!("[Lakehouse] Written batch to {table}");
+        }
+        Ok(resp) => {
+            log::debug!("[Lakehouse] Ingest to {table} returned HTTP {}", resp.status());
+        }
+        Err(e) => {
+            log::debug!("[Lakehouse] Ingest to {table} unavailable: {e}");
+        }
+    }
 }
 
 // ── Database Persistence ─────────────────────────────────────────────────────

@@ -64,7 +64,7 @@ OPENSEARCH_URL = os.environ.get("OPENSEARCH_URL", "http://localhost:9200")
 TEMPORAL_URL = os.environ.get("TEMPORAL_URL", "localhost:7233")
 DAPR_URL = os.environ.get("DAPR_HTTP_PORT", "http://localhost:3500")
 FLUVIO_URL = os.environ.get("FLUVIO_URL", "localhost:9003")
-LAKEHOUSE_URL = os.environ.get("LAKEHOUSE_URL", "http://localhost:8127")
+LAKEHOUSE_URL = os.environ.get("LAKEHOUSE_URL", "http://localhost:8140")
 TIGERBEETLE_URL = os.environ.get("TIGERBEETLE_URL", "")
 MOJALOOP_URL = os.environ.get("MOJALOOP_URL", "")
 OPENAPPSEC_URL = os.environ.get("OPENAPPSEC_URL", "")
@@ -487,7 +487,19 @@ def publish_to_fluvio(topic: str, data: dict):
 
 
 def publish_to_lakehouse(table: str, data: dict):
-    log.debug(f"[Lakehouse] Written to {table}")
+    """Publish data to Lakehouse Analytics Engine for historical analytics."""
+    try:
+        resp = requests.post(
+            f"{LAKEHOUSE_URL}/ingest",
+            json={"namespace": "ndsep", "table": table, "records": [data]},
+            timeout=5,
+        )
+        if resp.ok:
+            log.debug(f"[Lakehouse] Written to {table}: {resp.json().get('rowsIngested', 0)} rows")
+        else:
+            log.warning(f"[Lakehouse] Ingest to {table} failed: HTTP {resp.status_code}")
+    except Exception as e:
+        log.debug(f"[Lakehouse] Ingest to {table} unavailable: {e}")
 
 
 # ─────────────────────────────────────────────────────────────────────────────

@@ -16,3 +16,4 @@ rand = { workspace = true }
 sha2 = { workspace = true }
 hex = { workspace = true }
 tokio-postgres = { workspace = true }
+reqwest = { workspace = true }

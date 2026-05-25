@@ -777,6 +777,33 @@ export const lakehouseAnalyticsRouter = router({
         body: JSON.stringify({ table: input.table }),
       }, 30000);
     }),
+
+  lineage: protectedProcedure.query(async () => {
+    return await safeFetch(`${LAKEHOUSE_ANALYTICS_URL}/lineage`);
+  }),
+
+  incrementalStatus: protectedProcedure.query(async () => {
+    return await safeFetch(`${LAKEHOUSE_ANALYTICS_URL}/incremental/status`);
+  }),
+
+  resetIncremental: protectedProcedure.mutation(async () => {
+    emitMutationEvent("ndsep.ai.mutation", { action: "lakehouse_reset_incremental", ts: new Date().toISOString() }).catch((e: unknown) => logger.debug({ err: e instanceof Error ? e.message : String(e) }, "fire-and-forget failed"));
+    return await safeFetch(`${LAKEHOUSE_ANALYTICS_URL}/etl/reset`, { method: "POST" });
+  }),
+
+  ingest: protectedProcedure
+    .input(z.object({
+      namespace: z.string().default("ndsep"),
+      table: z.string(),
+      records: z.array(z.record(z.string(), z.unknown())),
+    }))
+    .mutation(async ({ input }) => {
+      return await safeFetch(`${LAKEHOUSE_ANALYTICS_URL}/ingest`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(input),
+      });
+    }),
 });
 
 // ── ML Production Engine Router ───────────────────────────────────────────────

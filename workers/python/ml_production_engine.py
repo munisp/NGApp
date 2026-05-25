@@ -116,8 +116,54 @@ FEATURE_COLUMNS = [
     "sector_encoded", "staff_proxy", "has_dpo"
 ]
 
+def _try_lakehouse_features() -> Optional[tuple]:
+    """Try to extract features from Lakehouse Analytics Engine (Parquet via DuckDB)."""
+    try:
+        import requests
+        resp = requests.get(f"{LAKEHOUSE_URL}/features/compliance_features", timeout=8)
+        if not resp.ok:
+            return None
+        data = resp.json()
+        rows = data.get("rows", [])
+        if not rows or len(rows) < 5:
+            return None
+
+        log.info(f"[ML] Using Lakehouse features ({len(rows)} rows) instead of direct PostgreSQL")
+        sectors = list(set(r.get("sector", "Other") for r in rows if r.get("sector")))
+        sector_map = {s: i for i, s in enumerate(sorted(sectors))}
+
+        org_ids = [str(r.get("org_id", "")) for r in rows]
+        X, y = [], []
+        for r in rows:
+            compliance = float(r.get("compliance_score") or 50)
+            features = [
+                compliance,
+                float(r.get("violation_count") or 0),
+                0.0,  # critical_violations (not in lakehouse aggregate)
+                0.0,  # high_violations
+                0.0,  # enforcement_count
+                float(r.get("total_penalties") or 0),
+                365.0,  # days_active placeholder
+                float(r.get("breach_count") or 0),
+                float(sector_map.get(r.get("sector", "Other"), 0)),
+                float(r.get("violation_count") or 0),  # staff proxy
+                1.0 if compliance > 75 else 0.0,  # DPO proxy
+            ]
+            X.append(features)
+            y.append(1 if compliance < 70 else 0)
+
+        return np.array(X, dtype=np.float32), np.array(y), org_ids, FEATURE_COLUMNS
+    except Exception as e:
+        log.debug(f"[ML] Lakehouse features unavailable: {e}")
+        return None
+
 def extract_features() -> tuple:
-    """Extract ML features from PostgreSQL. Returns (X, y, org_ids, feature_names)."""
+    """Extract ML features from Lakehouse (preferred) or PostgreSQL (fallback)."""
+    # Try Lakehouse first for enriched analytical features
+    lh_result = _try_lakehouse_features()
+    if lh_result is not None:
+        return lh_result
+
     if not HAS_PG:
         return np.array([]), np.array([]), [], FEATURE_COLUMNS
 

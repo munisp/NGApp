@@ -45,24 +45,57 @@ fn get_env(key: &str, default: &str) -> String {
 #[derive(Clone)]
 struct AppState {
     db_url: String,
+    lakehouse_analytics_url: String,
     start_time: Instant,
     writes_total: Arc<AtomicU64>,
     writes_failed: Arc<AtomicU64>,
     feature_writes: Arc<AtomicU64>,
     prediction_writes: Arc<AtomicU64>,
     lineage_writes: Arc<AtomicU64>,
+    parquet_forwards: Arc<AtomicU64>,
 }
 
 impl AppState {
-    fn new(db_url: String) -> Self {
+    fn new(db_url: String, lakehouse_analytics_url: String) -> Self {
         AppState {
             db_url,
+            lakehouse_analytics_url,
             start_time: Instant::now(),
             writes_total: Arc::new(AtomicU64::new(0)),
             writes_failed: Arc::new(AtomicU64::new(0)),
             feature_writes: Arc::new(AtomicU64::new(0)),
             prediction_writes: Arc::new(AtomicU64::new(0)),
             lineage_writes: Arc::new(AtomicU64::new(0)),
+            parquet_forwards: Arc::new(AtomicU64::new(0)),
+        }
+    }
+}
+
+/// Forward a record to the Lakehouse Analytics Engine for Parquet (offline) storage.
+async fn forward_to_parquet(state: &AppState, table: &str, record: &serde_json::Value) {
+    if state.lakehouse_analytics_url.is_empty() {
+        return;
+    }
+    let client = reqwest::Client::new();
+    let payload = serde_json::json!({
+        "namespace": "ndsep",
+        "table": table,
+        "records": [record],
+    });
+    match client.post(format!("{}/ingest", state.lakehouse_analytics_url))
+        .json(&payload)
+        .timeout(std::time::Duration::from_secs(5))
+        .send().await
+    {
+        Ok(resp) if resp.status().is_success() => {
+            state.parquet_forwards.fetch_add(1, Ordering::Relaxed);
+            log::debug!("[Lakehouse] Forwarded to Parquet offline store: {table}");
+        }
+        Ok(resp) => {
+            log::debug!("[Lakehouse] Parquet forward to {table}: HTTP {}", resp.status());
+        }
+        Err(e) => {
+            log::debug!("[Lakehouse] Parquet forward unavailable: {e}");
         }
     }
 }
@@ -186,6 +219,16 @@ async fn write_features(
         }
     }
 
+    // Forward to Lakehouse Analytics Engine for Parquet (offline store)
+    let fwd_record = serde_json::json!({
+        "feature_group": &req.feature_group,
+        "entity_id": &req.entity_id,
+        "entity_type": &req.entity_type,
+        "features": &req.features,
+        "recorded_at": &ts,
+    });
+    forward_to_parquet(&state, "ml_features", &fwd_record).await;
+
     Json(WriteResponse {
         status: "written".to_string(),
         record_id,
@@ -228,6 +271,17 @@ async fn log_prediction(
             log::error!("[Lakehouse] DB connect failed: {}", e);
         }
     }
+
+    // Forward prediction to Lakehouse Analytics Engine for Parquet (offline store)
+    let fwd_record = serde_json::json!({
+        "model_name": &req.model_name,
+        "model_version": &req.model_version,
+        "entity_id": &req.entity_id,
+        "confidence": req.confidence,
+        "latency_ms": req.latency_ms,
+        "predicted_at": &ts,
+    });
+    forward_to_parquet(&state, "ml_predictions", &fwd_record).await;
 
     Json(WriteResponse {
         status: "logged".to_string(),
@@ -379,7 +433,8 @@ async fn main() {
         log::info!("[Lakehouse] Tables ensured");
     }
 
-    let state = AppState::new(db_url);
+    let lakehouse_url = get_env("LAKEHOUSE_ANALYTICS_URL", "http://localhost:8140");
+    let state = AppState::new(db_url, lakehouse_url);
 
     let app = Router::new()
         .route("/health", get(health))

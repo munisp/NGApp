@@ -125,11 +125,61 @@ _gnn_weights: dict[str, np.ndarray] = {}
 _link_predictor: Any = None
 _training_metrics: dict = {}
 
-# ── Build Graph from PostgreSQL ────────────────────────────────────────────────
+# ── Build Graph from Lakehouse or PostgreSQL ───────────────────────────────────
+
+def _fetch_lakehouse_features() -> Optional[dict]:
+    """Try to fetch ML features from Lakehouse Analytics Engine."""
+    try:
+        import requests
+        resp = requests.get(f"{LAKEHOUSE_URL}/features/compliance_features", timeout=8)
+        if resp.ok:
+            data = resp.json()
+            if data.get("rows") and len(data["rows"]) > 0:
+                log.info(f"[GNN] Fetched {len(data['rows'])} compliance features from Lakehouse")
+                return data
+    except Exception as e:
+        log.debug(f"[GNN] Lakehouse features unavailable: {e}")
+    return None
+
+def _publish_embeddings_to_lakehouse():
+    """Publish computed GNN embeddings to Lakehouse for downstream ML consumption."""
+    if not graph.embeddings:
+        return
+    try:
+        import requests
+        records = []
+        for nid, emb in graph.embeddings.items():
+            node = graph.nodes.get(nid, {})
+            records.append({
+                "node_id": nid,
+                "node_type": node.get("type", "unknown"),
+                "embedding_dim": len(emb),
+                "embedding_norm": float(np.linalg.norm(emb)),
+                "degree": graph.degree(nid),
+                "computed_at": datetime.now(timezone.utc).isoformat(),
+            })
+        resp = requests.post(
+            f"{LAKEHOUSE_URL}/ingest",
+            json={"namespace": "ndsep", "table": "gnn_embeddings", "records": records},
+            timeout=10,
+        )
+        if resp.ok:
+            log.info(f"[GNN] Published {len(records)} embeddings to Lakehouse")
+        else:
+            log.debug(f"[GNN] Lakehouse embedding publish: HTTP {resp.status_code}")
+    except Exception as e:
+        log.debug(f"[GNN] Lakehouse embedding publish unavailable: {e}")
+
 def build_graph_from_db():
-    """Build compliance knowledge graph from PostgreSQL tables."""
+    """Build compliance knowledge graph from Lakehouse (preferred) or PostgreSQL (fallback)."""
     global graph
     graph = ComplianceGraph()
+
+    # Try Lakehouse first for enriched features
+    lh_data = _fetch_lakehouse_features()
+    if lh_data and lh_data.get("rows"):
+        _build_graph_from_lakehouse(lh_data["rows"])
+        return
 
     if not HAS_PG:
         log.warning("psycopg2 not available — using synthetic graph")
@@ -212,6 +262,75 @@ def build_graph_from_db():
     except Exception as e:
         log.error(f"Graph build failed: {e}")
         build_synthetic_graph()
+
+def _build_graph_from_lakehouse(rows: list[dict]):
+    """Build graph from Lakehouse compliance features (enriched with breach/violation/penalty counts)."""
+    global graph
+    log.info(f"[GNN] Building graph from {len(rows)} Lakehouse compliance feature rows")
+
+    sectors_seen: set[str] = set()
+    for row in rows:
+        org_id = str(row.get("org_id", ""))
+        if not org_id:
+            continue
+
+        sector = row.get("sector", "Unknown")
+        if sector and sector not in sectors_seen:
+            graph.add_node(f"sector:{sector}", "Sector", {"name": sector})
+            sectors_seen.add(sector)
+
+        graph.add_node(f"org:{org_id}", "Organization", {
+            "name": row.get("name", f"Org-{org_id}"),
+            "sector": sector,
+            "compliance_score": float(row.get("compliance_score") or 50),
+            "risk_score": float(row.get("risk_score") or 50),
+            "breach_count": int(row.get("breach_count") or 0),
+            "violation_count": int(row.get("violation_count") or 0),
+            "total_penalties": float(row.get("total_penalties") or 0),
+        })
+
+        if sector:
+            graph.add_edge(f"org:{org_id}", f"sector:{sector}", "BELONGS_TO")
+
+        # Create virtual violation/breach nodes from counts
+        for v_idx in range(min(int(row.get("violation_count") or 0), 5)):
+            vid = f"violation:{org_id}_{v_idx}"
+            graph.add_node(vid, "Violation", {"severity": "medium", "status": "open", "source": "lakehouse"})
+            graph.add_edge(f"org:{org_id}", vid, "HAS_VIOLATION")
+
+        for b_idx in range(min(int(row.get("breach_count") or 0), 5)):
+            bid = f"breach:{org_id}_{b_idx}"
+            graph.add_node(bid, "BreachIncident", {"severity": "high", "status": "open", "source": "lakehouse"})
+            graph.add_edge(f"org:{org_id}", bid, "REPORTED_BREACH")
+
+    # Sector peer edges
+    for sector_id in [nid for nid in graph.nodes if graph.nodes[nid]["type"] == "Sector"]:
+        sector_orgs = [nid for nid, rel in graph.adj.get(sector_id, []) if rel == "INV_BELONGS_TO"]
+        for i in range(len(sector_orgs)):
+            for j in range(i + 1, min(len(sector_orgs), i + 5)):
+                graph.add_edge(sector_orgs[i], sector_orgs[j], "SECTOR_PEER")
+
+    graph.built_at = datetime.now(timezone.utc).isoformat()
+    log.info(f"[GNN] Graph from Lakehouse: {graph.stats()}")
+
+    # Fall back to PostgreSQL for entities not in Lakehouse features
+    if HAS_PG:
+        try:
+            conn = psycopg2.connect(DB_URL)
+            cur = conn.cursor(cursor_factory=psycopg2.extras.RealDictCursor)
+            cur.execute("SELECT id::text, organization_id::text, action_type, status FROM enforcement_actions LIMIT 500")
+            for row in cur.fetchall():
+                eid = f"enforcement:{row['id']}"
+                if eid not in graph.nodes:
+                    graph.add_node(eid, "EnforcementAction", {
+                        "action_type": row.get("action_type", "unknown"),
+                        "status": row.get("status", "pending"),
+                    })
+                    graph.add_edge(f"org:{row['organization_id']}", eid, "ENFORCED_BY")
+            cur.close()
+            conn.close()
+        except Exception as e:
+            log.debug(f"[GNN] PostgreSQL enrichment skipped: {e}")
 
 def build_synthetic_graph():
     """Build synthetic compliance graph for demo."""
@@ -448,6 +567,8 @@ def api_build_graph(req: BuildRequest):
     initialize_gnn_weights()
     compute_all_embeddings()
     train_link_predictor()
+    # Publish embeddings back to Lakehouse for ML feature consumption
+    _publish_embeddings_to_lakehouse()
     return {"status": "built", "graph": graph.stats(), "training_metrics": _training_metrics}
 
 @app.get("/graph/stats")

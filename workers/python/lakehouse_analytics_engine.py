@@ -82,6 +82,8 @@ _total_rows_synced = 0
 _last_etl: Optional[str] = None
 _snapshots: list[dict] = []
 _duck_conn: Optional[Any] = None
+_last_sync_timestamps: dict[str, str] = {}  # table -> last incremental_col value
+_lineage_records: list[dict] = []  # data lineage tracking
 
 # ── ETL Table Definitions ──────────────────────────────────────────────────────
 ETL_TABLES = {
@@ -205,18 +207,46 @@ def get_pg():
     return psycopg2.connect(DB_URL)
 
 # ── ETL: PostgreSQL → Parquet ──────────────────────────────────────────────────
-def run_etl_for_table(table_name: str, table_def: dict) -> dict:
-    """Extract from PostgreSQL and write to Parquet."""
+def run_etl_for_table(table_name: str, table_def: dict, incremental: bool = True) -> dict:
+    """Extract from PostgreSQL and write to Parquet with incremental support."""
     table_dir = PARQUET_PATH / table_name
     table_dir.mkdir(parents=True, exist_ok=True)
 
     try:
         conn = get_pg()
         cur = conn.cursor(cursor_factory=psycopg2.extras.RealDictCursor)
-        cur.execute(table_def["query"])
+
+        query = table_def["query"]
+        incremental_col = table_def.get("incremental_col")
+        last_sync = _last_sync_timestamps.get(table_name)
+
+        # Incremental extraction: only fetch rows newer than last sync
+        if incremental and incremental_col and last_sync:
+            # Inject WHERE clause for incremental extraction
+            base_query = query.rstrip()
+            if "WHERE" in base_query.upper():
+                query = f"{base_query} AND {incremental_col} > %s"
+            elif "ORDER BY" in base_query.upper():
+                order_pos = base_query.upper().rfind("ORDER BY")
+                query = f"{base_query[:order_pos]} WHERE {incremental_col} > %s {base_query[order_pos:]}"
+            elif "LIMIT" in base_query.upper():
+                limit_pos = base_query.upper().rfind("LIMIT")
+                query = f"{base_query[:limit_pos]} WHERE {incremental_col} > %s {base_query[limit_pos:]}"
+            else:
+                query = f"{base_query} WHERE {incremental_col} > %s"
+            cur.execute(query, (last_sync,))
+        else:
+            cur.execute(query)
+
         rows = cur.fetchall()
         cur.close()
         conn.close()
+
+        # Update last sync timestamp for incremental
+        if rows and incremental_col:
+            max_ts = max(str(row.get(incremental_col, "")) for row in rows if row.get(incremental_col))
+            if max_ts:
+                _last_sync_timestamps[table_name] = max_ts
 
         if not rows:
             return {"table": table_name, "rows": 0, "status": "empty"}
@@ -296,6 +326,21 @@ def run_full_etl() -> dict:
         "status": "complete",
     }
     _snapshots.append(snapshot)
+
+    # Record data lineage
+    _lineage_records.append({
+        "pipeline_run_id": snapshot_id,
+        "source": "postgresql",
+        "destination": "parquet",
+        "tables_synced": len(results),
+        "total_rows": total_rows,
+        "incremental": any(r.get("incremental", False) for r in results),
+        "elapsed_ms": round(elapsed * 1000),
+        "timestamp": _last_etl,
+    })
+    # Keep only last 100 lineage records
+    if len(_lineage_records) > 100:
+        _lineage_records[:] = _lineage_records[-100:]
 
     # Refresh DuckDB materialized views
     refresh_materialized_views()
@@ -504,6 +549,23 @@ def get_features(feature_group: str):
 def list_snapshots():
     """List ETL snapshots (time-travel)."""
     return {"snapshots": _snapshots[-50:], "total": len(_snapshots)}
+
+@app.get("/lineage")
+def get_lineage():
+    """Get data lineage records."""
+    return {"lineage": _lineage_records[-50:], "total": len(_lineage_records)}
+
+@app.get("/incremental/status")
+def incremental_status():
+    """Get incremental ETL sync timestamps per table."""
+    return {"sync_timestamps": _last_sync_timestamps, "tables": list(ETL_TABLES.keys())}
+
+@app.post("/etl/reset")
+def reset_incremental():
+    """Reset incremental sync timestamps to force full re-extract."""
+    global _last_sync_timestamps
+    _last_sync_timestamps = {}
+    return {"status": "reset", "message": "All incremental timestamps cleared — next ETL will be a full extract"}
 
 @app.get("/tables")
 def list_tables():
