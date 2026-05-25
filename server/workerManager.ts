@@ -50,7 +50,8 @@ export interface WorkerDef {
   technology: string;
 }
 
-const DB_URL = getDatabaseUrl() + "?sslmode=disable";
+const _rawDbUrl = getDatabaseUrl();
+const DB_URL = _rawDbUrl.includes("sslmode=") ? _rawDbUrl : _rawDbUrl + "?sslmode=disable";
 const RELAY_URL = "http://localhost:3000/api/workers/event";
 
 export const WORKER_DEFS: WorkerDef[] = [

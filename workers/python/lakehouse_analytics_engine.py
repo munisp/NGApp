@@ -21,6 +21,7 @@ Technology: Python · DuckDB · PyArrow · Parquet · psycopg2 · FastAPI
 Port: 8140
 """
 import os
+import re
 import sys
 import json
 import time
@@ -56,9 +57,10 @@ logging.basicConfig(level=logging.INFO,
 log = logging.getLogger(__name__)
 
 # ── Configuration ──────────────────────────────────────────────────────────────
-DB_URL = os.environ.get("DATABASE_URL",
+_raw_db_url = os.environ.get("DATABASE_URL",
     os.environ.get("WORKER_DATABASE_URL",
     "postgresql://ndsep_user:ndsep_secure_2026@localhost:5432/ndsep_db"))
+DB_URL = re.sub(r'(\?sslmode=[^&?]*)+', '?sslmode=disable', _raw_db_url)
 PORT = int(os.environ.get("LAKEHOUSE_PORT", "8140"))
 WAREHOUSE_PATH = Path(os.environ.get("LAKEHOUSE_WAREHOUSE_PATH", "/tmp/ndsep-lakehouse/warehouse"))
 PARQUET_PATH = Path(os.environ.get("LAKEHOUSE_PARQUET_PATH", "/tmp/ndsep-lakehouse/parquet"))
