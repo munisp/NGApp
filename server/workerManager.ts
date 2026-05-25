@@ -1391,6 +1391,18 @@ export const WORKER_DEFS: WorkerDef[] = [
     description: "GraphSAGE GNN with learned weights, link prediction, compliance graph embeddings for downstream ML.",
     technology: "Python · numpy · scipy · scikit-learn · FastAPI",
   },
+  {
+    id: "ray-ml-engine",
+    name: "Ray ML/DL/GNN Engine",
+    layer: "L7",
+    language: "Python",
+    command: "python3",
+    args: [path.join(PYTHON_DIR, "ray_ml_engine.py")],
+    port: 8250,
+    env: { RAY_ML_PORT: "8250", DATABASE_URL: DB_URL, WORKER_RELAY_URL: RELAY_URL, LAKEHOUSE_URL: "http://localhost:8140" },
+    description: "Real PyTorch ML/DL/GNN engine: GraphSAGE with backprop, LSTM time-series, Autoencoder anomaly detection, XGBoost+SHAP. Ray distributed training. Lakehouse/DuckDB integration.",
+    technology: "Python · PyTorch · Ray · XGBoost · SHAP · DuckDB · FastAPI",
+  },
 ];
 
 // ─────────────────────────────────────────────────────────────────────────────

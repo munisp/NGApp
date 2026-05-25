@@ -848,6 +848,102 @@ async function startServer() {
     } catch (err: unknown) { res.json({ error: (err instanceof Error ? err.message : String(err)) }); }
   });
 
+  // ── Ray ML/DL/GNN Engine Endpoints ─────────────────────────────────────────
+  const RAY_ML_URL = process.env.RAY_ML_URL || "http://localhost:8250";
+
+  app.get("/api/ray-ml/health", requireSession, async (_req, res) => {
+    try {
+      const resp = await fetch(`${RAY_ML_URL}/health`, { signal: AbortSignal.timeout(5000) });
+      res.json(await resp.json());
+    } catch (err: unknown) { res.json({ status: "unavailable", error: (err instanceof Error ? err.message : String(err)) }); }
+  });
+
+  app.post("/api/ray-ml/train", requireSession, async (req, res) => {
+    try {
+      const resp = await fetch(`${RAY_ML_URL}/train`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(req.body || { models: ["all"], use_ray: true }),
+        signal: AbortSignal.timeout(300000),
+      });
+      res.json(await resp.json());
+    } catch (err: unknown) { res.json({ error: (err instanceof Error ? err.message : String(err)) }); }
+  });
+
+  app.get("/api/ray-ml/models", requireSession, async (_req, res) => {
+    try {
+      const resp = await fetch(`${RAY_ML_URL}/models`, { signal: AbortSignal.timeout(5000) });
+      res.json(await resp.json());
+    } catch (err: unknown) { res.json({ error: (err instanceof Error ? err.message : String(err)) }); }
+  });
+
+  app.get("/api/ray-ml/experiments", requireSession, async (_req, res) => {
+    try {
+      const resp = await fetch(`${RAY_ML_URL}/experiments`, { signal: AbortSignal.timeout(5000) });
+      res.json(await resp.json());
+    } catch (err: unknown) { res.json({ error: (err instanceof Error ? err.message : String(err)) }); }
+  });
+
+  app.get("/api/ray-ml/pipeline", requireSession, async (_req, res) => {
+    try {
+      const resp = await fetch(`${RAY_ML_URL}/pipeline/status`, { signal: AbortSignal.timeout(5000) });
+      res.json(await resp.json());
+    } catch (err: unknown) { res.json({ error: (err instanceof Error ? err.message : String(err)) }); }
+  });
+
+  app.get("/api/ray-ml/ray-status", requireSession, async (_req, res) => {
+    try {
+      const resp = await fetch(`${RAY_ML_URL}/ray/status`, { signal: AbortSignal.timeout(5000) });
+      res.json(await resp.json());
+    } catch (err: unknown) { res.json({ error: (err instanceof Error ? err.message : String(err)) }); }
+  });
+
+  app.post("/api/ray-ml/predict/breach", requireSession, async (req, res) => {
+    try {
+      const resp = await fetch(`${RAY_ML_URL}/predict/breach`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(req.body || {}),
+        signal: AbortSignal.timeout(10000),
+      });
+      res.json(await resp.json());
+    } catch (err: unknown) { res.json({ error: (err instanceof Error ? err.message : String(err)) }); }
+  });
+
+  app.post("/api/ray-ml/predict/anomaly", requireSession, async (req, res) => {
+    try {
+      const resp = await fetch(`${RAY_ML_URL}/predict/anomaly`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(req.body || {}),
+        signal: AbortSignal.timeout(10000),
+      });
+      res.json(await resp.json());
+    } catch (err: unknown) { res.json({ error: (err instanceof Error ? err.message : String(err)) }); }
+  });
+
+  app.post("/api/ray-ml/graph/build", requireSession, async (req, res) => {
+    try {
+      const resp = await fetch(`${RAY_ML_URL}/graph/build`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(req.body || { source: "database" }),
+        signal: AbortSignal.timeout(120000),
+      });
+      res.json(await resp.json());
+    } catch (err: unknown) { res.json({ error: (err instanceof Error ? err.message : String(err)) }); }
+  });
+
+  app.post("/api/ray-ml/lakehouse/etl", requireSession, async (_req, res) => {
+    try {
+      const resp = await fetch(`${RAY_ML_URL}/lakehouse/etl`, {
+        method: "POST",
+        signal: AbortSignal.timeout(60000),
+      });
+      res.json(await resp.json());
+    } catch (err: unknown) { res.json({ error: (err instanceof Error ? err.message : String(err)) }); }
+  });
+
   // ── Events polling fallback (for WebSocket-less clients) ─────────────────
   app.post("/api/events/poll", requireSession, async (req, res) => {
     try {
