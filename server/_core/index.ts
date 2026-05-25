@@ -755,6 +755,99 @@ async function startServer() {
     }
   });
 
+  // ── Lakehouse Analytics Endpoints ──────────────────────────────────────────
+  app.get("/api/lakehouse/health", requireSession, async (_req, res) => {
+    try {
+      const url = process.env.LAKEHOUSE_ANALYTICS_URL || "http://localhost:8140";
+      const resp = await fetch(`${url}/health`, { signal: AbortSignal.timeout(5000) });
+      res.json(await resp.json());
+    } catch (err: unknown) { res.json({ status: "unavailable", error: (err instanceof Error ? err.message : String(err)) }); }
+  });
+
+  app.post("/api/lakehouse/etl", requireSession, async (_req, res) => {
+    try {
+      const url = process.env.LAKEHOUSE_ANALYTICS_URL || "http://localhost:8140";
+      const resp = await fetch(`${url}/etl/run`, { method: "POST", signal: AbortSignal.timeout(60000) });
+      res.json(await resp.json());
+    } catch (err: unknown) { res.json({ error: (err instanceof Error ? err.message : String(err)) }); }
+  });
+
+  app.get("/api/lakehouse/tables", requireSession, async (_req, res) => {
+    try {
+      const url = process.env.LAKEHOUSE_ANALYTICS_URL || "http://localhost:8140";
+      const resp = await fetch(`${url}/tables`, { signal: AbortSignal.timeout(5000) });
+      res.json(await resp.json());
+    } catch (err: unknown) { res.json({ tables: [], error: (err instanceof Error ? err.message : String(err)) }); }
+  });
+
+  // ── ML Production Engine Endpoints ──────────────────────────────────────────
+  app.get("/api/ml/health", requireSession, async (_req, res) => {
+    try {
+      const url = process.env.ML_PRODUCTION_URL || "http://localhost:8085";
+      const resp = await fetch(`${url}/health`, { signal: AbortSignal.timeout(5000) });
+      res.json(await resp.json());
+    } catch (err: unknown) { res.json({ status: "unavailable", error: (err instanceof Error ? err.message : String(err)) }); }
+  });
+
+  app.post("/api/ml/train", requireSession, async (_req, res) => {
+    try {
+      const url = process.env.ML_PRODUCTION_URL || "http://localhost:8085";
+      const resp = await fetch(`${url}/train`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ models: ["all"] }),
+        signal: AbortSignal.timeout(120000),
+      });
+      res.json(await resp.json());
+    } catch (err: unknown) { res.json({ error: (err instanceof Error ? err.message : String(err)) }); }
+  });
+
+  app.get("/api/ml/models", requireSession, async (_req, res) => {
+    try {
+      const url = process.env.ML_PRODUCTION_URL || "http://localhost:8085";
+      const resp = await fetch(`${url}/models`, { signal: AbortSignal.timeout(5000) });
+      res.json(await resp.json());
+    } catch (err: unknown) { res.json({ models: {}, error: (err instanceof Error ? err.message : String(err)) }); }
+  });
+
+  app.get("/api/ml/pipeline", requireSession, async (_req, res) => {
+    try {
+      const url = process.env.ML_PRODUCTION_URL || "http://localhost:8085";
+      const resp = await fetch(`${url}/pipeline/status`, { signal: AbortSignal.timeout(5000) });
+      res.json(await resp.json());
+    } catch (err: unknown) { res.json({ error: (err instanceof Error ? err.message : String(err)) }); }
+  });
+
+  // ── GNN Engine Endpoints ────────────────────────────────────────────────────
+  app.get("/api/gnn/health", requireSession, async (_req, res) => {
+    try {
+      const url = process.env.GNN_ENGINE_URL || "http://localhost:8216";
+      const resp = await fetch(`${url}/health`, { signal: AbortSignal.timeout(5000) });
+      res.json(await resp.json());
+    } catch (err: unknown) { res.json({ status: "unavailable", error: (err instanceof Error ? err.message : String(err)) }); }
+  });
+
+  app.post("/api/gnn/build", requireSession, async (_req, res) => {
+    try {
+      const url = process.env.GNN_ENGINE_URL || "http://localhost:8216";
+      const resp = await fetch(`${url}/graph/build`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ source: "database" }),
+        signal: AbortSignal.timeout(60000),
+      });
+      res.json(await resp.json());
+    } catch (err: unknown) { res.json({ error: (err instanceof Error ? err.message : String(err)) }); }
+  });
+
+  app.get("/api/gnn/stats", requireSession, async (_req, res) => {
+    try {
+      const url = process.env.GNN_ENGINE_URL || "http://localhost:8216";
+      const resp = await fetch(`${url}/graph/stats`, { signal: AbortSignal.timeout(5000) });
+      res.json(await resp.json());
+    } catch (err: unknown) { res.json({ error: (err instanceof Error ? err.message : String(err)) }); }
+  });
+
   // ── Events polling fallback (for WebSocket-less clients) ─────────────────
   app.post("/api/events/poll", requireSession, async (req, res) => {
     try {

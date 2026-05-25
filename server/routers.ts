@@ -187,6 +187,9 @@ import {
   cocoIndexRouter,
   rssFeedRouter,
   aiHealthRouter,
+  lakehouseAnalyticsRouter,
+  mlProductionRouter,
+  gnnRouter,
 } from "./routers/aimlRouter";
 import { wirediggRouter } from "./routers/wiredigg";
 import { nocRouter } from "./routers/noc";
@@ -3342,6 +3345,9 @@ export const appRouter = router({
   cocoIndex: cocoIndexRouter,
   rssFeed: rssFeedRouter,
   aiHealth: aiHealthRouter,
+  lakehouseAnalytics: lakehouseAnalyticsRouter,
+  mlProduction: mlProductionRouter,
+  gnn: gnnRouter,
   wiredigg: wirediggRouter,
   noc: nocRouter,
   nocAgent: nocAgentRouter,

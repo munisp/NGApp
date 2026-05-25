@@ -144,29 +144,52 @@ async fn ingest_records(
 }
 
 async fn flush_buffer(State(state): State<AppState>) -> impl IntoResponse {
-    let mut buffer = state.buffer.lock().unwrap();
-    let count = buffer.len();
-    let records: Vec<LakehouseRecord> = buffer.drain(..).collect();
-    QUEUE_GAUGE.set(0.0);
-    BATCH_COUNTER.inc();
+    // Drain buffer while holding lock, then release before async HTTP calls
+    let (count, records) = {
+        let mut buffer = state.buffer.lock().unwrap();
+        let count = buffer.len();
+        let records: Vec<LakehouseRecord> = buffer.drain(..).collect();
+        QUEUE_GAUGE.set(0.0);
+        BATCH_COUNTER.inc();
+        (count, records)
+    };
 
-    // Group by table for batch write simulation
-    let mut by_table: std::collections::HashMap<String, Vec<&LakehouseRecord>> = std::collections::HashMap::new();
+    // Group by table for batch write to lakehouse analytics engine
+    let mut by_table: std::collections::HashMap<String, Vec<serde_json::Value>> = std::collections::HashMap::new();
     for r in &records {
-        by_table.entry(r.table.clone()).or_default().push(r);
+        by_table.entry(r.table.clone()).or_default().push(r.data.clone());
     }
 
-    let table_summary: Vec<serde_json::Value> = by_table.iter().map(|(table, recs)| {
-        serde_json::json!({
+    let lakehouse_url = state.lakehouse_url.clone();
+    let mut table_summary: Vec<serde_json::Value> = Vec::new();
+    let client = reqwest::Client::new();
+
+    for (table, data_records) in &by_table {
+        let payload = serde_json::json!({
+            "namespace": "ndsep",
             "table": table,
-            "records": recs.len(),
-        })
-    }).collect();
+            "records": data_records,
+        });
+        let write_result = client.post(format!("{}/ingest", lakehouse_url))
+            .json(&payload)
+            .timeout(std::time::Duration::from_secs(10))
+            .send().await;
+        let status = match write_result {
+            Ok(resp) => if resp.status().is_success() { "written" } else { "http_error" },
+            Err(_) => "connection_failed",
+        };
+        table_summary.push(serde_json::json!({
+            "table": table,
+            "records": data_records.len(),
+            "lakehouse_status": status,
+        }));
+    }
 
     Json(serde_json::json!({
         "success": true,
         "flushed": count,
         "tables": table_summary,
+        "lakehouse_forwarded": true,
         "timestamp": Utc::now().timestamp_millis(),
     }))
 }

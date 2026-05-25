@@ -48,6 +48,9 @@ const VECTOR_CACHE_URL = process.env.VECTOR_CACHE_URL || "http://localhost:8214"
 const LAKEHOUSE_WRITER_URL = process.env.LAKEHOUSE_WRITER_URL || "http://localhost:8215";
 const OLLAMA_URL = process.env.OLLAMA_URL || "http://localhost:11434";
 const PYTHON_WORKER_URL = process.env.PYTHON_WORKER_URL || "http://localhost:8300";
+const LAKEHOUSE_ANALYTICS_URL = process.env.LAKEHOUSE_ANALYTICS_URL || "http://localhost:8140";
+const ML_PRODUCTION_URL = process.env.ML_PRODUCTION_URL || "http://localhost:8085";
+const GNN_ENGINE_URL = process.env.GNN_ENGINE_URL || "http://localhost:8216";
 
 // ── Helper: safe fetch with timeout ───────────────────────────────────────────
 async function safeFetch(url: string, options?: RequestInit, timeoutMs = 5000): Promise<any> {
@@ -717,10 +720,244 @@ export const rssFeedRouter = router({
     }),
 });
 
+// ── Lakehouse Analytics Router ─────────────────────────────────────────────────
+export const lakehouseAnalyticsRouter = router({
+  health: protectedProcedure.query(async () => {
+    return await safeFetch(`${LAKEHOUSE_ANALYTICS_URL}/health`);
+  }),
+
+  triggerETL: protectedProcedure.mutation(async () => {
+    emitMutationEvent("ndsep.ai.mutation", { action: "lakehouse_etl", ts: new Date().toISOString() }).catch((e: unknown) => logger.debug({ err: e instanceof Error ? e.message : String(e) }, "fire-and-forget failed"));
+    return await safeFetch(`${LAKEHOUSE_ANALYTICS_URL}/etl/run`, { method: "POST" }, 60000);
+  }),
+
+  etlStatus: protectedProcedure.query(async () => {
+    return await safeFetch(`${LAKEHOUSE_ANALYTICS_URL}/etl/status`);
+  }),
+
+  query: protectedProcedure
+    .input(z.object({
+      sql: z.string().min(1).max(5000),
+    }))
+    .query(async ({ input }) => {
+      return await safeFetch(`${LAKEHOUSE_ANALYTICS_URL}/query`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ sql: input.sql }),
+      }, 30000);
+    }),
+
+  tables: protectedProcedure.query(async () => {
+    return await safeFetch(`${LAKEHOUSE_ANALYTICS_URL}/tables`);
+  }),
+
+  materializedView: protectedProcedure
+    .input(z.object({ viewName: z.string() }))
+    .query(async ({ input }) => {
+      return await safeFetch(`${LAKEHOUSE_ANALYTICS_URL}/views/${encodeURIComponent(input.viewName)}`);
+    }),
+
+  features: protectedProcedure
+    .input(z.object({ featureGroup: z.string() }))
+    .query(async ({ input }) => {
+      return await safeFetch(`${LAKEHOUSE_ANALYTICS_URL}/features/${encodeURIComponent(input.featureGroup)}`);
+    }),
+
+  snapshots: protectedProcedure.query(async () => {
+    return await safeFetch(`${LAKEHOUSE_ANALYTICS_URL}/snapshots`);
+  }),
+
+  compact: protectedProcedure
+    .input(z.object({ table: z.string() }))
+    .mutation(async ({ input }) => {
+      emitMutationEvent("ndsep.ai.mutation", { action: "lakehouse_compact", ts: new Date().toISOString() }).catch((e: unknown) => logger.debug({ err: e instanceof Error ? e.message : String(e) }, "fire-and-forget failed"));
+      return await safeFetch(`${LAKEHOUSE_ANALYTICS_URL}/compact`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ table: input.table }),
+      }, 30000);
+    }),
+});
+
+// ── ML Production Engine Router ───────────────────────────────────────────────
+export const mlProductionRouter = router({
+  health: protectedProcedure.query(async () => {
+    return await safeFetch(`${ML_PRODUCTION_URL}/health`);
+  }),
+
+  trainAll: protectedProcedure.mutation(async () => {
+    emitMutationEvent("ndsep.ai.mutation", { action: "ml_train", ts: new Date().toISOString() }).catch((e: unknown) => logger.debug({ err: e instanceof Error ? e.message : String(e) }, "fire-and-forget failed"));
+    return await safeFetch(`${ML_PRODUCTION_URL}/train`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ models: ["all"] }),
+    }, 120000);
+  }),
+
+  trainModel: protectedProcedure
+    .input(z.object({ modelName: z.string() }))
+    .mutation(async ({ input }) => {
+      emitMutationEvent("ndsep.ai.mutation", { action: "ml_train", ts: new Date().toISOString() }).catch((e: unknown) => logger.debug({ err: e instanceof Error ? e.message : String(e) }, "fire-and-forget failed"));
+      return await safeFetch(`${ML_PRODUCTION_URL}/train`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ models: [input.modelName] }),
+      }, 120000);
+    }),
+
+  models: protectedProcedure.query(async () => {
+    return await safeFetch(`${ML_PRODUCTION_URL}/models`);
+  }),
+
+  modelDetail: protectedProcedure
+    .input(z.object({ modelName: z.string() }))
+    .query(async ({ input }) => {
+      return await safeFetch(`${ML_PRODUCTION_URL}/models/${encodeURIComponent(input.modelName)}`);
+    }),
+
+  predictBreach: protectedProcedure
+    .input(z.object({ orgFeatures: z.record(z.string(), z.number()) }))
+    .query(async ({ input }) => {
+      return await safeFetch(`${ML_PRODUCTION_URL}/predict/breach`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ org_features: input.orgFeatures }),
+      }, 15000);
+    }),
+
+  predictViolations: protectedProcedure.query(async () => {
+    return await safeFetch(`${ML_PRODUCTION_URL}/predict/violations`, { method: "POST" }, 15000);
+  }),
+
+  detectAnomaly: protectedProcedure
+    .input(z.object({ orgFeatures: z.record(z.string(), z.number()) }))
+    .query(async ({ input }) => {
+      return await safeFetch(`${ML_PRODUCTION_URL}/predict/anomaly`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ org_features: input.orgFeatures }),
+      }, 15000);
+    }),
+
+  scoreRisk: protectedProcedure
+    .input(z.object({ orgFeatures: z.record(z.string(), z.number()) }))
+    .query(async ({ input }) => {
+      return await safeFetch(`${ML_PRODUCTION_URL}/predict/risk`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ org_features: input.orgFeatures }),
+      }, 15000);
+    }),
+
+  shapExplanation: protectedProcedure
+    .input(z.object({ modelName: z.string() }))
+    .query(async ({ input }) => {
+      return await safeFetch(`${ML_PRODUCTION_URL}/shap/${encodeURIComponent(input.modelName)}`);
+    }),
+
+  pipelineStatus: protectedProcedure.query(async () => {
+    return await safeFetch(`${ML_PRODUCTION_URL}/pipeline/status`);
+  }),
+});
+
+// ── GNN Compliance Engine Router ──────────────────────────────────────────────
+export const gnnRouter = router({
+  health: protectedProcedure.query(async () => {
+    return await safeFetch(`${GNN_ENGINE_URL}/health`);
+  }),
+
+  buildGraph: protectedProcedure.mutation(async () => {
+    emitMutationEvent("ndsep.ai.mutation", { action: "gnn_build", ts: new Date().toISOString() }).catch((e: unknown) => logger.debug({ err: e instanceof Error ? e.message : String(e) }, "fire-and-forget failed"));
+    return await safeFetch(`${GNN_ENGINE_URL}/graph/build`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ source: "database" }),
+    }, 60000);
+  }),
+
+  graphStats: protectedProcedure.query(async () => {
+    return await safeFetch(`${GNN_ENGINE_URL}/graph/stats`);
+  }),
+
+  embedding: protectedProcedure
+    .input(z.object({
+      nodeId: z.string(),
+      depth: z.number().min(1).max(3).default(2),
+    }))
+    .query(async ({ input }) => {
+      return await safeFetch(`${GNN_ENGINE_URL}/embedding`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ node_id: input.nodeId, depth: input.depth }),
+      });
+    }),
+
+  allEmbeddings: protectedProcedure.query(async () => {
+    return await safeFetch(`${GNN_ENGINE_URL}/embeddings/all`, undefined, 30000);
+  }),
+
+  predictLink: protectedProcedure
+    .input(z.object({
+      source: z.string(),
+      target: z.string(),
+    }))
+    .query(async ({ input }) => {
+      return await safeFetch(`${GNN_ENGINE_URL}/predict/link`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(input),
+      });
+    }),
+
+  predictViolations: protectedProcedure
+    .input(z.object({ orgId: z.string() }))
+    .query(async ({ input }) => {
+      return await safeFetch(`${GNN_ENGINE_URL}/predict/violations`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ org_id: input.orgId }),
+      });
+    }),
+
+  neighbors: protectedProcedure
+    .input(z.object({
+      nodeId: z.string(),
+      relation: z.string().optional(),
+    }))
+    .query(async ({ input }) => {
+      return await safeFetch(
+        `${GNN_ENGINE_URL}/graph/neighbors/${encodeURIComponent(input.nodeId)}?relation=${input.relation || ""}`,
+      );
+    }),
+
+  findPath: protectedProcedure
+    .input(z.object({
+      src: z.string(),
+      dst: z.string(),
+      maxDepth: z.number().min(1).max(6).default(4),
+    }))
+    .query(async ({ input }) => {
+      return await safeFetch(
+        `${GNN_ENGINE_URL}/graph/path?src=${encodeURIComponent(input.src)}&dst=${encodeURIComponent(input.dst)}&max_depth=${input.maxDepth}`,
+      );
+    }),
+
+  similarity: protectedProcedure
+    .input(z.object({
+      nodeA: z.string(),
+      nodeB: z.string(),
+    }))
+    .query(async ({ input }) => {
+      return await safeFetch(
+        `${GNN_ENGINE_URL}/graph/similarity/${encodeURIComponent(input.nodeA)}/${encodeURIComponent(input.nodeB)}`,
+      );
+    }),
+});
+
 // ── Platform AI Health (aggregate) ────────────────────────────────────────────
 export const aiHealthRouter = router({
   summary: protectedProcedure.query(async () => {
-    const [qdrant, falkordb, ollama, vectorCache, lakehouse, anomaly, rss] = await Promise.allSettled([
+    const [qdrant, falkordb, ollama, vectorCache, lakehouse, anomaly, rss, lakehouseAnalytics, mlProd, gnn] = await Promise.allSettled([
       safeFetch(`${QDRANT_URL}/healthz`, undefined, 3000),
       safeFetch(`${FALKORDB_WORKER_URL}/health`, undefined, 3000),
       safeFetch(`${OLLAMA_URL}/api/tags`, undefined, 3000),
@@ -728,6 +965,9 @@ export const aiHealthRouter = router({
       safeFetch(`${LAKEHOUSE_WRITER_URL}/health`, undefined, 3000),
       safeFetch(`${ANOMALY_DISPATCHER_URL}/health`, undefined, 3000),
       safeFetch(`${RSS_SERVER_URL}/health`, undefined, 3000),
+      safeFetch(`${LAKEHOUSE_ANALYTICS_URL}/health`, undefined, 3000),
+      safeFetch(`${ML_PRODUCTION_URL}/health`, undefined, 3000),
+      safeFetch(`${GNN_ENGINE_URL}/health`, undefined, 3000),
     ]);
 
     const resolve = (r: PromiseSettledResult<any>, name: string) => ({
@@ -745,6 +985,9 @@ export const aiHealthRouter = router({
       resolve(lakehouse, "Lakehouse Writer (Rust)"),
       resolve(anomaly, "Anomaly Alert Dispatcher"),
       resolve(rss, "RSS/Webhook Server"),
+      resolve(lakehouseAnalytics, "Lakehouse Analytics (DuckDB/Parquet)"),
+      resolve(mlProd, "ML Production Engine (XGBoost/LSTM/SHAP)"),
+      resolve(gnn, "GNN Compliance Engine"),
     ];
 
     const healthy = services.filter((s) => s.available).length;
