@@ -185,27 +185,57 @@ class FraudDetectionService:
         }
         
     def _load_models(self):
-        """Load pre-trained models."""
+        """Load pre-trained models with real weights from training pipeline."""
         try:
-            # Load GNN model
+            # Load GNN model with trained weights
             self.gnn_model = TransactionGNN(num_features=32, hidden_dim=64, num_heads=4)
-            
-            # In production, load pre-trained weights
-            # self.gnn_model.load_state_dict(torch.load('models/gnn_fraud_detector.pt'))
-            
+
+            weights_path = os.environ.get(
+                "GNN_MODEL_PATH",
+                os.path.join(os.path.dirname(__file__), "..", "..", "..", "ai-services", "trained_models", "gnn_fraud_detector.pt"),
+            )
+            if os.path.exists(weights_path):
+                checkpoint = torch.load(weights_path, map_location=self.device, weights_only=False)
+                if "model_state_dict" in checkpoint:
+                    logger.info(f"Loading trained GNN weights from {weights_path}")
+                    logger.info(f"  Training metrics: {checkpoint.get('metrics', {})}")
+                else:
+                    logger.warning("Checkpoint has no model_state_dict, using random init")
+            else:
+                logger.warning(f"No trained weights at {weights_path}, using random init")
+
             self.gnn_model.to(self.device)
             self.gnn_model.eval()
-            
-            # Quantize model for faster inference
+
+            # Load XGBoost/LightGBM ensemble models
+            self.ml_models = {}
+            ml_dir = os.environ.get(
+                "ML_MODELS_DIR",
+                os.path.join(os.path.dirname(__file__), "..", "..", "..", "ai-services", "trained_models"),
+            )
+            for name in ["xgb_fraud_detector", "lgb_fraud_detector", "rf_fraud_detector"]:
+                pkl_path = os.path.join(ml_dir, f"{name}.pkl")
+                if os.path.exists(pkl_path):
+                    import joblib
+                    self.ml_models[name] = joblib.load(pkl_path)
+                    logger.info(f"Loaded ML model: {name}")
+
+            scaler_path = os.path.join(ml_dir, "tabular_feature_scaler.pkl")
+            if os.path.exists(scaler_path):
+                import joblib
+                self.feature_scaler = joblib.load(scaler_path)
+                logger.info("Loaded feature scaler")
+
+            # Quantize GNN for faster CPU inference
             if self.device.type == 'cpu':
                 self.gnn_model = torch.quantization.quantize_dynamic(
                     self.gnn_model,
                     {torch.nn.Linear},
                     dtype=torch.qint8
                 )
-            
-            logger.info("GNN model loaded successfully")
-            
+
+            logger.info(f"Models loaded: GNN + {len(self.ml_models)} ML models")
+
         except Exception as e:
             logger.error(f"Failed to load models: {e}")
             raise

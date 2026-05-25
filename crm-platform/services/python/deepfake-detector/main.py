@@ -259,97 +259,162 @@ class FeatureExtractor:
 # --- Spoofing Classifier ---
 
 class SpoofClassifier:
-    """Rule-based + learned classifier for anti-spoofing."""
+    """Neural network anti-spoofing classifier with trained PyTorch weights."""
 
     def __init__(self):
         self.feature_extractor = FeatureExtractor()
-        # Learned weights for each attack type (simulates a trained model)
-        self.attack_weights: dict[str, dict[str, float]] = {
-            "printed_photo": {
-                "depth_variance": -2.5,    # flat = print
-                "lbp_entropy": -1.8,       # low entropy = paper texture
-                "high_freq_ratio": -1.2,   # low high-freq = JPEG artifacts
-                "texture_contrast": -0.8,
-                "skin_score": -0.5,
-                "bias": 1.8,
-            },
-            "screen_replay": {
-                "moire_energy": 3.0,       # high moiré = screen
-                "high_freq_ratio": 2.5,    # pixel grid
-                "color_variance": -1.0,    # shifted colors
-                "histogram_smoothness": -0.8,
-                "bias": -0.5,
-            },
-            "paper_mask": {
-                "depth_variance": -1.5,    # somewhat flat
-                "lbp_uniformity": 2.0,     # uniform texture
-                "skin_score": -2.0,        # wrong skin color
-                "texture_contrast": -1.0,
-                "bias": 0.5,
-            },
-            "3d_mask": {
-                "lbp_entropy": 1.5,        # too uniform material
-                "skin_score": -1.5,        # synthetic skin
-                "gradient_consistency": -1.0,
-                "histogram_smoothness": 1.2, # abnormally smooth
-                "bias": 0.3,
-            },
-            "deepfake": {
-                "compression_artifacts": 2.0,  # GAN artifacts
-                "gradient_consistency": -1.5,
-                "texture_contrast": -0.5,
-                "lbp_entropy": 1.0,
-                "bias": -0.2,
-            },
-            "high_quality_photo": {
-                "depth_variance": -3.0,    # flat
-                "compression_artifacts": 1.5, # too sharp
-                "lbp_entropy": 0.5,
-                "texture_contrast": 0.8,
-                "bias": 0.8,
-            },
-        }
+        self.model = None
+        self.scaler = None
+        self.type_map: dict[int, str] = {}
+        self.reverse_type_map: dict[str, "SpoofType"] = {}
+        self._load_trained_model()
+
+    def _load_trained_model(self):
+        """Load trained anti-spoofing neural network weights."""
+        model_dir = os.path.join(
+            os.path.dirname(__file__), "..", "..", "..", "..",
+            "payment-core", "ai-services", "trained_models",
+        )
+        model_path = os.environ.get(
+            "ANTISPOOF_MODEL_PATH",
+            os.path.join(model_dir, "antispoof_classifier.pt"),
+        )
+        scaler_path = os.path.join(model_dir, "antispoof_scaler.pkl")
+
+        try:
+            import torch
+            import torch.nn as nn
+
+            if os.path.exists(model_path):
+                checkpoint = torch.load(model_path, map_location="cpu", weights_only=False)
+                config = checkpoint.get("model_config", {"in_features": 14, "hidden_dim": 64})
+
+                # Build model architecture
+                class AntiSpoofNet(nn.Module):
+                    def __init__(self, in_features=14, hidden_dim=64):
+                        super().__init__()
+                        self.feature_extractor = nn.Sequential(
+                            nn.Linear(in_features, hidden_dim), nn.BatchNorm1d(hidden_dim), nn.ReLU(), nn.Dropout(0.3),
+                            nn.Linear(hidden_dim, hidden_dim), nn.BatchNorm1d(hidden_dim), nn.ReLU(), nn.Dropout(0.2),
+                            nn.Linear(hidden_dim, hidden_dim // 2), nn.ReLU(),
+                        )
+                        self.binary_head = nn.Linear(hidden_dim // 2, 1)
+                        self.type_head = nn.Linear(hidden_dim // 2, 7)
+
+                    def forward(self, x):
+                        features = self.feature_extractor(x)
+                        return self.binary_head(features).squeeze(-1), self.type_head(features)
+
+                self.model = AntiSpoofNet(**config)
+                self.model.load_state_dict(checkpoint["model_state_dict"])
+                self.model.eval()
+
+                self.type_map = checkpoint.get("type_map", {})
+                self.reverse_idx_map = {v: k for k, v in self.type_map.items()}
+
+                metrics = checkpoint.get("metrics", {})
+                logging.info(f"Loaded trained anti-spoofing model: binary_auc={metrics.get('binary_auc', 'N/A')}, "
+                             f"type_acc={metrics.get('type_accuracy', 'N/A')}")
+            else:
+                logging.warning(f"No trained model at {model_path}, using fallback")
+
+            if os.path.exists(scaler_path):
+                import joblib
+                self.scaler = joblib.load(scaler_path)
+        except ImportError:
+            logging.warning("torch not available, using fallback classifier")
 
     def classify(self, image_data: bytes) -> SpoofClassification:
-        """Classify an image for spoofing attacks."""
+        """Classify an image for spoofing attacks using trained neural network."""
         start = time.time()
 
         features = self.feature_extractor.extract_all(image_data)
-        attack_probs = {}
 
-        for attack_name, weights in self.attack_weights.items():
+        # If trained model is loaded, use it
+        if self.model is not None:
+            import torch
+            import numpy as np
+
+            feature_order = [
+                "lbp_entropy", "lbp_uniformity", "high_freq_ratio", "moire_energy",
+                "depth_variance", "gradient_consistency", "skin_score", "color_variance",
+                "texture_contrast", "histogram_smoothness", "compression_artifacts",
+                "temporal_consistency", "subsurface_scatter", "micro_expression_score",
+            ]
+            x = np.array([features.get(f, 0.0) for f in feature_order], dtype=np.float32)
+
+            if self.scaler is not None:
+                x = self.scaler.transform(x.reshape(1, -1))
+            else:
+                x = x.reshape(1, -1)
+
+            x_tensor = torch.tensor(x, dtype=torch.float32)
+
+            with torch.no_grad():
+                bin_logit, type_logits = self.model(x_tensor)
+                live_prob = torch.sigmoid(bin_logit).item()
+                type_probs = torch.softmax(type_logits, dim=1).squeeze().numpy()
+
+            is_live = live_prob > 0.5
+            type_idx = int(type_probs.argmax())
+            predicted_type = self.reverse_idx_map.get(type_idx, "none")
+
+            attack_probs = {}
+            for idx, prob in enumerate(type_probs):
+                name = self.reverse_idx_map.get(idx, f"type_{idx}")
+                attack_probs[name] = round(float(prob), 4)
+
+            is_spoof = not is_live
+            spoof_type = SpoofType.NONE
+            if is_spoof:
+                spoof_type_map = {
+                    "printed_photo": SpoofType.PRINTED_PHOTO,
+                    "screen_replay": SpoofType.SCREEN_REPLAY,
+                    "paper_mask": SpoofType.PAPER_MASK,
+                    "3d_mask": SpoofType.THREE_D_MASK,
+                    "deepfake": SpoofType.DEEPFAKE,
+                    "high_quality_photo": SpoofType.HIGH_QUALITY_PHOTO,
+                }
+                spoof_type = spoof_type_map.get(predicted_type, SpoofType.NONE)
+
+            elapsed_ms = int((time.time() - start) * 1000)
+            return SpoofClassification(
+                is_spoof=is_spoof,
+                spoof_type=spoof_type,
+                confidence=round(1.0 - live_prob if is_spoof else live_prob, 4),
+                attack_probabilities=attack_probs,
+                features_used=list(features.keys()),
+                processing_ms=elapsed_ms,
+            )
+
+        # Fallback: rule-based if model not loaded
+        attack_weights = {
+            "printed_photo": {"depth_variance": -2.5, "lbp_entropy": -1.8, "bias": 1.8},
+            "screen_replay": {"moire_energy": 3.0, "high_freq_ratio": 2.5, "bias": -0.5},
+            "deepfake": {"compression_artifacts": 2.0, "gradient_consistency": -1.5, "bias": -0.2},
+        }
+        attack_probs = {}
+        for attack_name, weights in attack_weights.items():
             logit = weights.get("bias", 0.0)
             for feat_name, weight in weights.items():
-                if feat_name == "bias":
-                    continue
-                if feat_name in features:
+                if feat_name != "bias" and feat_name in features:
                     logit += weight * features[feat_name]
+            attack_probs[attack_name] = round(1.0 / (1.0 + math.exp(-logit)), 4)
 
-            # Sigmoid activation
-            prob = 1.0 / (1.0 + math.exp(-logit))
-            attack_probs[attack_name] = round(prob, 4)
-
-        # Find highest probability attack
         max_attack = max(attack_probs, key=attack_probs.get)
         max_prob = attack_probs[max_attack]
-
-        threshold = 0.6
-        is_spoof = max_prob >= threshold
+        is_spoof = max_prob >= 0.6
 
         spoof_type = SpoofType.NONE
         if is_spoof:
             type_map = {
                 "printed_photo": SpoofType.PRINTED_PHOTO,
                 "screen_replay": SpoofType.SCREEN_REPLAY,
-                "paper_mask": SpoofType.PAPER_MASK,
-                "3d_mask": SpoofType.THREE_D_MASK,
                 "deepfake": SpoofType.DEEPFAKE,
-                "high_quality_photo": SpoofType.HIGH_QUALITY_PHOTO,
             }
             spoof_type = type_map.get(max_attack, SpoofType.NONE)
 
         elapsed_ms = int((time.time() - start) * 1000)
-
         return SpoofClassification(
             is_spoof=is_spoof,
             spoof_type=spoof_type,
