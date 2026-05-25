@@ -16,6 +16,7 @@ import time
 from dataclasses import dataclass, field
 from enum import Enum
 from pathlib import Path
+from typing import ClassVar
 from typing import Any
 
 import numpy as np
@@ -86,11 +87,20 @@ class SchemaField:
             "tags": self.tags,
         }
 
+    _TYPE_ALIASES: ClassVar[dict[str, str]] = {
+        "float": "float64", "double": "float64", "int": "int64",
+        "integer": "int64", "long": "int64", "short": "int16",
+        "str": "string", "text": "string", "bool": "boolean",
+        "bytes": "binary", "datetime": "timestamp",
+    }
+
     @classmethod
     def from_dict(cls, data: dict[str, Any]) -> SchemaField:
+        raw_type = data.get("field_type") or data.get("type", "string")
+        resolved_type = cls._TYPE_ALIASES.get(raw_type, raw_type)
         return cls(
             name=data["name"],
-            field_type=FieldType(data["field_type"]),
+            field_type=FieldType(resolved_type),
             nullable=data.get("nullable", True),
             description=data.get("description", ""),
             default_value=data.get("default_value"),
