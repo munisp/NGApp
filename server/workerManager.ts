@@ -1399,9 +1399,18 @@ export const WORKER_DEFS: WorkerDef[] = [
     command: "python3",
     args: [path.join(PYTHON_DIR, "ray_ml_engine.py")],
     port: 8250,
-    env: { RAY_ML_PORT: "8250", DATABASE_URL: DB_URL, WORKER_RELAY_URL: RELAY_URL, LAKEHOUSE_URL: "http://localhost:8140" },
-    description: "Real PyTorch ML/DL/GNN engine: GraphSAGE with backprop, LSTM time-series, Autoencoder anomaly detection, XGBoost+SHAP. Ray distributed training. Lakehouse/DuckDB integration.",
-    technology: "Python · PyTorch · Ray · XGBoost · SHAP · DuckDB · FastAPI",
+    env: {
+      RAY_ML_PORT: "8250", DATABASE_URL: DB_URL, WORKER_RELAY_URL: RELAY_URL,
+      LAKEHOUSE_URL: "http://localhost:8140",
+      CONTINUOUS_TRAINING_ENABLED: process.env.CONTINUOUS_TRAINING_ENABLED ?? "false",
+      RETRAIN_INTERVAL: process.env.RETRAIN_INTERVAL ?? "21600",
+      DRIFT_CHECK_INTERVAL: process.env.DRIFT_CHECK_INTERVAL ?? "3600",
+      DRIFT_THRESHOLD_KS: process.env.DRIFT_THRESHOLD_KS ?? "0.15",
+      DRIFT_THRESHOLD_PSI: process.env.DRIFT_THRESHOLD_PSI ?? "0.2",
+      CHAMPION_THRESHOLD: process.env.CHAMPION_THRESHOLD ?? "0.01",
+    },
+    description: "Real PyTorch ML/DL/GNN engine with continuous training: GraphSAGE GNN, LSTM, Autoencoder, XGBoost+SHAP. Data drift detection (KS-test/PSI), champion/challenger model promotion, feedback loop, scheduled auto-retraining. Ray distributed training. Lakehouse/DuckDB integration.",
+    technology: "Python · PyTorch · Ray · XGBoost · SHAP · DuckDB · SciPy · FastAPI",
   },
 ];
 

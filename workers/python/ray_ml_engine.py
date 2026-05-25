@@ -713,12 +713,25 @@ def train_lstm() -> dict:
     y_train, y_test = y[:split], y[split:]
 
     _lstm_model = ViolationLSTM(input_dim, LSTM_HIDDEN, num_layers=2, dropout=0.2).to(DEVICE)
-    optimizer = Adam(_lstm_model.parameters(), lr=0.001, weight_decay=1e-5)
+
+    # Warm-start: load last checkpoint if available
+    lstm_ckpt = MODEL_DIR / "lstm_violation_latest.pt"
+    warm_started = False
+    if lstm_ckpt.exists():
+        try:
+            state = torch.load(lstm_ckpt, map_location=DEVICE, weights_only=True)
+            _lstm_model.load_state_dict(state)
+            warm_started = True
+            log.info("LSTM warm-started from checkpoint")
+        except Exception as e:
+            log.warning(f"LSTM warm-start failed (training from scratch): {e}")
+
+    optimizer = Adam(_lstm_model.parameters(), lr=0.0005 if warm_started else 0.001, weight_decay=1e-5)
     scheduler = ReduceLROnPlateau(optimizer, mode='min', patience=10, factor=0.5)
     criterion = nn.MSELoss()
 
-    # Training loop
-    num_epochs = 200
+    # Training loop (fewer epochs if warm-started)
+    num_epochs = 80 if warm_started else 200
     best_loss = float('inf')
     best_epoch = 0
     losses = []
@@ -763,6 +776,7 @@ def train_lstm() -> dict:
     version = hashlib.md5(f"lstm-{time.time()}".encode()).hexdigest()[:8]
     lstm_path = MODEL_DIR / f"lstm_violation_{version}.pt"
     torch.save(_lstm_model.state_dict(), lstm_path)
+    torch.save(_lstm_model.state_dict(), MODEL_DIR / "lstm_violation_latest.pt")
     if _lstm_scaler:
         joblib.dump(_lstm_scaler, MODEL_DIR / f"lstm_scaler_{version}.joblib")
 
@@ -789,12 +803,14 @@ def train_lstm() -> dict:
         "trained_at": datetime.now(timezone.utc).isoformat(),
         "has_backprop": True,
         "has_learned_weights": True,
+        "warm_started": warm_started,
     }
 
     registry.register("lstm_violation", _lstm_model, version, _lstm_metrics,
                       model_type="pytorch", artifact_path=str(lstm_path))
     tracker.log_experiment("lstm_violation", _lstm_metrics, {
-        "hidden_dim": LSTM_HIDDEN, "num_layers": 2, "lr": 0.001, "epochs": num_epochs,
+        "hidden_dim": LSTM_HIDDEN, "num_layers": 2,
+        "lr": 0.0005 if warm_started else 0.001, "epochs": num_epochs, "warm_start": warm_started,
     }, str(lstm_path))
 
     log.info(f"LSTM trained: {lstm_params} params, test_mse={test_loss:.4f}, test_mae={test_mae:.4f}")
@@ -854,11 +870,24 @@ def train_autoencoder() -> dict:
     X_test = X_tensor[split:]
 
     _autoencoder = ComplianceAutoencoder(input_dim, AUTOENCODER_LATENT).to(DEVICE)
-    optimizer = Adam(_autoencoder.parameters(), lr=0.001, weight_decay=1e-5)
+
+    # Warm-start: load last checkpoint if available
+    ae_ckpt = MODEL_DIR / "autoencoder_anomaly_latest.pt"
+    ae_warm_started = False
+    if ae_ckpt.exists():
+        try:
+            state = torch.load(ae_ckpt, map_location=DEVICE, weights_only=True)
+            _autoencoder.load_state_dict(state)
+            ae_warm_started = True
+            log.info("Autoencoder warm-started from checkpoint")
+        except Exception as e:
+            log.warning(f"Autoencoder warm-start failed (training from scratch): {e}")
+
+    optimizer = Adam(_autoencoder.parameters(), lr=0.0005 if ae_warm_started else 0.001, weight_decay=1e-5)
     criterion = nn.MSELoss()
 
-    # Training
-    num_epochs = 150
+    # Training (fewer epochs if warm-started)
+    num_epochs = 60 if ae_warm_started else 150
     best_loss = float('inf')
     losses = []
 
@@ -895,6 +924,7 @@ def train_autoencoder() -> dict:
     version = hashlib.md5(f"ae-{time.time()}".encode()).hexdigest()[:8]
     ae_path = MODEL_DIR / f"autoencoder_{version}.pt"
     torch.save(_autoencoder.state_dict(), ae_path)
+    torch.save(_autoencoder.state_dict(), MODEL_DIR / "autoencoder_anomaly_latest.pt")
     joblib.dump(_ae_scaler, MODEL_DIR / f"autoencoder_scaler_{version}.joblib")
 
     ae_params = sum(p.numel() for p in _autoencoder.parameters())
@@ -916,12 +946,14 @@ def train_autoencoder() -> dict:
         "trained_at": datetime.now(timezone.utc).isoformat(),
         "has_backprop": True,
         "has_learned_weights": True,
+        "warm_started": ae_warm_started,
     }
 
     registry.register("autoencoder_anomaly", _autoencoder, version, _ae_metrics,
                       model_type="pytorch", artifact_path=str(ae_path))
     tracker.log_experiment("autoencoder_anomaly", _ae_metrics, {
-        "latent_dim": AUTOENCODER_LATENT, "lr": 0.001, "epochs": num_epochs,
+        "latent_dim": AUTOENCODER_LATENT, "lr": 0.0005 if ae_warm_started else 0.001,
+        "epochs": num_epochs, "warm_start": ae_warm_started,
     }, str(ae_path))
 
     log.info(f"Autoencoder trained: {ae_params} params, threshold={_ae_threshold:.6f}")
@@ -1081,6 +1113,9 @@ def train_xgboost() -> dict:
     tracker.log_experiment("xgboost_breach", _xgb_metrics, {
         "n_estimators": 200, "max_depth": 5, "lr": 0.05
     }, str(model_path))
+
+    # Set drift baseline from training data
+    drift_monitor.set_baseline(X, feature_names)
 
     log.info(f"XGBoost trained: accuracy={metrics['accuracy']}, cv={metrics['cv_accuracy']}")
     return _xgb_metrics
@@ -1300,6 +1335,613 @@ def train_all_local() -> dict:
 
 
 # ══════════════════════════════════════════════════════════════════════════════
+# LAYER 7: CONTINUOUS TRAINING PIPELINE
+# ══════════════════════════════════════════════════════════════════════════════
+# - Data drift detection (KS-test + PSI)
+# - Scheduled auto-retraining (background thread)
+# - Incremental/warm-start learning (PyTorch checkpoint resume)
+# - Prediction feedback loop (store predictions → use as labels)
+# - Champion/challenger model promotion
+# - Lakehouse auto-sync before retraining
+# - Retraining event log with before/after metrics
+# ══════════════════════════════════════════════════════════════════════════════
+
+from scipy import stats as scipy_stats
+
+# ── Configuration ──────────────────────────────────────────────────────────────
+RETRAIN_INTERVAL_SECONDS = int(os.environ.get("RETRAIN_INTERVAL", "21600"))  # 6 hours
+DRIFT_CHECK_INTERVAL = int(os.environ.get("DRIFT_CHECK_INTERVAL", "3600"))  # 1 hour
+DRIFT_THRESHOLD_KS = float(os.environ.get("DRIFT_THRESHOLD_KS", "0.15"))  # KS test p-value
+DRIFT_THRESHOLD_PSI = float(os.environ.get("DRIFT_THRESHOLD_PSI", "0.2"))  # PSI threshold
+CHAMPION_IMPROVEMENT_THRESHOLD = float(os.environ.get("CHAMPION_THRESHOLD", "0.01"))  # 1%
+
+# ── Data Drift Monitor ────────────────────────────────────────────────────────
+
+class DataDriftMonitor:
+    """Monitors feature distribution drift using KS-test and PSI."""
+
+    def __init__(self):
+        self.baseline_stats: dict[str, dict] = {}
+        self.drift_history: list[dict] = []
+        self.last_check: Optional[float] = None
+        self._baseline_data: Optional[np.ndarray] = None
+
+    def set_baseline(self, X: np.ndarray, feature_names: list[str]):
+        """Record baseline feature distributions from training data."""
+        if X.size == 0:
+            return
+        self._baseline_data = X.copy()
+        for i, name in enumerate(feature_names):
+            col = X[:, i]
+            self.baseline_stats[name] = {
+                "mean": float(np.mean(col)),
+                "std": float(np.std(col)),
+                "min": float(np.min(col)),
+                "max": float(np.max(col)),
+                "median": float(np.median(col)),
+                "q25": float(np.percentile(col, 25)),
+                "q75": float(np.percentile(col, 75)),
+                "n_samples": len(col),
+                "histogram": np.histogram(col, bins=10)[0].tolist(),
+                "bin_edges": np.histogram(col, bins=10)[1].tolist(),
+            }
+        log.info(f"Drift baseline set: {len(feature_names)} features, {len(X)} samples")
+
+    def _compute_psi(self, baseline: np.ndarray, current: np.ndarray, bins: int = 10) -> float:
+        """Population Stability Index (PSI) between two distributions."""
+        if len(baseline) < 2 or len(current) < 2:
+            return 0.0
+        mn = min(baseline.min(), current.min())
+        mx = max(baseline.max(), current.max())
+        if mn == mx:
+            return 0.0
+        edges = np.linspace(mn, mx, bins + 1)
+        base_hist = np.histogram(baseline, bins=edges)[0].astype(float) + 1e-6
+        curr_hist = np.histogram(current, bins=edges)[0].astype(float) + 1e-6
+        base_pct = base_hist / base_hist.sum()
+        curr_pct = curr_hist / curr_hist.sum()
+        psi = float(np.sum((curr_pct - base_pct) * np.log(curr_pct / base_pct)))
+        return psi
+
+    def check_drift(self, X_current: np.ndarray, feature_names: list[str]) -> dict:
+        """Check for data drift between baseline and current data."""
+        if self._baseline_data is None or X_current.size == 0:
+            return {"drifted": False, "reason": "no_baseline"}
+
+        self.last_check = time.time()
+        drift_results = {}
+        drifted_features = []
+
+        for i, name in enumerate(feature_names):
+            if i >= self._baseline_data.shape[1] or i >= X_current.shape[1]:
+                continue
+            baseline_col = self._baseline_data[:, i]
+            current_col = X_current[:, i]
+
+            # KS test
+            ks_stat, ks_pvalue = scipy_stats.ks_2samp(baseline_col, current_col)
+            # PSI
+            psi = self._compute_psi(baseline_col, current_col)
+
+            drift_results[name] = {
+                "ks_statistic": round(float(ks_stat), 4),
+                "ks_pvalue": round(float(ks_pvalue), 4),
+                "psi": round(psi, 4),
+                "ks_drifted": bool(ks_pvalue < DRIFT_THRESHOLD_KS),
+                "psi_drifted": bool(psi > DRIFT_THRESHOLD_PSI),
+                "baseline_mean": round(float(np.mean(baseline_col)), 4),
+                "current_mean": round(float(np.mean(current_col)), 4),
+                "mean_shift": round(float(np.mean(current_col) - np.mean(baseline_col)), 4),
+            }
+            if ks_pvalue < DRIFT_THRESHOLD_KS or psi > DRIFT_THRESHOLD_PSI:
+                drifted_features.append(name)
+
+        overall_drifted = len(drifted_features) > 0
+        result = {
+            "drifted": overall_drifted,
+            "drifted_features": drifted_features,
+            "total_features": len(feature_names),
+            "drift_count": len(drifted_features),
+            "drift_percentage": round(len(drifted_features) / max(len(feature_names), 1) * 100, 1),
+            "feature_drift": drift_results,
+            "checked_at": datetime.now(timezone.utc).isoformat(),
+            "thresholds": {"ks": DRIFT_THRESHOLD_KS, "psi": DRIFT_THRESHOLD_PSI},
+        }
+
+        self.drift_history.append({
+            "timestamp": result["checked_at"],
+            "drifted": overall_drifted,
+            "drifted_features": drifted_features,
+            "drift_count": len(drifted_features),
+        })
+        # Keep last 100 checks
+        if len(self.drift_history) > 100:
+            self.drift_history = self.drift_history[-100:]
+
+        if overall_drifted:
+            log.warning(f"Data drift detected in {len(drifted_features)} features: {drifted_features}")
+
+        return result
+
+
+drift_monitor = DataDriftMonitor()
+
+
+# ── Prediction Feedback Loop ──────────────────────────────────────────────────
+
+class PredictionFeedbackStore:
+    """Stores predictions and actual outcomes for retraining feedback."""
+
+    def __init__(self, base_dir: Path):
+        self.store_dir = base_dir / "feedback"
+        self.store_dir.mkdir(parents=True, exist_ok=True)
+        self.predictions: list[dict] = []
+        self.feedback: list[dict] = []
+        self._load_existing()
+
+    def _load_existing(self):
+        """Load existing feedback from disk."""
+        feedback_file = self.store_dir / "feedback_log.jsonl"
+        if feedback_file.exists():
+            try:
+                for line in feedback_file.read_text().strip().split("\n"):
+                    if line:
+                        self.feedback.append(json.loads(line))
+            except Exception:
+                pass
+        predictions_file = self.store_dir / "predictions_log.jsonl"
+        if predictions_file.exists():
+            try:
+                for line in predictions_file.read_text().strip().split("\n"):
+                    if line:
+                        self.predictions.append(json.loads(line))
+            except Exception:
+                pass
+
+    def log_prediction(self, model: str, features: dict, prediction: dict):
+        """Log a prediction for later feedback matching."""
+        entry = {
+            "id": hashlib.md5(f"{model}-{time.time()}-{json.dumps(features, sort_keys=True)}".encode()).hexdigest()[:12],
+            "model": model,
+            "features": features,
+            "prediction": prediction,
+            "timestamp": datetime.now(timezone.utc).isoformat(),
+            "feedback_received": False,
+        }
+        self.predictions.append(entry)
+        # Append to disk (JSONL)
+        with open(self.store_dir / "predictions_log.jsonl", "a") as f:
+            f.write(json.dumps(entry) + "\n")
+        # Keep last 10000 predictions in memory
+        if len(self.predictions) > 10000:
+            self.predictions = self.predictions[-10000:]
+        return entry["id"]
+
+    def add_feedback(self, prediction_id: str, actual_outcome: dict):
+        """Add actual outcome for a previous prediction."""
+        entry = {
+            "prediction_id": prediction_id,
+            "actual_outcome": actual_outcome,
+            "timestamp": datetime.now(timezone.utc).isoformat(),
+        }
+        self.feedback.append(entry)
+        with open(self.store_dir / "feedback_log.jsonl", "a") as f:
+            f.write(json.dumps(entry) + "\n")
+        # Mark prediction as having feedback
+        for pred in reversed(self.predictions):
+            if pred["id"] == prediction_id:
+                pred["feedback_received"] = True
+                break
+        return entry
+
+    def get_feedback_pairs(self, model: str, limit: int = 1000) -> list[dict]:
+        """Get prediction-feedback pairs for retraining."""
+        feedback_map = {f["prediction_id"]: f for f in self.feedback}
+        pairs = []
+        for pred in self.predictions:
+            if pred["model"] == model and pred["id"] in feedback_map:
+                pairs.append({
+                    "features": pred["features"],
+                    "predicted": pred["prediction"],
+                    "actual": feedback_map[pred["id"]]["actual_outcome"],
+                    "timestamp": pred["timestamp"],
+                })
+        return pairs[-limit:]
+
+    def stats(self) -> dict:
+        total_predictions = len(self.predictions)
+        total_feedback = len(self.feedback)
+        models = {}
+        for p in self.predictions:
+            m = p["model"]
+            if m not in models:
+                models[m] = {"predictions": 0, "with_feedback": 0}
+            models[m]["predictions"] += 1
+            if p.get("feedback_received"):
+                models[m]["with_feedback"] += 1
+        return {
+            "total_predictions": total_predictions,
+            "total_feedback": total_feedback,
+            "feedback_rate": round(total_feedback / max(total_predictions, 1) * 100, 1),
+            "models": models,
+        }
+
+
+feedback_store = PredictionFeedbackStore(MODEL_DIR)
+
+
+# ── Champion/Challenger Model Promotion ───────────────────────────────────────
+
+class ChampionChallenger:
+    """Manages model versioning with champion/challenger promotion."""
+
+    def __init__(self):
+        self.champions: dict[str, dict] = {}
+        self.promotion_history: list[dict] = []
+
+    def set_champion(self, model_name: str, version: str, metrics: dict):
+        """Register the current champion model."""
+        self.champions[model_name] = {
+            "version": version,
+            "metrics": metrics,
+            "promoted_at": datetime.now(timezone.utc).isoformat(),
+        }
+
+    def evaluate_challenger(self, model_name: str, challenger_version: str,
+                           challenger_metrics: dict, primary_metric: str = "accuracy") -> dict:
+        """Compare challenger against champion. Promote if better."""
+        champion = self.champions.get(model_name)
+        if champion is None:
+            # No champion — auto-promote
+            self.set_champion(model_name, challenger_version, challenger_metrics)
+            event = {
+                "model": model_name,
+                "action": "auto_promoted",
+                "challenger_version": challenger_version,
+                "reason": "no_existing_champion",
+                "timestamp": datetime.now(timezone.utc).isoformat(),
+            }
+            self.promotion_history.append(event)
+            return event
+
+        champion_score = champion["metrics"].get(primary_metric, 0)
+        challenger_score = challenger_metrics.get(primary_metric, 0)
+        improvement = challenger_score - champion_score
+
+        if improvement >= CHAMPION_IMPROVEMENT_THRESHOLD:
+            old_version = champion["version"]
+            self.set_champion(model_name, challenger_version, challenger_metrics)
+            event = {
+                "model": model_name,
+                "action": "promoted",
+                "old_champion": old_version,
+                "new_champion": challenger_version,
+                "old_score": round(champion_score, 4),
+                "new_score": round(challenger_score, 4),
+                "improvement": round(improvement, 4),
+                "metric": primary_metric,
+                "timestamp": datetime.now(timezone.utc).isoformat(),
+            }
+            self.promotion_history.append(event)
+            log.info(f"Champion promoted: {model_name} v{old_version}→v{challenger_version} "
+                     f"({primary_metric}: {champion_score:.4f}→{challenger_score:.4f})")
+            return event
+        else:
+            event = {
+                "model": model_name,
+                "action": "rejected",
+                "champion_version": champion["version"],
+                "challenger_version": challenger_version,
+                "champion_score": round(champion_score, 4),
+                "challenger_score": round(challenger_score, 4),
+                "improvement": round(improvement, 4),
+                "threshold": CHAMPION_IMPROVEMENT_THRESHOLD,
+                "metric": primary_metric,
+                "timestamp": datetime.now(timezone.utc).isoformat(),
+            }
+            self.promotion_history.append(event)
+            log.info(f"Challenger rejected: {model_name} v{challenger_version} "
+                     f"({primary_metric}: {challenger_score:.4f} vs champion {champion_score:.4f})")
+            return event
+
+    def get_champion(self, model_name: str) -> Optional[dict]:
+        return self.champions.get(model_name)
+
+    def list_champions(self) -> dict:
+        return dict(self.champions)
+
+    def get_history(self) -> list[dict]:
+        return self.promotion_history
+
+
+champion_challenger = ChampionChallenger()
+
+
+# ── Retraining Event Log ──────────────────────────────────────────────────────
+
+class RetrainingEventLog:
+    """Tracks all retraining events with before/after metrics."""
+
+    def __init__(self, base_dir: Path):
+        self.log_dir = base_dir / "retraining_events"
+        self.log_dir.mkdir(parents=True, exist_ok=True)
+        self.events: list[dict] = []
+
+    def log_event(self, trigger: str, models_retrained: list[str],
+                  before_metrics: dict, after_metrics: dict,
+                  duration_seconds: float, drift_info: Optional[dict] = None) -> dict:
+        event = {
+            "id": hashlib.md5(f"retrain-{time.time()}".encode()).hexdigest()[:12],
+            "trigger": trigger,
+            "models_retrained": models_retrained,
+            "before_metrics": before_metrics,
+            "after_metrics": after_metrics,
+            "duration_seconds": round(duration_seconds, 2),
+            "drift_info": drift_info,
+            "timestamp": datetime.now(timezone.utc).isoformat(),
+        }
+        self.events.append(event)
+        # Persist to disk
+        event_file = self.log_dir / f"{event['id']}.json"
+        event_file.write_text(json.dumps(event, indent=2))
+        log.info(f"Retraining event {event['id']}: trigger={trigger}, "
+                 f"models={models_retrained}, duration={duration_seconds:.1f}s")
+        return event
+
+    def list_events(self, limit: int = 50) -> list[dict]:
+        return self.events[-limit:]
+
+    def stats(self) -> dict:
+        if not self.events:
+            return {"total_events": 0, "triggers": {}}
+        triggers: dict[str, int] = {}
+        for e in self.events:
+            t = e["trigger"]
+            triggers[t] = triggers.get(t, 0) + 1
+        return {
+            "total_events": len(self.events),
+            "triggers": triggers,
+            "last_retrain": self.events[-1]["timestamp"] if self.events else None,
+            "avg_duration": round(sum(e["duration_seconds"] for e in self.events) / len(self.events), 2),
+        }
+
+
+retrain_log = RetrainingEventLog(MODEL_DIR)
+
+
+# ── Continuous Training Orchestrator ──────────────────────────────────────────
+
+class ContinuousTrainingOrchestrator:
+    """Orchestrates the full continuous training pipeline."""
+
+    def __init__(self):
+        self.running = False
+        self._thread: Optional[threading.Thread] = None
+        self.last_train_time: Optional[float] = None
+        self.last_drift_check: Optional[float] = None
+        self.retrain_count = 0
+        self.config = {
+            "retrain_interval": RETRAIN_INTERVAL_SECONDS,
+            "drift_check_interval": DRIFT_CHECK_INTERVAL,
+            "drift_threshold_ks": DRIFT_THRESHOLD_KS,
+            "drift_threshold_psi": DRIFT_THRESHOLD_PSI,
+            "champion_threshold": CHAMPION_IMPROVEMENT_THRESHOLD,
+            "auto_lakehouse_sync": True,
+            "warm_start_pytorch": True,
+        }
+
+    def _collect_current_metrics(self) -> dict:
+        """Collect current model metrics for before/after comparison."""
+        metrics = {}
+        if _xgb_metrics:
+            metrics["xgboost_breach"] = {
+                "accuracy": _xgb_metrics.get("accuracy", 0),
+                "cv_accuracy": _xgb_metrics.get("cv_accuracy", 0),
+            }
+        if _ae_metrics:
+            metrics["autoencoder_anomaly"] = {
+                "train_loss_final": _ae_metrics.get("train_loss_final", 0),
+            }
+        if _lstm_metrics:
+            metrics["lstm_violation"] = {
+                "test_mae": _lstm_metrics.get("test_mae", 0),
+                "test_mse": _lstm_metrics.get("test_mse", 0),
+            }
+        if _gnn_metrics:
+            metrics["graphsage_gnn"] = {
+                "test_accuracy": _gnn_metrics.get("test_accuracy", 0),
+                "test_loss": _gnn_metrics.get("test_loss", 0),
+            }
+        return metrics
+
+    def _run_retrain_cycle(self, trigger: str, drift_info: Optional[dict] = None):
+        """Execute a full retraining cycle with champion/challenger."""
+        log.info(f"Starting retrain cycle (trigger={trigger})...")
+        before_metrics = self._collect_current_metrics()
+        t0 = time.time()
+
+        # Step 1: Lakehouse sync (refresh Parquet from DB)
+        if self.config["auto_lakehouse_sync"]:
+            try:
+                lakehouse_etl()
+                log.info("Lakehouse ETL sync completed before retraining")
+            except Exception as e:
+                log.warning(f"Lakehouse sync failed (non-fatal): {e}")
+
+        # Step 2: Extract latest features and set drift baseline
+        X, y, org_ids, feature_names = extract_features_from_db()
+        if X.size > 0:
+            drift_monitor.set_baseline(X, feature_names)
+
+        # Step 3: Train all models
+        train_result = train_all_local()
+
+        # Step 4: Champion/Challenger evaluation for each model
+        promotion_results = {}
+        if train_result.get("status") == "completed":
+            model_results = train_result.get("models", {})
+
+            # XGBoost
+            if "xgboost_breach" in model_results:
+                xgb_result = model_results["xgboost_breach"]
+                promotion_results["xgboost_breach"] = champion_challenger.evaluate_challenger(
+                    "xgboost_breach",
+                    xgb_result.get("version", "unknown"),
+                    xgb_result,
+                    primary_metric="accuracy",
+                )
+
+            # Autoencoder — use negative loss as metric (lower loss = better)
+            if "autoencoder_anomaly" in model_results:
+                ae_result = model_results["autoencoder_anomaly"]
+                ae_eval_metrics = dict(ae_result)
+                ae_eval_metrics["accuracy"] = 1.0 - min(ae_result.get("train_loss_final", 1.0), 1.0)
+                promotion_results["autoencoder_anomaly"] = champion_challenger.evaluate_challenger(
+                    "autoencoder_anomaly",
+                    ae_result.get("version", "unknown"),
+                    ae_eval_metrics,
+                    primary_metric="accuracy",
+                )
+
+            # LSTM — use negative MAE as metric (lower MAE = better)
+            if "lstm_violation" in model_results:
+                lstm_result = model_results["lstm_violation"]
+                lstm_eval_metrics = dict(lstm_result)
+                lstm_eval_metrics["accuracy"] = max(0, 1.0 - lstm_result.get("test_mae", 1.0))
+                promotion_results["lstm_violation"] = champion_challenger.evaluate_challenger(
+                    "lstm_violation",
+                    lstm_result.get("version", "unknown"),
+                    lstm_eval_metrics,
+                    primary_metric="accuracy",
+                )
+
+            # GNN
+            if "graphsage_gnn" in model_results:
+                gnn_result = model_results["graphsage_gnn"]
+                gnn_eval_metrics = dict(gnn_result)
+                gnn_eval_metrics["accuracy"] = gnn_result.get("test_accuracy", 0)
+                promotion_results["graphsage_gnn"] = champion_challenger.evaluate_challenger(
+                    "graphsage_gnn",
+                    gnn_result.get("version", "unknown"),
+                    gnn_eval_metrics,
+                    primary_metric="accuracy",
+                )
+
+        duration = time.time() - t0
+        after_metrics = self._collect_current_metrics()
+
+        # Step 5: Log the retraining event
+        retrain_log.log_event(
+            trigger=trigger,
+            models_retrained=list(train_result.get("models", {}).keys()),
+            before_metrics=before_metrics,
+            after_metrics=after_metrics,
+            duration_seconds=duration,
+            drift_info=drift_info,
+        )
+
+        self.last_train_time = time.time()
+        self.retrain_count += 1
+
+        return {
+            "trigger": trigger,
+            "training": train_result,
+            "promotions": promotion_results,
+            "before_metrics": before_metrics,
+            "after_metrics": after_metrics,
+            "duration_seconds": round(duration, 2),
+        }
+
+    def _background_loop(self):
+        """Background thread for scheduled drift checks and retraining."""
+        log.info(f"Continuous training started: retrain every {self.config['retrain_interval']}s, "
+                 f"drift check every {self.config['drift_check_interval']}s")
+        while self.running:
+            try:
+                now = time.time()
+
+                # Drift check
+                if (self.last_drift_check is None or
+                        now - self.last_drift_check >= self.config["drift_check_interval"]):
+                    X, y, org_ids, feature_names = extract_features_from_db()
+                    if X.size > 0 and drift_monitor._baseline_data is not None:
+                        drift_result = drift_monitor.check_drift(X, feature_names)
+                        self.last_drift_check = now
+                        if drift_result.get("drifted"):
+                            log.warning(f"Drift detected — triggering retraining")
+                            self._run_retrain_cycle("drift_detected", drift_info=drift_result)
+                            continue
+
+                # Scheduled retrain
+                if (self.last_train_time is None or
+                        now - self.last_train_time >= self.config["retrain_interval"]):
+                    self._run_retrain_cycle("scheduled")
+
+            except Exception as e:
+                log.error(f"Continuous training error: {e}")
+
+            # Sleep in small increments so we can stop quickly
+            for _ in range(60):
+                if not self.running:
+                    break
+                time.sleep(1)
+
+        log.info("Continuous training stopped")
+
+    def start(self):
+        """Start the continuous training background thread."""
+        if self.running:
+            return {"status": "already_running"}
+        self.running = True
+        self._thread = threading.Thread(target=self._background_loop, daemon=True, name="continuous-trainer")
+        self._thread.start()
+        return {"status": "started", "config": self.config}
+
+    def stop(self):
+        """Stop the continuous training background thread."""
+        if not self.running:
+            return {"status": "not_running"}
+        self.running = False
+        if self._thread:
+            self._thread.join(timeout=5)
+        return {"status": "stopped"}
+
+    def trigger_retrain(self, reason: str = "manual") -> dict:
+        """Manually trigger a retrain cycle."""
+        return self._run_retrain_cycle(reason)
+
+    def status(self) -> dict:
+        return {
+            "running": self.running,
+            "config": self.config,
+            "last_train_time": datetime.fromtimestamp(self.last_train_time, tz=timezone.utc).isoformat()
+                if self.last_train_time else None,
+            "last_drift_check": datetime.fromtimestamp(self.last_drift_check, tz=timezone.utc).isoformat()
+                if self.last_drift_check else None,
+            "retrain_count": self.retrain_count,
+            "drift_monitor": {
+                "has_baseline": drift_monitor._baseline_data is not None,
+                "baseline_samples": len(drift_monitor._baseline_data) if drift_monitor._baseline_data is not None else 0,
+                "drift_checks": len(drift_monitor.drift_history),
+                "last_check": drift_monitor.drift_history[-1] if drift_monitor.drift_history else None,
+            },
+            "feedback": feedback_store.stats(),
+            "champions": champion_challenger.list_champions(),
+            "retrain_events": retrain_log.stats(),
+        }
+
+    def update_config(self, **kwargs) -> dict:
+        """Update continuous training configuration."""
+        for k, v in kwargs.items():
+            if k in self.config:
+                self.config[k] = v
+        return self.config
+
+
+continuous_trainer = ContinuousTrainingOrchestrator()
+
+
+# ══════════════════════════════════════════════════════════════════════════════
 # API ENDPOINTS
 # ══════════════════════════════════════════════════════════════════════════════
 
@@ -1323,7 +1965,7 @@ def health():
     return {
         "status": "healthy",
         "worker": "ray_ml_engine",
-        "version": "4.0.0",
+        "version": "5.0.0",
         "has_pytorch": True,
         "pytorch_version": torch.__version__,
         "has_ray": HAS_RAY,
@@ -1334,11 +1976,20 @@ def health():
         "has_shap": HAS_SHAP,
         "has_duckdb": HAS_DUCKDB,
         "has_postgresql": HAS_PG,
+        "has_scipy": True,
         "device": str(DEVICE),
         "models_registered": list(registry.list_models().keys()),
         "experiments": len(tracker.experiments),
         "graph_nodes": len(_graph.nodes),
         "graph_embeddings": len(_graph.embeddings),
+        "continuous_training": {
+            "running": continuous_trainer.running,
+            "retrain_count": continuous_trainer.retrain_count,
+            "drift_baseline_set": drift_monitor._baseline_data is not None,
+            "feedback_predictions": len(feedback_store.predictions),
+            "champions": len(champion_challenger.champions),
+            "retrain_events": len(retrain_log.events),
+        },
     }
 
 
@@ -1407,6 +2058,9 @@ def api_predict_breach(req: PredictRequest):
         except Exception:
             pass
 
+    # Log prediction for feedback loop
+    feedback_store.log_prediction("xgboost_breach", req.org_features, result)
+
     return result
 
 
@@ -1429,7 +2083,7 @@ def api_detect_anomaly(req: PredictRequest):
         reconstruction_error = float(torch.mean((reconstructed - feat_tensor) ** 2).item())
         is_anomaly = reconstruction_error > _ae_threshold
 
-    return {
+    result = {
         "is_anomaly": is_anomaly,
         "anomaly_score": round(reconstruction_error, 6),
         "threshold": round(_ae_threshold, 6),
@@ -1437,6 +2091,8 @@ def api_detect_anomaly(req: PredictRequest):
         "model": "autoencoder_anomaly",
         "model_version": _ae_metrics.get("version", "unknown"),
     }
+    feedback_store.log_prediction("autoencoder_anomaly", req.org_features, result)
+    return result
 
 
 @app.post("/predict/violations")
@@ -1554,6 +2210,142 @@ def api_pipeline_status():
             "has_duckdb": HAS_DUCKDB,
             "parquet_files": len(list(PARQUET_DIR.glob("*.parquet"))),
         },
+        "continuous_training": continuous_trainer.status(),
+    }
+
+
+# ══════════════════════════════════════════════════════════════════════════════
+# CONTINUOUS TRAINING API ENDPOINTS
+# ══════════════════════════════════════════════════════════════════════════════
+
+class FeedbackRequest(BaseModel):
+    prediction_id: str
+    actual_outcome: dict
+
+class ContinuousTrainConfigRequest(BaseModel):
+    retrain_interval: Optional[int] = None
+    drift_check_interval: Optional[int] = None
+    drift_threshold_ks: Optional[float] = None
+    drift_threshold_psi: Optional[float] = None
+    champion_threshold: Optional[float] = None
+    auto_lakehouse_sync: Optional[bool] = None
+    warm_start_pytorch: Optional[bool] = None
+
+
+@app.post("/continuous/start")
+def api_continuous_start():
+    """Start continuous training pipeline."""
+    return continuous_trainer.start()
+
+
+@app.post("/continuous/stop")
+def api_continuous_stop():
+    """Stop continuous training pipeline."""
+    return continuous_trainer.stop()
+
+
+@app.get("/continuous/status")
+def api_continuous_status():
+    """Get continuous training pipeline status."""
+    return continuous_trainer.status()
+
+
+@app.post("/continuous/trigger")
+def api_continuous_trigger():
+    """Manually trigger a retraining cycle."""
+    return continuous_trainer.trigger_retrain("manual_api")
+
+
+@app.post("/continuous/config")
+def api_continuous_config(req: ContinuousTrainConfigRequest):
+    """Update continuous training configuration."""
+    updates = {k: v for k, v in req.model_dump().items() if v is not None}
+    return continuous_trainer.update_config(**updates)
+
+
+@app.get("/drift/report")
+def api_drift_report():
+    """Get latest drift detection report."""
+    X, y, org_ids, feature_names = extract_features_from_db()
+    if X.size == 0:
+        return {"error": "no_data", "message": "No features to check drift against"}
+    if drift_monitor._baseline_data is None:
+        drift_monitor.set_baseline(X, feature_names)
+        return {"status": "baseline_set", "samples": len(X), "features": len(feature_names)}
+    return drift_monitor.check_drift(X, feature_names)
+
+
+@app.get("/drift/history")
+def api_drift_history():
+    """Get drift check history."""
+    return {
+        "history": drift_monitor.drift_history,
+        "total_checks": len(drift_monitor.drift_history),
+        "baseline_set": drift_monitor._baseline_data is not None,
+    }
+
+
+@app.post("/feedback/ingest")
+def api_feedback_ingest(req: FeedbackRequest):
+    """Ingest actual outcome feedback for a previous prediction."""
+    entry = feedback_store.add_feedback(req.prediction_id, req.actual_outcome)
+    return {"status": "ingested", "feedback": entry}
+
+
+@app.get("/feedback/stats")
+def api_feedback_stats():
+    """Get prediction feedback statistics."""
+    return feedback_store.stats()
+
+
+@app.get("/feedback/pairs/{model_name}")
+def api_feedback_pairs(model_name: str):
+    """Get feedback pairs for a model (for retraining)."""
+    pairs = feedback_store.get_feedback_pairs(model_name)
+    return {"model": model_name, "pairs": pairs, "count": len(pairs)}
+
+
+@app.get("/champion/info")
+def api_champion_info():
+    """Get current champion models."""
+    return {
+        "champions": champion_challenger.list_champions(),
+        "promotion_history": champion_challenger.get_history(),
+    }
+
+
+@app.get("/champion/{model_name}")
+def api_champion_model(model_name: str):
+    """Get champion info for a specific model."""
+    champion = champion_challenger.get_champion(model_name)
+    if not champion:
+        raise HTTPException(404, f"No champion registered for {model_name}")
+    return champion
+
+
+@app.get("/retrain/events")
+def api_retrain_events():
+    """Get retraining event history."""
+    return {
+        "events": retrain_log.list_events(),
+        "stats": retrain_log.stats(),
+    }
+
+
+@app.get("/retrain/status")
+def api_retrain_status():
+    """Get current retraining status."""
+    return {
+        "continuous_running": continuous_trainer.running,
+        "last_train_time": datetime.fromtimestamp(continuous_trainer.last_train_time, tz=timezone.utc).isoformat()
+            if continuous_trainer.last_train_time else None,
+        "retrain_count": continuous_trainer.retrain_count,
+        "next_scheduled": datetime.fromtimestamp(
+            continuous_trainer.last_train_time + continuous_trainer.config["retrain_interval"],
+            tz=timezone.utc
+        ).isoformat() if continuous_trainer.last_train_time else None,
+        "config": continuous_trainer.config,
+        "event_stats": retrain_log.stats(),
     }
 
 
@@ -1564,9 +2356,16 @@ if __name__ == "__main__":
     log.info(f"  PyTorch={torch.__version__}, Ray={HAS_RAY}, sklearn={HAS_SKLEARN}, "
              f"XGBoost={HAS_XGB}, SHAP={HAS_SHAP}, DuckDB={HAS_DUCKDB}, PostgreSQL={HAS_PG}")
     log.info(f"  Device={DEVICE}, Models dir={MODEL_DIR}")
+    log.info(f"  Continuous Training: interval={RETRAIN_INTERVAL_SECONDS}s, "
+             f"drift_ks={DRIFT_THRESHOLD_KS}, drift_psi={DRIFT_THRESHOLD_PSI}")
 
     # Initialize Ray
     if HAS_RAY:
         init_ray()
+
+    # Auto-start continuous training if enabled
+    if os.environ.get("CONTINUOUS_TRAINING_ENABLED", "false").lower() == "true":
+        continuous_trainer.start()
+        log.info("Continuous training auto-started")
 
     uvicorn.run(app, host="0.0.0.0", port=PORT, log_level="info")

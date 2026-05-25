@@ -944,6 +944,124 @@ async function startServer() {
     } catch (err: unknown) { res.json({ error: (err instanceof Error ? err.message : String(err)) }); }
   });
 
+  // ── Continuous Training Pipeline (proxy to Ray ML Engine) ─────────────────
+  app.post("/api/ray-ml/continuous/start", requireSession, async (_req, res) => {
+    try {
+      const resp = await fetch(`${RAY_ML_URL}/continuous/start`, {
+        method: "POST",
+        signal: AbortSignal.timeout(10000),
+      });
+      res.json(await resp.json());
+    } catch (err: unknown) { res.json({ error: (err instanceof Error ? err.message : String(err)) }); }
+  });
+
+  app.post("/api/ray-ml/continuous/stop", requireSession, async (_req, res) => {
+    try {
+      const resp = await fetch(`${RAY_ML_URL}/continuous/stop`, {
+        method: "POST",
+        signal: AbortSignal.timeout(10000),
+      });
+      res.json(await resp.json());
+    } catch (err: unknown) { res.json({ error: (err instanceof Error ? err.message : String(err)) }); }
+  });
+
+  app.get("/api/ray-ml/continuous/status", requireSession, async (_req, res) => {
+    try {
+      const resp = await fetch(`${RAY_ML_URL}/continuous/status`, {
+        signal: AbortSignal.timeout(10000),
+      });
+      res.json(await resp.json());
+    } catch (err: unknown) { res.json({ error: (err instanceof Error ? err.message : String(err)) }); }
+  });
+
+  app.post("/api/ray-ml/continuous/trigger", requireSession, async (_req, res) => {
+    try {
+      const resp = await fetch(`${RAY_ML_URL}/continuous/trigger`, {
+        method: "POST",
+        signal: AbortSignal.timeout(120000),
+      });
+      res.json(await resp.json());
+    } catch (err: unknown) { res.json({ error: (err instanceof Error ? err.message : String(err)) }); }
+  });
+
+  app.post("/api/ray-ml/continuous/config", requireSession, async (req, res) => {
+    try {
+      const resp = await fetch(`${RAY_ML_URL}/continuous/config`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(req.body),
+        signal: AbortSignal.timeout(10000),
+      });
+      res.json(await resp.json());
+    } catch (err: unknown) { res.json({ error: (err instanceof Error ? err.message : String(err)) }); }
+  });
+
+  app.get("/api/ray-ml/drift/report", requireSession, async (_req, res) => {
+    try {
+      const resp = await fetch(`${RAY_ML_URL}/drift/report`, {
+        signal: AbortSignal.timeout(30000),
+      });
+      res.json(await resp.json());
+    } catch (err: unknown) { res.json({ error: (err instanceof Error ? err.message : String(err)) }); }
+  });
+
+  app.get("/api/ray-ml/drift/history", requireSession, async (_req, res) => {
+    try {
+      const resp = await fetch(`${RAY_ML_URL}/drift/history`, {
+        signal: AbortSignal.timeout(10000),
+      });
+      res.json(await resp.json());
+    } catch (err: unknown) { res.json({ error: (err instanceof Error ? err.message : String(err)) }); }
+  });
+
+  app.post("/api/ray-ml/feedback/ingest", requireSession, async (req, res) => {
+    try {
+      const resp = await fetch(`${RAY_ML_URL}/feedback/ingest`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(req.body),
+        signal: AbortSignal.timeout(10000),
+      });
+      res.json(await resp.json());
+    } catch (err: unknown) { res.json({ error: (err instanceof Error ? err.message : String(err)) }); }
+  });
+
+  app.get("/api/ray-ml/feedback/stats", requireSession, async (_req, res) => {
+    try {
+      const resp = await fetch(`${RAY_ML_URL}/feedback/stats`, {
+        signal: AbortSignal.timeout(10000),
+      });
+      res.json(await resp.json());
+    } catch (err: unknown) { res.json({ error: (err instanceof Error ? err.message : String(err)) }); }
+  });
+
+  app.get("/api/ray-ml/champion/info", requireSession, async (_req, res) => {
+    try {
+      const resp = await fetch(`${RAY_ML_URL}/champion/info`, {
+        signal: AbortSignal.timeout(10000),
+      });
+      res.json(await resp.json());
+    } catch (err: unknown) { res.json({ error: (err instanceof Error ? err.message : String(err)) }); }
+  });
+
+  app.get("/api/ray-ml/retrain/events", requireSession, async (_req, res) => {
+    try {
+      const resp = await fetch(`${RAY_ML_URL}/retrain/events`, {
+        signal: AbortSignal.timeout(10000),
+      });
+      res.json(await resp.json());
+    } catch (err: unknown) { res.json({ error: (err instanceof Error ? err.message : String(err)) }); }
+  });
+
+  app.get("/api/ray-ml/retrain/status", requireSession, async (_req, res) => {
+    try {
+      const resp = await fetch(`${RAY_ML_URL}/retrain/status`, {
+        signal: AbortSignal.timeout(10000),
+      });
+      res.json(await resp.json());
+    } catch (err: unknown) { res.json({ error: (err instanceof Error ? err.message : String(err)) }); }
+  });
+
   // ── Events polling fallback (for WebSocket-less clients) ─────────────────
   app.post("/api/events/poll", requireSession, async (req, res) => {
     try {
