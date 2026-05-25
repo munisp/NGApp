@@ -1,0 +1,12 @@
+# Generated training data (regenerate with: python data/nigerian_payment_generator.py)
+data/generated/transactions.csv
+data/generated/accounts.csv
+data/generated/graph_features.csv
+data/generated/mule_networks.json
+
+# Continuous training logs
+weights/continuous_training_log.jsonl
+
+# PyTorch cache
+__pycache__/
+*.pyc

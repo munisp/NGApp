@@ -623,107 +623,239 @@ async def run_art_test(req: ARTTestRequest):
 
 
 # ─────────────────────────────────────────────────────────────
-# 5. GNN FRAUD DETECTION — Real scikit-learn graph feature model
-#    (PyTorch Geometric requires GPU; using sklearn on graph features)
+# 5. GNN FRAUD DETECTION — Real PyTorch GAT (runs on CPU)
+#    Loads pre-trained weights or trains from synthetic data
 # ─────────────────────────────────────────────────────────────
+
+import torch
+import torch.nn as nn
+import torch.nn.functional as F
+
+_gnn_weights_dir = os.path.join(os.path.dirname(__file__), "..", "..", "ml-platform", "weights")
 
 gnn_model = None
 gnn_metrics = None
+_gnn_norm_stats = None  # (x_mean, x_std) for inference normalization
+
+
+class _GraphAttentionLayer(nn.Module):
+    """Single Graph Attention layer — pure PyTorch (no torch_geometric)."""
+
+    def __init__(self, in_features: int, out_features: int, n_heads: int = 4, dropout: float = 0.3, concat: bool = True):
+        super().__init__()
+        self.in_features = in_features
+        self.out_features = out_features
+        self.n_heads = n_heads
+        self.concat = concat
+        self.W = nn.Parameter(torch.empty(n_heads, in_features, out_features))
+        self.a_src = nn.Parameter(torch.empty(n_heads, out_features, 1))
+        self.a_dst = nn.Parameter(torch.empty(n_heads, out_features, 1))
+        self.leaky_relu = nn.LeakyReLU(0.2)
+        self.dropout = nn.Dropout(dropout)
+        nn.init.xavier_uniform_(self.W)
+        nn.init.xavier_uniform_(self.a_src)
+        nn.init.xavier_uniform_(self.a_dst)
+
+    def forward(self, x: torch.Tensor, edge_index: torch.Tensor) -> torch.Tensor:
+        N = x.size(0)
+        h = torch.einsum("ni,hio->nho", x, self.W)
+        src, dst = edge_index[0], edge_index[1]
+        attn_src = torch.einsum("nho,hol->nhl", h, self.a_src).squeeze(-1)
+        attn_dst = torch.einsum("nho,hol->nhl", h, self.a_dst).squeeze(-1)
+        e = self.leaky_relu(attn_src[src] + attn_dst[dst])
+        e_max = torch.zeros(N, self.n_heads, device=x.device)
+        e_max.scatter_reduce_(0, dst.unsqueeze(1).expand(-1, self.n_heads), e, reduce="amax", include_self=True)
+        alpha = torch.exp(e - e_max[dst])
+        alpha_sum = torch.zeros(N, self.n_heads, device=x.device)
+        alpha_sum.scatter_add_(0, dst.unsqueeze(1).expand(-1, self.n_heads), alpha)
+        alpha = self.dropout(alpha / (alpha_sum[dst] + 1e-8))
+        msg = h[src] * alpha.unsqueeze(-1)
+        out = torch.zeros(N, self.n_heads, self.out_features, device=x.device)
+        out.scatter_add_(0, dst.unsqueeze(1).unsqueeze(2).expand(-1, self.n_heads, self.out_features), msg)
+        return out.reshape(N, self.n_heads * self.out_features) if self.concat else out.mean(dim=1)
+
+
+class _FraudGATNet(nn.Module):
+    """3-layer GAT for fraud detection — pure PyTorch, CPU-native."""
+
+    def __init__(self, num_node_features: int, hidden_dim: int = 64, n_heads: int = 4, dropout: float = 0.3):
+        super().__init__()
+        self.gat1 = _GraphAttentionLayer(num_node_features, hidden_dim, n_heads, dropout, concat=True)
+        self.gat2 = _GraphAttentionLayer(hidden_dim * n_heads, hidden_dim, n_heads, dropout, concat=True)
+        self.gat3 = _GraphAttentionLayer(hidden_dim * n_heads, hidden_dim, 1, dropout, concat=False)
+        self.classifier = nn.Sequential(
+            nn.Linear(hidden_dim, hidden_dim // 2), nn.ReLU(), nn.Dropout(dropout),
+            nn.Linear(hidden_dim // 2, 2),
+        )
+        self.dropout = nn.Dropout(dropout)
+
+    def forward(self, x: torch.Tensor, edge_index: torch.Tensor) -> torch.Tensor:
+        x = self.dropout(F.elu(self.gat1(x, edge_index)))
+        x = self.dropout(F.elu(self.gat2(x, edge_index)))
+        x = F.elu(self.gat3(x, edge_index))
+        return self.classifier(x)
+
+
+def _load_gnn_weights():
+    """Try to load pre-trained GNN weights from disk."""
+    global gnn_model, gnn_metrics, _gnn_norm_stats
+    weight_path = os.path.join(_gnn_weights_dir, "fraud_gnn_gat.pt")
+    if os.path.exists(weight_path):
+        try:
+            checkpoint = torch.load(weight_path, map_location="cpu", weights_only=False)
+            cfg = checkpoint["model_config"]
+            model = _FraudGATNet(
+                num_node_features=cfg["num_node_features"],
+                hidden_dim=cfg["hidden_dim"],
+                n_heads=cfg["n_heads"],
+                dropout=cfg["dropout"],
+            )
+            model.load_state_dict(checkpoint["model_state_dict"])
+            model.eval()
+            gnn_model = model
+            gnn_metrics = checkpoint.get("metrics", {})
+            gnn_metrics["framework"] = "PyTorch GAT 3-layer (CPU, pre-trained weights)"
+            logger.info(f"Loaded GNN weights from {weight_path} (AUC={gnn_metrics.get('auc_roc', 'N/A')})")
+        except Exception as e:
+            logger.warning(f"Failed to load GNN weights: {e}")
+
+
+# Try loading weights at startup
+_load_gnn_weights()
 
 
 @app.post("/gnn/train")
 async def train_gnn_model():
-    """Train a fraud detection model on graph-derived features."""
-    global gnn_model, gnn_metrics
+    """Train a PyTorch GAT fraud detection model on synthetic Nigerian payment graph data."""
+    global gnn_model, gnn_metrics, _gnn_norm_stats
     try:
-        from sklearn.ensemble import GradientBoostingClassifier
-        from sklearn.model_selection import train_test_split, cross_val_score
-        from sklearn.metrics import (
-            accuracy_score, precision_score, recall_score,
-            f1_score, roc_auc_score,
-        )
+        import sys
+        sys.path.insert(0, os.path.join(os.path.dirname(__file__), "..", "..", "ml-platform", "data"))
+        from nigerian_payment_generator import NigerianPaymentDataGenerator
 
         start = time.time()
-        np.random.seed(42)
 
-        n_legit = 5000
-        n_fraud = 250
+        gen = NigerianPaymentDataGenerator(seed=42)
+        gen.generate_accounts(n_accounts=5000, mule_pct=0.03)
+        gen.generate_transactions(n_transactions=50000, fraud_rate=0.02)
+        tx_df = gen.to_dataframe()
+        acct_df = gen.to_accounts_dataframe()
 
-        # Graph-derived features for legitimate accounts
-        X_legit = np.column_stack([
-            np.random.poisson(5, n_legit),            # degree_centrality
-            np.random.uniform(0, 0.3, n_legit),       # pagerank
-            np.random.uniform(0, 0.2, n_legit),       # betweenness
-            np.random.normal(0.5, 0.1, n_legit),      # clustering_coefficient
-            np.random.poisson(3, n_legit),             # in_degree
-            np.random.poisson(3, n_legit),             # out_degree
-            np.random.lognormal(10, 1, n_legit),       # total_amount
-            np.random.uniform(30, 3650, n_legit),      # account_age
-            np.random.uniform(0, 0.2, n_legit),        # fan_out_ratio
-            np.random.poisson(2, n_legit),             # unique_counterparties
-            np.random.uniform(0, 0.1, n_legit),        # round_amount_ratio
-            np.random.binomial(1, 0.05, n_legit),      # is_night_trader
-        ]).astype(np.float32)
+        # Build graph
+        all_accounts = pd.concat([tx_df["debit_account_id"], tx_df["credit_account_id"]]).unique()
+        acct_to_idx = {aid: idx for idx, aid in enumerate(all_accounts)}
+        acct_map = acct_df.set_index("account_id")
+        n_nodes = len(all_accounts)
 
-        # Graph-derived features for fraud accounts
-        X_fraud = np.column_stack([
-            np.random.poisson(20, n_fraud),
-            np.random.uniform(0.3, 0.9, n_fraud),
-            np.random.uniform(0.4, 0.8, n_fraud),
-            np.random.normal(0.1, 0.05, n_fraud),
-            np.random.poisson(15, n_fraud),
-            np.random.poisson(25, n_fraud),
-            np.random.lognormal(14, 0.5, n_fraud),
-            np.random.uniform(1, 30, n_fraud),
-            np.random.uniform(0.6, 1.0, n_fraud),
-            np.random.poisson(15, n_fraud),
-            np.random.uniform(0.5, 0.9, n_fraud),
-            np.random.binomial(1, 0.4, n_fraud),
-        ]).astype(np.float32)
+        node_features = []
+        node_labels = []
+        for aid in all_accounts:
+            if aid in acct_map.index:
+                row = acct_map.loc[aid]
+                sent = tx_df[tx_df["debit_account_id"] == aid]
+                recv = tx_df[tx_df["credit_account_id"] == aid]
+                out_deg = len(sent)
+                in_deg = len(recv)
+                total_sent = float(sent["amount"].sum())
+                total_recv = float(recv["amount"].sum())
+                night_ratio = float(len(sent[sent["is_night"] == 1]) / max(out_deg, 1))
+                node_features.append([
+                    float(row.get("balance", 0)), float(row.get("account_age_days", 0)),
+                    float(row.get("is_mule", 0)), out_deg, in_deg, total_sent, total_recv,
+                    (total_sent + total_recv) / max(out_deg + in_deg, 1), night_ratio,
+                ])
+                node_labels.append(int(row.get("is_mule", 0)))
+            else:
+                node_features.append([0.0] * 9)
+                node_labels.append(0)
 
-        X = np.vstack([X_legit, X_fraud])
-        y = np.concatenate([np.zeros(n_legit), np.ones(n_fraud)])
+        x = torch.tensor(node_features, dtype=torch.float32)
+        x_mean = x.mean(dim=0, keepdim=True)
+        x_std = x.std(dim=0, keepdim=True) + 1e-8
+        x = (x - x_mean) / x_std
+        _gnn_norm_stats = (x_mean, x_std)
+        y = torch.tensor(node_labels, dtype=torch.long)
 
-        X_train, X_test, y_train, y_test = train_test_split(
-            X, y, test_size=0.2, random_state=42, stratify=y
-        )
+        src_indices = [acct_to_idx[aid] for aid in tx_df["debit_account_id"]]
+        dst_indices = [acct_to_idx[aid] for aid in tx_df["credit_account_id"]]
+        edge_index = torch.tensor([src_indices, dst_indices], dtype=torch.long)
 
-        model = GradientBoostingClassifier(
-            n_estimators=200,
-            max_depth=6,
-            learning_rate=0.1,
-            subsample=0.8,
-            random_state=42,
-        )
-        model.fit(X_train, y_train)
+        # Train
+        model = _FraudGATNet(num_node_features=9, hidden_dim=64, n_heads=4, dropout=0.3)
+        n_fraud = y.sum().item()
+        n_legit = (y == 0).sum().item()
+        weight = torch.tensor([1.0, n_legit / max(n_fraud, 1)], dtype=torch.float32)
+        criterion = nn.CrossEntropyLoss(weight=weight)
+        optimizer = torch.optim.Adam(model.parameters(), lr=0.005, weight_decay=5e-4)
 
+        perm = torch.randperm(n_nodes)
+        train_mask = torch.zeros(n_nodes, dtype=torch.bool)
+        val_mask = torch.zeros(n_nodes, dtype=torch.bool)
+        train_mask[perm[:int(0.8 * n_nodes)]] = True
+        val_mask[perm[int(0.8 * n_nodes):]] = True
+
+        best_val_loss = float("inf")
+        best_state = None
+        for epoch in range(1, 101):
+            model.train()
+            optimizer.zero_grad()
+            out = model(x, edge_index)
+            loss = criterion(out[train_mask], y[train_mask])
+            loss.backward()
+            optimizer.step()
+
+            model.eval()
+            with torch.no_grad():
+                val_out = model(x, edge_index)
+                val_loss = criterion(val_out[val_mask], y[val_mask]).item()
+            if val_loss < best_val_loss:
+                best_val_loss = val_loss
+                best_state = {k: v.clone() for k, v in model.state_dict().items()}
+
+        model.load_state_dict(best_state)
+        model.eval()
         train_time = time.time() - start
 
-        y_pred = model.predict(X_test)
-        y_proba = model.predict_proba(X_test)[:, 1]
-
-        cv_scores = cross_val_score(model, X, y, cv=5, scoring="roc_auc")
+        # Evaluate
+        from sklearn.metrics import accuracy_score, precision_score, recall_score, f1_score, roc_auc_score
+        with torch.no_grad():
+            out = model(x, edge_index)
+            pred = out.argmax(dim=1)
+            probs = F.softmax(out, dim=1)[:, 1]
+            y_val = y[val_mask].numpy()
+            pred_val = pred[val_mask].numpy()
+            probs_val = probs[val_mask].numpy()
 
         gnn_model = model
         gnn_metrics = {
-            "accuracy": round(accuracy_score(y_test, y_pred) * 100, 2),
-            "precision": round(precision_score(y_test, y_pred) * 100, 2),
-            "recall": round(recall_score(y_test, y_pred) * 100, 2),
-            "f1_score": round(f1_score(y_test, y_pred) * 100, 2),
-            "auc_roc": round(roc_auc_score(y_test, y_proba), 4),
-            "cv_auc_mean": round(float(cv_scores.mean()), 4),
-            "cv_auc_std": round(float(cv_scores.std()), 4),
+            "accuracy": round(float(accuracy_score(y_val, pred_val)) * 100, 2),
+            "precision": round(float(precision_score(y_val, pred_val, zero_division=0)) * 100, 2),
+            "recall": round(float(recall_score(y_val, pred_val, zero_division=0)) * 100, 2),
+            "f1_score": round(float(f1_score(y_val, pred_val, zero_division=0)) * 100, 2),
+            "auc_roc": round(float(roc_auc_score(y_val, probs_val)), 4) if len(np.unique(y_val)) > 1 else 0.0,
             "training_time_seconds": round(train_time, 3),
-            "training_samples": len(X_train),
-            "test_samples": len(X_test),
+            "epochs": 100,
+            "nodes": n_nodes,
+            "edges": edge_index.size(1),
+            "n_parameters": sum(p.numel() for p in model.parameters()),
+            "framework": "PyTorch GAT 3-layer (CPU, trained from synthetic Nigerian payment graph)",
             "features": [
-                "degree_centrality", "pagerank", "betweenness",
-                "clustering_coefficient", "in_degree", "out_degree",
-                "total_amount", "account_age", "fan_out_ratio",
-                "unique_counterparties", "round_amount_ratio", "is_night_trader",
+                "balance", "account_age_days", "is_mule", "out_degree", "in_degree",
+                "total_sent", "total_received", "avg_tx_amount", "night_tx_ratio",
             ],
-            "framework": "scikit-learn GBM on graph features (real training, not simulated)",
         }
+
+        # Save weights
+        os.makedirs(_gnn_weights_dir, exist_ok=True)
+        torch.save({
+            "model_state_dict": model.state_dict(),
+            "model_config": {"num_node_features": 9, "hidden_dim": 64, "n_heads": 4, "dropout": 0.3},
+            "metrics": gnn_metrics,
+            "trained_at": datetime.now().isoformat(),
+            "device": "cpu",
+            "n_nodes": n_nodes,
+            "n_edges": edge_index.size(1),
+        }, os.path.join(_gnn_weights_dir, "fraud_gnn_gat.pt"))
 
         return {"status": "trained", "metrics": gnn_metrics}
 
@@ -734,32 +866,41 @@ async def train_gnn_model():
 
 @app.post("/gnn/predict")
 async def predict_fraud(account_features: dict):
-    """Predict fraud probability for an account using the trained model."""
+    """Predict fraud probability for an account using the trained PyTorch GAT model."""
     if gnn_model is None:
-        raise HTTPException(status_code=400, detail="Model not trained. Call /gnn/train first.")
+        raise HTTPException(status_code=400, detail="Model not trained. Call /gnn/train first or provide weights.")
 
     try:
-        features = np.array([[
-            account_features.get("degree_centrality", 5),
-            account_features.get("pagerank", 0.1),
-            account_features.get("betweenness", 0.1),
-            account_features.get("clustering_coefficient", 0.5),
-            account_features.get("in_degree", 3),
-            account_features.get("out_degree", 3),
-            account_features.get("total_amount", 50000),
-            account_features.get("account_age", 365),
-            account_features.get("fan_out_ratio", 0.1),
-            account_features.get("unique_counterparties", 2),
-            account_features.get("round_amount_ratio", 0.1),
-            account_features.get("is_night_trader", 0),
-        ]], dtype=np.float32)
+        features = torch.tensor([[
+            float(account_features.get("balance", 50000)),
+            float(account_features.get("account_age_days", 365)),
+            float(account_features.get("is_mule", 0)),
+            float(account_features.get("out_degree", 5)),
+            float(account_features.get("in_degree", 3)),
+            float(account_features.get("total_sent", 100000)),
+            float(account_features.get("total_received", 80000)),
+            float(account_features.get("avg_tx_amount", 15000)),
+            float(account_features.get("night_tx_ratio", 0.05)),
+        ]], dtype=torch.float32)
 
-        proba = float(gnn_model.predict_proba(features)[0][1])
-        prediction = int(gnn_model.predict(features)[0])
+        if _gnn_norm_stats is not None:
+            x_mean, x_std = _gnn_norm_stats
+            features = (features - x_mean) / x_std
+
+        # Single-node inference: create self-loop edge
+        edge_index = torch.tensor([[0], [0]], dtype=torch.long)
+
+        with torch.no_grad():
+            out = gnn_model(features, edge_index)
+            probs = F.softmax(out, dim=1)
+            fraud_prob = float(probs[0][1])
+            prediction = int(out.argmax(dim=1)[0])
 
         return {
-            "fraud_probability": round(proba, 6),
+            "fraud_probability": round(fraud_prob, 6),
             "is_fraud": bool(prediction),
+            "model_type": "PyTorch GAT 3-layer",
+            "device": "cpu",
             "model_metrics": gnn_metrics,
         }
 
@@ -991,24 +1132,19 @@ async def neo4j_status():
         return {"connected": False, "error": str(e)}
 
 
-_pyg_available = False
-try:
-    import torch
-    from torch_geometric.nn import GATConv
-    _pyg_available = True
-except ImportError:
-    pass
-
-
 @app.get("/gnn/info")
 async def gnn_info():
     """Get GNN model framework info."""
+    weights_exist = os.path.exists(os.path.join(_gnn_weights_dir, "fraud_gnn_gat.pt"))
     return {
-        "pytorch_geometric_available": _pyg_available,
+        "framework": "PyTorch GAT (pure, no torch_geometric dependency)",
+        "model_loaded": gnn_model is not None,
+        "weights_on_disk": weights_exist,
         "neo4j_connected": get_neo4j() is not None,
-        "framework": "PyTorch Geometric (GATConv)" if _pyg_available else "sklearn GBM (fallback)",
-        "model_type": "FraudGAT (3-layer Graph Attention Network)" if _pyg_available else "GradientBoosting on graph features",
-        "_source": "REAL PyTorch Geometric" if _pyg_available else "sklearn fallback (pip install torch torch-geometric to enable GNN)",
+        "model_type": "FraudGATNet — 3-layer Graph Attention Network (87,522 params)",
+        "device": "cpu",
+        "metrics": gnn_metrics,
+        "_source": "REAL PyTorch GAT with trained weights" if gnn_model else "Weights available, call /gnn/train to load",
     }
 
 
@@ -1072,11 +1208,15 @@ async def health():
         libraries["cocoindex"] = {"installed": False}
 
     try:
-        import torch
-        from torch_geometric.nn import GATConv
-        libraries["torch_geometric"] = {"installed": True, "torch_version": torch.__version__}
+        import torch as _torch
+        libraries["pytorch"] = {
+            "installed": True,
+            "version": _torch.__version__,
+            "gnn_model_loaded": gnn_model is not None,
+            "gnn_weights_on_disk": os.path.exists(os.path.join(_gnn_weights_dir, "fraud_gnn_gat.pt")),
+        }
     except ImportError:
-        libraries["torch_geometric"] = {"installed": False}
+        libraries["pytorch"] = {"installed": False}
 
     try:
         import networkx

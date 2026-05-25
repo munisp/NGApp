@@ -1,0 +1,67 @@
+{
+  "trained_at": "2026-05-25T13:10:33.174349",
+  "total_training_time_seconds": 100.7,
+  "data": {
+    "transactions": 100000,
+    "accounts": 10000,
+    "fraud_rate": 0.015,
+    "date_range": "2025-01-01 00:00:03 to 2025-03-30 23:56:53"
+  },
+  "models": {
+    "gnn_gat": {
+      "accuracy": 1.0,
+      "precision": 1.0,
+      "recall": 1.0,
+      "f1": 1.0,
+      "auc_roc": 1.0,
+      "training_time_seconds": 88.63,
+      "epochs_trained": 150,
+      "n_parameters": 87522
+    },
+    "xgboost": {
+      "accuracy": 0.9719,
+      "precision": 0.34515366430260047,
+      "recall": 0.9733333333333334,
+      "f1": 0.5095986038394416,
+      "auc_roc": 0.9964560913705584,
+      "training_time_seconds": 0.19,
+      "best_iteration": 27
+    },
+    "lightgbm": {
+      "accuracy": 0.9857,
+      "precision": 0.5128676470588235,
+      "recall": 0.93,
+      "f1": 0.6611374407582938,
+      "auc_roc": 0.99704179357022,
+      "training_time_seconds": 0.36,
+      "best_iteration": 74
+    },
+    "ensemble": {
+      "accuracy": 0.9956,
+      "precision": 0.8955223880597015,
+      "recall": 0.8,
+      "f1": 0.8450704225352113,
+      "auc_roc": 0.9708939086294417,
+      "training_time_seconds": 7.67
+    },
+    "random_forest": {
+      "accuracy": 0.9665,
+      "precision": 0.3036093418259023,
+      "recall": 0.9533333333333334,
+      "f1": 0.4605475040257649,
+      "auc_roc": 0.9947668358714045,
+      "training_time_seconds": 1.55
+    }
+  },
+  "weights_dir": "/home/ubuntu/repos/NGApp/payment-core/ml-platform/weights",
+  "weight_files": [
+    "fraud_ensemble.joblib",
+    "fraud_xgboost.joblib",
+    "fraud_random_forest.joblib",
+    "fraud_gnn_gat.pt",
+    "fraud_lightgbm.joblib",
+    "encoders.joblib"
+  ],
+  "device": "cpu",
+  "continuous_training": true
+}
