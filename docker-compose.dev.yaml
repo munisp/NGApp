@@ -180,6 +180,104 @@ services:
       - '--storage.tsdb.path=/prometheus'
       - '--web.enable-lifecycle'
 
+  # Schema Registry (Kafka Schema Management)
+  schema-registry:
+    image: confluentinc/cp-schema-registry:7.5.0
+    hostname: schema-registry
+    container_name: payment-switch-schema-registry
+    ports:
+      - "8081:8081"
+    environment:
+      SCHEMA_REGISTRY_HOST_NAME: schema-registry
+      SCHEMA_REGISTRY_KAFKASTORE_BOOTSTRAP_SERVERS: 'kafka:29092'
+      SCHEMA_REGISTRY_LISTENERS: http://0.0.0.0:8081
+    depends_on:
+      kafka:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8081/subjects"]
+      interval: 30s
+      timeout: 10s
+      retries: 5
+
+  # Keycloak (IAM / OIDC)
+  keycloak:
+    image: quay.io/keycloak/keycloak:23.0
+    hostname: keycloak
+    container_name: payment-switch-keycloak
+    ports:
+      - "8180:8080"
+    environment:
+      KEYCLOAK_ADMIN: admin
+      KEYCLOAK_ADMIN_PASSWORD: admin
+      KC_DB: postgres
+      KC_DB_URL_HOST: postgres
+      KC_DB_URL_DATABASE: keycloak
+      KC_DB_USERNAME: payment_switch
+      KC_DB_PASSWORD: payment_switch_dev
+    command: start-dev
+    depends_on:
+      postgres:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD-SHELL", "exec 3<>/dev/tcp/localhost/8080 && echo -e 'GET /health/ready HTTP/1.1\\r\\nHost: localhost\\r\\n\\r\\n' >&3 && cat <&3 | grep -q '200\\|UP'"]
+      interval: 30s
+      timeout: 10s
+      retries: 10
+
+  # APISIX (API Gateway)
+  apisix:
+    image: apache/apisix:3.7.0-debian
+    hostname: apisix
+    container_name: payment-switch-apisix
+    ports:
+      - "9080:9080"
+      - "9180:9180"
+      - "9443:9443"
+    volumes:
+      - ./config/apisix/config.yaml:/usr/local/apisix/conf/config.yaml:ro
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:9080/apisix/status"]
+      interval: 30s
+      timeout: 10s
+      retries: 5
+
+  # Permify (Authorization)
+  permify:
+    image: ghcr.io/permify/permify:latest
+    hostname: permify
+    container_name: payment-switch-permify
+    ports:
+      - "3476:3476"
+      - "3478:3478"
+    command: serve
+    healthcheck:
+      test: ["CMD", "wget", "--spider", "-q", "http://localhost:3476/healthz"]
+      interval: 30s
+      timeout: 10s
+      retries: 5
+
+  # OpenSearch (Search & Analytics)
+  opensearch:
+    image: opensearchproject/opensearch:2.11.0
+    hostname: opensearch
+    container_name: payment-switch-opensearch
+    ports:
+      - "9200:9200"
+      - "9600:9600"
+    environment:
+      discovery.type: single-node
+      DISABLE_INSTALL_DEMO_CONFIG: "true"
+      DISABLE_SECURITY_PLUGIN: "true"
+      OPENSEARCH_JAVA_OPTS: "-Xms512m -Xmx512m"
+    volumes:
+      - opensearch-data:/usr/share/opensearch/data
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:9200/_cluster/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 5
+
   # Grafana (Dashboards)
   grafana:
     image: grafana/grafana:latest
@@ -203,6 +301,7 @@ volumes:
   tigerbeetle-data:
   prometheus-data:
   grafana-data:
+  opensearch-data:
 
 networks:
   default:

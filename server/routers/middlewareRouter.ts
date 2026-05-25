@@ -1,9 +1,18 @@
 import { publicProcedure, router } from "../_core/trpc";
 import { z } from "zod";
+import {
+  getKafkaLiveStatus, getRedisLiveStatus, getPostgresLiveStatus,
+  getTigerBeetleLiveStatus, getKeycloakLiveStatus, getApisixLiveStatus,
+  getPermifyLiveStatus, getOpenAppSecLiveStatus, getOpenSearchLiveStatus,
+  getFluvioLiveStatus, getDaprLiveStatus, getMojaloopLiveStatus,
+  withLiveFallback,
+} from "../lib/infraClient";
 
 export const middlewareRouter = router({
   // === KAFKA STATUS (#1-7) ===
-  kafkaStatus: publicProcedure.query(() => ({
+  kafkaStatus: publicProcedure.query(async () => {
+    const live = await getKafkaLiveStatus();
+    const seed = {
     broker: {
       status: "HEALTHY",
       clusterId: "q1Sh-9_ISia_zwGINzRvyQ",
@@ -62,10 +71,14 @@ export const middlewareRouter = router({
       { name: "merchant-state", policy: "compact", dirtyRatio: 0.18 },
       { name: "bank-participant-config", policy: "compact", dirtyRatio: 0.05 },
     ],
-  })),
+  };
+    return live ? { ...seed, _live: live, _source: 'LIVE' } : { ...seed, _source: 'SEED' };
+  }),
 
   // === REDIS STATUS (#8-12) ===
-  redisStatus: publicProcedure.query(() => ({
+  redisStatus: publicProcedure.query(async () => {
+    const live = await getRedisLiveStatus();
+    const seed = {
     topology: {
       mode: "sentinel",
       masterName: "payment-switch-master",
@@ -106,10 +119,14 @@ export const middlewareRouter = router({
       totalWarmed: 12450,
       keyPatterns: ["bank:config:*", "account:balance:*", "sanctions:list:*", "fee:schedule:*"],
     },
-  })),
+  };
+    return live ? { ...seed, _live: live, _source: 'LIVE' } : { ...seed, _source: 'SEED' };
+  }),
 
   // === POSTGRESQL STATUS (#13-18) ===
-  postgresqlStatus: publicProcedure.query(() => ({
+  postgresqlStatus: publicProcedure.query(async () => {
+    const live = await getPostgresLiveStatus();
+    const seed = {
     pgbouncer: {
       status: "HEALTHY",
       mode: "transaction",
@@ -164,10 +181,14 @@ export const middlewareRouter = router({
       walEncrypt: true,
       lastRotation: "2026-04-15",
     },
-  })),
+  };
+    return live ? { ...seed, _live: live, _source: 'LIVE' } : { ...seed, _source: 'SEED' };
+  }),
 
   // === TIGERBEETLE STATUS (#19-22) ===
-  tigerbeetleStatus: publicProcedure.query(() => ({
+  tigerbeetleStatus: publicProcedure.query(async () => {
+    const live = await getTigerBeetleLiveStatus();
+    const seed = {
     cluster: {
       clusterId: 1,
       replicas: 6,
@@ -204,7 +225,9 @@ export const middlewareRouter = router({
       branchAccounts: 380,
       merchantAccounts: 12400,
     },
-  })),
+  };
+    return live ? { ...seed, _live: live, _source: 'LIVE' } : { ...seed, _source: 'SEED' };
+  }),
 
   // === TEMPORAL STATUS (#23-27) ===
   temporalStatus: publicProcedure.query(() => ({
@@ -245,7 +268,9 @@ export const middlewareRouter = router({
   })),
 
   // === APISIX STATUS (#28-33) ===
-  apisixStatus: publicProcedure.query(() => ({
+  apisixStatus: publicProcedure.query(async () => {
+    const live = await getApisixLiveStatus();
+    const seed = {
     gateway: {
       version: "3.7.0",
       totalRoutes: 18,
@@ -287,10 +312,14 @@ export const middlewareRouter = router({
       expiredKeys: 2,
       requestsToday: 45000,
     },
-  })),
+  };
+    return live ? { ...seed, _live: live, _source: 'LIVE' } : { ...seed, _source: 'SEED' };
+  }),
 
   // === KEYCLOAK STATUS (#34-38) ===
-  keycloakStatus: publicProcedure.query(() => ({
+  keycloakStatus: publicProcedure.query(async () => {
+    const live = await getKeycloakLiveStatus();
+    const seed = {
     bvnSpi: {
       enabled: true,
       verificationsToday: 1250,
@@ -324,10 +353,14 @@ export const middlewareRouter = router({
         { name: "payment-switch-admin", maxFailures: 5, lockedAccounts: 0 },
       ],
     },
-  })),
+  };
+    return live ? { ...seed, _live: live, _source: 'LIVE' } : { ...seed, _source: 'SEED' };
+  }),
 
   // === DAPR STATUS (#39-43) ===
-  daprStatus: publicProcedure.query(() => ({
+  daprStatus: publicProcedure.query(async () => {
+    const live = await getDaprLiveStatus();
+    const seed = {
     sidecars: [
       { appId: "go-ledger", protocol: "grpc", healthy: true, requestsPerSec: 3200 },
       { appId: "fraud-detection", protocol: "http", healthy: true, requestsPerSec: 1800 },
@@ -365,10 +398,14 @@ export const middlewareRouter = router({
         { name: "audit-events", ttl: "never", expiredToday: 0 },
       ],
     },
-  })),
+  };
+    return live ? { ...seed, _live: live, _source: 'LIVE' } : { ...seed, _source: 'SEED' };
+  }),
 
   // === OPENSEARCH STATUS (#44-48) ===
-  opensearchStatus: publicProcedure.query(() => ({
+  opensearchStatus: publicProcedure.query(async () => {
+    const live = await getOpenSearchLiveStatus();
+    const seed = {
     cluster: {
       name: "lagos-primary",
       status: "GREEN",
@@ -412,7 +449,9 @@ export const middlewareRouter = router({
         { name: "audit-logs-template", indexPattern: "audit-logs-*", shards: 3, replicas: 2 },
       ],
     },
-  })),
+  };
+    return live ? { ...seed, _live: live, _source: 'LIVE' } : { ...seed, _source: 'SEED' };
+  }),
 
   // === OBSERVABILITY STATUS (#49-53) ===
   observabilityStatus: publicProcedure.query(() => ({
@@ -459,7 +498,9 @@ export const middlewareRouter = router({
   })),
 
   // === MOJALOOP STATUS (#54-56) ===
-  mojaloopStatus: publicProcedure.query(() => ({
+  mojaloopStatus: publicProcedure.query(async () => {
+    const live = await getMojaloopLiveStatus();
+    const seed = {
     hub: {
       version: "16.0.0",
       components: 10,
@@ -495,10 +536,14 @@ export const middlewareRouter = router({
         { type: "BUSINESS", name: "Merchant Oracle", queries24h: 5600 },
       ],
     },
-  })),
+  };
+    return live ? { ...seed, _live: live, _source: 'LIVE' } : { ...seed, _source: 'SEED' };
+  }),
 
   // === FLUVIO STATUS (#57-59) ===
-  fluvioStatus: publicProcedure.query(() => ({
+  fluvioStatus: publicProcedure.query(async () => {
+    const live = await getFluvioLiveStatus();
+    const seed = {
     smartModules: {
       total: 6,
       active: 6,
@@ -526,10 +571,14 @@ export const middlewareRouter = router({
         { name: "fraud-velocity-check", windowType: "sliding", windowDuration: "5m", alertsToday: 23 },
       ],
     },
-  })),
+  };
+    return live ? { ...seed, _live: live, _source: 'LIVE' } : { ...seed, _source: 'SEED' };
+  }),
 
   // === PERMIFY STATUS (#60-62) ===
-  permifyStatus: publicProcedure.query(() => ({
+  permifyStatus: publicProcedure.query(async () => {
+    const live = await getPermifyLiveStatus();
+    const seed = {
     schema: {
       version: "1.0.0",
       entities: 10,
@@ -552,10 +601,14 @@ export const middlewareRouter = router({
       retentionDays: 2555,
       openSearchStatus: "CONNECTED",
     },
-  })),
+  };
+    return live ? { ...seed, _live: live, _source: 'LIVE' } : { ...seed, _source: 'SEED' };
+  }),
 
   // === OPENAPPSEC STATUS (#63-65) ===
-  openappsecStatus: publicProcedure.query(() => ({
+  openappsecStatus: publicProcedure.query(async () => {
+    const live = await getOpenAppSecLiveStatus();
+    const seed = {
     enforcement: {
       mode: "PREVENT_LEARN",
       whitelistedPaths: 3,
@@ -587,10 +640,21 @@ export const middlewareRouter = router({
         { name: "API Scraping", detectedToday: 45, action: "CHALLENGE" },
       ],
     },
-  })),
+  };
+    return live ? { ...seed, _live: live, _source: 'LIVE' } : { ...seed, _source: 'SEED' };
+  }),
 
   // === COMBINED HEALTH ===
-  health: publicProcedure.query(() => ({
+  health: publicProcedure.query(async () => {
+    const [kafkaLive, redisLive, pgLive, tbLive, kcLive, apisixLive, daprLive, osLive, mojLive, flvLive, permLive, wafLive] = await Promise.allSettled([
+      getKafkaLiveStatus(), getRedisLiveStatus(), getPostgresLiveStatus(),
+      getTigerBeetleLiveStatus(), getKeycloakLiveStatus(), getApisixLiveStatus(),
+      getDaprLiveStatus(), getOpenSearchLiveStatus(), getMojaloopLiveStatus(),
+      getFluvioLiveStatus(), getPermifyLiveStatus(), getOpenAppSecLiveStatus(),
+    ]);
+    const liveCount = [kafkaLive, redisLive, pgLive, tbLive, kcLive, apisixLive, daprLive, osLive, mojLive, flvLive, permLive, wafLive]
+      .filter(r => r.status === 'fulfilled' && r.value !== null).length;
+    return ({
     overall: "HEALTHY",
     timestamp: new Date().toISOString(),
     services: [
@@ -610,5 +674,8 @@ export const middlewareRouter = router({
       { name: "OpenAppSec", status: "HEALTHY", version: "latest", enhancements: ["Enforce Mode", "Threat Intelligence", "Bot Detection"] },
     ],
     totalEnhancements: 65,
-  })),
+    liveServices: liveCount,
+    _source: liveCount > 0 ? 'PARTIAL_LIVE' : 'SEED',
+  });
+  }),
 });
