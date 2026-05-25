@@ -84,31 +84,34 @@ _duck_conn: Optional[Any] = None
 # ── ETL Table Definitions ──────────────────────────────────────────────────────
 ETL_TABLES = {
     "organizations": {
-        "query": """SELECT id, name, sector, compliance_score, risk_level, status,
+        "query": """SELECT id, name, sector, compliance_score, risk_score, compliance_status,
                     registration_number, created_at, updated_at FROM organizations""",
         "partition_cols": ["sector"],
         "incremental_col": "updated_at",
     },
     "breach_incidents": {
-        "query": """SELECT id, organization_id, title, severity, status, affected_records,
-                    reported_at, resolved_at, created_at FROM breach_incidents""",
+        "query": """SELECT id, organization_id, title, breach_incident_severity as severity,
+                    breach_incident_status as status, affected_individuals_count as affected_records,
+                    detected_at as reported_at, resolved_at, created_at FROM breach_incidents""",
         "partition_cols": ["severity"],
         "incremental_col": "created_at",
     },
     "enforcement_actions": {
-        "query": """SELECT id, organization_id, action_type, status, description,
-                    initiated_at, resolved_at, created_at FROM enforcement_actions""",
+        "query": """SELECT id, organization_id, action_type, status, notes as description,
+                    notice_issued_at as initiated_at, penalty_imposed_at as resolved_at,
+                    created_at FROM enforcement_actions""",
         "partition_cols": ["status"],
         "incremental_col": "created_at",
     },
     "financial_penalties": {
-        "query": """SELECT id, organization_id, amount, currency, status, reason,
-                    issued_at, paid_at, created_at FROM financial_penalties""",
+        "query": """SELECT id, organization_id, amount, currency, payment_status as status,
+                    description as reason, due_date as issued_at, paid_at,
+                    created_at FROM financial_penalties""",
         "partition_cols": ["status"],
         "incremental_col": "created_at",
     },
     "compliance_violations": {
-        "query": """SELECT id, organization_id, violation_type, severity, status,
+        "query": """SELECT id, organization_id, title as violation_type, severity, status,
                     description, detected_at, resolved_at FROM compliance_violations""",
         "partition_cols": ["severity"],
         "incremental_col": "detected_at",
@@ -120,7 +123,7 @@ ETL_TABLES = {
         "incremental_col": "created_at",
     },
     "security_alerts": {
-        "query": """SELECT id, alert_type, severity, source, status, description,
+        "query": """SELECT id, alert_type, severity, source, is_resolved as status, description,
                     created_at, resolved_at FROM security_alerts""",
         "partition_cols": ["severity"],
         "incremental_col": "created_at",
@@ -173,12 +176,12 @@ MATERIALIZED_VIEWS = {
         GROUP BY severity, violation_type ORDER BY count DESC
     """,
     "risk_distribution": """
-        SELECT risk_level,
+        SELECT risk_score,
                sector,
                COUNT(*) as org_count,
                AVG(compliance_score) as avg_score
         FROM read_parquet('{parquet}/organizations/*.parquet')
-        GROUP BY risk_level, sector ORDER BY org_count DESC
+        GROUP BY risk_score, sector ORDER BY org_count DESC
     """,
 }
 

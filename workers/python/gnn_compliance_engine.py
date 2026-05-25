@@ -141,13 +141,13 @@ def build_graph_from_db():
         cur = conn.cursor(cursor_factory=psycopg2.extras.RealDictCursor)
 
         # Organizations as nodes
-        cur.execute("SELECT id::text, name, sector, compliance_score, risk_level, status FROM organizations WHERE status='active'")
+        cur.execute("SELECT id::text, name, sector, compliance_score, risk_score, compliance_status FROM organizations WHERE compliance_status IS NOT NULL")
         for row in cur.fetchall():
             graph.add_node(f"org:{row['id']}", "Organization", {
                 "name": row["name"],
                 "sector": row.get("sector", "Unknown"),
                 "compliance_score": float(row.get("compliance_score") or 50),
-                "risk_level": row.get("risk_level", "medium"),
+                "risk_score": float(row.get("risk_score") or 50),
             })
 
         # Sectors as nodes
@@ -164,7 +164,7 @@ def build_graph_from_db():
                     graph.add_edge(nid, sector_id, "BELONGS_TO")
 
         # Violations as nodes
-        cur.execute("SELECT id::text, organization_id::text, violation_type, severity, status FROM compliance_violations LIMIT 500")
+        cur.execute("SELECT id::text, organization_id::text, title as violation_type, severity, status FROM compliance_violations LIMIT 500")
         for row in cur.fetchall():
             vid = f"violation:{row['id']}"
             graph.add_node(vid, "Violation", {
@@ -185,7 +185,7 @@ def build_graph_from_db():
             graph.add_edge(f"org:{row['organization_id']}", eid, "ENFORCED_BY")
 
         # Breach incidents as nodes
-        cur.execute("SELECT id::text, organization_id::text, severity, status, affected_records FROM breach_incidents LIMIT 500")
+        cur.execute("SELECT id::text, organization_id::text, breach_incident_severity as severity, breach_incident_status as status, affected_individuals_count as affected_records FROM breach_incidents LIMIT 500")
         for row in cur.fetchall():
             bid = f"breach:{row['id']}"
             graph.add_node(bid, "BreachIncident", {

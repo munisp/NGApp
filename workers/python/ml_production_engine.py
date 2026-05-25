@@ -130,7 +130,7 @@ def extract_features() -> tuple:
                 o.name,
                 o.sector,
                 COALESCE(o.compliance_score, 50) as compliance_score,
-                COALESCE(o.risk_level, 'medium') as risk_level,
+                COALESCE(o.risk_score, 50) as risk_level,
                 COALESCE(v.violation_count, 0) as violation_count,
                 COALESCE(v.critical_violations, 0) as critical_violations,
                 COALESCE(v.high_violations, 0) as high_violations,
@@ -159,7 +159,7 @@ def extract_features() -> tuple:
                 SELECT organization_id, COUNT(*) as breach_count
                 FROM breach_incidents GROUP BY organization_id
             ) bi ON bi.organization_id = o.id
-            WHERE o.status = 'active'
+            WHERE o.compliance_status IS NOT NULL
             ORDER BY o.id
         """)
         rows = cur.fetchall()
