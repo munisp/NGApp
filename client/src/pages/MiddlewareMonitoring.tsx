@@ -1,10 +1,24 @@
 import { useState } from 'react';
 import { trpc } from '@/lib/trpc';
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { Server, Database, Shield, Activity, Layers, Network, Globe, Eye, Lock, Gauge, Radio, Cpu, AlertTriangle, CheckCircle, XCircle, Clock } from 'lucide-react';
+import ModuleLayout from '@/components/ModuleLayout';
+import type { NavItem, ModuleConfig } from '@/components/ModuleLayout';
+import SharedStatusBadge from '@/components/StatusBadge';
+import MetricCardShared from '@/components/MetricCard';
+import PageHeader from '@/components/PageHeader';
 
-type Tab = 'overview' | 'kafka' | 'redis' | 'postgresql' | 'tigerbeetle' | 'temporal' | 'apisix' | 'keycloak' | 'dapr' | 'opensearch' | 'observability' | 'mojaloop' | 'fluvio' | 'permify' | 'openappsec';
+const MW_MODULE: ModuleConfig = {
+  title: 'Middleware',
+  subtitle: '65 Enhancements',
+  icon: Server,
+  accentColor: 'text-blue-600',
+  accentBg: 'bg-blue-600',
+  accentHover: 'hover:bg-blue-700',
+};
 
-const tabs: { id: Tab; label: string; icon: typeof Server }[] = [
+const MW_NAV_ITEMS: NavItem[] = [
   { id: 'overview', label: 'Overview', icon: Gauge },
   { id: 'kafka', label: 'Kafka', icon: Radio },
   { id: 'redis', label: 'Redis', icon: Database },
@@ -23,29 +37,15 @@ const tabs: { id: Tab; label: string; icon: typeof Server }[] = [
 ];
 
 function StatusBadge({ status }: { status: string }) {
-  const color = status === 'HEALTHY' || status === 'GREEN' || status === 'ACTIVE' || status === 'RUNNING' || status === 'COMPLETED' || status === 'OK'
-    ? 'bg-green-100 text-green-800'
-    : status === 'WARNING' || status === 'PENDING'
-    ? 'bg-amber-100 text-amber-800'
-    : 'bg-red-100 text-red-800';
-  return <span className={`px-2 py-0.5 rounded-full text-xs font-medium ${color}`}>{status}</span>;
+  return <SharedStatusBadge status={status} />;
 }
 
 function MetricCard({ title, value, subtitle, icon: Icon }: { title: string; value: string | number; subtitle?: string; icon?: typeof Server }) {
-  return (
-    <div className="bg-white rounded-lg border p-4">
-      <div className="flex items-center gap-2 text-sm text-gray-500 mb-1">
-        {Icon && <Icon className="w-4 h-4" />}
-        {title}
-      </div>
-      <div className="text-2xl font-bold">{value}</div>
-      {subtitle && <div className="text-xs text-gray-400 mt-1">{subtitle}</div>}
-    </div>
-  );
+  return <MetricCardShared title={title} value={value} subtitle={subtitle} icon={Icon} />;
 }
 
 export default function MiddlewareMonitoring() {
-  const [activeTab, setActiveTab] = useState<Tab>('overview');
+  const [activeTab, setActiveTab] = useState('overview');
 
   const healthQuery = trpc.middleware.health.useQuery(undefined, { retry: false });
   const kafkaQuery = trpc.middleware.kafkaStatus.useQuery(undefined, { retry: false, enabled: activeTab === 'kafka' || activeTab === 'overview' });
@@ -66,29 +66,12 @@ export default function MiddlewareMonitoring() {
   const health = healthQuery.data;
 
   return (
-    <div className="flex h-screen bg-gray-50">
-      {/* Sidebar */}
-      <div className="w-56 bg-white border-r overflow-y-auto flex-shrink-0">
-        <div className="p-4 border-b">
-          <h2 className="font-bold text-lg">Middleware</h2>
-          <p className="text-xs text-gray-500">65 Enhancements</p>
-        </div>
-        {tabs.map(tab => (
-          <button
-            key={tab.id}
-            onClick={() => setActiveTab(tab.id)}
-            className={`w-full flex items-center gap-2 px-4 py-2.5 text-sm text-left transition-colors ${
-              activeTab === tab.id ? 'bg-blue-50 text-blue-700 border-r-2 border-blue-700 font-medium' : 'text-gray-600 hover:bg-gray-50'
-            }`}
-          >
-            <tab.icon className="w-4 h-4" />
-            {tab.label}
-          </button>
-        ))}
-      </div>
-
-      {/* Main Content */}
-      <div className="flex-1 overflow-y-auto p-6">
+    <ModuleLayout module={MW_MODULE} navItems={MW_NAV_ITEMS} activeTab={activeTab} onTabChange={setActiveTab}>
+      <PageHeader
+        title={MW_NAV_ITEMS.find(n => n.id === activeTab)?.label ?? 'Overview'}
+        subtitle="Infrastructure monitoring & health"
+        icon={Server}
+      />
         {/* Overview */}
         {activeTab === 'overview' && health && (
           <div>
@@ -527,7 +510,6 @@ export default function MiddlewareMonitoring() {
             </div>
           );
         })()}
-      </div>
-    </div>
+    </ModuleLayout>
   );
 }

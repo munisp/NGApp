@@ -1,20 +1,36 @@
 import { useState } from 'react';
 import { trpc } from '@/lib/trpc';
-import { Landmark, Receipt, Building2, Heart, FileText, CheckCircle, Clock, AlertCircle, BarChart3, TrendingUp, Activity, PieChart, LayoutDashboard, Globe, ArrowDownLeft, Banknote, Ship, CreditCard, Code, Users } from 'lucide-react';
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
+import { Landmark, Receipt, Building2, Heart, FileText, TrendingUp, PieChart, LayoutDashboard } from 'lucide-react';
+import ModuleLayout from '@/components/ModuleLayout';
+import type { NavItem, ModuleConfig } from '@/components/ModuleLayout';
+import MetricCard from '@/components/MetricCard';
+import StatusBadge from '@/components/StatusBadge';
+import PageHeader from '@/components/PageHeader';
+import { formatNGN } from '@/lib/currency';
+import { cn } from '@/lib/utils';
 
-type Tab = 'dashboard' | 'tsa' | 'tax' | 'pension' | 'social' | 'reports';
+const MODULE: ModuleConfig = {
+  title: 'Government Payments',
+  subtitle: 'Payment Switch Module',
+  icon: Landmark,
+  accentColor: 'text-sky-700',
+  accentBg: 'bg-sky-700',
+  accentHover: 'hover:bg-sky-800',
+};
 
-const moduleLinks = [
-  { label: 'Outbound Remittance', href: '/', icon: Globe, color: '#3b82f6' },
-  { label: 'Inbound Remittance', href: '/inbound-remittance', icon: ArrowDownLeft, color: '#059669' },
-  { label: 'Domestic Payments', href: '/domestic-payments', icon: Banknote, color: '#2563eb' },
-  { label: 'Trade Payments', href: '/trade-payments', icon: Ship, color: '#7c3aed' },
-  { label: 'Card Processing', href: '/card-processing', icon: CreditCard, color: '#dc2626' },
-  { label: 'Open Banking', href: '/open-banking', icon: Code, color: '#0ea5e9' },
+const NAV_ITEMS: NavItem[] = [
+  { id: 'dashboard', label: 'Dashboard', icon: LayoutDashboard },
+  { id: 'tsa', label: 'TSA Collections', icon: Landmark },
+  { id: 'tax', label: 'Tax Payments', icon: Receipt },
+  { id: 'pension', label: 'Pension', icon: Building2 },
+  { id: 'social', label: 'Social Payments', icon: Heart },
+  { id: 'reports', label: 'Regulatory Reports', icon: FileText },
 ];
 
 export default function GovernmentPayments() {
-  const [activeTab, setActiveTab] = useState<Tab>('dashboard');
+  const [activeTab, setActiveTab] = useState('dashboard');
 
   const govQuery = trpc.governmentPayments.listGovernmentPayments.useQuery(undefined, { retry: false });
   const taxQuery = trpc.governmentPayments.listTaxPayments.useQuery(undefined, { retry: false });
@@ -29,300 +45,276 @@ export default function GovernmentPayments() {
   const socials = socialQuery.data?.disbursements ?? [];
   const reports = reportsQuery.data?.reports ?? [];
 
-  const fmt = (n: number | undefined | null) => { const v = n ?? 0; return v >= 1e12 ? `₦${(v / 1e12).toFixed(1)}T` : v >= 1e9 ? `₦${(v / 1e9).toFixed(1)}B` : v >= 1e6 ? `₦${(v / 1e6).toFixed(1)}M` : `₦${v.toLocaleString()}`; };
-
-  const navItems: { id: Tab; label: string; icon: typeof LayoutDashboard }[] = [
-    { id: 'dashboard', label: 'Dashboard', icon: LayoutDashboard },
-    { id: 'tsa', label: 'TSA Collections', icon: Landmark },
-    { id: 'tax', label: 'Tax Payments', icon: Receipt },
-    { id: 'pension', label: 'Pension', icon: Building2 },
-    { id: 'social', label: 'Social Payments', icon: Heart },
-    { id: 'reports', label: 'Regulatory Reports', icon: FileText },
-  ];
-
   return (
-    <div style={{ display: 'flex', minHeight: '100vh', fontFamily: 'system-ui, -apple-system, sans-serif' }}>
-      <aside style={{ width: 250, borderRight: '1px solid #e5e7eb', background: '#fafafa', display: 'flex', flexDirection: 'column', flexShrink: 0 }}>
-        <div style={{ padding: '16px 16px 12px', borderBottom: '1px solid #e5e7eb' }}>
-          <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
-            <Landmark size={22} color="#0369a1" />
-            <div>
-              <div style={{ fontWeight: 700, fontSize: 14 }}>Government Payments</div>
-              <div style={{ fontSize: 11, color: '#6b7280' }}>Payment Switch Module</div>
-            </div>
-          </div>
-        </div>
-        <nav style={{ flex: 1, padding: 8, display: 'flex', flexDirection: 'column', gap: 2 }}>
-          {navItems.map(item => (
-            <button key={item.id} onClick={() => setActiveTab(item.id)}
-              style={{ display: 'flex', alignItems: 'center', gap: 10, padding: '10px 14px', borderRadius: 8, border: 'none', cursor: 'pointer', fontSize: 13, fontWeight: 600, width: '100%', textAlign: 'left',
-                background: activeTab === item.id ? '#0369a1' : 'transparent', color: activeTab === item.id ? 'white' : '#374151' }}>
-              <item.icon size={16} />
-              {item.label}
-            </button>
-          ))}
-        </nav>
-        <div style={{ borderTop: '1px solid #e5e7eb', padding: '8px 8px 12px' }}>
-          <div style={{ fontSize: 10, fontWeight: 700, color: '#9ca3af', textTransform: 'uppercase', letterSpacing: 1, padding: '4px 14px 6px' }}>Other Modules</div>
-          {moduleLinks.map(m => (
-            <a key={m.href} href={m.href} style={{ display: 'flex', alignItems: 'center', gap: 8, padding: '6px 14px', borderRadius: 6, fontSize: 12, color: m.color, textDecoration: 'none' }}>
-              <m.icon size={14} />
-              {m.label}
-            </a>
-          ))}
-        </div>
-      </aside>
+    <ModuleLayout module={MODULE} navItems={NAV_ITEMS} activeTab={activeTab} onTabChange={setActiveTab}>
+      <PageHeader
+        title={NAV_ITEMS.find(n => n.id === activeTab)?.label ?? 'Dashboard'}
+        subtitle="TSA, Tax, Pension, Social Payments, CBN Reporting"
+        icon={Landmark}
+      />
 
-      <main style={{ flex: 1, padding: 24, overflowY: 'auto', maxWidth: 1200 }}>
-        <div style={{ display: 'flex', alignItems: 'center', gap: 12, marginBottom: 24 }}>
-          <h1 style={{ fontSize: 24, fontWeight: 700, margin: 0 }}>{navItems.find(n => n.id === activeTab)?.label ?? 'Dashboard'}</h1>
-          <span style={{ fontSize: 13, color: '#6b7280' }}>TSA, Tax, Pension, Social Payments, CBN Reporting</span>
-        </div>
+      {/* Summary Metrics */}
+      <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-3">
+        <MetricCard title="TSA" value={govSummary?.totalCollections ?? 0} subtitle={formatNGN(govSummary?.totalValueNGN ?? 0)} icon={Landmark} />
+        <MetricCard title="Tax" value={taxes.length} subtitle={formatNGN(taxQuery.data?.totalPaidNGN ?? 0)} icon={Receipt} />
+        <MetricCard title="Pension" value={pensions.length} subtitle={formatNGN(pensionQuery.data?.totalContributions ?? 0)} icon={Building2} variant="success" />
+        <MetricCard title="Social" value={socials.length} subtitle={`${((socialQuery.data?.totalBeneficiaries ?? 0) / 1e6).toFixed(1)}M`} icon={Heart} variant="danger" />
+        <MetricCard title="Reports" value={reports.length} subtitle={`${reportsQuery.data?.totalSubmitted ?? 0} submitted`} icon={FileText} variant="warning" />
+      </div>
 
-        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(180px, 1fr))', gap: 16, marginBottom: 24 }}>
-          {[
-            { label: 'TSA', value: govSummary?.totalCollections ?? 0, sub: fmt(govSummary?.totalValueNGN ?? 0), icon: Landmark, color: '#0369a1' },
-            { label: 'Tax', value: taxes.length, sub: fmt(taxQuery.data?.totalPaidNGN ?? 0), icon: Receipt, color: '#7c3aed' },
-            { label: 'Pension', value: pensions.length, sub: fmt(pensionQuery.data?.totalContributions ?? 0), icon: Building2, color: '#059669' },
-            { label: 'Social', value: socials.length, sub: `${((socialQuery.data?.totalBeneficiaries ?? 0) / 1e6).toFixed(1)}M`, icon: Heart, color: '#dc2626' },
-            { label: 'Reports', value: reports.length, sub: `${reportsQuery.data?.totalSubmitted ?? 0} submitted`, icon: FileText, color: '#ea580c' },
-          ].map((c, i) => (
-            <div key={i} style={{ background: 'white', border: '1px solid #e5e7eb', borderRadius: 12, padding: 16 }}>
-              <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 8 }}>
-                <c.icon size={18} color={c.color} />
-                <span style={{ fontSize: 12, color: '#6b7280' }}>{c.label}</span>
-              </div>
-              <div style={{ fontSize: 24, fontWeight: 700, color: c.color }}>{c.value}</div>
-              <div style={{ fontSize: 12, color: '#9ca3af', marginTop: 4 }}>{c.sub}</div>
-            </div>
-          ))}
-        </div>
-
-      {/* Dashboard Tab */}
+      {/* Dashboard */}
       {activeTab === 'dashboard' && (
-        <div>
-          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: 20, marginBottom: 24 }}>
-            <div style={{ background: 'linear-gradient(135deg, #0369a1, #0ea5e9)', borderRadius: 16, padding: 24, color: 'white' }}>
-              <div style={{ fontSize: 13, opacity: 0.9, marginBottom: 8 }}>Total TSA Revenue</div>
-              <div style={{ fontSize: 32, fontWeight: 800 }}>{fmt(govSummary?.totalValueNGN ?? 0)}</div>
-              <div style={{ fontSize: 12, opacity: 0.8, marginTop: 4 }}><TrendingUp size={14} style={{ display: 'inline', verticalAlign: 'middle' }} /> {govSummary?.totalCollections ?? 0} collections</div>
-            </div>
-            <div style={{ background: 'linear-gradient(135deg, #7c3aed, #8b5cf6)', borderRadius: 16, padding: 24, color: 'white' }}>
-              <div style={{ fontSize: 13, opacity: 0.9, marginBottom: 8 }}>Tax Revenue Collected</div>
-              <div style={{ fontSize: 32, fontWeight: 800 }}>{fmt(taxQuery.data?.totalPaidNGN ?? 0)}</div>
-              <div style={{ fontSize: 12, opacity: 0.8, marginTop: 4 }}>{taxes.length} tax payments processed</div>
-            </div>
-            <div style={{ background: 'linear-gradient(135deg, #059669, #10b981)', borderRadius: 16, padding: 24, color: 'white' }}>
-              <div style={{ fontSize: 13, opacity: 0.9, marginBottom: 8 }}>Pension Contributions</div>
-              <div style={{ fontSize: 32, fontWeight: 800 }}>{fmt(pensionQuery.data?.totalContributions ?? 0)}</div>
-              <div style={{ fontSize: 12, opacity: 0.8, marginTop: 4 }}>{pensions.length} employer remittances</div>
-            </div>
+        <>
+          <div className="grid md:grid-cols-3 gap-5">
+            <Card className="bg-gradient-to-br from-sky-700 to-sky-500 text-white border-0">
+              <CardContent className="p-6">
+                <p className="text-sm opacity-90 mb-2">Total TSA Revenue</p>
+                <p className="text-3xl font-extrabold">{formatNGN(govSummary?.totalValueNGN ?? 0)}</p>
+                <p className="text-xs opacity-80 mt-1 flex items-center gap-1"><TrendingUp className="h-3.5 w-3.5" /> {govSummary?.totalCollections ?? 0} collections</p>
+              </CardContent>
+            </Card>
+            <Card className="bg-gradient-to-br from-violet-600 to-violet-500 text-white border-0">
+              <CardContent className="p-6">
+                <p className="text-sm opacity-90 mb-2">Tax Revenue Collected</p>
+                <p className="text-3xl font-extrabold">{formatNGN(taxQuery.data?.totalPaidNGN ?? 0)}</p>
+                <p className="text-xs opacity-80 mt-1">{taxes.length} tax payments processed</p>
+              </CardContent>
+            </Card>
+            <Card className="bg-gradient-to-br from-emerald-600 to-emerald-500 text-white border-0">
+              <CardContent className="p-6">
+                <p className="text-sm opacity-90 mb-2">Pension Contributions</p>
+                <p className="text-3xl font-extrabold">{formatNGN(pensionQuery.data?.totalContributions ?? 0)}</p>
+                <p className="text-xs opacity-80 mt-1">{pensions.length} employer remittances</p>
+              </CardContent>
+            </Card>
           </div>
 
-          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 20, marginBottom: 24 }}>
-            <div style={{ background: 'white', border: '1px solid #e5e7eb', borderRadius: 12, padding: 20 }}>
-              <h3 style={{ fontSize: 15, fontWeight: 700, marginBottom: 16, display: 'flex', alignItems: 'center', gap: 8 }}><PieChart size={18} color="#0369a1" /> Revenue by Category</h3>
-              {[
-                { label: 'TSA Collections', value: govSummary?.totalValueNGN ?? 0, color: '#0369a1' },
-                { label: 'Tax (CIT/VAT/WHT)', value: taxQuery.data?.totalPaidNGN ?? 0, color: '#7c3aed' },
-                { label: 'Pension', value: pensionQuery.data?.totalContributions ?? 0, color: '#059669' },
-              ].map((item, i) => {
-                const total = (govSummary?.totalValueNGN ?? 0) + (taxQuery.data?.totalPaidNGN ?? 0) + (pensionQuery.data?.totalContributions ?? 0);
-                return (
-                  <div key={i} style={{ marginBottom: 12 }}>
-                    <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: 13, marginBottom: 4 }}>
-                      <span>{item.label}</span>
-                      <span style={{ fontWeight: 600 }}>{fmt(item.value)}</span>
+          <div className="grid md:grid-cols-2 gap-5">
+            <Card>
+              <CardHeader>
+                <CardTitle className="text-[15px] flex items-center gap-2"><PieChart className="h-4.5 w-4.5 text-sky-700" /> Revenue by Category</CardTitle>
+              </CardHeader>
+              <CardContent className="space-y-3">
+                {[
+                  { label: 'TSA Collections', value: govSummary?.totalValueNGN ?? 0, color: 'bg-sky-700' },
+                  { label: 'Tax (CIT/VAT/WHT)', value: taxQuery.data?.totalPaidNGN ?? 0, color: 'bg-violet-600' },
+                  { label: 'Pension', value: pensionQuery.data?.totalContributions ?? 0, color: 'bg-emerald-600' },
+                ].map(item => {
+                  const total = (govSummary?.totalValueNGN ?? 0) + (taxQuery.data?.totalPaidNGN ?? 0) + (pensionQuery.data?.totalContributions ?? 0);
+                  return (
+                    <div key={item.label}>
+                      <div className="flex justify-between text-sm mb-1">
+                        <span>{item.label}</span>
+                        <span className="font-semibold">{formatNGN(item.value)}</span>
+                      </div>
+                      <div className="h-2.5 bg-muted rounded-full overflow-hidden">
+                        <div className={cn('h-full rounded-full', item.color)} style={{ width: `${total > 0 ? (item.value / total) * 100 : 0}%` }} />
+                      </div>
                     </div>
-                    <div style={{ height: 10, background: '#f3f4f6', borderRadius: 5, overflow: 'hidden' }}>
-                      <div style={{ height: '100%', width: `${total > 0 ? (item.value / total) * 100 : 0}%`, background: item.color, borderRadius: 5 }} />
+                  );
+                })}
+              </CardContent>
+            </Card>
+
+            <Card>
+              <CardHeader>
+                <CardTitle className="text-[15px] flex items-center gap-2"><Heart className="h-4.5 w-4.5 text-red-600" /> Social Programs</CardTitle>
+              </CardHeader>
+              <CardContent className="space-y-2.5">
+                {socials.map((s, i) => (
+                  <div key={i} className="flex items-center gap-3 p-2.5 bg-muted/50 rounded-lg">
+                    <div className="flex-1">
+                      <p className="font-semibold text-sm">{s.programName}</p>
+                      <p className="text-[11px] text-muted-foreground">{s.programCode}</p>
+                    </div>
+                    <div className="text-right">
+                      <p className="font-bold font-mono text-sm">{formatNGN(s.totalAmount)}</p>
+                      <p className="text-[10px] text-muted-foreground">{(s.beneficiaryCount / 1e6).toFixed(1)}M beneficiaries</p>
                     </div>
                   </div>
-                );
-              })}
-            </div>
-
-            <div style={{ background: 'white', border: '1px solid #e5e7eb', borderRadius: 12, padding: 20 }}>
-              <h3 style={{ fontSize: 15, fontWeight: 700, marginBottom: 16, display: 'flex', alignItems: 'center', gap: 8 }}><Heart size={18} color="#dc2626" /> Social Programs</h3>
-              {socials.map((s, i) => (
-                <div key={i} style={{ display: 'flex', alignItems: 'center', gap: 12, marginBottom: 10, padding: '10px 12px', background: '#f9fafb', borderRadius: 8 }}>
-                  <div style={{ flex: 1 }}>
-                    <div style={{ fontWeight: 600, fontSize: 13 }}>{s.programName}</div>
-                    <div style={{ fontSize: 11, color: '#6b7280' }}>{s.ministry}</div>
-                  </div>
-                  <div style={{ textAlign: 'right' as const }}>
-                    <div style={{ fontWeight: 700, fontFamily: 'monospace', fontSize: 13 }}>{fmt(s.totalDisbursed)}</div>
-                    <div style={{ fontSize: 10, color: '#9ca3af' }}>{(s.beneficiaryCount / 1e6).toFixed(1)}M beneficiaries</div>
-                  </div>
-                </div>
-              ))}
-            </div>
+                ))}
+              </CardContent>
+            </Card>
           </div>
 
-          <div style={{ background: 'white', border: '1px solid #e5e7eb', borderRadius: 12, padding: 20 }}>
-            <h3 style={{ fontSize: 15, fontWeight: 700, marginBottom: 16, display: 'flex', alignItems: 'center', gap: 8 }}><FileText size={18} color="#ea580c" /> Regulatory Reports Status</h3>
-            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(250px, 1fr))', gap: 12 }}>
-              {reports.map((r, i) => (
-                <div key={i} style={{ padding: 14, background: '#f9fafb', borderRadius: 8, borderLeft: `4px solid ${r.status === 'SUBMITTED' ? '#10b981' : r.status === 'PENDING' ? '#f59e0b' : '#ef4444'}` }}>
-                  <div style={{ fontWeight: 700, fontSize: 13 }}>{r.reportName}</div>
-                  <div style={{ fontSize: 11, color: '#6b7280', marginTop: 2 }}>{r.reportType} · {r.frequency}</div>
-                  <div style={{ display: 'flex', justifyContent: 'space-between', marginTop: 8 }}>
-                    <span style={{ padding: '2px 8px', borderRadius: 9999, fontSize: 10, fontWeight: 600, background: r.status === 'SUBMITTED' ? '#dcfce7' : '#fef3c7', color: r.status === 'SUBMITTED' ? '#166534' : '#92400e' }}>{r.status}</span>
-                    <span style={{ fontSize: 10, color: '#9ca3af' }}>Due: {new Date(r.dueDate).toLocaleDateString()}</span>
+          <Card>
+            <CardHeader>
+              <CardTitle className="text-[15px] flex items-center gap-2"><FileText className="h-4.5 w-4.5 text-orange-600" /> Regulatory Reports Status</CardTitle>
+            </CardHeader>
+            <CardContent>
+              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
+                {reports.map((r, i) => (
+                  <div key={i} className={cn('p-3.5 bg-muted/50 rounded-lg border-l-4', r.status === 'SUBMITTED' ? 'border-l-emerald-500' : r.status === 'PENDING' ? 'border-l-amber-500' : 'border-l-red-500')}>
+                    <p className="font-bold text-sm">{r.reportType}</p>
+                    <p className="text-[11px] text-muted-foreground mt-0.5">{r.period} · {r.submittedTo}</p>
+                    <div className="flex justify-between mt-2">
+                      <StatusBadge status={r.status} />
+                      <span className="text-[10px] text-muted-foreground">Ref: {r.reference}</span>
+                    </div>
                   </div>
-                </div>
-              ))}
-            </div>
-          </div>
-        </div>
+                ))}
+              </div>
+            </CardContent>
+          </Card>
+        </>
       )}
 
+      {/* TSA Tab */}
       {activeTab === 'tsa' && (
-        <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: 13 }}>
-          <thead>
-            <tr style={{ background: '#f9fafb' }}>
-              {['ID', 'MDA', 'TSA Code', 'Revenue Code', 'Amount', 'GIFMIS Ref', 'Status', 'Completed'].map(h => (
-                <th key={h} style={{ padding: '10px 12px', textAlign: 'left', fontWeight: 600, borderBottom: '2px solid #e5e7eb' }}>{h}</th>
-              ))}
-            </tr>
-          </thead>
-          <tbody>
-            {govPayments.map(p => (
-              <tr key={p.id} style={{ borderBottom: '1px solid #f3f4f6' }}>
-                <td style={{ padding: '10px 12px', fontFamily: 'monospace', fontSize: 12 }}>{p.id}</td>
-                <td style={{ padding: '10px 12px', fontWeight: 600 }}>{p.beneficiaryMda}</td>
-                <td style={{ padding: '10px 12px', fontFamily: 'monospace' }}>{p.tsaCode}</td>
-                <td style={{ padding: '10px 12px', fontFamily: 'monospace' }}>{p.revenueCode}</td>
-                <td style={{ padding: '10px 12px', fontFamily: 'monospace', fontWeight: 700 }}>{fmt(p.amount)}</td>
-                <td style={{ padding: '10px 12px', fontFamily: 'monospace', fontSize: 12 }}>{p.gifmisRef || '—'}</td>
-                <td style={{ padding: '10px 12px' }}>
-                  <span style={{ padding: '2px 8px', borderRadius: 9999, fontSize: 11, fontWeight: 600,
-                    background: p.status === 'COMPLETED' ? '#dcfce7' : '#fef3c7', color: p.status === 'COMPLETED' ? '#166534' : '#92400e' }}>{p.status}</span>
-                </td>
-                <td style={{ padding: '10px 12px', fontSize: 11, color: '#6b7280' }}>{p.completedAt ? new Date(p.completedAt).toLocaleString() : '—'}</td>
-              </tr>
-            ))}
-          </tbody>
-        </table>
+        <Card>
+          <CardContent className="p-0">
+            <Table>
+              <TableHeader>
+                <TableRow>
+                  {['ID', 'MDA', 'TSA Code', 'Revenue Code', 'Amount', 'GIFMIS Ref', 'Status', 'Completed'].map(h => (
+                    <TableHead key={h}>{h}</TableHead>
+                  ))}
+                </TableRow>
+              </TableHeader>
+              <TableBody>
+                {govPayments.map(p => (
+                  <TableRow key={p.id}>
+                    <TableCell className="font-mono text-xs">{p.id}</TableCell>
+                    <TableCell className="font-semibold">{p.beneficiaryMda}</TableCell>
+                    <TableCell className="font-mono">{p.tsaCode}</TableCell>
+                    <TableCell className="font-mono">{p.revenueCode}</TableCell>
+                    <TableCell className="font-mono font-bold">{formatNGN(p.amount)}</TableCell>
+                    <TableCell className="font-mono text-xs">{p.gifmisRef || '—'}</TableCell>
+                    <TableCell><StatusBadge status={p.status} /></TableCell>
+                    <TableCell className="text-[11px] text-muted-foreground">{p.completedAt ? new Date(p.completedAt).toLocaleString() : '—'}</TableCell>
+                  </TableRow>
+                ))}
+              </TableBody>
+            </Table>
+          </CardContent>
+        </Card>
       )}
 
+      {/* Tax Tab */}
       {activeTab === 'tax' && (
-        <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: 13 }}>
-          <thead>
-            <tr style={{ background: '#f9fafb' }}>
-              {['ID', 'Tax Type', 'Payer', 'TIN', 'Tax Office', 'Amount', 'Penalty', 'Interest', 'Total', 'Status', 'Receipt'].map(h => (
-                <th key={h} style={{ padding: '10px 12px', textAlign: 'left', fontWeight: 600, borderBottom: '2px solid #e5e7eb' }}>{h}</th>
-              ))}
-            </tr>
-          </thead>
-          <tbody>
-            {taxes.map(t => (
-              <tr key={t.id} style={{ borderBottom: '1px solid #f3f4f6' }}>
-                <td style={{ padding: '10px 12px', fontFamily: 'monospace', fontSize: 12 }}>{t.id}</td>
-                <td style={{ padding: '10px 12px' }}><span style={{ padding: '2px 8px', borderRadius: 4, fontSize: 11, fontWeight: 600, background: '#e0e7ff', color: '#3730a3' }}>{t.taxType}</span></td>
-                <td style={{ padding: '10px 12px', fontWeight: 600 }}>{t.payerName}</td>
-                <td style={{ padding: '10px 12px', fontFamily: 'monospace', fontSize: 12 }}>{t.payerTin}</td>
-                <td style={{ padding: '10px 12px', fontSize: 12 }}>{t.taxOffice}</td>
-                <td style={{ padding: '10px 12px', fontFamily: 'monospace' }}>{fmt(t.amount)}</td>
-                <td style={{ padding: '10px 12px', fontFamily: 'monospace', color: t.penalty > 0 ? '#ef4444' : '#6b7280' }}>{t.penalty > 0 ? fmt(t.penalty) : '—'}</td>
-                <td style={{ padding: '10px 12px', fontFamily: 'monospace', color: t.interest > 0 ? '#f59e0b' : '#6b7280' }}>{t.interest > 0 ? fmt(t.interest) : '—'}</td>
-                <td style={{ padding: '10px 12px', fontFamily: 'monospace', fontWeight: 700 }}>{fmt(t.totalAmount)}</td>
-                <td style={{ padding: '10px 12px' }}>
-                  <span style={{ padding: '2px 8px', borderRadius: 9999, fontSize: 11, fontWeight: 600,
-                    background: t.status === 'paid' ? '#dcfce7' : '#fef2f2', color: t.status === 'paid' ? '#166534' : '#991b1b' }}>{t.status}</span>
-                </td>
-                <td style={{ padding: '10px 12px', fontFamily: 'monospace', fontSize: 11 }}>{t.receiptNumber || '—'}</td>
-              </tr>
-            ))}
-          </tbody>
-        </table>
+        <Card>
+          <CardContent className="p-0">
+            <div className="overflow-x-auto">
+              <Table>
+                <TableHeader>
+                  <TableRow>
+                    {['ID', 'Tax Type', 'Payer', 'TIN', 'Tax Office', 'Amount', 'Penalty', 'Interest', 'Total', 'Status', 'Receipt'].map(h => (
+                      <TableHead key={h}>{h}</TableHead>
+                    ))}
+                  </TableRow>
+                </TableHeader>
+                <TableBody>
+                  {taxes.map(t => (
+                    <TableRow key={t.id}>
+                      <TableCell className="font-mono text-xs">{t.id}</TableCell>
+                      <TableCell><span className="px-2 py-0.5 rounded text-[11px] font-semibold bg-indigo-100 text-indigo-800">{t.taxType}</span></TableCell>
+                      <TableCell className="font-semibold">{t.payerName}</TableCell>
+                      <TableCell className="font-mono text-xs">{t.payerTin}</TableCell>
+                      <TableCell className="text-xs">{t.taxOffice}</TableCell>
+                      <TableCell className="font-mono">{formatNGN(t.amount)}</TableCell>
+                      <TableCell className={cn('font-mono', t.penalty > 0 ? 'text-red-500' : 'text-muted-foreground')}>{t.penalty > 0 ? formatNGN(t.penalty) : '—'}</TableCell>
+                      <TableCell className={cn('font-mono', t.interest > 0 ? 'text-amber-500' : 'text-muted-foreground')}>{t.interest > 0 ? formatNGN(t.interest) : '—'}</TableCell>
+                      <TableCell className="font-mono font-bold">{formatNGN(t.totalAmount)}</TableCell>
+                      <TableCell><StatusBadge status={t.status} /></TableCell>
+                      <TableCell className="font-mono text-[11px]">{t.receiptNumber || '—'}</TableCell>
+                    </TableRow>
+                  ))}
+                </TableBody>
+              </Table>
+            </div>
+          </CardContent>
+        </Card>
       )}
 
+      {/* Pension Tab */}
       {activeTab === 'pension' && (
-        <div>
+        <div className="space-y-4">
           {pensions.map(p => (
-            <div key={p.id} style={{ background: 'white', border: '1px solid #e5e7eb', borderRadius: 12, padding: 20, marginBottom: 16 }}>
-              <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 12 }}>
-                <div>
-                  <div style={{ fontSize: 16, fontWeight: 700 }}>{p.pfaName}</div>
-                  <div style={{ fontSize: 13, color: '#6b7280' }}>{p.employerName} · {p.pfaCode} · Period: {p.period}</div>
+            <Card key={p.id}>
+              <CardContent className="p-5">
+                <div className="flex justify-between mb-3">
+                  <div>
+                    <p className="text-base font-bold">{p.pfaName}</p>
+                    <p className="text-sm text-muted-foreground">{p.employerName} · {p.pfaCode} · Period: {p.period}</p>
+                  </div>
+                  <StatusBadge status={p.status} />
                 </div>
-                <span style={{ padding: '4px 12px', borderRadius: 9999, fontSize: 12, fontWeight: 600,
-                  background: p.status === 'confirmed' ? '#dcfce7' : '#fef3c7', color: p.status === 'confirmed' ? '#166534' : '#92400e' }}>{p.status}</span>
-              </div>
-              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(150px, 1fr))', gap: 12, fontSize: 13 }}>
-                <div><span style={{ color: '#9ca3af' }}>Employees:</span> <strong>{p.employeeCount.toLocaleString()}</strong></div>
-                <div><span style={{ color: '#9ca3af' }}>Employer (10%):</span> <strong>{fmt(p.employerContribution)}</strong></div>
-                <div><span style={{ color: '#9ca3af' }}>Employee (8%):</span> <strong>{fmt(p.employeeContribution)}</strong></div>
-                <div><span style={{ color: '#9ca3af' }}>Voluntary:</span> <strong>{fmt(p.voluntaryContribution)}</strong></div>
-                <div><span style={{ color: '#9ca3af' }}>Total:</span> <strong style={{ fontSize: 16, color: '#059669' }}>{fmt(p.totalAmount)}</strong></div>
-              </div>
-            </div>
+                <div className="grid grid-cols-2 sm:grid-cols-5 gap-3 text-sm">
+                  <div><span className="text-muted-foreground">Employees:</span> <strong>{p.employeeCount.toLocaleString()}</strong></div>
+                  <div><span className="text-muted-foreground">Employer (10%):</span> <strong>{formatNGN(p.employerContribution)}</strong></div>
+                  <div><span className="text-muted-foreground">Employee (8%):</span> <strong>{formatNGN(p.employeeContribution)}</strong></div>
+                  <div><span className="text-muted-foreground">Voluntary:</span> <strong>{formatNGN(p.voluntaryContribution)}</strong></div>
+                  <div><span className="text-muted-foreground">Total:</span> <strong className="text-base text-emerald-600">{formatNGN(p.totalAmount)}</strong></div>
+                </div>
+              </CardContent>
+            </Card>
           ))}
         </div>
       )}
 
+      {/* Social Tab */}
       {activeTab === 'social' && (
-        <div>
+        <div className="space-y-4">
           {socials.map(s => (
-            <div key={s.id} style={{ background: 'white', border: '1px solid #e5e7eb', borderRadius: 12, padding: 20, marginBottom: 16 }}>
-              <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 12 }}>
-                <div>
-                  <div style={{ fontSize: 16, fontWeight: 700 }}>{s.programName}</div>
-                  <div style={{ fontSize: 13, color: '#6b7280' }}>{s.programCode} · {s.initiatedBy}</div>
+            <Card key={s.id}>
+              <CardContent className="p-5">
+                <div className="flex justify-between mb-3">
+                  <div>
+                    <p className="text-base font-bold">{s.programName}</p>
+                    <p className="text-sm text-muted-foreground">{s.programCode} · {s.initiatedBy}</p>
+                  </div>
+                  <StatusBadge status={s.status} />
                 </div>
-                <span style={{ padding: '4px 12px', borderRadius: 9999, fontSize: 12, fontWeight: 600,
-                  background: s.status === 'completed' ? '#dcfce7' : '#fef3c7', color: s.status === 'completed' ? '#166534' : '#92400e' }}>{s.status}</span>
-              </div>
-              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(160px, 1fr))', gap: 12, fontSize: 13 }}>
-                <div><span style={{ color: '#9ca3af' }}>Beneficiaries:</span> <strong>{s.beneficiaryCount.toLocaleString()}</strong></div>
-                <div><span style={{ color: '#9ca3af' }}>Amount/Person:</span> <strong>{fmt(s.amountPerBeneficiary)}</strong></div>
-                <div><span style={{ color: '#9ca3af' }}>Total:</span> <strong style={{ fontSize: 16, color: '#dc2626' }}>{fmt(s.totalAmount)}</strong></div>
-                <div><span style={{ color: '#9ca3af' }}>Disbursed:</span> <strong style={{ color: '#10b981' }}>{s.disbursedCount.toLocaleString()}</strong></div>
-                <div><span style={{ color: '#9ca3af' }}>Failed:</span> <strong style={{ color: '#ef4444' }}>{s.failedCount.toLocaleString()}</strong></div>
-              </div>
-              <div style={{ marginTop: 12 }}>
-                <div style={{ height: 8, background: '#f3f4f6', borderRadius: 4, overflow: 'hidden' }}>
-                  <div style={{ height: '100%', width: `${(s.disbursedCount / s.beneficiaryCount * 100)}%`, background: '#10b981', borderRadius: 4 }} />
+                <div className="grid grid-cols-2 sm:grid-cols-5 gap-3 text-sm">
+                  <div><span className="text-muted-foreground">Beneficiaries:</span> <strong>{s.beneficiaryCount.toLocaleString()}</strong></div>
+                  <div><span className="text-muted-foreground">Amount/Person:</span> <strong>{formatNGN(s.amountPerBeneficiary)}</strong></div>
+                  <div><span className="text-muted-foreground">Total:</span> <strong className="text-base text-red-600">{formatNGN(s.totalAmount)}</strong></div>
+                  <div><span className="text-muted-foreground">Disbursed:</span> <strong className="text-emerald-500">{s.disbursedCount.toLocaleString()}</strong></div>
+                  <div><span className="text-muted-foreground">Failed:</span> <strong className="text-red-500">{s.failedCount.toLocaleString()}</strong></div>
                 </div>
-                <div style={{ fontSize: 11, color: '#6b7280', marginTop: 4 }}>{(s.disbursedCount / s.beneficiaryCount * 100).toFixed(1)}% disbursed</div>
-              </div>
-            </div>
+                <div className="mt-3">
+                  <div className="h-2 bg-muted rounded-full overflow-hidden">
+                    <div className="h-full bg-emerald-500 rounded-full" style={{ width: `${(s.disbursedCount / s.beneficiaryCount * 100)}%` }} />
+                  </div>
+                  <p className="text-[11px] text-muted-foreground mt-1">{(s.disbursedCount / s.beneficiaryCount * 100).toFixed(1)}% disbursed</p>
+                </div>
+              </CardContent>
+            </Card>
           ))}
         </div>
       )}
 
+      {/* Reports Tab */}
       {activeTab === 'reports' && (
-        <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: 13 }}>
-          <thead>
-            <tr style={{ background: '#f9fafb' }}>
-              {['ID', 'Report Type', 'Period', 'Records', 'Total Value', 'Submitted To', 'Reference', 'Status', 'Generated'].map(h => (
-                <th key={h} style={{ padding: '10px 12px', textAlign: 'left', fontWeight: 600, borderBottom: '2px solid #e5e7eb' }}>{h}</th>
-              ))}
-            </tr>
-          </thead>
-          <tbody>
-            {reports.map(r => (
-              <tr key={r.id} style={{ borderBottom: '1px solid #f3f4f6' }}>
-                <td style={{ padding: '10px 12px', fontFamily: 'monospace', fontSize: 12 }}>{r.id}</td>
-                <td style={{ padding: '10px 12px' }}><span style={{ padding: '2px 8px', borderRadius: 4, fontSize: 11, fontWeight: 600, background: '#e0e7ff', color: '#3730a3' }}>{r.reportType}</span></td>
-                <td style={{ padding: '10px 12px', fontWeight: 600 }}>{r.period}</td>
-                <td style={{ padding: '10px 12px', fontFamily: 'monospace' }}>{r.recordCount.toLocaleString()}</td>
-                <td style={{ padding: '10px 12px', fontFamily: 'monospace', fontWeight: 600 }}>{fmt(r.totalValue)}</td>
-                <td style={{ padding: '10px 12px' }}>{r.submittedTo}</td>
-                <td style={{ padding: '10px 12px', fontFamily: 'monospace', fontSize: 12 }}>{r.reference}</td>
-                <td style={{ padding: '10px 12px' }}>
-                  <span style={{ padding: '2px 8px', borderRadius: 9999, fontSize: 11, fontWeight: 600,
-                    background: r.status === 'submitted' ? '#dcfce7' : r.status === 'generated' ? '#dbeafe' : '#f3f4f6',
-                    color: r.status === 'submitted' ? '#166534' : r.status === 'generated' ? '#1d4ed8' : '#6b7280' }}>{r.status}</span>
-                </td>
-                <td style={{ padding: '10px 12px', fontSize: 11, color: '#6b7280' }}>{new Date(r.generatedAt).toLocaleString()}</td>
-              </tr>
-            ))}
-          </tbody>
-        </table>
+        <Card>
+          <CardContent className="p-0">
+            <Table>
+              <TableHeader>
+                <TableRow>
+                  {['ID', 'Report Type', 'Period', 'Records', 'Total Value', 'Submitted To', 'Reference', 'Status', 'Generated'].map(h => (
+                    <TableHead key={h}>{h}</TableHead>
+                  ))}
+                </TableRow>
+              </TableHeader>
+              <TableBody>
+                {reports.map(r => (
+                  <TableRow key={r.id}>
+                    <TableCell className="font-mono text-xs">{r.id}</TableCell>
+                    <TableCell><span className="px-2 py-0.5 rounded text-[11px] font-semibold bg-indigo-100 text-indigo-800">{r.reportType}</span></TableCell>
+                    <TableCell className="font-semibold">{r.period}</TableCell>
+                    <TableCell className="font-mono">{r.recordCount.toLocaleString()}</TableCell>
+                    <TableCell className="font-mono font-semibold">{formatNGN(r.totalValue)}</TableCell>
+                    <TableCell>{r.submittedTo}</TableCell>
+                    <TableCell className="font-mono text-xs">{r.reference}</TableCell>
+                    <TableCell><StatusBadge status={r.status} /></TableCell>
+                    <TableCell className="text-[11px] text-muted-foreground">{new Date(r.generatedAt).toLocaleString()}</TableCell>
+                  </TableRow>
+                ))}
+              </TableBody>
+            </Table>
+          </CardContent>
+        </Card>
       )}
-      </main>
-    </div>
+    </ModuleLayout>
   );
 }

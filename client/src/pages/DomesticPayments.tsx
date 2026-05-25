@@ -1,6 +1,11 @@
 import { useState } from 'react';
 import { trpc } from '@/lib/trpc';
 import { Banknote, QrCode, FileText, Repeat, Users, ArrowRightLeft, CheckCircle, XCircle, Clock, BarChart3, TrendingUp, Activity, PieChart, LayoutDashboard, Globe, Ship, CreditCard, Landmark, Code, ArrowDownLeft, Package, RefreshCw, AlertTriangle, ShieldCheck, Search, Layers, Building2, BookOpen, UserCheck, Hash, RotateCcw, Scale, Store, Receipt, FileCode, ScanLine, FileCheck, Fingerprint, Shield, UserPlus, Gauge, FileSpreadsheet, Timer, HeartPulse, FileWarning, Eye, DollarSign, Map, Brain, Zap, Cpu, Database, MessageSquare, Network, Bot, ShieldAlert, GitGraph, Dice1 } from 'lucide-react';
+import ModuleLayout from '@/components/ModuleLayout';
+import type { NavItem as ModNavItem, ModuleConfig } from '@/components/ModuleLayout';
+import PageHeader from '@/components/PageHeader';
+import StatusBadge from '@/components/StatusBadge';
+import { formatNGN } from '@/lib/currency';
 
 type Tab = 'dashboard' | 'payments' | 'bills' | 'standing_orders' | 'bulk'
   | 'neft' | 'cheques' | 'mandates' | 'reversals' | 'disputes'
@@ -10,14 +15,14 @@ type Tab = 'dashboard' | 'payments' | 'bills' | 'standing_orders' | 'bulk'
   | 'prophet' | 'cocoindex' | 'kgqa' | 'falkordb' | 'ollama' | 'art' | 'gnn_neo4j' | 'mcmc'
   | 'saga' | 'hotpath' | 'cqrs' | 'sanctions' | 'cbn_reporting' | 'multiregion' | 'smart_routing' | 'hsm' | 'incidents' | 'capacity' | 'whitelabel' | 'api_versions';
 
-const moduleLinks = [
-  { label: 'Outbound Remittance', href: '/', icon: Globe, color: '#3b82f6' },
-  { label: 'Inbound Remittance', href: '/inbound-remittance', icon: ArrowDownLeft, color: '#059669' },
-  { label: 'Trade Payments', href: '/trade-payments', icon: Ship, color: '#7c3aed' },
-  { label: 'Card Processing', href: '/card-processing', icon: CreditCard, color: '#dc2626' },
-  { label: 'Government Payments', href: '/government-payments', icon: Landmark, color: '#0369a1' },
-  { label: 'Open Banking', href: '/open-banking', icon: Code, color: '#0ea5e9' },
-];
+const DOM_MODULE: ModuleConfig = {
+  title: 'Domestic Payments',
+  subtitle: 'Payment Switch Module',
+  icon: Banknote,
+  accentColor: 'text-blue-600',
+  accentBg: 'bg-blue-600',
+  accentHover: 'hover:bg-blue-700',
+};
 
 export default function DomesticPayments() {
   const [activeTab, setActiveTab] = useState<Tab>('dashboard');
@@ -158,189 +163,64 @@ export default function DomesticPayments() {
     return <span style={{ padding: '2px 8px', borderRadius: 9999, fontSize: 11, fontWeight: 600, background: c.bg, color: c.fg }}>{s.replace(/_/g, ' ')}</span>;
   };
 
-  const navItems: { id: Tab; label: string; icon: typeof LayoutDashboard; section?: string }[] = [
+  const navItems: ModNavItem[] = [
     { id: 'dashboard', label: 'Dashboard', icon: LayoutDashboard },
     { id: 'payments', label: 'Instant Payments', icon: ArrowRightLeft },
     { id: 'bills', label: 'Bill Providers', icon: FileText },
     { id: 'standing_orders', label: 'Standing Orders', icon: Repeat },
     { id: 'bulk', label: 'Bulk Disbursements', icon: Package },
-    // NIBSS Gap Features
-    { id: 'neft', label: 'Batch Transfers', icon: Layers, section: 'NIBSS' },
-    { id: 'cheques', label: 'Cheque Clearing', icon: BookOpen, section: 'NIBSS' },
-    { id: 'mandates', label: 'Direct Debit', icon: Receipt, section: 'NIBSS' },
-    { id: 'reversals', label: 'Reversals', icon: RotateCcw, section: 'NIBSS' },
-    { id: 'disputes', label: 'Inter-Bank Disputes', icon: Scale, section: 'NIBSS' },
-    { id: 'merchants', label: 'Merchant Registry', icon: Store, section: 'NIBSS' },
-    { id: 'paydirect', label: 'Corporate Collections', icon: Building2, section: 'NIBSS' },
-    { id: 'identity', label: 'Identity Verification', icon: UserCheck, section: 'NIBSS' },
-    { id: 'iso20022', label: 'Message Standards', icon: FileCode, section: 'NIBSS' },
-    { id: 'nqr', label: 'QR Payments', icon: ScanLine, section: 'NIBSS' },
-    { id: 'emandate', label: 'Mandate Approvals', icon: FileCheck, section: 'NIBSS' },
-    { id: 'fraud', label: 'Fraud Detection', icon: Shield, section: 'ADVANCED' },
-    { id: 'onboarding', label: 'Stakeholder Onboarding', icon: UserPlus, section: 'ADVANCED' },
-    { id: 'nip_monitor', label: 'Real-Time Monitor', icon: Gauge, section: 'OPS' },
-    { id: 'reconciliation', label: 'Reconciliation', icon: FileSpreadsheet, section: 'OPS' },
-    { id: 'sla', label: 'Service Levels', icon: Timer, section: 'OPS' },
-    { id: 'health', label: 'Participant Health', icon: HeartPulse, section: 'OPS' },
-    { id: 'circuit_breaker', label: 'Service Health', icon: Zap, section: 'OPS' },
-    { id: 'compliance', label: 'Regulatory Reports', icon: FileWarning, section: 'COMPLIANCE' },
-    { id: 'monitoring', label: 'Transaction Monitoring', icon: Eye, section: 'COMPLIANCE' },
-    { id: 'revenue', label: 'Revenue Analytics', icon: DollarSign, section: 'ANALYTICS' },
-    { id: 'corridors', label: 'Corridor Analytics', icon: Map, section: 'ANALYTICS' },
-    { id: 'forecast', label: 'Volume Forecast', icon: Brain, section: 'ANALYTICS' },
-    // AI/ML Section
-    { id: 'prophet', label: 'Volume Forecasting', icon: TrendingUp, section: 'AI_ML' },
-    { id: 'cocoindex', label: 'Data Pipeline', icon: Database, section: 'AI_ML' },
-    { id: 'kgqa', label: 'Knowledge Search', icon: MessageSquare, section: 'AI_ML' },
-    { id: 'falkordb', label: 'Graph Analytics', icon: Network, section: 'AI_ML' },
-    { id: 'ollama', label: 'AI Assistant', icon: Bot, section: 'AI_ML' },
-    { id: 'art', label: 'Model Security', icon: ShieldAlert, section: 'AI_ML' },
-    { id: 'gnn_neo4j', label: 'Fraud Networks', icon: GitGraph, section: 'AI_ML' },
-    { id: 'mcmc', label: 'Risk Scoring', icon: Dice1, section: 'AI_ML' },
-    // Core Switch Enhancements
-    { id: 'saga', label: 'Transaction Sagas', icon: RefreshCw, section: 'INFRA' },
-    { id: 'hotpath', label: 'Hot Path Optimization', icon: Zap, section: 'INFRA' },
-    { id: 'cqrs', label: 'Read/Write Separation', icon: Layers, section: 'INFRA' },
-    { id: 'sanctions', label: 'Sanctions Screening', icon: ShieldCheck, section: 'COMPLIANCE' },
-    { id: 'cbn_reporting', label: 'CBN Reporting', icon: FileSpreadsheet, section: 'COMPLIANCE' },
-    { id: 'incidents', label: 'Incident Response', icon: AlertTriangle, section: 'OPS' },
-    { id: 'capacity', label: 'Capacity Planning', icon: Activity, section: 'OPS' },
-    { id: 'multiregion', label: 'Multi-Region', icon: Globe, section: 'INFRA' },
-    { id: 'smart_routing', label: 'Smart Routing', icon: ArrowRightLeft, section: 'INFRA' },
-    { id: 'hsm', label: 'Key Management', icon: ShieldCheck, section: 'SECURITY' },
-    { id: 'whitelabel', label: 'White-Label Tenants', icon: Building2, section: 'PLATFORM' },
-    { id: 'api_versions', label: 'API Versions', icon: Code, section: 'PLATFORM' },
+    { id: 'neft', label: 'Batch Transfers', icon: Layers, section: 'Clearing & Settlement' },
+    { id: 'cheques', label: 'Cheque Clearing', icon: BookOpen, section: 'Clearing & Settlement' },
+    { id: 'mandates', label: 'Direct Debit', icon: Receipt, section: 'Clearing & Settlement' },
+    { id: 'reversals', label: 'Reversals', icon: RotateCcw, section: 'Clearing & Settlement' },
+    { id: 'disputes', label: 'Inter-Bank Disputes', icon: Scale, section: 'Clearing & Settlement' },
+    { id: 'merchants', label: 'Merchant Registry', icon: Store, section: 'Clearing & Settlement' },
+    { id: 'paydirect', label: 'Corporate Collections', icon: Building2, section: 'Clearing & Settlement' },
+    { id: 'identity', label: 'Identity Verification', icon: UserCheck, section: 'Clearing & Settlement' },
+    { id: 'iso20022', label: 'Message Standards', icon: FileCode, section: 'Clearing & Settlement' },
+    { id: 'nqr', label: 'QR Payments', icon: ScanLine, section: 'Clearing & Settlement' },
+    { id: 'emandate', label: 'Mandate Approvals', icon: FileCheck, section: 'Clearing & Settlement' },
+    { id: 'fraud', label: 'Fraud Detection', icon: Shield, section: 'Risk & Onboarding' },
+    { id: 'onboarding', label: 'Stakeholder Onboarding', icon: UserPlus, section: 'Risk & Onboarding' },
+    { id: 'nip_monitor', label: 'Real-Time Monitor', icon: Gauge, section: 'Operations' },
+    { id: 'reconciliation', label: 'Reconciliation', icon: FileSpreadsheet, section: 'Operations' },
+    { id: 'sla', label: 'Service Levels', icon: Timer, section: 'Operations' },
+    { id: 'health', label: 'Participant Health', icon: HeartPulse, section: 'Operations' },
+    { id: 'circuit_breaker', label: 'Service Health', icon: Zap, section: 'Operations' },
+    { id: 'incidents', label: 'Incident Response', icon: AlertTriangle, section: 'Operations' },
+    { id: 'capacity', label: 'Capacity Planning', icon: Activity, section: 'Operations' },
+    { id: 'compliance', label: 'Regulatory Reports', icon: FileWarning, section: 'Compliance' },
+    { id: 'monitoring', label: 'Transaction Monitoring', icon: Eye, section: 'Compliance' },
+    { id: 'sanctions', label: 'Sanctions Screening', icon: ShieldCheck, section: 'Compliance' },
+    { id: 'cbn_reporting', label: 'CBN Reporting', icon: FileSpreadsheet, section: 'Compliance' },
+    { id: 'revenue', label: 'Revenue Analytics', icon: DollarSign, section: 'Analytics' },
+    { id: 'corridors', label: 'Corridor Analytics', icon: Map, section: 'Analytics' },
+    { id: 'forecast', label: 'Volume Forecast', icon: Brain, section: 'Analytics' },
+    { id: 'saga', label: 'Transaction Sagas', icon: RefreshCw, section: 'Infrastructure' },
+    { id: 'hotpath', label: 'Hot Path Optimization', icon: Zap, section: 'Infrastructure' },
+    { id: 'cqrs', label: 'Read/Write Separation', icon: Layers, section: 'Infrastructure' },
+    { id: 'multiregion', label: 'Multi-Region', icon: Globe, section: 'Infrastructure' },
+    { id: 'smart_routing', label: 'Smart Routing', icon: ArrowRightLeft, section: 'Infrastructure' },
+    { id: 'hsm', label: 'Key Management', icon: ShieldCheck, section: 'Security' },
+    { id: 'whitelabel', label: 'White-Label Tenants', icon: Building2, section: 'Platform' },
+    { id: 'api_versions', label: 'API Versions', icon: Code, section: 'Platform' },
+    { id: 'prophet', label: 'Volume Forecasting', icon: TrendingUp, section: 'Intelligence' },
+    { id: 'cocoindex', label: 'Data Pipeline', icon: Database, section: 'Intelligence' },
+    { id: 'kgqa', label: 'Knowledge Search', icon: MessageSquare, section: 'Intelligence' },
+    { id: 'falkordb', label: 'Graph Analytics', icon: Network, section: 'Intelligence' },
+    { id: 'ollama', label: 'AI Assistant', icon: Bot, section: 'Intelligence' },
+    { id: 'art', label: 'Model Security', icon: ShieldAlert, section: 'Intelligence' },
+    { id: 'gnn_neo4j', label: 'Fraud Networks', icon: GitGraph, section: 'Intelligence' },
+    { id: 'mcmc', label: 'Risk Scoring', icon: Dice1, section: 'Intelligence' },
   ];
 
-  const coreItems = navItems.filter(n => !n.section);
-  const nibssItems = navItems.filter(n => n.section === 'NIBSS');
-  const advancedItems = navItems.filter(n => n.section === 'ADVANCED');
-  const opsItems = navItems.filter(n => n.section === 'OPS');
-  const complianceItems = navItems.filter(n => n.section === 'COMPLIANCE');
-  const analyticsItems = navItems.filter(n => n.section === 'ANALYTICS');
-  const aimlItems = navItems.filter(n => n.section === 'AI_ML');
-  const infraItems = navItems.filter(n => n.section === 'INFRA');
-  const securityItems = navItems.filter(n => n.section === 'SECURITY');
-  const platformItems = navItems.filter(n => n.section === 'PLATFORM');
-
   return (
-    <div style={{ display: 'flex', minHeight: '100vh', fontFamily: 'system-ui, -apple-system, sans-serif' }}>
-      <aside style={{ width: 250, borderRight: '1px solid #e5e7eb', background: '#fafafa', display: 'flex', flexDirection: 'column', flexShrink: 0, overflowY: 'auto' }}>
-        <div style={{ padding: '16px 16px 12px', borderBottom: '1px solid #e5e7eb' }}>
-          <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
-            <Banknote size={22} color="#2563eb" />
-            <div>
-              <div style={{ fontWeight: 700, fontSize: 14 }}>Domestic Payments</div>
-              <div style={{ fontSize: 11, color: '#6b7280' }}>Payment Switch Module</div>
-            </div>
-          </div>
-        </div>
-        <nav style={{ flex: 1, padding: 8, display: 'flex', flexDirection: 'column', gap: 2 }}>
-          {coreItems.map(item => (
-            <button key={item.id} onClick={() => setActiveTab(item.id)}
-              style={{ display: 'flex', alignItems: 'center', gap: 10, padding: '10px 14px', borderRadius: 8, border: 'none', cursor: 'pointer', fontSize: 13, fontWeight: 600, width: '100%', textAlign: 'left',
-                background: activeTab === item.id ? '#2563eb' : 'transparent', color: activeTab === item.id ? 'white' : '#374151' }}>
-              <item.icon size={16} />
-              {item.label}
-            </button>
-          ))}
-          <div style={{ fontSize: 10, fontWeight: 700, color: '#9ca3af', textTransform: 'uppercase', letterSpacing: 1, padding: '12px 14px 4px' }}>Clearing & Settlement</div>
-          {nibssItems.map(item => (
-            <button key={item.id} onClick={() => setActiveTab(item.id)}
-              style={{ display: 'flex', alignItems: 'center', gap: 10, padding: '8px 14px', borderRadius: 8, border: 'none', cursor: 'pointer', fontSize: 12, fontWeight: 600, width: '100%', textAlign: 'left',
-                background: activeTab === item.id ? '#2563eb' : 'transparent', color: activeTab === item.id ? 'white' : '#374151' }}>
-              <item.icon size={14} />
-              {item.label}
-            </button>
-          ))}
-          <div style={{ fontSize: 10, fontWeight: 700, color: '#9ca3af', textTransform: 'uppercase', letterSpacing: 1, padding: '12px 14px 4px' }}>Risk & Onboarding</div>
-          {advancedItems.map(item => (
-            <button key={item.id} onClick={() => setActiveTab(item.id)}
-              style={{ display: 'flex', alignItems: 'center', gap: 10, padding: '8px 14px', borderRadius: 8, border: 'none', cursor: 'pointer', fontSize: 12, fontWeight: 600, width: '100%', textAlign: 'left',
-                background: activeTab === item.id ? '#2563eb' : 'transparent', color: activeTab === item.id ? 'white' : '#374151' }}>
-              <item.icon size={14} />
-              {item.label}
-            </button>
-          ))}
-          <div style={{ fontSize: 10, fontWeight: 700, color: '#9ca3af', textTransform: 'uppercase', letterSpacing: 1, padding: '12px 14px 4px' }}>Operations</div>
-          {opsItems.map(item => (
-            <button key={item.id} onClick={() => setActiveTab(item.id)}
-              style={{ display: 'flex', alignItems: 'center', gap: 10, padding: '8px 14px', borderRadius: 8, border: 'none', cursor: 'pointer', fontSize: 12, fontWeight: 600, width: '100%', textAlign: 'left',
-                background: activeTab === item.id ? '#2563eb' : 'transparent', color: activeTab === item.id ? 'white' : '#374151' }}>
-              <item.icon size={14} />
-              {item.label}
-            </button>
-          ))}
-          <div style={{ fontSize: 10, fontWeight: 700, color: '#9ca3af', textTransform: 'uppercase', letterSpacing: 1, padding: '12px 14px 4px' }}>Compliance</div>
-          {complianceItems.map(item => (
-            <button key={item.id} onClick={() => setActiveTab(item.id)}
-              style={{ display: 'flex', alignItems: 'center', gap: 10, padding: '8px 14px', borderRadius: 8, border: 'none', cursor: 'pointer', fontSize: 12, fontWeight: 600, width: '100%', textAlign: 'left',
-                background: activeTab === item.id ? '#2563eb' : 'transparent', color: activeTab === item.id ? 'white' : '#374151' }}>
-              <item.icon size={14} />
-              {item.label}
-            </button>
-          ))}
-          <div style={{ fontSize: 10, fontWeight: 700, color: '#9ca3af', textTransform: 'uppercase', letterSpacing: 1, padding: '12px 14px 4px' }}>Analytics</div>
-          {analyticsItems.map(item => (
-            <button key={item.id} onClick={() => setActiveTab(item.id)}
-              style={{ display: 'flex', alignItems: 'center', gap: 10, padding: '8px 14px', borderRadius: 8, border: 'none', cursor: 'pointer', fontSize: 12, fontWeight: 600, width: '100%', textAlign: 'left',
-                background: activeTab === item.id ? '#2563eb' : 'transparent', color: activeTab === item.id ? 'white' : '#374151' }}>
-              <item.icon size={14} />
-              {item.label}
-            </button>
-          ))}
-          <div style={{ fontSize: 10, fontWeight: 700, color: '#9ca3af', textTransform: 'uppercase', letterSpacing: 1, padding: '12px 14px 4px' }}>Infrastructure</div>
-          {infraItems.map(item => (
-            <button key={item.id} onClick={() => setActiveTab(item.id)}
-              style={{ display: 'flex', alignItems: 'center', gap: 10, padding: '8px 14px', borderRadius: 8, border: 'none', cursor: 'pointer', fontSize: 12, fontWeight: 600, width: '100%', textAlign: 'left',
-                background: activeTab === item.id ? '#0d9488' : 'transparent', color: activeTab === item.id ? 'white' : '#374151' }}>
-              <item.icon size={14} />
-              {item.label}
-            </button>
-          ))}
-          <div style={{ fontSize: 10, fontWeight: 700, color: '#9ca3af', textTransform: 'uppercase', letterSpacing: 1, padding: '12px 14px 4px' }}>Security</div>
-          {securityItems.map(item => (
-            <button key={item.id} onClick={() => setActiveTab(item.id)}
-              style={{ display: 'flex', alignItems: 'center', gap: 10, padding: '8px 14px', borderRadius: 8, border: 'none', cursor: 'pointer', fontSize: 12, fontWeight: 600, width: '100%', textAlign: 'left',
-                background: activeTab === item.id ? '#dc2626' : 'transparent', color: activeTab === item.id ? 'white' : '#374151' }}>
-              <item.icon size={14} />
-              {item.label}
-            </button>
-          ))}
-          <div style={{ fontSize: 10, fontWeight: 700, color: '#9ca3af', textTransform: 'uppercase', letterSpacing: 1, padding: '12px 14px 4px' }}>Platform</div>
-          {platformItems.map(item => (
-            <button key={item.id} onClick={() => setActiveTab(item.id)}
-              style={{ display: 'flex', alignItems: 'center', gap: 10, padding: '8px 14px', borderRadius: 8, border: 'none', cursor: 'pointer', fontSize: 12, fontWeight: 600, width: '100%', textAlign: 'left',
-                background: activeTab === item.id ? '#7c3aed' : 'transparent', color: activeTab === item.id ? 'white' : '#374151' }}>
-              <item.icon size={14} />
-              {item.label}
-            </button>
-          ))}
-          <div style={{ fontSize: 10, fontWeight: 700, color: '#9ca3af', textTransform: 'uppercase', letterSpacing: 1, padding: '12px 14px 4px' }}>Intelligence</div>
-          {aimlItems.map(item => (
-            <button key={item.id} onClick={() => setActiveTab(item.id)}
-              style={{ display: 'flex', alignItems: 'center', gap: 10, padding: '8px 14px', borderRadius: 8, border: 'none', cursor: 'pointer', fontSize: 12, fontWeight: 600, width: '100%', textAlign: 'left',
-                background: activeTab === item.id ? '#7c3aed' : 'transparent', color: activeTab === item.id ? 'white' : '#374151' }}>
-              <item.icon size={14} />
-              {item.label}
-            </button>
-          ))}
-        </nav>
-        <div style={{ borderTop: '1px solid #e5e7eb', padding: '8px 8px 12px' }}>
-          <div style={{ fontSize: 10, fontWeight: 700, color: '#9ca3af', textTransform: 'uppercase', letterSpacing: 1, padding: '4px 14px 6px' }}>Other Modules</div>
-          {moduleLinks.map(m => (
-            <a key={m.href} href={m.href} style={{ display: 'flex', alignItems: 'center', gap: 8, padding: '6px 14px', borderRadius: 6, fontSize: 12, color: m.color, textDecoration: 'none' }}>
-              <m.icon size={14} />
-              {m.label}
-            </a>
-          ))}
-        </div>
-      </aside>
-
-      <main style={{ flex: 1, padding: 24, overflowY: 'auto', maxWidth: 1200 }}>
-        <div style={{ display: 'flex', alignItems: 'center', gap: 12, marginBottom: 24 }}>
-          <h1 style={{ fontSize: 24, fontWeight: 700, margin: 0 }}>{navItems.find(n => n.id === activeTab)?.label ?? 'Dashboard'}</h1>
-        </div>
+    <ModuleLayout module={DOM_MODULE} navItems={navItems} activeTab={activeTab} onTabChange={(tab) => setActiveTab(tab as Tab)}>
+      <PageHeader
+        title={navItems.find(n => n.id === activeTab)?.label ?? 'Dashboard'}
+        subtitle="Nigeria's real-time payment infrastructure"
+        icon={Banknote}
+      />
 
         {/* ============== Summary Cards (shown on dashboard) ============== */}
         {activeTab === 'dashboard' && summary && (
@@ -1673,14 +1553,14 @@ export default function DomesticPayments() {
         )}
 
         {/* 22. CocoIndex */}
-        {activeTab === 'cocoindex' && cocoQuery.data && (
+        {activeTab === 'cocoindex' && cocoQuery.data && (() => { const cData = cocoQuery.data as any; return (
           <div>
             <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: 16, marginBottom: 24 }}>
               {[
-                { label: 'Status', value: cocoQuery.data.pipeline.status, color: '#059669' },
-                { label: 'Lag', value: `${cocoQuery.data.health.lagSeconds}s`, color: '#2563eb' },
-                { label: 'Throughput', value: `${cocoQuery.data.health.throughputAvg.toLocaleString()} docs/s`, color: '#7c3aed' },
-                { label: 'Error Rate', value: `${cocoQuery.data.health.errorRate}%`, color: '#059669' },
+                { label: 'Status', value: String(cData.pipeline.status), color: '#059669' },
+                { label: 'Lag', value: `${cData.health.lagSeconds}s`, color: '#2563eb' },
+                { label: 'Throughput', value: `${cData.health.throughputAvg?.toLocaleString()} docs/s`, color: '#7c3aed' },
+                { label: 'Error Rate', value: `${cData.health.errorRate}%`, color: '#059669' },
               ].map(m => (
                 <div key={m.label} style={{ background: 'white', border: '1px solid #e5e7eb', borderRadius: 12, padding: 16 }}>
                   <div style={{ fontSize: 11, color: '#6b7280', marginBottom: 4 }}>{m.label}</div>
@@ -1689,12 +1569,12 @@ export default function DomesticPayments() {
               ))}
             </div>
             <div style={{ background: '#eff6ff', border: '1px solid #bfdbfe', borderRadius: 12, padding: 16, marginBottom: 24 }}>
-              <div style={{ fontSize: 14, fontWeight: 700, color: '#1d4ed8', marginBottom: 4 }}>Pipeline: {cocoQuery.data.pipeline.id} — {cocoQuery.data.pipeline.framework}</div>
-              <div style={{ fontSize: 12, color: '#1d4ed8' }}>Source: {cocoQuery.data.source.type} ({cocoQuery.data.source.tables.length} tables) | Batch: {cocoQuery.data.pipeline.batchSize.toLocaleString()} | Parallelism: {cocoQuery.data.pipeline.parallelism}</div>
+              <div style={{ fontSize: 14, fontWeight: 700, color: '#1d4ed8', marginBottom: 4 }}>Pipeline: {cData.pipeline.id} — {cData.pipeline.framework}</div>
+              <div style={{ fontSize: 12, color: '#1d4ed8' }}>Source: {cData.source.type} ({cData.source.tables.length} tables) | Batch: {cData.pipeline.batchSize?.toLocaleString()} | Parallelism: {cData.pipeline.parallelism}</div>
             </div>
             <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: 13 }}>
               <thead><tr style={{ borderBottom: '2px solid #e5e7eb' }}>{['Index', 'Total Docs', 'Indexed', 'Updated', 'Deleted', 'Errors', 'Duration', 'Throughput'].map(h => <th key={h} style={{ padding: '8px 12px', textAlign: 'left', fontWeight: 600 }}>{h}</th>)}</tr></thead>
-              <tbody>{cocoQuery.data.indexes.map((idx: any) => (
+              <tbody>{cData.indexes.map((idx: any) => (
                 <tr key={idx.name} style={{ borderBottom: '1px solid #f3f4f6' }}>
                   <td style={{ padding: '8px 12px', fontWeight: 600 }}>{idx.name}</td>
                   <td style={{ padding: '8px 12px' }}>{idx.totalDocs.toLocaleString()}</td>
@@ -1708,7 +1588,7 @@ export default function DomesticPayments() {
               ))}</tbody>
             </table>
           </div>
-        )}
+        ); })()}
 
         {/* 23. EPR-KGQA */}
         {activeTab === 'kgqa' && kgqaQuery.data && (
@@ -1747,14 +1627,14 @@ export default function DomesticPayments() {
         )}
 
         {/* 24. FalkorDB */}
-        {activeTab === 'falkordb' && falkorQuery.data && (
+        {activeTab === 'falkordb' && falkorQuery.data && (() => { const fData = falkorQuery.data as any; return (
           <div>
             <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: 16, marginBottom: 24 }}>
               {[
-                { label: 'Avg Query Time', value: `${falkorQuery.data.metrics.avgQueryTimeMs}ms`, color: '#059669' },
-                { label: 'P99 Latency', value: `${falkorQuery.data.metrics.p99QueryTimeMs}ms`, color: '#f59e0b' },
-                { label: 'Queries/sec', value: falkorQuery.data.metrics.queriesPerSecond.toLocaleString(), color: '#2563eb' },
-                { label: 'Cache Hit Rate', value: `${(falkorQuery.data.metrics.cacheHitRate * 100).toFixed(0)}%`, color: '#7c3aed' },
+                { label: 'Avg Query Time', value: `${fData.metrics.avgQueryTimeMs ?? 0}ms`, color: '#059669' },
+                { label: 'P99 Latency', value: `${fData.metrics.p99QueryTimeMs ?? 0}ms`, color: '#f59e0b' },
+                { label: 'Queries/sec', value: (fData.metrics.queriesPerSecond ?? 0).toLocaleString(), color: '#2563eb' },
+                { label: 'Cache Hit Rate', value: `${((fData.metrics.cacheHitRate ?? 0) * 100).toFixed(0)}%`, color: '#7c3aed' },
               ].map(m => (
                 <div key={m.label} style={{ background: 'white', border: '1px solid #e5e7eb', borderRadius: 12, padding: 16 }}>
                   <div style={{ fontSize: 11, color: '#6b7280', marginBottom: 4 }}>{m.label}</div>
@@ -1763,12 +1643,12 @@ export default function DomesticPayments() {
               ))}
             </div>
             <div style={{ background: '#fef2f2', border: '1px solid #fecaca', borderRadius: 12, padding: 16, marginBottom: 24 }}>
-              <div style={{ fontSize: 14, fontWeight: 700, color: '#991b1b', marginBottom: 4 }}>FalkorDB — {falkorQuery.data.connection.graphName}</div>
-              <div style={{ fontSize: 12, color: '#991b1b' }}>{falkorQuery.data.connection.host}:{falkorQuery.data.connection.port} | {falkorQuery.data.metrics.totalNodes.toLocaleString()} nodes | {falkorQuery.data.metrics.totalEdges.toLocaleString()} edges | {falkorQuery.data.metrics.memoryUsageMb}MB</div>
+              <div style={{ fontSize: 14, fontWeight: 700, color: '#991b1b', marginBottom: 4 }}>FalkorDB — {fData.connection.graphName}</div>
+              <div style={{ fontSize: 12, color: '#991b1b' }}>{fData.connection.host}:{fData.connection.port} | {fData.metrics.totalNodes?.toLocaleString()} nodes | {fData.metrics.totalEdges?.toLocaleString()} edges | {fData.metrics.memoryUsageMb ?? 0}MB</div>
             </div>
             <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: 13 }}>
               <thead><tr style={{ borderBottom: '2px solid #e5e7eb' }}>{['Query', 'Results', 'Time', 'Type'].map(h => <th key={h} style={{ padding: '8px 12px', textAlign: 'left', fontWeight: 600 }}>{h}</th>)}</tr></thead>
-              <tbody>{falkorQuery.data.recentQueries.map((q: any, i: number) => (
+              <tbody>{(fData.recentQueries ?? []).map((q: any, i: number) => (
                 <tr key={i} style={{ borderBottom: '1px solid #f3f4f6' }}>
                   <td style={{ padding: '8px 12px', fontWeight: 600 }}>{q.query}</td>
                   <td style={{ padding: '8px 12px' }}>{q.resultCount}</td>
@@ -1778,7 +1658,7 @@ export default function DomesticPayments() {
               ))}</tbody>
             </table>
           </div>
-        )}
+        ); })()}
 
         {/* 25. Ollama LLM */}
         {activeTab === 'ollama' && ollamaQuery.data && (
@@ -2419,7 +2299,6 @@ export default function DomesticPayments() {
           </div>
         )}
 
-      </main>
-    </div>
+    </ModuleLayout>
   );
 }

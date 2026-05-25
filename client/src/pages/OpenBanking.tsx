@@ -1,20 +1,54 @@
 import { useState } from 'react';
 import { trpc } from '@/lib/trpc';
-import { Globe, Key, Shield, Code, CheckCircle, XCircle, Clock, Zap, Users, Server, BarChart3, TrendingUp, Activity, PieChart, LayoutDashboard, ArrowDownLeft, Banknote, Ship, CreditCard, Landmark, Box } from 'lucide-react';
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
+import { Code, CheckCircle, Shield, Zap, Users, Server, BarChart3, TrendingUp, Box, LayoutDashboard } from 'lucide-react';
+import ModuleLayout from '@/components/ModuleLayout';
+import type { NavItem, ModuleConfig } from '@/components/ModuleLayout';
+import MetricCard from '@/components/MetricCard';
+import StatusBadge from '@/components/StatusBadge';
+import PageHeader from '@/components/PageHeader';
+import { formatCompact } from '@/lib/currency';
+import { cn } from '@/lib/utils';
 
-type Tab = 'dashboard' | 'tpps' | 'consents' | 'api_catalog' | 'sandboxes';
+const MODULE: ModuleConfig = {
+  title: 'Open Banking',
+  subtitle: 'API Marketplace',
+  icon: Code,
+  accentColor: 'text-sky-500',
+  accentBg: 'bg-sky-500',
+  accentHover: 'hover:bg-sky-600',
+};
 
-const moduleLinks = [
-  { label: 'Outbound Remittance', href: '/', icon: Globe, color: '#3b82f6' },
-  { label: 'Inbound Remittance', href: '/inbound-remittance', icon: ArrowDownLeft, color: '#059669' },
-  { label: 'Domestic Payments', href: '/domestic-payments', icon: Banknote, color: '#2563eb' },
-  { label: 'Trade Payments', href: '/trade-payments', icon: Ship, color: '#7c3aed' },
-  { label: 'Card Processing', href: '/card-processing', icon: CreditCard, color: '#dc2626' },
-  { label: 'Government Payments', href: '/government-payments', icon: Landmark, color: '#0369a1' },
+const NAV_ITEMS: NavItem[] = [
+  { id: 'dashboard', label: 'Dashboard', icon: LayoutDashboard },
+  { id: 'tpps', label: 'Third-Party Providers', icon: Users },
+  { id: 'consents', label: 'Consents', icon: Shield },
+  { id: 'api_catalog', label: 'API Services', icon: Server },
+  { id: 'sandboxes', label: 'Sandboxes', icon: Box },
 ];
 
+const TIER_STYLES: Record<string, string> = {
+  ENTERPRISE: 'bg-amber-100 text-amber-800',
+  GROWTH: 'bg-blue-100 text-blue-800',
+  STARTER: 'bg-green-100 text-green-800',
+  SANDBOX: 'bg-gray-100 text-gray-600',
+};
+
+const METHOD_STYLES: Record<string, string> = {
+  GET: 'bg-green-100 text-green-800',
+  POST: 'bg-blue-100 text-blue-800',
+  PUT: 'bg-amber-100 text-amber-800',
+  DELETE: 'bg-red-100 text-red-800',
+};
+
+const SERVICE_STYLES: Record<string, string> = {
+  AIS: 'bg-blue-100 text-blue-800',
+  PIS: 'bg-green-100 text-green-800',
+};
+
 export default function OpenBanking() {
-  const [activeTab, setActiveTab] = useState<Tab>('dashboard');
+  const [activeTab, setActiveTab] = useState('dashboard');
 
   const tppsQuery = trpc.openBanking.listTPPs.useQuery(undefined, { retry: false });
   const consentsQuery = trpc.openBanking.listConsents.useQuery(undefined, { retry: false });
@@ -28,293 +62,259 @@ export default function OpenBanking() {
   const endpoints = endpointsQuery.data?.endpoints ?? [];
   const sandboxes = sandboxQuery.data?.sandboxes ?? [];
 
-  const fmtCalls = (n: number) => n >= 1e6 ? `${(n / 1e6).toFixed(1)}M` : n >= 1e3 ? `${(n / 1e3).toFixed(0)}K` : String(n);
-
-  const tierColor = (t: string) => {
-    const m: Record<string, { bg: string; fg: string }> = {
-      ENTERPRISE: { bg: '#fef3c7', fg: '#92400e' }, GROWTH: { bg: '#dbeafe', fg: '#1d4ed8' },
-      STARTER: { bg: '#dcfce7', fg: '#166534' }, SANDBOX: { bg: '#f3f4f6', fg: '#6b7280' },
-    };
-    return m[t] || { bg: '#f3f4f6', fg: '#6b7280' };
-  };
-
-  const navItems: { id: Tab; label: string; icon: typeof LayoutDashboard }[] = [
-    { id: 'dashboard', label: 'Dashboard', icon: LayoutDashboard },
-    { id: 'tpps', label: 'Third-Party Providers', icon: Users },
-    { id: 'consents', label: 'Consents', icon: Shield },
-    { id: 'api_catalog', label: 'API Services', icon: Server },
-    { id: 'sandboxes', label: 'Sandboxes', icon: Box },
-  ];
-
   return (
-    <div style={{ display: 'flex', minHeight: '100vh', fontFamily: 'system-ui, -apple-system, sans-serif' }}>
-      <aside style={{ width: 250, borderRight: '1px solid #e5e7eb', background: '#fafafa', display: 'flex', flexDirection: 'column', flexShrink: 0 }}>
-        <div style={{ padding: '16px 16px 12px', borderBottom: '1px solid #e5e7eb' }}>
-          <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
-            <Code size={22} color="#0ea5e9" />
-            <div>
-              <div style={{ fontWeight: 700, fontSize: 14 }}>Open Banking</div>
-              <div style={{ fontSize: 11, color: '#6b7280' }}>API Marketplace</div>
-            </div>
-          </div>
-        </div>
-        <nav style={{ flex: 1, padding: 8, display: 'flex', flexDirection: 'column', gap: 2 }}>
-          {navItems.map(item => (
-            <button key={item.id} onClick={() => setActiveTab(item.id)}
-              style={{ display: 'flex', alignItems: 'center', gap: 10, padding: '10px 14px', borderRadius: 8, border: 'none', cursor: 'pointer', fontSize: 13, fontWeight: 600, width: '100%', textAlign: 'left',
-                background: activeTab === item.id ? '#0ea5e9' : 'transparent', color: activeTab === item.id ? 'white' : '#374151' }}>
-              <item.icon size={16} />
-              {item.label}
-            </button>
-          ))}
-        </nav>
-        <div style={{ borderTop: '1px solid #e5e7eb', padding: '8px 8px 12px' }}>
-          <div style={{ fontSize: 10, fontWeight: 700, color: '#9ca3af', textTransform: 'uppercase', letterSpacing: 1, padding: '4px 14px 6px' }}>Other Modules</div>
-          {moduleLinks.map(m => (
-            <a key={m.href} href={m.href} style={{ display: 'flex', alignItems: 'center', gap: 8, padding: '6px 14px', borderRadius: 6, fontSize: 12, color: m.color, textDecoration: 'none' }}>
-              <m.icon size={14} />
-              {m.label}
-            </a>
-          ))}
-        </div>
-      </aside>
+    <ModuleLayout module={MODULE} navItems={NAV_ITEMS} activeTab={activeTab} onTabChange={setActiveTab}>
+      <PageHeader
+        title={NAV_ITEMS.find(n => n.id === activeTab)?.label ?? 'Dashboard'}
+        subtitle="AIS, PIS, Consent Management, Developer Sandbox"
+        icon={Code}
+      />
 
-      <main style={{ flex: 1, padding: 24, overflowY: 'auto', maxWidth: 1200 }}>
-        <div style={{ display: 'flex', alignItems: 'center', gap: 12, marginBottom: 24 }}>
-          <h1 style={{ fontSize: 24, fontWeight: 700, margin: 0 }}>{navItems.find(n => n.id === activeTab)?.label ?? 'Dashboard'}</h1>
-          <span style={{ fontSize: 13, color: '#6b7280' }}>AIS, PIS, Consent Management, Developer Sandbox</span>
-        </div>
+      {/* Summary Metrics */}
+      <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-3">
+        <MetricCard title="TPPs" value={tppSummary?.totalTPPs ?? 0} icon={Users} />
+        <MetricCard title="Active" value={tppSummary?.activeTPPs ?? 0} icon={CheckCircle} variant="success" />
+        <MetricCard title="API Calls" value={formatCompact(tppSummary?.totalApiCalls ?? 0)} icon={Zap} />
+        <MetricCard title="Consents" value={consentSummary?.authorized ?? 0} icon={Shield} variant="success" />
+        <MetricCard title="Endpoints" value={endpoints.length} icon={Server} variant="warning" />
+      </div>
 
-        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(150px, 1fr))', gap: 14, marginBottom: 24 }}>
-          {[
-            { label: 'TPPs', value: tppSummary?.totalTPPs ?? 0, icon: Users, color: '#0ea5e9' },
-            { label: 'Active', value: tppSummary?.activeTPPs ?? 0, icon: CheckCircle, color: '#10b981' },
-            { label: 'API Calls', value: fmtCalls(tppSummary?.totalApiCalls ?? 0), icon: Zap, color: '#7c3aed' },
-            { label: 'Consents', value: consentSummary?.authorized ?? 0, icon: Shield, color: '#059669' },
-            { label: 'Endpoints', value: endpoints.length, icon: Server, color: '#ea580c' },
-          ].map((c, i) => (
-            <div key={i} style={{ background: 'white', border: '1px solid #e5e7eb', borderRadius: 12, padding: 14 }}>
-              <div style={{ display: 'flex', alignItems: 'center', gap: 6, marginBottom: 6 }}>
-                <c.icon size={16} color={c.color} />
-                <span style={{ fontSize: 11, color: '#6b7280' }}>{c.label}</span>
-              </div>
-              <div style={{ fontSize: 22, fontWeight: 700, color: c.color }}>{c.value}</div>
-            </div>
-          ))}
-        </div>
-
-      {/* Dashboard Tab */}
+      {/* Dashboard */}
       {activeTab === 'dashboard' && (
-        <div>
-          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: 20, marginBottom: 24 }}>
-            <div style={{ background: 'linear-gradient(135deg, #0ea5e9, #38bdf8)', borderRadius: 16, padding: 24, color: 'white' }}>
-              <div style={{ fontSize: 13, opacity: 0.9, marginBottom: 8 }}>Total API Calls (Monthly)</div>
-              <div style={{ fontSize: 32, fontWeight: 800 }}>{fmtCalls(tppSummary?.totalApiCalls ?? 0)}</div>
-              <div style={{ fontSize: 12, opacity: 0.8, marginTop: 4 }}><TrendingUp size={14} style={{ display: 'inline', verticalAlign: 'middle' }} /> {fmtCalls(endpointsQuery.data?.totalCalls24h ?? 0)} in last 24h</div>
-            </div>
-            <div style={{ background: 'linear-gradient(135deg, #059669, #10b981)', borderRadius: 16, padding: 24, color: 'white' }}>
-              <div style={{ fontSize: 13, opacity: 0.9, marginBottom: 8 }}>Active Consents</div>
-              <div style={{ fontSize: 32, fontWeight: 800 }}>{consentSummary?.authorized ?? 0}</div>
-              <div style={{ fontSize: 12, opacity: 0.8, marginTop: 4 }}>{consentSummary?.revoked ?? 0} revoked, {consentSummary?.expired ?? 0} expired</div>
-            </div>
-            <div style={{ background: 'linear-gradient(135deg, #7c3aed, #8b5cf6)', borderRadius: 16, padding: 24, color: 'white' }}>
-              <div style={{ fontSize: 13, opacity: 0.9, marginBottom: 8 }}>Registered TPPs</div>
-              <div style={{ fontSize: 32, fontWeight: 800 }}>{tppSummary?.totalTPPs ?? 0}</div>
-              <div style={{ fontSize: 12, opacity: 0.8, marginTop: 4 }}>{tppSummary?.activeTPPs ?? 0} active, {sandboxes.length} sandboxes</div>
-            </div>
+        <>
+          <div className="grid md:grid-cols-3 gap-5">
+            <Card className="bg-gradient-to-br from-sky-500 to-sky-400 text-white border-0">
+              <CardContent className="p-6">
+                <p className="text-sm opacity-90 mb-2">Total API Calls (Monthly)</p>
+                <p className="text-3xl font-extrabold">{formatCompact(tppSummary?.totalApiCalls ?? 0)}</p>
+                <p className="text-xs opacity-80 mt-1 flex items-center gap-1"><TrendingUp className="h-3.5 w-3.5" /> {formatCompact(endpointsQuery.data?.totalCalls24h ?? 0)} in last 24h</p>
+              </CardContent>
+            </Card>
+            <Card className="bg-gradient-to-br from-emerald-600 to-emerald-500 text-white border-0">
+              <CardContent className="p-6">
+                <p className="text-sm opacity-90 mb-2">Active Consents</p>
+                <p className="text-3xl font-extrabold">{consentSummary?.authorized ?? 0}</p>
+                <p className="text-xs opacity-80 mt-1">{consentSummary?.revoked ?? 0} revoked, {consentSummary?.expired ?? 0} expired</p>
+              </CardContent>
+            </Card>
+            <Card className="bg-gradient-to-br from-violet-600 to-violet-500 text-white border-0">
+              <CardContent className="p-6">
+                <p className="text-sm opacity-90 mb-2">Registered TPPs</p>
+                <p className="text-3xl font-extrabold">{tppSummary?.totalTPPs ?? 0}</p>
+                <p className="text-xs opacity-80 mt-1">{tppSummary?.activeTPPs ?? 0} active, {sandboxes.length} sandboxes</p>
+              </CardContent>
+            </Card>
           </div>
 
-          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 20, marginBottom: 24 }}>
-            <div style={{ background: 'white', border: '1px solid #e5e7eb', borderRadius: 12, padding: 20 }}>
-              <h3 style={{ fontSize: 15, fontWeight: 700, marginBottom: 16, display: 'flex', alignItems: 'center', gap: 8 }}><BarChart3 size={18} color="#0ea5e9" /> TPP Tier Distribution</h3>
-              {['ENTERPRISE', 'GROWTH', 'STARTER', 'SANDBOX'].map((tier, i) => {
-                const count = tpps.filter(t => t.tier === tier).length;
-                return (
-                  <div key={i} style={{ display: 'flex', alignItems: 'center', gap: 12, marginBottom: 10, padding: '10px 12px', background: '#f9fafb', borderRadius: 8 }}>
-                    <span style={{ padding: '2px 10px', borderRadius: 9999, fontSize: 11, fontWeight: 600, background: tierColor(tier).bg, color: tierColor(tier).fg, minWidth: 80, textAlign: 'center' as const }}>{tier}</span>
-                    <div style={{ flex: 1, height: 8, background: '#f3f4f6', borderRadius: 4, overflow: 'hidden' }}>
-                      <div style={{ height: '100%', width: `${(tpps.length > 0 ? count / tpps.length : 0) * 100}%`, background: '#0ea5e9', borderRadius: 4 }} />
+          <div className="grid md:grid-cols-2 gap-5">
+            <Card>
+              <CardHeader>
+                <CardTitle className="text-[15px] flex items-center gap-2"><BarChart3 className="h-4.5 w-4.5 text-sky-500" /> TPP Tier Distribution</CardTitle>
+              </CardHeader>
+              <CardContent className="space-y-2.5">
+                {['ENTERPRISE', 'GROWTH', 'STARTER', 'SANDBOX'].map(tier => {
+                  const count = tpps.filter(t => t.apiTier === tier).length;
+                  return (
+                    <div key={tier} className="flex items-center gap-3 p-2.5 bg-muted/50 rounded-lg">
+                      <span className={cn('px-2.5 py-0.5 rounded-full text-[11px] font-semibold min-w-[80px] text-center', TIER_STYLES[tier] || 'bg-gray-100 text-gray-600')}>{tier}</span>
+                      <div className="flex-1 h-2 bg-muted rounded-full overflow-hidden">
+                        <div className="h-full bg-sky-500 rounded-full" style={{ width: `${(tpps.length > 0 ? count / tpps.length : 0) * 100}%` }} />
+                      </div>
+                      <span className="text-sm font-semibold">{count}</span>
                     </div>
-                    <span style={{ fontSize: 13, fontWeight: 600 }}>{count}</span>
-                  </div>
-                );
-              })}
-            </div>
+                  );
+                })}
+              </CardContent>
+            </Card>
 
-            <div style={{ background: 'white', border: '1px solid #e5e7eb', borderRadius: 12, padding: 20 }}>
-              <h3 style={{ fontSize: 15, fontWeight: 700, marginBottom: 16, display: 'flex', alignItems: 'center', gap: 8 }}><Shield size={18} color="#059669" /> Consent Status</h3>
-              {[
-                { label: 'Authorized', value: consentSummary?.authorized ?? 0, total: consentSummary?.total ?? 1, color: '#10b981' },
-                { label: 'Revoked', value: consentSummary?.revoked ?? 0, total: consentSummary?.total ?? 1, color: '#ef4444' },
-                { label: 'Expired', value: consentSummary?.expired ?? 0, total: consentSummary?.total ?? 1, color: '#6b7280' },
-              ].map((item, i) => (
-                <div key={i} style={{ marginBottom: 16 }}>
-                  <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: 13, marginBottom: 4 }}>
-                    <span>{item.label}</span>
-                    <span style={{ fontWeight: 600 }}>{item.value} ({((item.value / item.total) * 100).toFixed(0)}%)</span>
+            <Card>
+              <CardHeader>
+                <CardTitle className="text-[15px] flex items-center gap-2"><Shield className="h-4.5 w-4.5 text-emerald-600" /> Consent Status</CardTitle>
+              </CardHeader>
+              <CardContent className="space-y-4">
+                {[
+                  { label: 'Authorized', value: consentSummary?.authorized ?? 0, total: consentSummary?.totalConsents ?? 1, color: 'bg-emerald-500' },
+                  { label: 'Revoked', value: consentSummary?.revoked ?? 0, total: consentSummary?.totalConsents ?? 1, color: 'bg-red-500' },
+                  { label: 'Expired', value: consentSummary?.expired ?? 0, total: consentSummary?.totalConsents ?? 1, color: 'bg-gray-400' },
+                ].map(item => (
+                  <div key={item.label}>
+                    <div className="flex justify-between text-sm mb-1">
+                      <span>{item.label}</span>
+                      <span className="font-semibold">{item.value} ({((item.value / item.total) * 100).toFixed(0)}%)</span>
+                    </div>
+                    <div className="h-2.5 bg-muted rounded-full overflow-hidden">
+                      <div className={cn('h-full rounded-full', item.color)} style={{ width: `${(item.value / item.total) * 100}%` }} />
+                    </div>
                   </div>
-                  <div style={{ height: 10, background: '#f3f4f6', borderRadius: 5, overflow: 'hidden' }}>
-                    <div style={{ height: '100%', width: `${(item.value / item.total) * 100}%`, background: item.color, borderRadius: 5 }} />
-                  </div>
-                </div>
-              ))}
-            </div>
+                ))}
+              </CardContent>
+            </Card>
           </div>
 
-          <div style={{ background: 'white', border: '1px solid #e5e7eb', borderRadius: 12, padding: 20 }}>
-            <h3 style={{ fontSize: 15, fontWeight: 700, marginBottom: 16, display: 'flex', alignItems: 'center', gap: 8 }}><Code size={18} color="#ea580c" /> Top API Endpoints</h3>
-            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(300px, 1fr))', gap: 12 }}>
-              {endpoints.sort((a, b) => b.calls24h - a.calls24h).slice(0, 6).map((ep, i) => (
-                <div key={i} style={{ padding: 14, background: '#f9fafb', borderRadius: 8, display: 'flex', alignItems: 'center', gap: 12 }}>
-                  <span style={{ padding: '2px 8px', borderRadius: 4, fontSize: 10, fontWeight: 700, background: ep.method === 'GET' ? '#dbeafe' : ep.method === 'POST' ? '#dcfce7' : '#fef3c7', color: ep.method === 'GET' ? '#1d4ed8' : ep.method === 'POST' ? '#166534' : '#92400e' }}>{ep.method}</span>
-                  <div style={{ flex: 1 }}>
-                    <div style={{ fontWeight: 600, fontSize: 12, fontFamily: 'monospace' }}>{ep.path}</div>
-                    <div style={{ fontSize: 11, color: '#6b7280' }}>{ep.category} · p{ep.avgLatencyMs}ms</div>
+          <Card>
+            <CardHeader>
+              <CardTitle className="text-[15px] flex items-center gap-2"><Code className="h-4.5 w-4.5 text-orange-600" /> Top API Endpoints</CardTitle>
+            </CardHeader>
+            <CardContent>
+              <div className="grid grid-cols-1 lg:grid-cols-2 gap-3">
+                {endpoints.sort((a, b) => b.callsLast24h - a.callsLast24h).slice(0, 6).map((ep, i) => (
+                  <div key={i} className="flex items-center gap-3 p-3 bg-muted/50 rounded-lg">
+                    <span className={cn('px-2 py-0.5 rounded text-[10px] font-bold font-mono', METHOD_STYLES[ep.method] || 'bg-gray-100')}>{ep.method}</span>
+                    <div className="flex-1 min-w-0">
+                      <p className="font-semibold text-xs font-mono truncate">{ep.path}</p>
+                      <p className="text-[11px] text-muted-foreground">{ep.serviceType} · p{ep.avgLatencyMs}ms</p>
+                    </div>
+                    <span className="text-sm font-bold text-sky-500">{formatCompact(ep.callsLast24h)}</span>
                   </div>
-                  <span style={{ fontSize: 13, fontWeight: 700, color: '#0ea5e9' }}>{fmtCalls(ep.calls24h)}</span>
-                </div>
-              ))}
-            </div>
-          </div>
-        </div>
+                ))}
+              </div>
+            </CardContent>
+          </Card>
+        </>
       )}
 
+      {/* TPPs Tab */}
       {activeTab === 'tpps' && (
-        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(340px, 1fr))', gap: 16 }}>
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
           {tpps.map(t => (
-            <div key={t.id} style={{ background: 'white', border: '1px solid #e5e7eb', borderRadius: 12, padding: 20 }}>
-              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 12 }}>
-                <div>
-                  <div style={{ fontSize: 16, fontWeight: 700 }}>{t.name}</div>
-                  <div style={{ fontSize: 12, color: '#6b7280' }}>{t.registrationNumber} · {t.cbnLicense}</div>
+            <Card key={t.id}>
+              <CardContent className="p-5">
+                <div className="flex justify-between items-center mb-3">
+                  <div>
+                    <p className="text-base font-bold">{t.name}</p>
+                    <p className="text-xs text-muted-foreground">{t.registrationNumber} · {t.cbnLicense}</p>
+                  </div>
+                  <div className="flex flex-col items-end gap-1">
+                    <StatusBadge status={t.status} />
+                    <span className={cn('px-2 py-0.5 rounded-full text-[10px] font-semibold', TIER_STYLES[t.apiTier] || 'bg-gray-100 text-gray-600')}>{t.apiTier}</span>
+                  </div>
                 </div>
-                <div style={{ display: 'flex', gap: 4, flexDirection: 'column' as const, alignItems: 'flex-end' }}>
-                  <span style={{ padding: '2px 8px', borderRadius: 9999, fontSize: 11, fontWeight: 600,
-                    background: t.status === 'ACTIVE' ? '#dcfce7' : t.status === 'REGISTERED' ? '#dbeafe' : '#fef2f2',
-                    color: t.status === 'ACTIVE' ? '#166534' : t.status === 'REGISTERED' ? '#1d4ed8' : '#991b1b' }}>{t.status}</span>
-                  <span style={{ padding: '2px 8px', borderRadius: 9999, fontSize: 10, fontWeight: 600, ...tierColor(t.apiTier) }}>{t.apiTier}</span>
+                <div className="grid grid-cols-2 gap-2 text-xs">
+                  <div><span className="text-muted-foreground">Services:</span> <strong>{t.services.join(', ')}</strong></div>
+                  <div><span className="text-muted-foreground">Monthly Calls:</span> <strong>{formatCompact(t.monthlyApiCalls)}</strong></div>
+                  <div><span className="text-muted-foreground">Rate Limit:</span> <strong>{t.rateLimitPerMin}/min</strong></div>
+                  <div><span className="text-muted-foreground">Contact:</span> <strong>{t.contactEmail}</strong></div>
                 </div>
-              </div>
-              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 8, fontSize: 12 }}>
-                <div><span style={{ color: '#9ca3af' }}>Services:</span> <strong>{t.services.join(', ')}</strong></div>
-                <div><span style={{ color: '#9ca3af' }}>Monthly Calls:</span> <strong>{fmtCalls(t.monthlyApiCalls)}</strong></div>
-                <div><span style={{ color: '#9ca3af' }}>Rate Limit:</span> <strong>{t.rateLimitPerMin}/min</strong></div>
-                <div><span style={{ color: '#9ca3af' }}>Contact:</span> <strong>{t.contactEmail}</strong></div>
-              </div>
-            </div>
+              </CardContent>
+            </Card>
           ))}
         </div>
       )}
 
+      {/* Consents Tab */}
       {activeTab === 'consents' && (
-        <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: 13 }}>
-          <thead>
-            <tr style={{ background: '#f9fafb' }}>
-              {['ID', 'Customer', 'TPP', 'Service', 'Permissions', 'Accounts', 'Status', 'Valid Until'].map(h => (
-                <th key={h} style={{ padding: '10px 12px', textAlign: 'left', fontWeight: 600, borderBottom: '2px solid #e5e7eb' }}>{h}</th>
-              ))}
-            </tr>
-          </thead>
-          <tbody>
-            {consents.map(c => (
-              <tr key={c.id} style={{ borderBottom: '1px solid #f3f4f6' }}>
-                <td style={{ padding: '10px 12px', fontFamily: 'monospace', fontSize: 12 }}>{c.id}</td>
-                <td style={{ padding: '10px 12px', fontWeight: 600 }}>{c.customerName}<br/><span style={{ fontSize: 11, color: '#9ca3af' }}>{c.customerId}</span></td>
-                <td style={{ padding: '10px 12px' }}>{c.tppName}</td>
-                <td style={{ padding: '10px 12px' }}>
-                  <span style={{ padding: '2px 6px', borderRadius: 4, fontSize: 11, fontWeight: 600,
-                    background: c.serviceType === 'AIS' ? '#dbeafe' : '#dcfce7', color: c.serviceType === 'AIS' ? '#1d4ed8' : '#166534' }}>{c.serviceType}</span>
-                </td>
-                <td style={{ padding: '10px 12px' }}>
-                  <div style={{ display: 'flex', gap: 2, flexWrap: 'wrap' }}>
-                    {c.permissions.map(p => <span key={p} style={{ padding: '1px 4px', borderRadius: 2, fontSize: 10, background: '#f3f4f6' }}>{p}</span>)}
-                  </div>
-                </td>
-                <td style={{ padding: '10px 12px', fontFamily: 'monospace', fontSize: 11 }}>{c.accounts.join(', ')}</td>
-                <td style={{ padding: '10px 12px' }}>
-                  <span style={{ padding: '2px 8px', borderRadius: 9999, fontSize: 11, fontWeight: 600,
-                    background: c.status === 'AUTHORIZED' ? '#dcfce7' : c.status === 'REVOKED' ? '#fef2f2' : c.status === 'EXPIRED' ? '#f3f4f6' : '#fef3c7',
-                    color: c.status === 'AUTHORIZED' ? '#166534' : c.status === 'REVOKED' ? '#991b1b' : c.status === 'EXPIRED' ? '#6b7280' : '#92400e' }}>{c.status}</span>
-                </td>
-                <td style={{ padding: '10px 12px', fontSize: 12 }}>{new Date(c.validUntil).toLocaleDateString()}</td>
-              </tr>
-            ))}
-          </tbody>
-        </table>
+        <Card>
+          <CardContent className="p-0">
+            <div className="overflow-x-auto">
+              <Table>
+                <TableHeader>
+                  <TableRow>
+                    {['ID', 'Customer', 'TPP', 'Service', 'Permissions', 'Accounts', 'Status', 'Valid Until'].map(h => (
+                      <TableHead key={h}>{h}</TableHead>
+                    ))}
+                  </TableRow>
+                </TableHeader>
+                <TableBody>
+                  {consents.map(c => (
+                    <TableRow key={c.id}>
+                      <TableCell className="font-mono text-xs">{c.id}</TableCell>
+                      <TableCell>
+                        <div className="font-semibold">{c.customerName}</div>
+                        <div className="text-[11px] text-muted-foreground">{c.customerId}</div>
+                      </TableCell>
+                      <TableCell>{c.tppName}</TableCell>
+                      <TableCell><span className={cn('px-1.5 py-0.5 rounded text-[11px] font-semibold', SERVICE_STYLES[c.serviceType] || 'bg-gray-100')}>{c.serviceType}</span></TableCell>
+                      <TableCell>
+                        <div className="flex gap-1 flex-wrap">
+                          {c.permissions.map(p => <span key={p} className="px-1 py-0.5 rounded text-[10px] bg-muted">{p}</span>)}
+                        </div>
+                      </TableCell>
+                      <TableCell className="font-mono text-[11px]">{c.accounts.join(', ')}</TableCell>
+                      <TableCell><StatusBadge status={c.status} /></TableCell>
+                      <TableCell className="text-xs">{new Date(c.validUntil).toLocaleDateString()}</TableCell>
+                    </TableRow>
+                  ))}
+                </TableBody>
+              </Table>
+            </div>
+          </CardContent>
+        </Card>
       )}
 
+      {/* API Catalog Tab */}
       {activeTab === 'api_catalog' && (
-        <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: 13 }}>
-          <thead>
-            <tr style={{ background: '#f9fafb' }}>
-              {['Method', 'Path', 'Description', 'Service', 'Version', 'Avg Latency', '24h Calls'].map(h => (
-                <th key={h} style={{ padding: '10px 12px', textAlign: 'left', fontWeight: 600, borderBottom: '2px solid #e5e7eb' }}>{h}</th>
-              ))}
-            </tr>
-          </thead>
-          <tbody>
-            {endpoints.map(e => (
-              <tr key={e.id} style={{ borderBottom: '1px solid #f3f4f6' }}>
-                <td style={{ padding: '10px 12px' }}>
-                  <span style={{ padding: '2px 8px', borderRadius: 4, fontSize: 11, fontWeight: 700, fontFamily: 'monospace',
-                    background: e.method === 'GET' ? '#dcfce7' : e.method === 'POST' ? '#dbeafe' : '#fef3c7',
-                    color: e.method === 'GET' ? '#166534' : e.method === 'POST' ? '#1d4ed8' : '#92400e' }}>{e.method}</span>
-                </td>
-                <td style={{ padding: '10px 12px', fontFamily: 'monospace', fontSize: 12, fontWeight: 600 }}>{e.path}</td>
-                <td style={{ padding: '10px 12px' }}>{e.description}</td>
-                <td style={{ padding: '10px 12px' }}>
-                  <span style={{ padding: '2px 6px', borderRadius: 4, fontSize: 11,
-                    background: e.serviceType === 'AIS' ? '#dbeafe' : '#dcfce7', color: e.serviceType === 'AIS' ? '#1d4ed8' : '#166534' }}>{e.serviceType}</span>
-                </td>
-                <td style={{ padding: '10px 12px', fontFamily: 'monospace' }}>{e.version}</td>
-                <td style={{ padding: '10px 12px' }}>
-                  <span style={{ fontWeight: 600, color: e.avgLatencyMs > 200 ? '#f59e0b' : '#10b981' }}>{e.avgLatencyMs}ms</span>
-                </td>
-                <td style={{ padding: '10px 12px', fontFamily: 'monospace', fontWeight: 600 }}>{e.callsLast24h.toLocaleString()}</td>
-              </tr>
-            ))}
-          </tbody>
-        </table>
+        <Card>
+          <CardContent className="p-0">
+            <div className="overflow-x-auto">
+              <Table>
+                <TableHeader>
+                  <TableRow>
+                    {['Method', 'Path', 'Description', 'Service', 'Version', 'Avg Latency', '24h Calls'].map(h => (
+                      <TableHead key={h}>{h}</TableHead>
+                    ))}
+                  </TableRow>
+                </TableHeader>
+                <TableBody>
+                  {endpoints.map(e => (
+                    <TableRow key={e.id}>
+                      <TableCell><span className={cn('px-2 py-0.5 rounded text-[11px] font-bold font-mono', METHOD_STYLES[e.method] || 'bg-gray-100')}>{e.method}</span></TableCell>
+                      <TableCell className="font-mono text-xs font-semibold">{e.path}</TableCell>
+                      <TableCell>{e.description}</TableCell>
+                      <TableCell><span className={cn('px-1.5 py-0.5 rounded text-[11px] font-semibold', SERVICE_STYLES[e.serviceType] || 'bg-gray-100')}>{e.serviceType}</span></TableCell>
+                      <TableCell className="font-mono">{e.version}</TableCell>
+                      <TableCell>
+                        <span className={cn('font-semibold', e.avgLatencyMs > 200 ? 'text-amber-500' : 'text-emerald-500')}>{e.avgLatencyMs}ms</span>
+                      </TableCell>
+                      <TableCell className="font-mono font-semibold">{e.callsLast24h.toLocaleString()}</TableCell>
+                    </TableRow>
+                  ))}
+                </TableBody>
+              </Table>
+            </div>
+          </CardContent>
+        </Card>
       )}
 
+      {/* Sandboxes Tab */}
       {activeTab === 'sandboxes' && (
-        <div>
+        <div className="space-y-4">
           {sandboxes.length === 0 && (
-            <div style={{ textAlign: 'center', padding: 40, color: '#9ca3af' }}>
-              <Code size={48} color="#d1d5db" style={{ margin: '0 auto 16px' }} />
-              <div style={{ fontSize: 16, fontWeight: 600 }}>No active sandboxes</div>
-              <div style={{ fontSize: 13 }}>Register a TPP in SANDBOX tier to create a test environment</div>
+            <div className="text-center py-10 text-muted-foreground">
+              <Code className="h-12 w-12 mx-auto mb-4 text-muted-foreground/30" />
+              <p className="text-base font-semibold">No active sandboxes</p>
+              <p className="text-sm">Register a TPP in SANDBOX tier to create a test environment</p>
             </div>
           )}
           {sandboxes.map(s => (
-            <div key={s.id} style={{ background: 'white', border: '1px solid #e5e7eb', borderRadius: 12, padding: 20, marginBottom: 16 }}>
-              <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 12 }}>
-                <div>
-                  <div style={{ fontSize: 16, fontWeight: 700 }}>{s.tppName} Sandbox</div>
-                  <div style={{ fontSize: 12, color: '#6b7280' }}>{s.id} · Created {new Date(s.createdAt).toLocaleDateString()}</div>
+            <Card key={s.id}>
+              <CardContent className="p-5">
+                <div className="flex justify-between mb-3">
+                  <div>
+                    <p className="text-base font-bold">{s.tppName} Sandbox</p>
+                    <p className="text-xs text-muted-foreground">{s.id} · Created {new Date(s.createdAt).toLocaleDateString()}</p>
+                  </div>
+                  <StatusBadge status={s.status} />
                 </div>
-                <span style={{ padding: '4px 12px', borderRadius: 9999, fontSize: 12, fontWeight: 600, background: '#dcfce7', color: '#166534' }}>{s.status}</span>
-              </div>
-              <div style={{ background: '#f9fafb', borderRadius: 8, padding: 12, marginBottom: 12, fontFamily: 'monospace', fontSize: 12 }}>
-                <span style={{ color: '#6b7280' }}>Test API Key:</span> <strong>{s.testApiKey}</strong>
-              </div>
-              <div style={{ fontSize: 13 }}>
-                <strong>Test Accounts:</strong>
-                <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(200px, 1fr))', gap: 8, marginTop: 8 }}>
-                  {s.testAccounts.map((a: { id: string; name: string; balance: number; currency: string; type: string }) => (
-                    <div key={a.id} style={{ padding: 8, background: '#f9fafb', borderRadius: 6, fontSize: 12 }}>
-                      <div style={{ fontWeight: 600 }}>{a.name}</div>
-                      <div style={{ color: '#6b7280' }}>{a.currency} {a.balance.toLocaleString()} · {a.type}</div>
-                    </div>
-                  ))}
+                <div className="bg-muted/50 rounded-lg p-3 mb-3 font-mono text-xs">
+                  <span className="text-muted-foreground">Test API Key:</span> <strong>{s.testApiKey}</strong>
                 </div>
-              </div>
-              <div style={{ marginTop: 8, fontSize: 12, color: '#6b7280' }}>Total Test Calls: <strong>{s.totalTestCalls.toLocaleString()}</strong></div>
-            </div>
+                <div className="text-sm">
+                  <strong>Test Accounts:</strong>
+                  <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-2 mt-2">
+                    {s.testAccounts.map((a: { id: string; name: string; balance: number; currency: string; type: string }) => (
+                      <div key={a.id} className="p-2 bg-muted/50 rounded-md text-xs">
+                        <p className="font-semibold">{a.name}</p>
+                        <p className="text-muted-foreground">{a.currency} {a.balance.toLocaleString()} · {a.type}</p>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+                <p className="mt-2 text-xs text-muted-foreground">Total Test Calls: <strong>{s.totalTestCalls.toLocaleString()}</strong></p>
+              </CardContent>
+            </Card>
           ))}
         </div>
       )}
-      </main>
-    </div>
+    </ModuleLayout>
   );
 }
