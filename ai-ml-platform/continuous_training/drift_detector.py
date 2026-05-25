@@ -44,7 +44,7 @@ class DriftResult:
             "js_divergence": round(self.js_divergence, 6),
             "mean_shift": round(self.mean_shift, 6),
             "std_shift": round(self.std_shift, 6),
-            "is_drifted": self.is_drifted,
+            "is_drifted": bool(self.is_drifted),
             "drift_severity": self.drift_severity,
         }
 
@@ -67,7 +67,7 @@ class DatasetDriftReport:
             "n_features": self.n_features,
             "n_drifted": self.n_drifted,
             "overall_drift_score": round(self.overall_drift_score, 6),
-            "should_retrain": self.should_retrain,
+            "should_retrain": bool(self.should_retrain),
             "feature_reports": [r.to_dict() for r in self.feature_reports],
         }
 

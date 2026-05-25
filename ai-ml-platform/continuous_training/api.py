@@ -124,6 +124,17 @@ def create_continuous_training_app(
         df = pd.read_parquet(data_path)
         model_config = MODEL_CONFIGS.get(model_name, {})
         feature_cols = model_config.get("feature_cols", [])
+
+        # Engineer encoded categorical features if raw columns exist
+        cat_encoding_map = {
+            "doc_type_enc": "doc_type", "device_type_enc": "device_type",
+            "claim_type_enc": "claim_type", "policy_product_enc": "policy_product",
+            "occupation_enc": "occupation", "state_enc": "state", "gender_enc": "gender",
+        }
+        for enc_col, raw_col in cat_encoding_map.items():
+            if enc_col in feature_cols and enc_col not in df.columns and raw_col in df.columns:
+                df[enc_col] = df[raw_col].astype("category").cat.codes.astype(float)
+
         available = [c for c in feature_cols if c in df.columns]
 
         if not available:
