@@ -42,7 +42,7 @@ DB_URL = os.getenv("DATABASE_URL", "postgresql://ndsep_user:ndsep_secure_2026@lo
 OLLAMA_URL = os.getenv("OLLAMA_URL", "http://localhost:11434")
 RELAY_URL = os.getenv("RELAY_URL", "http://localhost:4000")
 REDIS_URL = os.getenv("REDIS_URL", "redis://localhost:6379")
-REASONING_MODEL = os.getenv("REASONING_MODEL", "llama3.2")
+REASONING_MODEL = os.getenv("REASONING_MODEL", "qwen2.5:1.5b")
 CONFIDENCE_AUTO_THRESHOLD = 0.85
 CONFIDENCE_SUGGEST_THRESHOLD = 0.50
 

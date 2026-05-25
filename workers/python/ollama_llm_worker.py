@@ -6,7 +6,8 @@ Provides local LLM inference via Ollama for the NDSEP platform.
 Supports streaming, prompt templates, and compliance-specific system prompts.
 
 Models supported (auto-detected):
-  - mistral:7b (recommended for compliance Q&A)
+  - qwen2.5 (recommended — strong reasoning, multilingual, data residency compliant)
+  - mistral:7b (compliance Q&A fallback)
   - llama3:8b (general purpose)
   - phi3:mini (fast, lightweight)
   - gemma:7b (alternative)
@@ -96,12 +97,29 @@ def check_ollama() -> bool:
 
 def get_best_model() -> str:
     """Select the best available model."""
-    preferred = ["mistral", "llama3", "phi3", "gemma", "llama2"]
+    preferred = ["qwen2.5", "qwen", "mistral", "llama3", "phi3", "gemma", "llama2"]
     for model in preferred:
         for available in _available_models:
             if model in available.lower():
                 return available
     return _available_models[0] if _available_models else DEFAULT_MODEL
+
+LLAMACPP_URL = os.environ.get("LLAMACPP_URL", "http://localhost:8204")
+
+def _try_llamacpp_fallback(prompt: str, system: Optional[str] = None) -> Optional[Dict[str, Any]]:
+    """Attempt to use llama.cpp native inference as fallback when Ollama is unavailable."""
+    try:
+        payload = {"prompt": prompt, "system": system or ""}
+        resp = requests.post(f"{LLAMACPP_URL}/generate", json=payload, timeout=30)
+        if resp.status_code == 200:
+            data = resp.json()
+            if data.get("response"):
+                log.info("llama.cpp fallback succeeded")
+                data["fallback_engine"] = "llama.cpp"
+                return data
+    except Exception:
+        pass
+    return None
 
 def generate(
     prompt: str,
@@ -151,6 +169,10 @@ def generate(
     except Exception as e:
         _errors += 1
         log.error(f"Ollama generate failed: {e}")
+        # Fallback to llama.cpp native inference
+        llamacpp_result = _try_llamacpp_fallback(prompt, system)
+        if llamacpp_result:
+            return llamacpp_result
         return {"error": str(e), "response": f"LLM unavailable. Error: {e}"}
 
 def chat(

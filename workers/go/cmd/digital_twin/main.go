@@ -117,8 +117,19 @@ type SimulationResult struct {
 	PenaltyDelta      float64                      `json:"penalty_delta_ngn"`
 	BreachDelta       float64                      `json:"breach_delta_percent"`
 	Recommendations   []string                     `json:"recommendations"`
+	RustEngines       *RustEngineResults           `json:"rust_engines,omitempty"`
 	SimulatedAt       string                       `json:"simulated_at"`
 	DurationMs        int64                        `json:"duration_ms"`
+}
+
+type RustEngineResults struct {
+	MonteCarloUsed     bool             `json:"monte_carlo_used"`
+	ABMUsed            bool             `json:"abm_used"`
+	SystemDynamicsUsed bool             `json:"system_dynamics_used"`
+	MonteCarloResult   *RustMCResponse  `json:"monte_carlo,omitempty"`
+	ABMResult          *RustABMResponse `json:"abm,omitempty"`
+	SDResult           *RustSDResponse  `json:"system_dynamics,omitempty"`
+	Errors             []string         `json:"errors,omitempty"`
 }
 
 type JurisdictionResult struct {
@@ -275,6 +286,390 @@ func envOr(key, fallback string) string {
 		return v
 	}
 	return fallback
+}
+
+// ── Rust Engine Integration (Circuit Breaker + HTTP Client) ─────────────────
+
+var rustHTTPClient = &http.Client{Timeout: 30 * time.Second}
+
+type rustServiceStatus struct {
+	available    bool
+	lastChecked  time.Time
+	failures     int
+	circuitOpen  bool
+}
+
+var (
+	rustServiceMu     sync.RWMutex
+	rustServiceHealth = map[string]*rustServiceStatus{}
+)
+
+func isRustServiceAvailable(url string) bool {
+	rustServiceMu.RLock()
+	status, exists := rustServiceHealth[url]
+	rustServiceMu.RUnlock()
+
+	if exists && status.circuitOpen && time.Since(status.lastChecked) < 30*time.Second {
+		return false
+	}
+
+	ctx, cancel := context.WithTimeout(context.Background(), 2*time.Second)
+	defer cancel()
+	req, _ := http.NewRequestWithContext(ctx, "GET", url+"/health", nil)
+	resp, err := rustHTTPClient.Do(req)
+	if err != nil || resp.StatusCode != 200 {
+		rustServiceMu.Lock()
+		if !exists {
+			rustServiceHealth[url] = &rustServiceStatus{}
+			status = rustServiceHealth[url]
+		}
+		status.failures++
+		status.lastChecked = time.Now()
+		if status.failures >= 3 {
+			status.circuitOpen = true
+		}
+		status.available = false
+		rustServiceMu.Unlock()
+		return false
+	}
+	if resp.Body != nil {
+		resp.Body.Close()
+	}
+
+	rustServiceMu.Lock()
+	if !exists {
+		rustServiceHealth[url] = &rustServiceStatus{}
+		status = rustServiceHealth[url]
+	}
+	status.available = true
+	status.failures = 0
+	status.circuitOpen = false
+	status.lastChecked = time.Now()
+	rustServiceMu.Unlock()
+	return true
+}
+
+// RustMCRequest maps Go sector data to the Rust Monte Carlo engine's expected input
+type RustMCRequest struct {
+	Sectors             []RustSectorInput `json:"sectors"`
+	Iterations          int               `json:"iterations"`
+	DurationMonths      int               `json:"duration_months"`
+	BreachSLAHours      float64           `json:"breach_sla_hours"`
+	PenaltyMultiplier   float64           `json:"penalty_multiplier"`
+	ComplianceThreshold float64           `json:"compliance_threshold"`
+}
+
+type RustSectorInput struct {
+	Sector         string  `json:"sector"`
+	Jurisdiction   string  `json:"jurisdiction"`
+	Organizations  int     `json:"organizations"`
+	AvgCompliance  float64 `json:"avg_compliance"`
+	BreachRate     float64 `json:"breach_rate"`
+	AvgPenaltyLocal float64 `json:"avg_penalty_local"`
+	AvgBudgetUSD   float64 `json:"avg_budget_usd"`
+	StaffCountAvg  int     `json:"staff_count_avg"`
+	TechMaturity   float64 `json:"tech_maturity"`
+}
+
+type RustMCResponse struct {
+	Iterations    int                   `json:"iterations"`
+	DurationMonths int                  `json:"duration_months"`
+	Compliance    RustCI                `json:"compliance"`
+	BreachDelta   RustCI                `json:"breach_delta"`
+	PenaltyDelta  RustCI                `json:"penalty_delta"`
+	GdpImpact     RustCI                `json:"gdp_impact"`
+	PerSector     []RustSectorMCResult  `json:"per_sector"`
+	Timeline      []RustTimelineCI      `json:"timeline"`
+	DurationMs    int64                 `json:"duration_ms"`
+}
+
+type RustCI struct {
+	P5     float64 `json:"p5"`
+	P25    float64 `json:"p25"`
+	P50    float64 `json:"p50"`
+	P75    float64 `json:"p75"`
+	P95    float64 `json:"p95"`
+	Mean   float64 `json:"mean"`
+	StdDev float64 `json:"std_dev"`
+}
+
+type RustSectorMCResult struct {
+	Sector       string `json:"sector"`
+	Jurisdiction string `json:"jurisdiction"`
+	Compliance   RustCI `json:"compliance"`
+	BreachDelta  RustCI `json:"breach_delta"`
+	PenaltyDelta RustCI `json:"penalty_delta"`
+}
+
+type RustTimelineCI struct {
+	Month       int    `json:"month"`
+	Compliance  RustCI `json:"compliance"`
+	BreachCount RustCI `json:"breach_count"`
+	Penalties   RustCI `json:"penalties"`
+}
+
+// RustABMRequest maps Go data to the Rust Agent-Based Model engine
+type RustABMRequest struct {
+	Agents             []RustAgent `json:"agents"`
+	DurationMonths     int         `json:"duration_months"`
+	BreachSLAHours     float64     `json:"breach_sla_hours"`
+	PenaltyMultiplier  float64     `json:"penalty_multiplier"`
+	ComplianceThreshold float64    `json:"compliance_threshold"`
+	PeerPressureWeight *float64    `json:"peer_pressure_weight,omitempty"`
+	NetworkEffects     *bool       `json:"network_effects,omitempty"`
+}
+
+type RustAgent struct {
+	ID              int     `json:"id"`
+	Name            string  `json:"name"`
+	Sector          string  `json:"sector"`
+	Jurisdiction    string  `json:"jurisdiction"`
+	ComplianceScore float64 `json:"compliance_score"`
+	SecurityBudget  float64 `json:"security_budget"`
+	InfosecStaff    int     `json:"infosec_staff"`
+	TechMaturity    float64 `json:"tech_maturity"`
+	RiskAppetite    float64 `json:"risk_appetite"`
+	BreachHistory   int     `json:"breach_history"`
+	DataVolumeGB    float64 `json:"data_volume_gb"`
+	CrossBorder     bool    `json:"cross_border"`
+}
+
+type RustABMResponse struct {
+	Agents       []json.RawMessage `json:"agents"`
+	Aggregate    json.RawMessage   `json:"aggregate"`
+	Interactions []json.RawMessage `json:"interactions"`
+	DurationMs   int64             `json:"duration_ms"`
+}
+
+// RustSDRequest maps Go data to the Rust System Dynamics engine
+type RustSDRequest struct {
+	InitialStocks  RustStocks      `json:"initial_stocks"`
+	DurationMonths int             `json:"duration_months"`
+	PolicyParams   RustPolicyParams `json:"policy_params"`
+	Jurisdiction   string          `json:"jurisdiction,omitempty"`
+}
+
+type RustStocks struct {
+	ComplianceLevel      float64 `json:"compliance_level"`
+	BreachRate           float64 `json:"breach_rate"`
+	PenaltyPool          float64 `json:"penalty_pool"`
+	ComplianceInvestment float64 `json:"compliance_investment"`
+	PublicTrust          float64 `json:"public_trust"`
+	RegulatoryCapacity   float64 `json:"regulatory_capacity"`
+	DataEconomyGrowth    float64 `json:"data_economy_growth"`
+	CrossBorderVolume    float64 `json:"cross_border_volume"`
+	FdiConfidence        float64 `json:"fdi_confidence"`
+	InsuranceCostIndex   float64 `json:"insurance_cost_index"`
+}
+
+type RustPolicyParams struct {
+	BreachSLAHours           float64 `json:"breach_sla_hours"`
+	PenaltyMultiplier        float64 `json:"penalty_multiplier"`
+	EnforcementBudgetIncrease float64 `json:"enforcement_budget_increase"`
+	AwarenessCampaign        bool    `json:"awareness_campaign"`
+	MandatoryAudit           bool    `json:"mandatory_audit"`
+	CrossBorderRestriction   float64 `json:"cross_border_restriction"`
+}
+
+type RustSDResponse struct {
+	Jurisdiction string            `json:"jurisdiction"`
+	Timeline     []json.RawMessage `json:"timeline"`
+	CausalLoops  []json.RawMessage `json:"causal_loops"`
+	Equilibrium  json.RawMessage   `json:"equilibrium"`
+	Sensitivity  []json.RawMessage `json:"sensitivity"`
+	DurationMs   int64             `json:"duration_ms"`
+}
+
+func sectorsToRustInputs(sectors []SectorModel) []RustSectorInput {
+	out := make([]RustSectorInput, len(sectors))
+	for i, s := range sectors {
+		out[i] = RustSectorInput{
+			Sector:         s.Sector,
+			Jurisdiction:   s.Jurisdiction,
+			Organizations:  s.Organizations,
+			AvgCompliance:  s.AvgCompliance,
+			BreachRate:     s.BreachRate,
+			AvgPenaltyLocal: s.AvgPenalty,
+			AvgBudgetUSD:   s.AvgBudgetUSD,
+			StaffCountAvg:  s.StaffCountAvg,
+			TechMaturity:   s.TechMaturity,
+		}
+	}
+	return out
+}
+
+func sectorsToRustAgents(sectors []SectorModel) []RustAgent {
+	agents := make([]RustAgent, 0, len(sectors)*3)
+	id := 1
+	for _, s := range sectors {
+		count := 3
+		if s.Organizations > 10 {
+			count = 5
+		}
+		for j := 0; j < count; j++ {
+			agents = append(agents, RustAgent{
+				ID:              id,
+				Name:            fmt.Sprintf("%s-Org-%d", s.Sector, id),
+				Sector:          s.Sector,
+				Jurisdiction:    s.Jurisdiction,
+				ComplianceScore: s.AvgCompliance + float64(j)*0.5 - 1.0,
+				SecurityBudget:  s.AvgBudgetUSD * (0.8 + float64(j)*0.1),
+				InfosecStaff:    s.StaffCountAvg + j - 1,
+				TechMaturity:    s.TechMaturity,
+				RiskAppetite:    5.0 + float64(j)*0.5,
+				BreachHistory:   int(s.BreachRate * float64(s.Organizations) * 0.1),
+				DataVolumeGB:    s.DataVolumeGB,
+				CrossBorder:     s.CrossBorderPct > 0.1,
+			})
+			id++
+		}
+	}
+	return agents
+}
+
+func sectorsToRustStocks(sectors []SectorModel) RustStocks {
+	if len(sectors) == 0 {
+		return RustStocks{ComplianceLevel: 65, BreachRate: 0.15, PenaltyPool: 500000, ComplianceInvestment: 50000, PublicTrust: 60, RegulatoryCapacity: 45, DataEconomyGrowth: 3.5, CrossBorderVolume: 5000, FdiConfidence: 55, InsuranceCostIndex: 100}
+	}
+	totalOrgs := 0
+	totalComp := 0.0
+	totalBreach := 0.0
+	totalBudget := 0.0
+	totalVolume := 0.0
+	for _, s := range sectors {
+		totalOrgs += s.Organizations
+		totalComp += s.AvgCompliance * float64(s.Organizations)
+		totalBreach += s.BreachRate
+		totalBudget += s.AvgBudgetUSD * float64(s.Organizations)
+		totalVolume += s.DataVolumeGB
+	}
+	avgComp := totalComp / float64(totalOrgs)
+	avgBreach := totalBreach / float64(len(sectors))
+	return RustStocks{
+		ComplianceLevel:      round2(avgComp),
+		BreachRate:           round4f(avgBreach),
+		PenaltyPool:          round2(avgBreach * 5000000),
+		ComplianceInvestment: round2(totalBudget * 0.15),
+		PublicTrust:          round2(avgComp * 0.85),
+		RegulatoryCapacity:   45.0,
+		DataEconomyGrowth:    3.5,
+		CrossBorderVolume:    round2(totalVolume),
+		FdiConfidence:        round2(avgComp * 0.75),
+		InsuranceCostIndex:   round2(100 + (avgBreach-0.1)*50),
+	}
+}
+
+func round4f(v float64) float64 { return math.Round(v*10000) / 10000 }
+
+func (dt *DigitalTwin) callRustMonteCarlo(sectors []SectorModel, iterations, duration int, sla, penMult, compThreshold float64) (*RustMCResponse, error) {
+	if !isRustServiceAvailable(dt.monteCarloURL) {
+		return nil, fmt.Errorf("rust monte carlo service unavailable at %s", dt.monteCarloURL)
+	}
+	reqBody := RustMCRequest{
+		Sectors:             sectorsToRustInputs(sectors),
+		Iterations:          iterations,
+		DurationMonths:      duration,
+		BreachSLAHours:      sla,
+		PenaltyMultiplier:   penMult,
+		ComplianceThreshold: compThreshold,
+	}
+	body, _ := json.Marshal(reqBody)
+	ctx, cancel := context.WithTimeout(context.Background(), 30*time.Second)
+	defer cancel()
+	req, _ := http.NewRequestWithContext(ctx, "POST", dt.monteCarloURL+"/api/v1/monte-carlo/run", strings.NewReader(string(body)))
+	req.Header.Set("Content-Type", "application/json")
+	resp, err := rustHTTPClient.Do(req)
+	if err != nil {
+		return nil, fmt.Errorf("monte carlo call failed: %w", err)
+	}
+	defer resp.Body.Close()
+	if resp.StatusCode != 200 {
+		respBody, _ := io.ReadAll(resp.Body)
+		return nil, fmt.Errorf("monte carlo returned %d: %s", resp.StatusCode, string(respBody))
+	}
+	var result RustMCResponse
+	if err := json.NewDecoder(resp.Body).Decode(&result); err != nil {
+		return nil, fmt.Errorf("monte carlo decode failed: %w", err)
+	}
+	return &result, nil
+}
+
+func (dt *DigitalTwin) callRustABM(sectors []SectorModel, duration int, sla, penMult, compThreshold float64) (*RustABMResponse, error) {
+	if !isRustServiceAvailable(dt.agentModelURL) {
+		return nil, fmt.Errorf("rust ABM service unavailable at %s", dt.agentModelURL)
+	}
+	peerWeight := 0.3
+	networkEffects := true
+	reqBody := RustABMRequest{
+		Agents:              sectorsToRustAgents(sectors),
+		DurationMonths:      duration,
+		BreachSLAHours:      sla,
+		PenaltyMultiplier:   penMult,
+		ComplianceThreshold: compThreshold,
+		PeerPressureWeight:  &peerWeight,
+		NetworkEffects:      &networkEffects,
+	}
+	body, _ := json.Marshal(reqBody)
+	ctx, cancel := context.WithTimeout(context.Background(), 30*time.Second)
+	defer cancel()
+	req, _ := http.NewRequestWithContext(ctx, "POST", dt.agentModelURL+"/api/v1/agent-sim/run", strings.NewReader(string(body)))
+	req.Header.Set("Content-Type", "application/json")
+	resp, err := rustHTTPClient.Do(req)
+	if err != nil {
+		return nil, fmt.Errorf("ABM call failed: %w", err)
+	}
+	defer resp.Body.Close()
+	if resp.StatusCode != 200 {
+		respBody, _ := io.ReadAll(resp.Body)
+		return nil, fmt.Errorf("ABM returned %d: %s", resp.StatusCode, string(respBody))
+	}
+	var result RustABMResponse
+	if err := json.NewDecoder(resp.Body).Decode(&result); err != nil {
+		return nil, fmt.Errorf("ABM decode failed: %w", err)
+	}
+	return &result, nil
+}
+
+func (dt *DigitalTwin) callRustSystemDynamics(sectors []SectorModel, jCode string, duration int, sla, penMult float64) (*RustSDResponse, error) {
+	if !isRustServiceAvailable(dt.sysDynURL) {
+		return nil, fmt.Errorf("rust system dynamics service unavailable at %s", dt.sysDynURL)
+	}
+	reqBody := RustSDRequest{
+		InitialStocks:  sectorsToRustStocks(sectors),
+		DurationMonths: duration,
+		PolicyParams: RustPolicyParams{
+			BreachSLAHours:            sla,
+			PenaltyMultiplier:         penMult,
+			EnforcementBudgetIncrease: 10.0,
+			AwarenessCampaign:         true,
+			MandatoryAudit:            penMult > 1.5,
+			CrossBorderRestriction:    0.1,
+		},
+		Jurisdiction: jCode,
+	}
+	body, _ := json.Marshal(reqBody)
+	ctx, cancel := context.WithTimeout(context.Background(), 30*time.Second)
+	defer cancel()
+	req, _ := http.NewRequestWithContext(ctx, "POST", dt.sysDynURL+"/api/v1/system-dynamics/run", strings.NewReader(string(body)))
+	req.Header.Set("Content-Type", "application/json")
+	resp, err := rustHTTPClient.Do(req)
+	if err != nil {
+		return nil, fmt.Errorf("system dynamics call failed: %w", err)
+	}
+	defer resp.Body.Close()
+	if resp.StatusCode != 200 {
+		respBody, _ := io.ReadAll(resp.Body)
+		return nil, fmt.Errorf("system dynamics returned %d: %s", resp.StatusCode, string(respBody))
+	}
+	var result RustSDResponse
+	if err := json.NewDecoder(resp.Body).Decode(&result); err != nil {
+		return nil, fmt.Errorf("system dynamics decode failed: %w", err)
+	}
+	return &result, nil
+}
+
+func rustCItoGoCI(rc RustCI) ConfidenceInterval {
+	return ConfidenceInterval{P5: rc.P5, P25: rc.P25, P50: rc.P50, P75: rc.P75, P95: rc.P95, Mean: rc.Mean, StdDev: rc.StdDev}
 }
 
 func generateDataFlows() []DataFlow {
@@ -506,6 +901,62 @@ func (dt *DigitalTwin) Simulate(ctx context.Context, req SimulationRequest) Simu
 	// Monte Carlo stats if iterations > 1
 	if req.Iterations > 1 {
 		result.MonteCarloStats = dt.runMonteCarlo(primarySectors, req.Duration, slaChange, penaltyMultiplier, req.Iterations)
+	}
+
+	// ── Rust Engine Integration (try advanced engines, fall back to Go) ──
+	rustResults := &RustEngineResults{}
+	hasRustResults := false
+
+	// Rust Monte Carlo: use when iterations > 1 for statistically rigorous CI
+	if req.Iterations > 1 {
+		mcResp, err := dt.callRustMonteCarlo(sectors, req.Iterations, req.Duration, slaChange, penaltyMultiplier, complianceThreshold)
+		if err != nil {
+			log.Printf("[rust-mc] Falling back to Go: %v", err)
+			rustResults.Errors = append(rustResults.Errors, fmt.Sprintf("monte_carlo: %v", err))
+		} else {
+			rustResults.MonteCarloUsed = true
+			rustResults.MonteCarloResult = mcResp
+			hasRustResults = true
+			// Enhance Go MC stats with Rust's more accurate CI
+			result.MonteCarloStats = &MonteCarloStats{
+				Iterations: mcResp.Iterations,
+				Metrics: map[string]ConfidenceInterval{
+					"compliance_delta": rustCItoGoCI(mcResp.Compliance),
+					"breach_delta_pct": rustCItoGoCI(mcResp.BreachDelta),
+					"penalty_delta":    rustCItoGoCI(mcResp.PenaltyDelta),
+					"gdp_impact":       rustCItoGoCI(mcResp.GdpImpact),
+				},
+			}
+			log.Printf("[rust-mc] %d iterations in %dms (Rayon-parallelized)", mcResp.Iterations, mcResp.DurationMs)
+		}
+	}
+
+	// Rust ABM: always try for richer per-org simulation
+	abmResp, abmErr := dt.callRustABM(primarySectors, req.Duration, slaChange, penaltyMultiplier, complianceThreshold)
+	if abmErr != nil {
+		log.Printf("[rust-abm] Falling back to Go: %v", abmErr)
+		rustResults.Errors = append(rustResults.Errors, fmt.Sprintf("abm: %v", abmErr))
+	} else {
+		rustResults.ABMUsed = true
+		rustResults.ABMResult = abmResp
+		hasRustResults = true
+		log.Printf("[rust-abm] %d agents simulated in %dms", len(abmResp.Agents), abmResp.DurationMs)
+	}
+
+	// Rust System Dynamics: run for causal feedback loop analysis
+	sdResp, sdErr := dt.callRustSystemDynamics(primarySectors, primaryJCode, req.Duration, slaChange, penaltyMultiplier)
+	if sdErr != nil {
+		log.Printf("[rust-sd] Falling back to Go: %v", sdErr)
+		rustResults.Errors = append(rustResults.Errors, fmt.Sprintf("system_dynamics: %v", sdErr))
+	} else {
+		rustResults.SystemDynamicsUsed = true
+		rustResults.SDResult = sdResp
+		hasRustResults = true
+		log.Printf("[rust-sd] %s jurisdiction, %d months in %dms", sdResp.Jurisdiction, len(sdResp.Timeline), sdResp.DurationMs)
+	}
+
+	if hasRustResults {
+		result.RustEngines = rustResults
 	}
 
 	// Economic impact calculation
@@ -1199,12 +1650,21 @@ func main() {
 
 	mux.HandleFunc("/health", func(w http.ResponseWriter, _ *http.Request) {
 		dbOK := dt.db != nil && dt.db.Ping() == nil
+		mcAvail := isRustServiceAvailable(dt.monteCarloURL)
+		abmAvail := isRustServiceAvailable(dt.agentModelURL)
+		sdAvail := isRustServiceAvailable(dt.sysDynURL)
 		json.NewEncoder(w).Encode(map[string]interface{}{
 			"status":         "healthy",
 			"service":        "digital-twin-v2",
-			"version":        "2.0.0",
+			"version":        "2.1.0",
 			"db_connected":   dbOK,
-			"features":       []string{"multi_jurisdiction", "policy_engine", "monte_carlo", "counterfactual", "sandbox", "economic_impact"},
+			"features":       []string{"multi_jurisdiction", "policy_engine", "monte_carlo", "counterfactual", "sandbox", "economic_impact", "rust_monte_carlo", "rust_abm", "rust_system_dynamics"},
+			"rust_engines": map[string]interface{}{
+				"monte_carlo":     map[string]interface{}{"url": dt.monteCarloURL, "available": mcAvail},
+				"agent_model":     map[string]interface{}{"url": dt.agentModelURL, "available": abmAvail},
+				"system_dynamics": map[string]interface{}{"url": dt.sysDynURL, "available": sdAvail},
+			},
+			"ollama": map[string]interface{}{"integrated": true, "model": "qwen2.5"},
 		})
 	})
 

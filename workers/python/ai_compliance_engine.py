@@ -34,7 +34,7 @@ app = FastAPI(
 
 OLLAMA_URL = os.getenv("OLLAMA_URL", "http://localhost:11434")
 DB_URL = os.getenv("WORKER_DATABASE_URL", "")
-MODEL = os.getenv("COMPLIANCE_MODEL", "llama3.1:8b")
+MODEL = os.getenv("COMPLIANCE_MODEL", "qwen2.5:1.5b")
 
 # ── NDPA 2023 Knowledge Base ────────────────────────────────────────────────
 
