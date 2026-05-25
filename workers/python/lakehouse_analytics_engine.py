@@ -327,7 +327,7 @@ def serve_ml_features(feature_group: str) -> dict:
     feature_queries = {
         "compliance_features": f"""
             SELECT o.id as org_id, o.name, o.sector, o.compliance_score,
-                   o.risk_level, COUNT(DISTINCT b.id) as breach_count,
+                   o.risk_score, COUNT(DISTINCT b.id) as breach_count,
                    COUNT(DISTINCT v.id) as violation_count,
                    COALESCE(SUM(fp.amount), 0) as total_penalties
             FROM read_parquet('{parquet}/organizations/*.parquet') o
@@ -337,7 +337,7 @@ def serve_ml_features(feature_group: str) -> dict:
                 ON v.organization_id = o.id
             LEFT JOIN read_parquet('{parquet}/financial_penalties/*.parquet') fp
                 ON fp.organization_id = o.id
-            GROUP BY o.id, o.name, o.sector, o.compliance_score, o.risk_level
+            GROUP BY o.id, o.name, o.sector, o.compliance_score, o.risk_score
         """,
         "risk_features": f"""
             SELECT o.sector,
