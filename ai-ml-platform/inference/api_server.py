@@ -17,6 +17,7 @@ All models run on CPU with ONNX Runtime for optimized inference.
 from __future__ import annotations
 
 import json
+import sys
 import time
 from pathlib import Path
 from typing import Any
@@ -27,12 +28,14 @@ import torch.nn as nn
 from fastapi import FastAPI, HTTPException
 from pydantic import BaseModel, Field
 
-from ..models.fraud_detection.model import FraudDetectionNet
-from ..models.churn_prediction.model import ChurnPredictionNet
-from ..models.claims_adjudication.model import ClaimsAdjudicationNet
-from ..models.credit_scoring.model import CreditScoringNet
-from ..models.anomaly_detection.model import TransactionAutoencoder
-from ..models.gnn_fraud.model import FraudGNN
+sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
+
+from models.fraud_detection.model import FraudDetectionNet
+from models.churn_prediction.model import ChurnPredictionNet
+from models.claims_adjudication.model import ClaimsAdjudicationNet
+from models.credit_scoring.model import CreditScoringNet
+from models.anomaly_detection.model import TransactionAutoencoder
+from models.gnn_fraud.model import FraudGNN
 
 
 # ── Request/Response Models ───────────────────────────────────────────────────
