@@ -30,18 +30,21 @@ export async function createContext(
     }
   } catch (error) {
     // Authentication is optional for public procedures.
-    // In development (no Keycloak/DB), provide a default participant user
+    // In development with ENABLE_DEV_AUTH=true (no Keycloak/DB), provide a default participant user
     // so the platform can be demonstrated with seed data.
-    if (process.env.NODE_ENV !== 'production' && !user) {
+    // SECURITY: Dev auth is DISABLED by default. Must be explicitly enabled.
+    if (process.env.NODE_ENV !== 'production' && process.env.ENABLE_DEV_AUTH === 'true' && !user) {
       const devRole = (opts.req.headers['x-dev-role'] as string) || 'participant';
-      const devUserId = devRole === 'admin' || devRole === 'cbn' ? 200 : 101;
+      const allowedRoles = ['participant', 'admin', 'cbn'];
+      const safeRole = allowedRoles.includes(devRole) ? devRole : 'participant';
+      const devUserId = safeRole === 'admin' || safeRole === 'cbn' ? 200 : 101;
       user = {
         id: devUserId,
-        sub: `dev-${devRole}-${devUserId}`,
-        name: devRole === 'admin' ? 'Platform Admin' : devRole === 'cbn' ? 'CBN Regulator' : 'PayApp Nigeria Ltd',
-        email: `${devRole}@switch.dev`,
+        sub: `dev-${safeRole}-${devUserId}`,
+        name: safeRole === 'admin' ? 'Platform Admin' : safeRole === 'cbn' ? 'CBN Regulator' : 'PayApp Nigeria Ltd',
+        email: `${safeRole}@switch.dev`,
         loginMethod: 'dev',
-        role: devRole as any,
+        role: safeRole as any,
         createdAt: new Date(),
         updatedAt: new Date(),
         lastSignedIn: new Date(),
@@ -55,18 +58,20 @@ export async function createContext(
     session = null;
   }
 
-  // Development fallback: if no auth succeeded and we're not in production,
-  // provide a default user so the platform can be demonstrated with seed data.
-  if (!user && process.env.NODE_ENV !== 'production' && !process.env.DISABLE_DEV_AUTH) {
+  // Development fallback: if no auth succeeded and dev auth is explicitly enabled
+  // SECURITY: Requires ENABLE_DEV_AUTH=true. Never enabled in production.
+  if (!user && process.env.NODE_ENV !== 'production' && process.env.ENABLE_DEV_AUTH === 'true') {
     const devRole = (opts.req.headers['x-dev-role'] as string) || 'participant';
-    const devUserId = devRole === 'admin' || devRole === 'cbn' ? 200 : 101;
+    const allowedRoles = ['participant', 'admin', 'cbn'];
+    const safeRole = allowedRoles.includes(devRole) ? devRole : 'participant';
+    const devUserId = safeRole === 'admin' || safeRole === 'cbn' ? 200 : 101;
     user = {
       id: devUserId,
-      sub: `dev-${devRole}-${devUserId}`,
-      name: devRole === 'admin' ? 'Platform Admin' : devRole === 'cbn' ? 'CBN Regulator' : 'PayApp Nigeria Ltd',
-      email: `${devRole}@switch.dev`,
+      sub: `dev-${safeRole}-${devUserId}`,
+      name: safeRole === 'admin' ? 'Platform Admin' : safeRole === 'cbn' ? 'CBN Regulator' : 'PayApp Nigeria Ltd',
+      email: `${safeRole}@switch.dev`,
       loginMethod: 'dev',
-      role: devRole as any,
+      role: safeRole as any,
       createdAt: new Date(),
       updatedAt: new Date(),
       lastSignedIn: new Date(),

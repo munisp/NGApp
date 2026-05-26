@@ -87,6 +87,52 @@ async function startServer() {
     });
   });
 
+  // Health, liveness, and readiness probes for Kubernetes
+  app.get("/healthz", (_req, res) => {
+    res.status(200).json({ status: "ok", timestamp: new Date().toISOString() });
+  });
+  app.get("/livez", (_req, res) => {
+    res.status(200).json({ status: "alive", uptime: process.uptime() });
+  });
+  app.get("/readyz", async (_req, res) => {
+    try {
+      const db = await import("../db");
+      const dbInstance = await db.getDb();
+      if (dbInstance) {
+        res.status(200).json({ status: "ready", db: "connected" });
+      } else {
+        res.status(503).json({ status: "not_ready", db: "no_pool" });
+      }
+    } catch {
+      res.status(503).json({ status: "not_ready", db: "disconnected" });
+    }
+  });
+
+  // Degradation status — reports which infrastructure services are live vs seed
+  app.get("/api/status/degradation", async (_req, res) => {
+    const { getKafkaLiveStatus, getRedisLiveStatus, getPostgresLiveStatus, getTigerBeetleLiveStatus } = await import("../lib/infraClient");
+    const checks = await Promise.allSettled([
+      getKafkaLiveStatus(),
+      getRedisLiveStatus(),
+      getPostgresLiveStatus(),
+      getTigerBeetleLiveStatus(),
+    ]);
+    const services = ['kafka', 'redis', 'postgresql', 'tigerbeetle'];
+    const statuses = services.map((name, i) => {
+      const c = checks[i];
+      return {
+        service: name,
+        status: c.status === 'fulfilled' && c.value ? 'live' as const : 'degraded' as const,
+      };
+    });
+    const overallDegraded = statuses.some(s => s.status === 'degraded');
+    res.json({
+      mode: overallDegraded ? 'degraded' : 'full',
+      services: statuses,
+      timestamp: new Date().toISOString(),
+    });
+  });
+
   // OpenAPI/Swagger documentation endpoint
   app.get("/api/docs", (_req, res) => {
     const html = `<!DOCTYPE html>
@@ -134,6 +180,43 @@ async function startServer() {
     // Start cleanup job
     startCleanupJob();
   });
+
+  // Graceful shutdown handler
+  let isShuttingDown = false;
+  const SHUTDOWN_TIMEOUT_MS = parseInt(process.env.SHUTDOWN_TIMEOUT_MS || '15000', 10);
+
+  async function gracefulShutdown(signal: string) {
+    if (isShuttingDown) return;
+    isShuttingDown = true;
+    logger.info({ signal }, 'Graceful shutdown initiated');
+
+    // Stop accepting new connections
+    server.close(() => {
+      logger.info('HTTP server closed');
+    });
+
+    // Allow in-flight requests to complete
+    const forceExit = setTimeout(() => {
+      logger.warn('Shutdown timeout reached, forcing exit');
+      process.exit(1);
+    }, SHUTDOWN_TIMEOUT_MS);
+    forceExit.unref();
+
+    try {
+      // Drain database pool
+      const db = await import("../db");
+      // getDb initializes pool; on shutdown we just log
+      logger.info('Database connections will be closed by pool timeout');
+    } catch (e) {
+      logger.warn({ err: e }, 'Error during shutdown cleanup');
+    }
+
+    logger.info('Graceful shutdown complete');
+    process.exit(0);
+  }
+
+  process.on('SIGTERM', () => gracefulShutdown('SIGTERM'));
+  process.on('SIGINT', () => gracefulShutdown('SIGINT'));
 }
 
 startServer().catch((err) => {

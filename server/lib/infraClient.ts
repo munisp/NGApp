@@ -6,31 +6,48 @@ import { createChildLogger } from './logger';
 
 const log = createChildLogger('infra-client');
 
-const TIMEOUT_MS = 3000;
+const TIMEOUT_MS = parseInt(process.env.INFRA_TIMEOUT_MS ?? '3000', 10);
+const MAX_RETRIES = parseInt(process.env.INFRA_MAX_RETRIES ?? '2', 10);
+const RETRY_BASE_MS = 200;
 
 interface FetchOpts {
   method?: string;
   body?: unknown;
   headers?: Record<string, string>;
+  retries?: number;
 }
 
 async function infraFetch<T>(url: string, opts: FetchOpts = {}): Promise<T | null> {
-  const controller = new AbortController();
-  const timer = setTimeout(() => controller.abort(), TIMEOUT_MS);
-  try {
-    const res = await fetch(url, {
-      method: opts.method ?? 'GET',
-      headers: { 'Content-Type': 'application/json', ...opts.headers },
-      body: opts.body ? JSON.stringify(opts.body) : undefined,
-      signal: controller.signal,
-    });
-    if (!res.ok) return null;
-    return (await res.json()) as T;
-  } catch {
-    return null;
-  } finally {
-    clearTimeout(timer);
+  const retries = opts.retries ?? MAX_RETRIES;
+  for (let attempt = 0; attempt <= retries; attempt++) {
+    const controller = new AbortController();
+    const timer = setTimeout(() => controller.abort(), TIMEOUT_MS);
+    try {
+      const res = await fetch(url, {
+        method: opts.method ?? 'GET',
+        headers: { 'Content-Type': 'application/json', ...opts.headers },
+        body: opts.body ? JSON.stringify(opts.body) : undefined,
+        signal: controller.signal,
+      });
+      clearTimeout(timer);
+      if (res.status === 503 || res.status === 429) {
+        if (attempt < retries) {
+          await new Promise(r => setTimeout(r, RETRY_BASE_MS * Math.pow(2, attempt)));
+          continue;
+        }
+      }
+      if (!res.ok) return null;
+      return (await res.json()) as T;
+    } catch {
+      clearTimeout(timer);
+      if (attempt < retries) {
+        await new Promise(r => setTimeout(r, RETRY_BASE_MS * Math.pow(2, attempt)));
+        continue;
+      }
+      return null;
+    }
   }
+  return null;
 }
 
 // ─── KAFKA ───────────────────────────────────────────────────────────────────

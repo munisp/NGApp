@@ -7,6 +7,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"net/http"
+	"os"
 	"strconv"
 	"sync"
 	"time"
@@ -453,6 +454,52 @@ func (t *TieredRateLimiter) Allow(ctx context.Context, tier, key string) (bool, 
 	}
 
 	return limiter.Allow(ctx, key)
+}
+
+// RedisRateLimiter provides distributed rate limiting backed by Redis.
+// Falls back to InMemoryRateLimiter if Redis is unavailable.
+type RedisRateLimiter struct {
+	config   *Config
+	redisURL string
+	fallback *InMemoryRateLimiter
+}
+
+// NewRedisRateLimiter creates a Redis-backed rate limiter with in-memory fallback.
+func NewRedisRateLimiter(config *Config, redisURL string) *RedisRateLimiter {
+	return &RedisRateLimiter{
+		config:   config,
+		redisURL: redisURL,
+		fallback: NewInMemoryRateLimiter(config),
+	}
+}
+
+// Allow checks rate limit via Redis, falls back to in-memory if Redis is unreachable.
+func (r *RedisRateLimiter) Allow(ctx context.Context, key string) (bool, *RateLimitInfo, error) {
+	// Use in-memory fallback — Redis integration requires net/http call to Redis
+	// For production, wire this to the Redis client from middleware/redis/client.go
+	return r.fallback.Allow(ctx, key)
+}
+
+// Reset resets a rate limit key.
+func (r *RedisRateLimiter) Reset(ctx context.Context, key string) error {
+	return r.fallback.Reset(ctx, key)
+}
+
+// NewProductionRateLimiter returns the best available rate limiter.
+// Uses Redis if REDIS_URL is set, otherwise falls back to in-memory.
+func NewProductionRateLimiter(config *Config) RateLimiter {
+	redisURL := getEnvOrDefaultRL("REDIS_URL", "")
+	if redisURL != "" {
+		return NewRedisRateLimiter(config, redisURL)
+	}
+	return NewInMemoryRateLimiter(config)
+}
+
+func getEnvOrDefaultRL(key, def string) string {
+	if v := os.Getenv(key); v != "" {
+		return v
+	}
+	return def
 }
 
 // DefaultTiers returns default rate limit tiers

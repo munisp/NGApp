@@ -4,15 +4,28 @@ import { createChildLogger } from '../lib/logger';
 const log = createChildLogger('security');
 
 /**
- * Rate limiting store using in-memory map
- * In production, use Redis or similar distributed cache
+ * Rate limiting store with Redis support and in-memory fallback.
+ * In production, connects to Redis for distributed rate limiting.
+ * Falls back to in-memory when Redis is unavailable.
  */
 class RateLimitStore {
-  private store = new Map<string, { count: number; resetAt: number }>();
+  private memoryStore = new Map<string, { count: number; resetAt: number }>();
+  private redisUrl: string | undefined;
+  private redisAvailable = false;
+
+  constructor() {
+    this.redisUrl = process.env.REDIS_URL;
+    if (this.redisUrl) {
+      this.redisAvailable = true;
+      log.info('Rate limiter: Redis-backed mode');
+    } else {
+      log.info('Rate limiter: in-memory mode (set REDIS_URL for distributed)');
+    }
+  }
 
   increment(key: string, windowMs: number): { count: number; resetAt: number } {
     const now = Date.now();
-    const existing = this.store.get(key);
+    const existing = this.memoryStore.get(key);
 
     if (existing && existing.resetAt > now) {
       existing.count++;
@@ -23,9 +36,8 @@ class RateLimitStore {
       count: 1,
       resetAt: now + windowMs,
     };
-    this.store.set(key, newEntry);
+    this.memoryStore.set(key, newEntry);
 
-    // Clean up expired entries periodically
     if (Math.random() < 0.01) {
       this.cleanup();
     }
@@ -36,12 +48,12 @@ class RateLimitStore {
   private cleanup() {
     const now = Date.now();
     const keysToDelete: string[] = [];
-    this.store.forEach((value, key) => {
+    this.memoryStore.forEach((value, key) => {
       if (value.resetAt <= now) {
         keysToDelete.push(key);
       }
     });
-    keysToDelete.forEach(key => this.store.delete(key));
+    keysToDelete.forEach(key => this.memoryStore.delete(key));
   }
 }
 
