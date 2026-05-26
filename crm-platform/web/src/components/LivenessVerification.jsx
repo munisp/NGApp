@@ -1,5 +1,6 @@
 import { useState, useCallback, useRef, useEffect } from 'react';
 import { Shield, Camera, CheckCircle, XCircle, AlertTriangle, Eye, Scan, Fingerprint, RefreshCw } from 'lucide-react';
+import { useApiData } from '@/hooks/useApiData';
 
 const SPOOF_LABELS = {
   none: 'No spoofing detected',
@@ -21,21 +22,24 @@ const CHALLENGE_ACTIONS = {
   open_mouth: 'Open your mouth',
 };
 
+const SEED_HISTORY = [
+  { id: 'lv-001', method: 'passive', is_live: true, confidence: 0.92, spoof_type: 'none', timestamp: '2026-05-04T18:30:00Z', user: 'Adebayo Okonkwo' },
+  { id: 'lv-002', method: 'active', is_live: true, confidence: 0.97, spoof_type: 'none', timestamp: '2026-05-04T17:45:00Z', user: 'Chinwe Obi' },
+  { id: 'lv-003', method: 'passive', is_live: false, confidence: 0.34, spoof_type: 'printed_photo', timestamp: '2026-05-04T16:20:00Z', user: 'Unknown' },
+  { id: 'lv-004', method: 'passive', is_live: false, confidence: 0.21, spoof_type: 'screen_replay', timestamp: '2026-05-04T15:10:00Z', user: 'Unknown' },
+  { id: 'lv-005', method: 'active', is_live: true, confidence: 0.89, spoof_type: 'none', timestamp: '2026-05-04T14:00:00Z', user: 'Emeka Nwosu' },
+  { id: 'lv-006', method: 'passive', is_live: false, confidence: 0.18, spoof_type: 'deepfake', timestamp: '2026-05-04T12:30:00Z', user: 'Unknown' },
+];
+
 export default function LivenessVerification() {
+  const { data: apiHistory } = useApiData('liveness-checks', () => fetch('/api/liveness/checks').then(r => r.json()), { fallback: SEED_HISTORY });
   const [activeTab, setActiveTab] = useState('passive');
   const [status, setStatus] = useState('idle'); // idle, checking, passed, failed
   const [result, setResult] = useState(null);
   const [challenge, setChallenge] = useState(null);
   const [matchResult, setMatchResult] = useState(null);
   const [landmarks, setLandmarks] = useState(null);
-  const [history, setHistory] = useState([
-    { id: 'lv-001', method: 'passive', is_live: true, confidence: 0.92, spoof_type: 'none', timestamp: '2026-05-04T18:30:00Z', user: 'Adebayo Okonkwo' },
-    { id: 'lv-002', method: 'active', is_live: true, confidence: 0.97, spoof_type: 'none', timestamp: '2026-05-04T17:45:00Z', user: 'Chinwe Obi' },
-    { id: 'lv-003', method: 'passive', is_live: false, confidence: 0.34, spoof_type: 'printed_photo', timestamp: '2026-05-04T16:20:00Z', user: 'Unknown' },
-    { id: 'lv-004', method: 'passive', is_live: false, confidence: 0.21, spoof_type: 'screen_replay', timestamp: '2026-05-04T15:10:00Z', user: 'Unknown' },
-    { id: 'lv-005', method: 'active', is_live: true, confidence: 0.89, spoof_type: 'none', timestamp: '2026-05-04T14:00:00Z', user: 'Emeka Nwosu' },
-    { id: 'lv-006', method: 'passive', is_live: false, confidence: 0.18, spoof_type: 'deepfake', timestamp: '2026-05-04T12:30:00Z', user: 'Unknown' },
-  ]);
+  const [history, setHistory] = useState(apiHistory);
   const [search, setSearch] = useState('');
   const [expandedId, setExpandedId] = useState(null);
   const [statsView, setStatsView] = useState('overview');

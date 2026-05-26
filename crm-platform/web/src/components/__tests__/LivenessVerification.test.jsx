@@ -1,22 +1,27 @@
 import { describe, it, expect, vi } from 'vitest'
 import { render, screen, fireEvent, waitFor } from '@testing-library/react'
 import { MemoryRouter } from 'react-router-dom'
+import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
 import LivenessVerification from '../LivenessVerification'
 
 vi.mock('@/contexts/TenantContext', () => ({
-  useTenant: () => ({ tenant: { id: 'test-tenant', name: 'Test Org' } }),
+  useTenant: () => ({ tenant: { id: 'test-tenant', name: 'Test Org', slug: 'test-tenant' } }),
 }))
 
 vi.mock('@/contexts/ThemeContext', () => ({
   useTheme: () => ({ theme: 'light' }),
 }))
 
-const renderComponent = () =>
-  render(
-    <MemoryRouter>
-      <LivenessVerification />
-    </MemoryRouter>
+const renderComponent = () => {
+  const qc = new QueryClient({ defaultOptions: { queries: { retry: false } } })
+  return render(
+    <QueryClientProvider client={qc}>
+      <MemoryRouter>
+        <LivenessVerification />
+      </MemoryRouter>
+    </QueryClientProvider>
   )
+}
 
 describe('LivenessVerification', () => {
   it('renders the page title and KPI cards', () => {
@@ -112,9 +117,9 @@ describe('LivenessVerification', () => {
 
   it('shows correct KPI counts from seed data', () => {
     renderComponent()
-    // 6 total, 3 live, 3 spoof
+    // 6 total, 3 live, 3 spoof — use getAllByText since "3" appears twice (Live=3, Spoof=3)
     expect(screen.getByText('6')).toBeTruthy()
-    expect(screen.getByText('3')).toBeTruthy()
+    expect(screen.getAllByText('3').length).toBeGreaterThanOrEqual(2)
   })
 
   it('shows empty state when search has no results', () => {
