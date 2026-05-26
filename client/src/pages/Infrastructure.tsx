@@ -358,53 +358,29 @@ function OpenStefMetricsChart() {
 
 /// ─── FledgePower protocol toggle panel ───────────────────────────────────────
 
-const PROTOCOLS = ["iec104", "dnp3", "modbus"] as const;
-type FledgeProtocol = (typeof PROTOCOLS)[number];
-
 function FledgeProtocolPanel() {
-  const tagMetrics = trpc.fledge.tagMetrics.useQuery({}, { refetchInterval: 15000 });
-  const switchMutation = trpc.fledge.switchTagProtocol.useMutation({
-    onSuccess: (data) => {
-      toast.success(`Protocol switched: ${data.tag} → ${data.protocol.toUpperCase()} (latency ${data.latency_ms}ms)`);
-      tagMetrics.refetch();
-    },
-    onError: (err) => toast.error(`Switch failed: ${err.message}`),
-  });
-
-  const metrics = tagMetrics.data?.metrics ?? [];
+  const protocolsQuery = trpc.fledge.protocols.useQuery(undefined, { refetchInterval: 15000 });
+  const protocols = (protocolsQuery.data as { protocols?: Array<{ name: string; status: string; connections: number }> })?.protocols ?? [];
 
   return (
     <div className="mt-3">
-      <p className="text-xs text-slate-400 mb-2 font-medium">Protocol Simulator Toggle</p>
-      {tagMetrics.isLoading ? (
-        <p className="text-xs text-slate-500">Loading tag metrics...</p>
+      <p className="text-xs text-slate-400 mb-2 font-medium">Protocol Bridge Status</p>
+      {protocolsQuery.isLoading ? (
+        <p className="text-xs text-slate-500">Loading protocol status...</p>
       ) : (
         <div className="space-y-1.5">
-          {metrics.map((m) => (
-            <div key={m.tag} className="bg-slate-800/60 rounded px-2 py-1.5">
+          {protocols.map((p: { name: string; status: string; connections: number }) => (
+            <div key={p.name} className="bg-slate-800/60 rounded px-2 py-1.5">
               <div className="flex items-center justify-between mb-1">
-                <span className="text-[10px] font-mono text-slate-300 truncate max-w-[140px]">{m.tag}</span>
-                <div className="flex gap-1">
-                  {PROTOCOLS.map((p) => (
-                    <button
-                      key={p}
-                      onClick={() => switchMutation.mutate({ tag: m.tag, protocol: p })}
-                      disabled={switchMutation.isPending}
-                      className={`px-1.5 py-0.5 rounded text-[9px] font-medium transition-colors ${
-                        m.protocol.toLowerCase() === p
-                          ? "bg-amber-500 text-slate-900"
-                          : "bg-slate-700 text-slate-400 hover:bg-slate-600"
-                      }`}
-                    >
-                      {p.toUpperCase()}
-                    </button>
-                  ))}
-                </div>
+                <span className="text-[10px] font-mono text-slate-300">{p.name.toUpperCase()}</span>
+                <span className={`px-1.5 py-0.5 rounded text-[9px] font-medium ${
+                  p.status === "connected" ? "bg-emerald-500/20 text-emerald-400" : "bg-red-500/20 text-red-400"
+                }`}>
+                  {p.status}
+                </span>
               </div>
-              <div className="flex gap-3 text-[9px] text-slate-500">
-                <span>Latency: <span className="text-slate-300 font-mono">{m.avg_latency_ms}ms</span></span>
-                <span>Errors: <span className={`font-mono ${m.frame_errors > 0 ? "text-red-400" : "text-slate-300"}`}>{m.frame_errors}</span></span>
-                <span>Quality: <span className="text-slate-300 font-mono">{m.last_quality === 0 ? "Good" : "Bad"}</span></span>
+              <div className="text-[9px] text-slate-500">
+                Connections: <span className="text-slate-300 font-mono">{p.connections}</span>
               </div>
             </div>
           ))}
@@ -629,13 +605,12 @@ export default function Infrastructure() {
     onError: () => toast.error("Failed to toggle Fluvio dual-publish"),
   });
   const cacheStats = trpc.cache.getStats.useQuery(undefined, { refetchInterval: 10000 });
-  const lakehouseStatus = trpc.lakehouse.getStatus.useQuery(undefined, { refetchInterval: 30000 });
+  const lakehouseStatus = trpc.lakehouse.health.useQuery(undefined, { refetchInterval: 30000 });
   const drStatus = trpc.demandResponse.getStatus.useQuery(undefined, { refetchInterval: 30000 });
-  const authzStatus = trpc.authz.getStatus.useQuery(undefined, { refetchInterval: 30000 });
+  const authzStatus = trpc.authz.check.useQuery({ entityType: "system", entityId: "platform", permission: "view" }, { refetchInterval: 30000 });
   const openStefStatus = trpc.openstef.modelStatus.useQuery(undefined, { refetchInterval: 60000 });
   const fledgeHealth = trpc.fledge.health.useQuery(undefined, { refetchInterval: 30000 });
-  const fledgeTagMetrics = trpc.fledge.tagMetrics.useQuery({}, { refetchInterval: 30000 });
-  const switchTagProtocol = trpc.fledge.switchTagProtocol.useMutation();
+  const fledgeStats = trpc.fledge.stats.useQuery(undefined, { refetchInterval: 30000 });
   const mlServiceHealth = trpc.digitalTwinExt.mlServiceHealth.useQuery(undefined, { refetchInterval: 30000 });
 
   const worker = workerStatus.data as Record<string, unknown> | undefined;
@@ -742,13 +717,13 @@ export default function Infrastructure() {
       description: "Fine-grained role and attribute-based access control",
       icon: <Shield className="w-4 h-4" />,
       category: "Security",
-      healthy: authz?.healthy === true,
-      mode: authz?.mode ?? "simulated",
+      healthy: authz?.allowed === true,
+      mode: authz?.source ?? "permify",
       lat: 41.0082, lng: 28.9784, // Istanbul (Permify origin)
       region: "Istanbul EU-East (TUR)",
       details: {
-        "Schema": authz?.schema ?? "og-rmm-v1",
-        "Mode": authz?.mode ?? "simulated",
+        "Schema": "og-rmm-v1",
+        "Mode": authz?.source ?? "permify",
         "Entities": "user, well, field, permit",
         "Relations": "owner, operator, viewer",
       },
@@ -945,7 +920,7 @@ export default function Infrastructure() {
     authzStatus.refetch();
     openStefStatus.refetch();
     fledgeHealth.refetch();
-    fledgeTagMetrics.refetch();
+    fledgeStats.refetch();
     mlServiceHealth.refetch();
   };
 

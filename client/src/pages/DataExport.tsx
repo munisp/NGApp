@@ -155,10 +155,11 @@ export default function DataExport() {
 
   const handleAlarm = async () => {
     try {
+      const sevMap: Record<string, number | undefined> = { CRITICAL: 1, HIGH: 2, MEDIUM: 3, LOW: 4, ALL: undefined };
       const res = await alarmExport.mutateAsync({
         format: alarmFormat,
         limit: parseInt(alarmLimit),
-        severity: alarmSev as "CRITICAL" | "HIGH" | "MEDIUM" | "LOW" | "ALL",
+        severity: sevMap[alarmSev],
       });
       setAlarmResult(res as ExportResult);
       toast.success(`Alarm export ready: ${(res as ExportResult).rows} rows`);

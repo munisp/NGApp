@@ -143,7 +143,7 @@ function TagBrowser({
 }) {
   const [search, setSearch] = useState("");
   const [wellId, setWellId] = useState("W-001");
-  const { data, isLoading } = trpc.lakehouse.getTags.useQuery(
+  const { data, isLoading } = trpc.lakehouse.tags.useQuery(
     { wellId, search: search || undefined, limit: 50 },
     { refetchInterval: 30000 }
   );
@@ -426,25 +426,29 @@ function MultiTagTrendChart({
     return Object.keys(band).length > 0 ? [band] : [];
   }, [alarmRulesData, primaryTag]);
 
+  // Map interval filter to resolution enum
+  const resolutionMap: Record<string, "1m" | "5m" | "15m" | "1h" | "4h" | "1d"> = { "1m": "1m", "5m": "5m", "15m": "15m", "1h": "1h", "4h": "4h", "1d": "1d" };
+  const resolution = resolutionMap[filters.interval] ?? "1h";
+
   // Fetch data for each tag
-  const q0 = trpc.lakehouse.queryResample.useQuery(
-    { tag: tags[0] ?? "", startTime: new Date(filters.startTime).toISOString(), endTime: new Date(filters.endTime).toISOString(), interval: filters.interval, method: filters.method },
+  const q0 = trpc.lakehouse.resample.useQuery(
+    { tag: tags[0] ?? "", startTime: new Date(filters.startTime).toISOString(), endTime: new Date(filters.endTime).toISOString(), resolution },
     { enabled: tags.length > 0 }
   );
-  const q1 = trpc.lakehouse.queryResample.useQuery(
-    { tag: tags[1] ?? "", startTime: new Date(filters.startTime).toISOString(), endTime: new Date(filters.endTime).toISOString(), interval: filters.interval, method: filters.method },
+  const q1 = trpc.lakehouse.resample.useQuery(
+    { tag: tags[1] ?? "", startTime: new Date(filters.startTime).toISOString(), endTime: new Date(filters.endTime).toISOString(), resolution },
     { enabled: tags.length > 1 }
   );
-  const q2 = trpc.lakehouse.queryResample.useQuery(
-    { tag: tags[2] ?? "", startTime: new Date(filters.startTime).toISOString(), endTime: new Date(filters.endTime).toISOString(), interval: filters.interval, method: filters.method },
+  const q2 = trpc.lakehouse.resample.useQuery(
+    { tag: tags[2] ?? "", startTime: new Date(filters.startTime).toISOString(), endTime: new Date(filters.endTime).toISOString(), resolution },
     { enabled: tags.length > 2 }
   );
-  const q3 = trpc.lakehouse.queryResample.useQuery(
-    { tag: tags[3] ?? "", startTime: new Date(filters.startTime).toISOString(), endTime: new Date(filters.endTime).toISOString(), interval: filters.interval, method: filters.method },
+  const q3 = trpc.lakehouse.resample.useQuery(
+    { tag: tags[3] ?? "", startTime: new Date(filters.startTime).toISOString(), endTime: new Date(filters.endTime).toISOString(), resolution },
     { enabled: tags.length > 3 }
   );
-  const q4 = trpc.lakehouse.queryResample.useQuery(
-    { tag: tags[4] ?? "", startTime: new Date(filters.startTime).toISOString(), endTime: new Date(filters.endTime).toISOString(), interval: filters.interval, method: filters.method },
+  const q4 = trpc.lakehouse.resample.useQuery(
+    { tag: tags[4] ?? "", startTime: new Date(filters.startTime).toISOString(), endTime: new Date(filters.endTime).toISOString(), resolution },
     { enabled: tags.length > 4 }
   );
 
@@ -460,7 +464,7 @@ function MultiTagTrendChart({
     const map = new Map<string, Record<string, number | string | boolean>>();
     queries.forEach((q, i) => {
       const tag = tags[i];
-      (q.data?.data ?? []).forEach((d: { timestamp: string; value: number }) => {
+      (q.data?.timeSeries ?? []).forEach((d: { timestamp: string; value: number }) => {
         const v = d.value;
         if (minVal !== undefined && v < minVal) return;
         if (maxVal !== undefined && v > maxVal) return;
@@ -831,7 +835,7 @@ function LiveValues({ selectedTags }: { selectedTags: string[] }) {
     ? selectedTags
     : ["W-001.WELLHEAD_PRESSURE", "W-001.TUBING_TEMP", "W-001.GAS_RATE", "W-002.WELLHEAD_PRESSURE", "W-002.OIL_RATE"];
 
-  const { data, refetch } = trpc.lakehouse.getLatest.useQuery(
+  const { data, refetch } = trpc.lakehouse.latestValues.useQuery(
     { tags: DEMO_TAGS },
     { refetchInterval: 5000 }
   );
@@ -850,7 +854,7 @@ function LiveValues({ selectedTags }: { selectedTags: string[] }) {
       </CardHeader>
       <CardContent>
         <div className="space-y-2">
-          {(data?.values ?? []).map((v: { tag: string; value: number; unit: string; quality: number; timestamp: string }, i: number) => (
+          {(data?.values ?? []).map((v: { tag: string; value: number; unit: string; quality: string; timestamp: string }, i: number) => (
             <div key={v.tag} className="flex items-center justify-between py-1 border-b border-slate-800/50 last:border-0">
               <div>
                 <p className="text-xs font-mono" style={{ color: selectedTags.length > 0 ? TAG_COLORS[i % TAG_COLORS.length] : "#fbbf24" }}>
@@ -888,13 +892,12 @@ function ForecastReconciliation({ tag, filters }: { tag: string; filters: Filter
   // Fetch actual historical data for the same window (last 48h)
   const end48 = new Date();
   const start48 = new Date(end48.getTime() - 48 * 3600_000);
-  const { data: actualData, isLoading: aLoading } = trpc.lakehouse.queryResample.useQuery(
+  const { data: actualData, isLoading: aLoading } = trpc.lakehouse.resample.useQuery(
     {
       tag,
       startTime: start48.toISOString(),
       endTime: end48.toISOString(),
-      interval: "1h",
-      method: "mean",
+      resolution: "1h",
     },
     { enabled: !!tag }
   );
@@ -904,7 +907,7 @@ function ForecastReconciliation({ tag, filters }: { tag: string; filters: Filter
     const map = new Map<string, { timestamp: string; actual?: number; p50?: number; p05?: number; p95?: number }>();
 
     // Actual values
-    (actualData?.data ?? []).forEach((d: { timestamp: string; value: number }) => {
+    (actualData?.timeSeries ?? []).forEach((d: { timestamp: string; value: number }) => {
       map.set(d.timestamp, { timestamp: d.timestamp, actual: d.value });
     });
 
@@ -1168,16 +1171,16 @@ export default function Lakehouse() {
   const [sedonaLng, setSedonaLng] = useState("44.4");
   const [sedonaRadius, setSedonaRadius] = useState("100");
 
-  const datafusionQueryMut = trpc.lakehouseExt.datafusionQuery.useMutation();
-  const duckdbQueryMut = trpc.lakehouseExt.duckdbQuery.useMutation();
-  const { data: icebergData } = trpc.lakehouseExt.icebergCatalog.useQuery();
-  const { data: analyticsHealth } = trpc.lakehouseExt.analyticsHealth.useQuery();
-  const { data: datafusionHealth } = trpc.lakehouseExt.datafusionHealth.useQuery();
-  const sedonaQuery = trpc.lakehouseExt.sedonaProximityQuery.useQuery(
+  const datafusionQueryMut = trpc.lakehouse.datafusionQuery.useMutation();
+  const duckdbQueryMut = trpc.lakehouse.duckdbQuery.useMutation();
+  const { data: icebergData } = trpc.lakehouse.icebergCatalog.useQuery();
+  const { data: analyticsHealth } = trpc.lakehouse.analyticsHealth.useQuery();
+  const { data: datafusionHealth } = trpc.lakehouse.datafusionHealth.useQuery();
+  const sedonaQuery = trpc.lakehouse.sedonaProximityQuery.useQuery(
     { lat: parseFloat(sedonaLat) || 33.3, lng: parseFloat(sedonaLng) || 44.4, radiusKm: parseFloat(sedonaRadius) || 100 },
     { enabled: activeTab === "sedona" }
   );
-  const heatmapQuery = trpc.lakehouseExt.sedonaDamageHeatmap.useQuery({}, { enabled: activeTab === "sedona" });
+  const heatmapQuery = trpc.lakehouse.sedonaDamageHeatmap.useQuery({}, { enabled: activeTab === "sedona" });
 
   // Default: last 24h
   const defaultEnd = new Date();
@@ -1193,7 +1196,7 @@ export default function Lakehouse() {
     maxValue: "",
   });
 
-  const { data: statusData } = trpc.lakehouse.getStatus.useQuery(undefined, { refetchInterval: 30000 });
+  const { data: statusData } = trpc.lakehouse.health.useQuery(undefined, { refetchInterval: 30000 });
 
   const handleTagToggle = useCallback((tag: string) => {
     setSelectedTags((prev) => {
@@ -1301,7 +1304,7 @@ export default function Lakehouse() {
               placeholder="SELECT ... FROM well_telemetry WHERE ..."
             />
             <button
-              onClick={() => datafusionQueryMut.mutateAsync({ sql: dfSql }).then(r => setDfResult(r as typeof dfResult))}
+              onClick={() => datafusionQueryMut.mutateAsync({ sql: dfSql }).then((r: typeof dfResult) => setDfResult(r))}
               disabled={datafusionQueryMut.isPending}
               className="px-4 py-2 bg-amber-500 hover:bg-amber-400 text-slate-900 text-sm font-medium rounded-lg disabled:opacity-50"
             >
@@ -1345,7 +1348,7 @@ export default function Lakehouse() {
               placeholder="SELECT ... FROM read_parquet('s3://...')"
             />
             <button
-              onClick={() => duckdbQueryMut.mutateAsync({ sql: duckSql }).then(r => setDuckResult(r as typeof duckResult))}
+              onClick={() => duckdbQueryMut.mutateAsync({ sql: duckSql }).then((r: typeof duckResult) => setDuckResult(r))}
               disabled={duckdbQueryMut.isPending}
               className="px-4 py-2 bg-amber-500 hover:bg-amber-400 text-slate-900 text-sm font-medium rounded-lg disabled:opacity-50"
             >
@@ -1394,7 +1397,7 @@ export default function Lakehouse() {
               ) : (
                 <div className="text-xs text-slate-300">
                   <p className="text-slate-400 mb-2">Found {(sedonaQuery.data as { totalFound?: number })?.totalFound ?? 0} assets within {sedonaRadius}km</p>
-                  {((sedonaQuery.data as { features?: { id: string; name: string; type: string; distanceKm: number }[] })?.features ?? []).slice(0, 8).map((f) => (
+                  {((sedonaQuery.data as unknown as { features?: { id: string; name: string; type: string; distanceKm: number }[] })?.features ?? []).slice(0, 8).map((f) => (
                     <div key={f.id} className="flex justify-between py-1 border-b border-slate-800">
                       <span>{f.name}</span>
                       <span className="text-amber-400">{f.distanceKm?.toFixed(1)} km</span>
@@ -1443,7 +1446,7 @@ export default function Lakehouse() {
             </div>
           </div>
           <div className="grid grid-cols-1 gap-3">
-            {((icebergData as { tables?: { name: string; rowCount: number; sizeBytes: number; partitionedBy: string; lastUpdated: string }[] })?.tables ?? []).map(table => (
+            {((icebergData as unknown as { tables?: { name: string; rowCount: number; sizeBytes: number; partitionedBy: string; lastUpdated: string }[] })?.tables ?? []).map(table => (
               <div key={table.name} className="bg-slate-900 border border-slate-700 rounded-lg p-4 flex items-center justify-between">
                 <div>
                   <p className="text-sm font-semibold text-slate-200 font-mono">{table.name}</p>

@@ -160,11 +160,7 @@ function StartWorkflowDialog({
 
   const startMutation = trpc.temporal.startWorkover.useMutation({
     onSuccess: (data) => {
-      toast.success(
-        data.simulated
-          ? `Workflow simulated: ${data.workflowId}`
-          : `Workflow started: ${data.workflowId}`
-      );
+      toast.success(`Workflow started: ${data.workflowId}`);
       onClose();
     },
     onError: (err) => toast.error(`Failed: ${err.message}`),
