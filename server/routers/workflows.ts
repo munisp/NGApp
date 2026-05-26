@@ -3,13 +3,13 @@
  *
  * Exposes workflow lifecycle operations: start, status, signal, terminate.
  * Communicates with the Go middleware worker's internal HTTP API.
- * Falls back to simulated data when the Go worker is unavailable.
+ * Requires the Go worker to be running — throws SERVICE_UNAVAILABLE if not.
  */
 import { z } from "zod";
 import { protectedProcedure, router } from "../_core/trpc";
+import { TRPCError } from "@trpc/server";
 
 const WORKER_URL = process.env.GO_WORKER_URL ?? "http://localhost:8090";
-const WORKER_ENABLED = process.env.GO_WORKER_ENABLED !== "false";
 
 // ─── Types ─────────────────────────────────────────────────────────────────────
 
@@ -31,27 +31,19 @@ interface WorkflowStatus {
 // ─── HTTP helper ───────────────────────────────────────────────────────────────
 
 async function workerFetch(path: string, options?: RequestInit): Promise<Response> {
-  return fetch(`${WORKER_URL}/v1${path}`, {
+  const res = await fetch(`${WORKER_URL}/v1${path}`, {
     ...options,
     headers: { "Content-Type": "application/json", ...(options?.headers ?? {}) },
     signal: AbortSignal.timeout(5000),
   });
+  return res;
 }
 
-// ─── Simulated workflow store ─────────────────────────────────────────────────
-
-const simulatedWorkflows: Map<string, WorkflowStatus> = new Map();
-
-function simulateWorkflow(type: string, input: unknown): string {
-  const id = `${type}-${Date.now()}`;
-  simulatedWorkflows.set(id, {
-    workflowId: id,
-    status: "RUNNING",
-    startTime: new Date().toISOString(),
-    closeTime: null,
-    type,
+function workerError(message: string): TRPCError {
+  return new TRPCError({
+    code: "SERVICE_UNAVAILABLE",
+    message: `Temporal workflow service unavailable: ${message}. Ensure Go worker is running at ${WORKER_URL}`,
   });
-  return id;
 }
 
 // ─── Exported helpers for testing ───────────────────────────────────────────
@@ -61,14 +53,12 @@ export async function getWorkflowList(input: { workflowType?: string; limit?: nu
     const res = await workerFetch("/workflows");
     if (!res.ok) throw new Error(`HTTP ${res.status}`);
     const data = await res.json() as { workflows: WorkflowStatus[]; total: number };
-    return { ...data, source: "temporal" };
-  } catch {
-    const demos: WorkflowStatus[] = [
-      { workflowId: "PTWWorkflow-demo-001", status: "RUNNING", startTime: new Date(Date.now() - 3600000).toISOString(), closeTime: null, type: WORKFLOW_TYPES.PTW },
-      { workflowId: "OTACampaignWorkflow-demo-001", status: "COMPLETED", startTime: new Date(Date.now() - 86400000).toISOString(), closeTime: new Date(Date.now() - 82800000).toISOString(), type: WORKFLOW_TYPES.OTA_CAMPAIGN },
-    ];
-    const filtered = input.workflowType ? demos.filter((w) => w.type === input.workflowType) : demos;
-    return { workflows: filtered.slice(0, input.limit ?? 20), total: filtered.length, source: "simulated" };
+    const filtered = input.workflowType
+      ? data.workflows.filter(w => w.type === input.workflowType)
+      : data.workflows;
+    return { workflows: filtered.slice(0, input.limit ?? 20), total: filtered.length, source: "temporal" };
+  } catch (err) {
+    throw workerError(err instanceof Error ? err.message : "connection failed");
   }
 }
 
@@ -76,7 +66,7 @@ export async function getWorkflowList(input: { workflowType?: string; limit?: nu
 
 export const workflowsRouter = router({
   /**
-   * Start a new workflow instance.
+   * Start a new workflow instance via the Go worker → Temporal.
    */
   start: protectedProcedure
     .input(
@@ -90,10 +80,6 @@ export const workflowsRouter = router({
       })
     )
     .mutation(async ({ input }) => {
-      if (!WORKER_ENABLED) {
-        const id = simulateWorkflow(input.workflowType, input.input);
-        return { workflowId: id };
-      }
       try {
         const res = await workerFetch("/workflows/start", {
           method: "POST",
@@ -102,11 +88,14 @@ export const workflowsRouter = router({
             input: input.input ?? {},
           }),
         });
-        if (!res.ok) throw new Error(`HTTP ${res.status}`);
+        if (!res.ok) {
+          const errText = await res.text().catch(() => "");
+          throw new Error(`HTTP ${res.status}: ${errText}`);
+        }
         return await res.json() as { workflowId: string };
-      } catch {
-        const id = simulateWorkflow(input.workflowType, input.input);
-        return { workflowId: id };
+      } catch (err) {
+        if (err instanceof TRPCError) throw err;
+        throw workerError(err instanceof Error ? err.message : "start failed");
       }
     }),
 
@@ -116,22 +105,23 @@ export const workflowsRouter = router({
   getStatus: protectedProcedure
     .input(z.object({ workflowId: z.string() }))
     .query(async ({ input }) => {
-      if (!WORKER_ENABLED) {
-        const wf = simulatedWorkflows.get(input.workflowId);
-        return wf ?? { workflowId: input.workflowId, status: "NOT_FOUND", startTime: null, closeTime: null, type: "Unknown" };
-      }
       try {
         const res = await workerFetch(`/workflows/${encodeURIComponent(input.workflowId)}/status`);
-        if (!res.ok) throw new Error(`HTTP ${res.status}`);
+        if (!res.ok) {
+          if (res.status === 404) {
+            throw new TRPCError({ code: "NOT_FOUND", message: `Workflow ${input.workflowId} not found` });
+          }
+          throw new Error(`HTTP ${res.status}`);
+        }
         return await res.json() as WorkflowStatus;
-      } catch {
-        const wf = simulatedWorkflows.get(input.workflowId);
-        return wf ?? { workflowId: input.workflowId, status: "UNAVAILABLE", startTime: null, closeTime: null, type: "Unknown" };
+      } catch (err) {
+        if (err instanceof TRPCError) throw err;
+        throw workerError(err instanceof Error ? err.message : "status query failed");
       }
     }),
 
   /**
-   * List all known workflow instances (simulated + active).
+   * List all workflow instances from Temporal via the Go worker.
    */
   list: protectedProcedure
     .input(
@@ -141,42 +131,7 @@ export const workflowsRouter = router({
       })
     )
     .query(async ({ input }) => {
-      // Return simulated workflows + some demo entries
-      const demos: WorkflowStatus[] = [
-        {
-          workflowId: "PTWWorkflow-demo-001",
-          status: "RUNNING",
-          startTime: new Date(Date.now() - 3600000).toISOString(),
-          closeTime: null,
-          type: WORKFLOW_TYPES.PTW,
-        },
-        {
-          workflowId: "OTACampaignWorkflow-demo-001",
-          status: "COMPLETED",
-          startTime: new Date(Date.now() - 86400000).toISOString(),
-          closeTime: new Date(Date.now() - 82800000).toISOString(),
-          type: WORKFLOW_TYPES.OTA_CAMPAIGN,
-        },
-        {
-          workflowId: "RegulatorySubmissionWorkflow-demo-001",
-          status: "RUNNING",
-          startTime: new Date(Date.now() - 7200000).toISOString(),
-          closeTime: null,
-          type: WORKFLOW_TYPES.REGULATORY_SUBMISSION,
-        },
-      ];
-
-      const active = Array.from(simulatedWorkflows.values());
-      const all = [...demos, ...active];
-
-      const filtered = input.workflowType
-        ? all.filter((w) => w.type === input.workflowType)
-        : all;
-
-      return {
-        workflows: filtered.slice(0, input.limit),
-        total: filtered.length,
-      };
+      return getWorkflowList(input);
     }),
 
   /**
@@ -191,26 +146,19 @@ export const workflowsRouter = router({
       })
     )
     .mutation(async ({ input }) => {
-      if (!WORKER_ENABLED) {
-        const wf = simulatedWorkflows.get(input.workflowId);
-        if (wf) {
-          wf.lastSignal = input.signal;
-          if (["ptw.close", "regulatory.callback"].includes(input.signal)) {
-            wf.status = "COMPLETED";
-            wf.closeTime = new Date().toISOString();
-          }
-        }
-        return { status: "signalled" };
-      }
       try {
         const res = await workerFetch(`/workflows/${encodeURIComponent(input.workflowId)}/signal`, {
           method: "POST",
           body: JSON.stringify({ signal: input.signal, payload: input.payload ?? {} }),
         });
-        if (!res.ok) throw new Error(`HTTP ${res.status}`);
+        if (!res.ok) {
+          const errText = await res.text().catch(() => "");
+          throw new Error(`HTTP ${res.status}: ${errText}`);
+        }
         return await res.json() as { status: string };
-      } catch {
-        return { status: "simulated" };
+      } catch (err) {
+        if (err instanceof TRPCError) throw err;
+        throw workerError(err instanceof Error ? err.message : "signal failed");
       }
     }),
 
@@ -225,23 +173,19 @@ export const workflowsRouter = router({
       })
     )
     .mutation(async ({ input }) => {
-      if (!WORKER_ENABLED) {
-        const wf = simulatedWorkflows.get(input.workflowId);
-        if (wf) {
-          wf.status = "TERMINATED";
-          wf.closeTime = new Date().toISOString();
-        }
-        return { status: "terminated" };
-      }
       try {
         const res = await workerFetch(
           `/workflows/${encodeURIComponent(input.workflowId)}?reason=${encodeURIComponent(input.reason)}`,
           { method: "DELETE" }
         );
-        if (!res.ok) throw new Error(`HTTP ${res.status}`);
+        if (!res.ok) {
+          const errText = await res.text().catch(() => "");
+          throw new Error(`HTTP ${res.status}: ${errText}`);
+        }
         return await res.json() as { status: string };
-      } catch {
-        return { status: "simulated" };
+      } catch (err) {
+        if (err instanceof TRPCError) throw err;
+        throw workerError(err instanceof Error ? err.message : "terminate failed");
       }
     }),
 });

@@ -12,7 +12,8 @@
  */
 
 import { z } from "zod";
-import { protectedProcedure, publicProcedure, router } from "../_core/trpc";
+import { protectedProcedure, router } from "../_core/trpc";
+import { TRPCError } from "@trpc/server";
 
 const GRAFANA_URL = process.env.GRAFANA_URL ?? "http://localhost:3001";
 const GRAFANA_API_KEY = process.env.GRAFANA_API_KEY ?? "";
@@ -111,7 +112,7 @@ export const grafanaRouter = router({
    * Returns Grafana base URL and feature flags.
    * Used by the PWA to know whether Grafana is available.
    */
-  config: publicProcedure.query(() => {
+  config: protectedProcedure.query(() => {
     return {
       grafanaUrl: GRAFANA_URL,
       available: Boolean(GRAFANA_URL),
@@ -177,14 +178,13 @@ export const grafanaRouter = router({
    * Checks Grafana API health.
    * Returns { healthy: true } if Grafana is reachable, { healthy: false } otherwise.
    */
-  health: publicProcedure.query(async () => {
+  health: protectedProcedure.query(async () => {
     const result = await grafanaApi<{ database: string; version: string }>("/api/health");
     if (!result) {
-      return {
-        healthy: false,
-        message: "Grafana is not reachable. Start it with: docker compose -f infra/grafana/docker-compose.grafana.yml up -d",
-        grafanaUrl: GRAFANA_URL,
-      };
+      throw new TRPCError({
+        code: "SERVICE_UNAVAILABLE",
+        message: `Grafana is not reachable at ${GRAFANA_URL}. Start it with: docker compose -f infra/grafana/docker-compose.grafana.yml up -d`,
+      });
     }
     return {
       healthy: true,

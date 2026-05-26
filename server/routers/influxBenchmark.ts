@@ -4,7 +4,7 @@ import { TRPCError } from "@trpc/server";
  */
 
 import { z } from "zod";
-import { publicProcedure, router, protectedProcedure} from "../_core/trpc";
+import { router, protectedProcedure} from "../_core/trpc";
 import { runBenchmarkSuite, type BenchmarkRun } from "../influxBenchmark";
 import { triggerBenchmarkNow, getNightlyBenchmarkHistory } from "../benchmarkScheduler";
 
@@ -40,7 +40,7 @@ export const influxBenchmarkRouter = router({
   /**
    * Get benchmark run history (last N runs).
    */
-  history: publicProcedure
+  history: protectedProcedure
     .input(z.object({ limit: z.number().min(1).max(10).default(5) }).optional())
     .query(({ input }) => {
       return benchmarkHistory.slice(0, input?.limit ?? 5);
@@ -58,7 +58,7 @@ export const influxBenchmarkRouter = router({
   /**
    * Get the nightly scheduler history (last 30 runs).
    */
-  nightlyHistory: publicProcedure
+  nightlyHistory: protectedProcedure
     .input(z.object({ limit: z.number().min(1).max(30).default(10) }).optional())
     .query(({ input }) => {
       try {

@@ -6,7 +6,7 @@ import { TRPCError } from "@trpc/server";
  * to publish sensor readings from the Node.js layer to Kafka.
  */
 import { z } from "zod";
-import { protectedProcedure, publicProcedure, router } from "../_core/trpc";
+import { protectedProcedure, router } from "../_core/trpc";
 import {
   getKafkaStats,
   isWorkerHealthy,
@@ -110,16 +110,20 @@ export const streamingRouter = router({
    * In production this would query the Kafka Admin API via the Go worker.
    */
   getTopics: protectedProcedure.query(async () => {
-    const healthy = await isWorkerHealthy();
-    const topics = [
-      { name: "og.sensor.readings", partitions: 6, retention: "7d", description: "Well sensor telemetry" },
-      { name: "og.alarms.all", partitions: 3, retention: "30d", description: "All alarm events" },
-      { name: "og.alarms.critical", partitions: 3, retention: "90d", description: "Critical alarm events (sev >= 4)" },
-      { name: "og.ptw.events", partitions: 2, retention: "365d", description: "Permit-to-Work lifecycle events" },
-      { name: "og.production.records", partitions: 4, retention: "30d", description: "Production allocation records" },
-      { name: "og.regulatory.submissions", partitions: 2, retention: "365d", description: "Regulatory submission events" },
-    ];
-    return { topics, brokerHealthy: healthy };
+    const WORKER_URL = process.env.GO_WORKER_URL ?? "http://localhost:8090";
+    try {
+      const res = await fetch(`${WORKER_URL}/v1/kafka/topics`, {
+        signal: AbortSignal.timeout(5000),
+      });
+      if (!res.ok) throw new Error(`HTTP ${res.status}`);
+      const data = await res.json() as { topics: Array<{ name: string; partitions: number; retention: string; description: string }>; brokerHealthy: boolean };
+      return data;
+    } catch (err) {
+      throw new TRPCError({
+        code: "SERVICE_UNAVAILABLE",
+        message: `Kafka Admin API unavailable: ${err instanceof Error ? err.message : "connection failed"}. Ensure Go worker is running at ${WORKER_URL}`,
+      });
+    }
   }),
 
   /**
@@ -141,23 +145,28 @@ export const streamingRouter = router({
         { name: "og.security.events", description: "Wazuh security events and triage results", producers: ["wazuh-agent", "incident-triage"] },
       ];
   
-      // Simulate connectivity check (in production, ping fluvio-sc:9003)
-      const reachable = dualPublish; // When dual-publish is enabled, assume SC is reachable
-      const messagesRouted = dualPublish ? Math.floor(Math.random() * 50000) + 100000 : 0;
-  
+      let reachable = false;
+      let stats = { messagesRouted: 0, topicCount: fluvioTopics.length, producerCount: 0, consumerCount: 0, lagMs: 0 };
+
+      if (dualPublish && endpoint) {
+        try {
+          const WORKER_URL = process.env.GO_WORKER_URL ?? "http://localhost:8090";
+          const res = await fetch(`${WORKER_URL}/v1/fluvio/status`, { signal: AbortSignal.timeout(3000) });
+          if (res.ok) {
+            const data = await res.json() as { reachable: boolean; messagesRouted: number; producerCount: number; consumerCount: number; lagMs: number };
+            reachable = data.reachable;
+            stats = { ...stats, messagesRouted: data.messagesRouted, producerCount: data.producerCount, consumerCount: data.consumerCount, lagMs: data.lagMs };
+          }
+        } catch { /* Fluvio status unavailable */ }
+      }
+
       return {
         dualPublishEnabled: dualPublish,
         endpoint,
         reachable,
-        mode: dualPublish ? "live" : "disabled",
+        mode: dualPublish ? (reachable ? "live" : "degraded") : "disabled",
         topics: fluvioTopics,
-        stats: {
-          messagesRouted,
-          topicCount: fluvioTopics.length,
-          producerCount: 6,
-          consumerCount: 3,
-          lagMs: dualPublish ? Math.floor(Math.random() * 5) + 1 : 0,
-        },
+        stats,
       };
     } catch (err: unknown) {
       if (err instanceof TRPCError) throw err;
@@ -173,15 +182,22 @@ export const streamingRouter = router({
   toggleFluvioDualPublish: protectedProcedure
     .input(z.object({ enabled: z.boolean() }))
     .mutation(async ({ input }) => {
-      // In production: POST to middleware /api/fluvio/toggle
-      // For now, return the new state (env var change requires restart)
-      return {
-        success: true,
-        dualPublishEnabled: input.enabled,
-        message: input.enabled
-          ? "Fluvio dual-publish activated — all new messages will be routed to both Kafka and Fluvio"
-          : "Fluvio dual-publish disabled — messages routed to Kafka only",
-        note: "Set FLUVIO_DUAL_PUBLISH env var and restart to persist this change",
-      };
+      const WORKER_URL = process.env.GO_WORKER_URL ?? "http://localhost:8090";
+      try {
+        const res = await fetch(`${WORKER_URL}/v1/fluvio/toggle`, {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ enabled: input.enabled }),
+          signal: AbortSignal.timeout(3000),
+        });
+        if (!res.ok) throw new Error(`HTTP ${res.status}`);
+        const data = await res.json() as { success: boolean; dualPublishEnabled: boolean; message: string };
+        return data;
+      } catch (err) {
+        throw new TRPCError({
+          code: "SERVICE_UNAVAILABLE",
+          message: `Failed to toggle Fluvio dual-publish: ${err instanceof Error ? err.message : "connection failed"}`,
+        });
+      }
     }),
 });

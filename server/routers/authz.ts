@@ -21,13 +21,13 @@
  *     action write = manager
  *   }
  *
- * Falls back to role-based simulation when Permify is unavailable.
+ * Requires the Go worker + Permify to be running.
  */
 import { z } from "zod";
 import { protectedProcedure, router } from "../_core/trpc";
+import { TRPCError } from "@trpc/server";
 
 const WORKER_URL = process.env.GO_WORKER_URL ?? "http://localhost:8090";
-const PERMIFY_ENABLED = process.env.PERMIFY_ENABLED !== "false";
 
 // ─── HTTP helper ───────────────────────────────────────────────────────────────
 
@@ -39,20 +39,33 @@ async function workerFetch(path: string, options?: RequestInit): Promise<Respons
   });
 }
 
-// ─── Simulation ────────────────────────────────────────────────────────────────
+function authzError(message: string): TRPCError {
+  return new TRPCError({
+    code: "SERVICE_UNAVAILABLE",
+    message: `Permify authorization service unavailable: ${message}. Ensure Go worker is running at ${WORKER_URL}`,
+  });
+}
 
-export function simulatePermifyCheck(
+// ─── Exported helpers for testing ───────────────────────────────────────────
+
+export async function checkPermission(
   subjectType: string,
   subjectId: string,
   permission: string,
   entityType: string,
   entityId: string,
-  role: string
-): boolean {
-  if (role === "admin") return true;
-  if (permission === "read") return true;
-  if (permission === "write" && role !== "viewer") return true;
-  return false;
+): Promise<boolean> {
+  try {
+    const res = await workerFetch("/authz/check", {
+      method: "POST",
+      body: JSON.stringify({ subjectType, subjectId, permission, entityType, entityId }),
+    });
+    if (!res.ok) throw new Error(`HTTP ${res.status}`);
+    const data = await res.json() as { allowed: boolean };
+    return data.allowed;
+  } catch (err) {
+    throw authzError(err instanceof Error ? err.message : "check failed");
+  }
 }
 
 // ─── Router ────────────────────────────────────────────────────────────────────
@@ -60,7 +73,6 @@ export function simulatePermifyCheck(
 export const authzRouter = router({
   /**
    * Check if the current user has a specific permission on an entity.
-   * Used by UI to conditionally show/hide actions.
    */
   check: protectedProcedure
     .input(
@@ -72,14 +84,6 @@ export const authzRouter = router({
     )
     .query(async ({ input, ctx }) => {
       const userId = ctx.user?.openId ?? "anonymous";
-      const userRole = (ctx.user as { role?: string })?.role ?? "user";
-
-      if (!PERMIFY_ENABLED) {
-        return {
-          allowed: simulatePermifyCheck("user", userId, input.permission, input.entityType, input.entityId, userRole),
-          source: "simulated",
-        };
-      }
 
       try {
         const res = await workerFetch("/authz/check", {
@@ -95,17 +99,14 @@ export const authzRouter = router({
         if (!res.ok) throw new Error(`HTTP ${res.status}`);
         const data = await res.json() as { allowed: boolean };
         return { allowed: data.allowed, source: "permify" };
-      } catch {
-        return {
-          allowed: simulatePermifyCheck("user", userId, input.permission, input.entityType, input.entityId, userRole),
-          source: "simulated",
-        };
+      } catch (err) {
+        if (err instanceof TRPCError) throw err;
+        throw authzError(err instanceof Error ? err.message : "check failed");
       }
     }),
 
   /**
    * Bulk permission check for multiple entities at once.
-   * Used by list views to determine which actions are available per row.
    */
   bulkCheck: protectedProcedure
     .input(
@@ -121,15 +122,6 @@ export const authzRouter = router({
     )
     .query(async ({ input, ctx }) => {
       const userId = ctx.user?.openId ?? "anonymous";
-      const userRole = (ctx.user as { role?: string })?.role ?? "user";
-
-      if (!PERMIFY_ENABLED) {
-        const results = input.checks.map((c) => ({
-          ...c,
-          allowed: simulatePermifyCheck("user", userId, c.permission, c.entityType, c.entityId, userRole),
-        }));
-        return { results, source: "simulated" as const };
-      }
 
       try {
         const res = await workerFetch("/authz/bulk-check", {
@@ -143,19 +135,16 @@ export const authzRouter = router({
         if (!res.ok) throw new Error(`HTTP ${res.status}`);
         const data = await res.json() as { results: Array<{ entityType: string; entityId: string; permission: string; allowed: boolean }> };
         return { results: data.results, source: "permify" as const };
-      } catch {
-        const results = input.checks.map((c) => ({
-          ...c,
-          allowed: simulatePermifyCheck("user", userId, c.permission, c.entityType, c.entityId, userRole),
-        }));
-        return { results, source: "simulated" as const };
+      } catch (err) {
+        if (err instanceof TRPCError) throw err;
+        throw authzError(err instanceof Error ? err.message : "bulk check failed");
       }
     }),
 
   /**
-   * Write a relationship tuple (e.g., assign user as operator of a well).
+   * Write a relationship tuple to Permify.
    */
-  writeRelationship: protectedProcedure
+  writeRelation: protectedProcedure
     .input(
       z.object({
         entityType: z.string(),
@@ -166,33 +155,43 @@ export const authzRouter = router({
       })
     )
     .mutation(async ({ input }) => {
-      if (!PERMIFY_ENABLED) {
-        return { status: "simulated" };
-      }
       try {
-        const res = await workerFetch("/authz/relationship", {
+        const res = await workerFetch("/authz/relations", {
           method: "POST",
           body: JSON.stringify(input),
         });
         if (!res.ok) throw new Error(`HTTP ${res.status}`);
-        return await res.json() as { status: string };
-      } catch {
-        return { status: "simulated" };
+        return await res.json() as { success: boolean };
+      } catch (err) {
+        if (err instanceof TRPCError) throw err;
+        throw authzError(err instanceof Error ? err.message : "write relation failed");
       }
     }),
 
   /**
-   * Get Permify service health.
+   * Delete a relationship tuple from Permify.
    */
-  getStatus: protectedProcedure.query(async () => {
-    if (!PERMIFY_ENABLED) {
-      return { healthy: false, mode: "disabled", schema: "N/A" };
-    }
-    try {
-      const res = await workerFetch("/authz/health");
-      return { healthy: res.ok, mode: "permify", schema: "og-rmm-v1" };
-    } catch {
-      return { healthy: false, mode: "unavailable", schema: "N/A" };
-    }
-  }),
+  deleteRelation: protectedProcedure
+    .input(
+      z.object({
+        entityType: z.string(),
+        entityId: z.string(),
+        relation: z.string(),
+        subjectType: z.string(),
+        subjectId: z.string(),
+      })
+    )
+    .mutation(async ({ input }) => {
+      try {
+        const res = await workerFetch("/authz/relations", {
+          method: "DELETE",
+          body: JSON.stringify(input),
+        });
+        if (!res.ok) throw new Error(`HTTP ${res.status}`);
+        return await res.json() as { success: boolean };
+      } catch (err) {
+        if (err instanceof TRPCError) throw err;
+        throw authzError(err instanceof Error ? err.message : "delete relation failed");
+      }
+    }),
 });

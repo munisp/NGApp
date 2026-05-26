@@ -1,7 +1,7 @@
 import { TRPCError } from "@trpc/server";
 import { z } from "zod";
 import { and, desc, eq, gte, lte, or, sql } from "drizzle-orm";
-import { router, publicProcedure, protectedProcedure, adminProcedure } from "../_core/trpc";
+import { router, protectedProcedure, adminProcedure } from "../_core/trpc";
 import { getDb } from "../db";
 import {
   wells,
@@ -252,7 +252,7 @@ async function seedWellsIfEmpty(db: Awaited<ReturnType<typeof getDb>>) {
 
 // ─── WELLS ROUTER ─────────────────────────────────────────────────────────────
 export const wellsRouter = router({
-  list: publicProcedure
+  list: protectedProcedure
     .input(z.object({
       status: z.enum(["ACTIVE", "SHUT_IN", "DRILLING", "WORKOVER", "ABANDONED"]).optional(),
       country: z.string().optional(),
@@ -274,7 +274,7 @@ export const wellsRouter = router({
       });
     }),
 
-  byId: publicProcedure
+  byId: protectedProcedure
     .input(z.object({ wellId: z.string() }))
     .query(async ({ input }) => {
       const db = await getDb();
@@ -349,7 +349,7 @@ export const wellsRouter = router({
 
 // ─── TELEMETRY ROUTER ─────────────────────────────────────────────────────────
 export const telemetryRouter = router({
-  latest: publicProcedure
+  latest: protectedProcedure
     .input(z.object({ wellId: z.string() }))
     .query(async ({ input }) => {
       const db = await getDb();
@@ -361,7 +361,7 @@ export const telemetryRouter = router({
       return rows[0] ?? null;
     }),
 
-  history: publicProcedure
+  history: protectedProcedure
     .input(z.object({
       wellId: z.string(),
       hours: z.number().default(24),
@@ -443,7 +443,7 @@ export const telemetryRouter = router({
       return { success: true };
     }),
 
-  getLiveStreamStatus: publicProcedure
+  getLiveStreamStatus: protectedProcedure
     .input(z.object({ wellId: z.string().optional() }))
     .query(async ({ input }) => {
       const TELEMETRY_SERVICE_URL = process.env.TELEMETRY_SERVICE_URL ?? "http://localhost:8082";
@@ -489,7 +489,7 @@ export const telemetryRouter = router({
 
 // ─── ALARMS ROUTER ────────────────────────────────────────────────────────────
 export const alarmsRouter = router({
-  list: publicProcedure
+  list: protectedProcedure
     .input(z.object({
       state: z.enum(["UNACKNOWLEDGED", "ACKNOWLEDGED", "CLEARED", "SUPPRESSED"]).optional(),
       severity: z.number().optional(),
@@ -614,7 +614,7 @@ export const alarmsRouter = router({
     });
   }),
 
-  isaDaily: publicProcedure
+  isaDaily: protectedProcedure
     .input(z.object({ days: z.number().default(30) }))
     .query(async ({ input }) => {
       const db = await getDb();
@@ -677,7 +677,7 @@ export const alarmsRouter = router({
 
 // ─── PRODUCTION ROUTER ────────────────────────────────────────────────────────
 export const productionRouter = router({
-  daily: publicProcedure
+  daily: protectedProcedure
     .input(z.object({ wellId: z.string().optional(), days: z.number().default(14) }))
     .query(async ({ input }) => {
       const db = await getDb();
@@ -725,7 +725,7 @@ export const productionRouter = router({
 
 // ─── WORKOVERS ROUTER ─────────────────────────────────────────────────────────
 export const workoverRouter = router({
-  list: publicProcedure
+  list: protectedProcedure
     .input(z.object({
       status: z.enum(["PLANNED", "MOBILIZING", "IN_PROGRESS", "SUSPENDED", "COMPLETED", "CANCELLED"]).optional(),
       wellId: z.string().optional(),
@@ -761,7 +761,7 @@ export const workoverRouter = router({
       const jobId = `WO-${new Date().getFullYear()}-${nanoid(4).toUpperCase()}`;
 
       // Start Temporal durable workflow for the workover lifecycle
-      const { workflowId: temporalWorkflowId, runId, simulated } = await startWorkoverWorkflow({
+      const { workflowId: temporalWorkflowId, runId } = await startWorkoverWorkflow({
         workoverJobId: jobId,
         wellId: input.wellId,
         jobType: input.jobType,
@@ -779,9 +779,9 @@ export const workoverRouter = router({
         action: "CREATE_WORKOVER",
         resource: "workovers",
         resourceId: jobId,
-        details: { ...input, temporalWorkflowId, temporalRunId: runId, temporalSimulated: simulated },
+        details: { ...input, temporalWorkflowId, temporalRunId: runId },
       });
-      return { jobId, temporalWorkflowId, temporalSimulated: simulated };
+      return { jobId, temporalWorkflowId };
     }),
 
   updateStatus: protectedProcedure
@@ -817,7 +817,7 @@ export const workoverRouter = router({
       return { success: true };
     }),
 
-  costs: publicProcedure
+  costs: protectedProcedure
     .input(z.object({ workoverId: z.number() }))
     .query(async ({ input }) => {
       const db = await getDb();
@@ -828,7 +828,7 @@ export const workoverRouter = router({
 
 // ─── CALIBRATION ROUTER ───────────────────────────────────────────────────────
 export const calibrationRouter = router({
-  list: publicProcedure
+  list: protectedProcedure
     .input(z.object({
       status: z.enum(["CURRENT", "DUE_SOON", "OVERDUE", "IN_PROGRESS", "FAILED"]).optional(),
       wellId: z.string().optional(),
@@ -917,7 +917,7 @@ export const fpsoRouter = router({
     return db.select().from(fpsoVessels).orderBy(fpsoVessels.name);
   }),
 
-  hpuUnits: publicProcedure
+  hpuUnits: protectedProcedure
     .input(z.object({ fpsoId: z.string().optional() }))
     .query(async ({ input }) => {
       const db = await getDb();
@@ -927,7 +927,7 @@ export const fpsoRouter = router({
       return input.fpsoId ? rows.filter(h => h.fpsoId === input.fpsoId) : rows;
     }),
 
-  subseaTrees: publicProcedure
+  subseaTrees: protectedProcedure
     .input(z.object({ fpsoId: z.string().optional() }))
     .query(async ({ input }) => {
       const db = await getDb();
@@ -1015,7 +1015,7 @@ export const connectivityRouter = router({
 
 // ─── ACTUATOR ROUTER ──────────────────────────────────────────────────────────
 export const actuatorRouter = router({
-  list: publicProcedure
+  list: protectedProcedure
     .input(z.object({ wellId: z.string().optional() }))
     .query(async ({ input }) => {
       const db = await getDb();
@@ -1068,7 +1068,7 @@ export const actuatorRouter = router({
 
 // ─── FINANCIALS ROUTER ────────────────────────────────────────────────────────
 export const financialsRouter = router({
-  list: publicProcedure
+  list: protectedProcedure
     .input(z.object({
       entryType: z.enum(["REVENUE", "ROYALTY", "OPEX", "CAPEX", "TAX", "SETTLEMENT", "ADJUSTMENT"]).optional(),
       wellId: z.string().optional(),
@@ -1121,7 +1121,7 @@ export const financialsRouter = router({
 
 // ─── HSE ROUTER ───────────────────────────────────────────────────────────────
 export const hseRouter = router({
-  incidents: publicProcedure
+  incidents: protectedProcedure
     .input(z.object({ limit: z.number().default(50) }).optional())
     .query(async ({ input }) => {
       const db = await getDb();
@@ -1189,7 +1189,7 @@ export const hseRouter = router({
 
 // ─── SECURITY ROUTER ──────────────────────────────────────────────────────────
 export const securityRouter = router({
-  events: publicProcedure
+  events: protectedProcedure
     .input(z.object({ limit: z.number().default(50), mitigated: z.boolean().optional() }).optional())
     .query(async ({ input }) => {
       const db = await getDb();
@@ -1257,7 +1257,7 @@ export const securityRouter = router({
       }).onConflictDoNothing().returning();
       const triageId = triageInsert[0]?.id ?? 0;
 
-      const { workflowId, simulated } = await startIncidentTriageWorkflow({
+      const { workflowId } = await startIncidentTriageWorkflow({
         eventId: input.eventId,
         severity: severityNum,
         target: ev?.target ?? "unknown",
@@ -1275,35 +1275,10 @@ export const securityRouter = router({
         action: "TRIGGER_INCIDENT_TRIAGE",
         resource: "incident_triage",
         resourceId: input.eventId,
-        details: { workflowId, temporalLive: !simulated, temporalAddress: getTemporalAddress() },
+        details: { workflowId, temporalAddress: getTemporalAddress() },
       });
 
-      // If Temporal is in simulation mode, auto-complete after 3s (dev/demo)
-      if (simulated) {
-        setTimeout(async () => {
-          try {
-            const dbLate = await getDb();
-            if (!dbLate) return;
-            const isCritical = severityNum >= 4;
-            await dbLate.update(incidentTriage).set({
-              status: "COMPLETED",
-              openCtiScore: Math.floor(Math.random() * 40) + (isCritical ? 60 : 20),
-              tlpClassification: isCritical ? "TLP:RED" : "TLP:AMBER",
-              finalSeverity: ev?.severity ?? "MEDIUM",
-              nodeIsolated: isCritical,
-              networkPolicyId: isCritical ? `netpol-${input.eventId}` : null,
-              alertGroupId: `oncall-${input.eventId}`,
-              recommendedAction: isCritical
-                ? "Node isolated. Initiate forensic analysis. Escalate to CISO."
-                : "Monitor closely. Apply patch within 24h. Review access logs.",
-              completedAt: new Date(),
-              updatedAt: new Date(),
-            }).where(eq(incidentTriage.eventId, input.eventId));
-          } catch (_) { /* silent */ }
-        }, 3000);
-      }
-
-      return { workflowId, status: "RUNNING", temporalLive: !simulated };
+      return { workflowId, status: "RUNNING", temporalLive: true };
     }),
 
   // IEC 62443 S21.2 — Re-admit an isolated node after remediation
@@ -1329,7 +1304,7 @@ export const securityRouter = router({
     }),
 
   // List all triage records
-  triageList: publicProcedure
+  triageList: protectedProcedure
     .input(z.object({ limit: z.number().default(20) }).optional())
     .query(async ({ input }) => {
       const db = await getDb();
@@ -1342,7 +1317,7 @@ export const securityRouter = router({
 
 // ─── ML ROUTER ────────────────────────────────────────────────────────────────
 export const mlRouter = router({
-  predictions: publicProcedure
+  predictions: protectedProcedure
     .input(z.object({ wellId: z.string().optional(), limit: z.number().default(50) }))
     .query(async ({ input }) => {
       const db = await getDb();
@@ -1352,7 +1327,7 @@ export const mlRouter = router({
       return input.wellId ? rows.filter(p => p.wellId === input.wellId) : rows;
     }),
 
-  latestByWell: publicProcedure
+  latestByWell: protectedProcedure
     .input(z.object({ wellId: z.string() }))
     .query(async ({ input }) => {
       const db = await getDb();
@@ -1368,7 +1343,7 @@ export const mlRouter = router({
 
 // ─── DIGITAL TWIN ROUTER ──────────────────────────────────────────────────────
 export const digitalTwinRouter = router({
-  scenarios: publicProcedure
+  scenarios: protectedProcedure
     .input(z.object({ wellId: z.string() }))
     .query(async ({ input }) => {
       const db = await getDb();
@@ -1441,7 +1416,7 @@ export const regulatoryRouter = router({
 
 // ─── ALLOCATION ROUTER ────────────────────────────────────────────────────────
 export const allocationRouter = router({
-  list: publicProcedure
+  list: protectedProcedure
     .input(z.object({ wellId: z.string().optional(), days: z.number().default(30) }))
     .query(async ({ input }) => {
       const db = await getDb();
@@ -1574,7 +1549,7 @@ export const temporalRouter = router({
    * List recent workflows (all types or filtered by type).
    * Returns simulated data when Temporal server is not available.
    */
-  list: publicProcedure
+  list: protectedProcedure
     .input(z.object({
       workflowType: z.string().optional(),
       limit: z.number().default(20),
@@ -1586,7 +1561,7 @@ export const temporalRouter = router({
   /**
    * Get status of a specific workflow by ID.
    */
-  status: publicProcedure
+  status: protectedProcedure
     .input(z.object({ workflowId: z.string() }))
     .query(async ({ input }) => {
       return getWorkflowStatus(input.workflowId);
@@ -1631,7 +1606,7 @@ export const temporalRouter = router({
     return {
       configured: !!TEMPORAL_ADDRESS,
       address: TEMPORAL_ADDRESS || "not configured",
-      mode: TEMPORAL_ADDRESS ? "live" : "simulation",
+      mode: TEMPORAL_ADDRESS ? "live" : "not_configured",
     };
   }),
 });

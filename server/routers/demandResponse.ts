@@ -3,7 +3,7 @@ import { TRPCError } from "@trpc/server";
  * server/routers/demandResponse.ts — OpenADR 3.1 Demand Response router
  *
  * v12.2: Fully database-backed (drPrograms, drEvents, drVens tables).
- * Falls back to simulated data when no programs exist yet.
+ * All endpoints require authentication. No simulated fallbacks.
  *
  * Use cases:
  * - GCC utility peak-tariff load shedding for compressors/pumps
@@ -11,7 +11,7 @@ import { TRPCError } from "@trpc/server";
  * - VEN (Virtual End Node) registration and reporting
  */
 import { z } from "zod";
-import { protectedProcedure, publicProcedure, router, adminProcedure} from "../_core/trpc";
+import { protectedProcedure, router, adminProcedure} from "../_core/trpc";
 import { getDb } from "../db";
 import { drPrograms, drEvents, drVens } from "../../drizzle/schema";
 import { eq, desc } from "drizzle-orm";
@@ -51,179 +51,29 @@ async function vtnFetch<T>(path: string, opts?: RequestInit): Promise<T | null> 
   }
 }
 
-// ─── Simulation helpers ────────────────────────────────────────────────────────
 
-function simulatedPrograms() {
-  const now = new Date();
-  return [
-    {
-      id: 1,
-      programId: "PROG-GCC-001",
-      name: "GCC Peak Tariff Curtailment",
-      programType: "DEMAND_RESPONSE",
-      country: "KW",
-      principalProgram: true,
-      bindingEvents: true,
-      localPrice: false,
-      timezone: "Asia/Kuwait",
-      status: "ACTIVE" as const,
-      description: "Kuwait MEW peak demand curtailment — summer 12:00–17:00",
-      intervalPeriod: "PT1H",
-      payloadDescriptors: null,
-      targets: null,
-      createdBy: "system",
-      createdAt: new Date(now.getTime() - 30 * 86400000),
-      updatedAt: now,
-    },
-    {
-      id: 2,
-      programId: "PROG-DR-002",
-      name: "Compressor Load Flex",
-      programType: "LOAD_FLEXIBILITY",
-      country: "SA",
-      principalProgram: false,
-      bindingEvents: false,
-      localPrice: true,
-      timezone: "Asia/Riyadh",
-      status: "ACTIVE" as const,
-      description: "Saudi Aramco facility compressor flex programme",
-      intervalPeriod: "PT15M",
-      payloadDescriptors: null,
-      targets: null,
-      createdBy: "system",
-      createdAt: new Date(now.getTime() - 14 * 86400000),
-      updatedAt: now,
-    },
-  ];
-}
 
-function simulatedEvents(programId?: string) {
-  const now = new Date();
-  const events = [
-    {
-      id: 1,
-      eventId: "EVT-001",
-      programId: "PROG-GCC-001",
-      eventName: "Peak Curtailment 14:00",
-      status: "SCHEDULED" as const,
-      priority: 1,
-      startTime: new Date(now.getTime() + 2 * 3600000),
-      endTime: new Date(now.getTime() + 5 * 3600000),
-      signalType: "LOAD" as const,
-      payloadValue: 250,
-      payloadUnit: "kW",
-      targets: JSON.stringify([{ type: "FACILITY", values: ["FAC-001", "FAC-002"] }]),
-      intervalPeriod: "PT1H",
-      reportRequired: true,
-      createdBy: "system",
-      createdAt: new Date(now.getTime() - 3600000),
-      updatedAt: now,
-    },
-    {
-      id: 2,
-      eventId: "EVT-002",
-      programId: "PROG-DR-002",
-      eventName: "Compressor Flex -15%",
-      status: "ACTIVE" as const,
-      priority: 2,
-      startTime: new Date(now.getTime() - 3600000),
-      endTime: new Date(now.getTime() + 3600000),
-      signalType: "SIMPLE" as const,
-      payloadValue: 0.85,
-      payloadUnit: "ratio",
-      targets: JSON.stringify([{ type: "RESOURCE_TYPE", values: ["COMPRESSOR"] }]),
-      intervalPeriod: "PT15M",
-      reportRequired: false,
-      createdBy: "system",
-      createdAt: new Date(now.getTime() - 7200000),
-      updatedAt: now,
-    },
-  ];
-  return programId ? events.filter((e) => e.programId === programId) : events;
-}
 
-function simulatedVens(programId?: string) {
-  const now = new Date();
-  const vens = [
-    {
-      id: 1,
-      venId: "VEN-COMP-001",
-      venName: "Compressor Station A",
-      programId: "PROG-GCC-001",
-      facilityId: "FAC-001",
-      resourceType: "COMPRESSOR",
-      maxLoadKw: 500,
-      currentLoadKw: 420,
-      availableKw: 80,
-      status: "REGISTERED",
-      capabilities: JSON.stringify(["LOAD_SHED", "LOAD_SHIFT", "BASELINE_REPORTING"]),
-      lastHeartbeat: new Date(now.getTime() - 30000),
-      createdAt: new Date(now.getTime() - 7 * 86400000),
-      updatedAt: now,
-    },
-    {
-      id: 2,
-      venId: "VEN-PUMP-001",
-      venName: "Injection Pump Array B",
-      programId: "PROG-GCC-001",
-      facilityId: "FAC-002",
-      resourceType: "PUMP",
-      maxLoadKw: 320,
-      currentLoadKw: 280,
-      availableKw: 40,
-      status: "REGISTERED",
-      capabilities: JSON.stringify(["LOAD_SHED", "BASELINE_REPORTING"]),
-      lastHeartbeat: new Date(now.getTime() - 45000),
-      createdAt: new Date(now.getTime() - 5 * 86400000),
-      updatedAt: now,
-    },
-    {
-      id: 3,
-      venId: "VEN-HVAC-001",
-      venName: "Process HVAC Block C",
-      programId: "PROG-DR-002",
-      facilityId: "FAC-003",
-      resourceType: "HVAC",
-      maxLoadKw: 180,
-      currentLoadKw: 150,
-      availableKw: 30,
-      status: "PENDING",
-      capabilities: JSON.stringify(["LOAD_SHED"]),
-      lastHeartbeat: null,
-      createdAt: new Date(now.getTime() - 86400000),
-      updatedAt: now,
-    },
-  ];
-  return programId ? vens.filter((v) => v.programId === programId) : vens;
-}
 
-// ─── Exported test helpers ─────────────────────────────────────────────────────
 
-export function getSimulatedPrograms() { return simulatedPrograms(); }
-export function getSimulatedEvents(programId?: string) { return simulatedEvents(programId); }
+
+
 
 // ─── Router ────────────────────────────────────────────────────────────────────
 
 export const demandResponseRouter = router({
   // ── Programs ─────────────────────────────────────────────────────────────────
-  getPrograms: publicProcedure
+  getPrograms: protectedProcedure
     .input(z.object({ status: z.enum(["ACTIVE", "INACTIVE", "DRAFT"]).optional() }).optional())
     .query(async ({ input }) => {
-      // Try VTN first
       const vtnPrograms = await vtnFetch<unknown[]>("/programs");
       if (vtnPrograms) return { programs: vtnPrograms, source: "vtn" };
 
-      // Database
-      try {
-        const db = await getDb();
-        if (!db) throw new Error("no db");
-        let rows = await db.select().from(drPrograms).orderBy(desc(drPrograms.createdAt));
-        if (input?.status) rows = rows.filter((r) => r.status === input.status);
-        if (rows.length > 0) return { programs: rows, source: "database" };
-      } catch {
-        // fall through to simulation
-      }
-      return { programs: simulatedPrograms(), source: "simulated" };
+      const db = await getDb();
+      if (!db) throw new TRPCError({ code: "INTERNAL_SERVER_ERROR", message: "Database unavailable" });
+      let rows = await db.select().from(drPrograms).orderBy(desc(drPrograms.createdAt));
+      if (input?.status) rows = rows.filter((r) => r.status === input.status);
+      return { programs: rows, source: "database" };
     }),
 
   createProgram: protectedProcedure
@@ -241,27 +91,23 @@ export const demandResponseRouter = router({
     }))
     .mutation(async ({ input, ctx }) => {
       const programId = `PROG-${Date.now().toString(36).toUpperCase()}`;
-      try {
-        const db = await getDb();
-        if (!db) throw new Error("no db");
-        const [row] = await db.insert(drPrograms).values({
-          programId,
-          name: input.name,
-          programType: input.programType,
-          country: input.country,
-          principalProgram: input.principalProgram,
-          bindingEvents: input.bindingEvents,
-          localPrice: input.localPrice,
-          timezone: input.timezone,
-          description: input.description,
-          intervalPeriod: input.intervalPeriod,
-          status: input.status,
-          createdBy: ctx.user.name ?? ctx.user.email ?? "unknown",
-        }).returning();
-        return { ...row, source: "database" };
-      } catch {
-        return { programId, ...input, source: "simulated" };
-      }
+      const db = await getDb();
+      if (!db) throw new TRPCError({ code: "INTERNAL_SERVER_ERROR", message: "Database unavailable" });
+      const [row] = await db.insert(drPrograms).values({
+        programId,
+        name: input.name,
+        programType: input.programType,
+        country: input.country,
+        principalProgram: input.principalProgram,
+        bindingEvents: input.bindingEvents,
+        localPrice: input.localPrice,
+        timezone: input.timezone,
+        description: input.description,
+        intervalPeriod: input.intervalPeriod,
+        status: input.status,
+        createdBy: ctx.user.name ?? ctx.user.email ?? "unknown",
+      }).returning();
+      return { ...row, source: "database" };
     }),
 
   updateProgram: protectedProcedure
@@ -274,34 +120,26 @@ export const demandResponseRouter = router({
       description: z.string().optional(),
     }))
     .mutation(async ({ input }) => {
-      try {
-        const db = await getDb();
-        if (!db) throw new Error("no db");
-        const { programId, ...updates } = input;
-        await db.update(drPrograms)
-          .set({ ...updates, updatedAt: new Date() })
-          .where(eq(drPrograms.programId, programId));
-        return { success: true, source: "database" };
-      } catch {
-        return { success: true, source: "simulated" };
-      }
+      const db = await getDb();
+      if (!db) throw new TRPCError({ code: "INTERNAL_SERVER_ERROR", message: "Database unavailable" });
+      const { programId, ...updates } = input;
+      await db.update(drPrograms)
+        .set({ ...updates, updatedAt: new Date() })
+        .where(eq(drPrograms.programId, programId));
+      return { success: true, source: "database" };
     }),
 
   deleteProgram: adminProcedure
     .input(z.object({ programId: z.string() }))
     .mutation(async ({ input }) => {
-      try {
-        const db = await getDb();
-        if (!db) throw new Error("no db");
-        await db.delete(drPrograms).where(eq(drPrograms.programId, input.programId));
-        return { success: true, source: "database" };
-      } catch {
-        return { success: true, source: "simulated" };
-      }
+      const db = await getDb();
+      if (!db) throw new TRPCError({ code: "INTERNAL_SERVER_ERROR", message: "Database unavailable" });
+      await db.delete(drPrograms).where(eq(drPrograms.programId, input.programId));
+      return { success: true, source: "database" };
     }),
 
   // ── Events ───────────────────────────────────────────────────────────────────
-  getEvents: publicProcedure
+  getEvents: protectedProcedure
     .input(z.object({
       programId: z.string().optional(),
       status: z.enum(["SCHEDULED", "ACTIVE", "CANCELLED", "COMPLETED"]).optional(),
@@ -310,17 +148,12 @@ export const demandResponseRouter = router({
       const vtnEvents = await vtnFetch<unknown[]>("/events");
       if (vtnEvents) return { events: vtnEvents, source: "vtn" };
 
-      try {
-        const db = await getDb();
-        if (!db) throw new Error("no db");
-        let rows = await db.select().from(drEvents).orderBy(desc(drEvents.createdAt));
-        if (input?.programId) rows = rows.filter((r) => r.programId === input.programId);
-        if (input?.status) rows = rows.filter((r) => r.status === input.status);
-        if (rows.length > 0) return { events: rows, source: "database" };
-      } catch {
-        // fall through
-      }
-      return { events: simulatedEvents(input?.programId), source: "simulated" };
+      const db = await getDb();
+      if (!db) throw new TRPCError({ code: "INTERNAL_SERVER_ERROR", message: "Database unavailable" });
+      let rows = await db.select().from(drEvents).orderBy(desc(drEvents.createdAt));
+      if (input?.programId) rows = rows.filter((r) => r.programId === input.programId);
+      if (input?.status) rows = rows.filter((r) => r.status === input.status);
+      return { events: rows, source: "database" };
     }),
 
   createEvent: protectedProcedure
@@ -339,28 +172,24 @@ export const demandResponseRouter = router({
     }))
     .mutation(async ({ input, ctx }) => {
       const eventId = `EVT-${randomUUID().slice(0, 8).toUpperCase()}`;
-      try {
-        const db = await getDb();
-        if (!db) throw new Error("no db");
-        const [row] = await db.insert(drEvents).values({
-          eventId,
-          programId: input.programId,
-          eventName: input.eventName,
-          priority: input.priority,
-          startTime: new Date(input.startTime),
-          endTime: new Date(input.endTime),
-          signalType: input.signalType,
-          payloadValue: input.payloadValue,
-          payloadUnit: input.payloadUnit,
-          targets: input.targets ? JSON.stringify(input.targets) : null,
-          intervalPeriod: input.intervalPeriod,
-          reportRequired: input.reportRequired,
-          createdBy: ctx.user.name ?? ctx.user.email ?? "unknown",
-        }).returning();
-        return { ...row, source: "database" };
-      } catch {
-        return { eventId, ...input, source: "simulated" };
-      }
+      const db = await getDb();
+      if (!db) throw new TRPCError({ code: "INTERNAL_SERVER_ERROR", message: "Database unavailable" });
+      const [row] = await db.insert(drEvents).values({
+        eventId,
+        programId: input.programId,
+        eventName: input.eventName,
+        priority: input.priority,
+        startTime: new Date(input.startTime),
+        endTime: new Date(input.endTime),
+        signalType: input.signalType,
+        payloadValue: input.payloadValue,
+        payloadUnit: input.payloadUnit,
+        targets: input.targets ? JSON.stringify(input.targets) : null,
+        intervalPeriod: input.intervalPeriod,
+        reportRequired: input.reportRequired,
+        createdBy: ctx.user.name ?? ctx.user.email ?? "unknown",
+      }).returning();
+      return { ...row, source: "database" };
     }),
 
   updateEventStatus: protectedProcedure
@@ -369,46 +198,33 @@ export const demandResponseRouter = router({
       status: z.enum(["SCHEDULED", "ACTIVE", "CANCELLED", "COMPLETED"]),
     }))
      .mutation(async ({ input }) => {
-      try {
-        const db = await getDb();
-        if (!db) throw new Error("no db");
-        await db.update(drEvents)
-          .set({ status: input.status, updatedAt: new Date() })
-          .where(eq(drEvents.eventId, input.eventId));
-        return { success: true, source: "database" };
-      } catch {
-        return { success: true, source: "simulated" };
-      }
+      const db = await getDb();
+      if (!db) throw new TRPCError({ code: "INTERNAL_SERVER_ERROR", message: "Database unavailable" });
+      await db.update(drEvents)
+        .set({ status: input.status, updatedAt: new Date() })
+        .where(eq(drEvents.eventId, input.eventId));
+      return { success: true, source: "database" };
     }),
   cancelEvent: protectedProcedure
     .input(z.object({ eventId: z.string() }))
     .mutation(async ({ input }) => {
-      try {
-        const db = await getDb();
-        if (!db) throw new Error("no db");
-        await db.update(drEvents)
-          .set({ status: "CANCELLED", updatedAt: new Date() })
-          .where(eq(drEvents.eventId, input.eventId));
-        return { status: "cancelled", source: "database" };
-      } catch {
-        return { status: "cancelled", source: "simulated" };
-      }
+      const db = await getDb();
+      if (!db) throw new TRPCError({ code: "INTERNAL_SERVER_ERROR", message: "Database unavailable" });
+      await db.update(drEvents)
+        .set({ status: "CANCELLED", updatedAt: new Date() })
+        .where(eq(drEvents.eventId, input.eventId));
+      return { status: "cancelled", source: "database" };
     }),
 
   // ── VENs ─────────────────────────────────────────────────────────────────────
-  getVens: publicProcedure
+  getVens: protectedProcedure
     .input(z.object({ programId: z.string().optional() }).optional())
     .query(async ({ input }) => {
-      try {
-        const db = await getDb();
-        if (!db) throw new Error("no db");
-        let rows = await db.select().from(drVens).orderBy(desc(drVens.createdAt));
-        if (input?.programId) rows = rows.filter((r) => r.programId === input.programId);
-        if (rows.length > 0) return { vens: rows, source: "database" };
-      } catch {
-        // fall through
-      }
-      return { vens: simulatedVens(input?.programId), source: "simulated" };
+      const db = await getDb();
+      if (!db) throw new TRPCError({ code: "INTERNAL_SERVER_ERROR", message: "Database unavailable" });
+      let rows = await db.select().from(drVens).orderBy(desc(drVens.createdAt));
+      if (input?.programId) rows = rows.filter((r) => r.programId === input.programId);
+      return { vens: rows, source: "database" };
     }),
 
   registerVen: protectedProcedure
@@ -422,23 +238,19 @@ export const demandResponseRouter = router({
     }))
     .mutation(async ({ input }) => {
       const venId = `VEN-${input.resourceType.slice(0, 4).toUpperCase()}-${Date.now().toString(36).toUpperCase()}`;
-      try {
-        const db = await getDb();
-        if (!db) throw new Error("no db");
-        const [row] = await db.insert(drVens).values({
-          venId,
-          venName: input.venName,
-          programId: input.programId,
-          facilityId: input.facilityId,
-          resourceType: input.resourceType,
-          maxLoadKw: input.maxLoadKw,
-          capabilities: input.capabilities ? JSON.stringify(input.capabilities) : null,
-          status: "REGISTERED",
-        }).returning();
-        return { ...row, source: "database" };
-      } catch {
-        return { venId, ...input, source: "simulated" };
-      }
+      const db = await getDb();
+      if (!db) throw new TRPCError({ code: "INTERNAL_SERVER_ERROR", message: "Database unavailable" });
+      const [row] = await db.insert(drVens).values({
+        venId,
+        venName: input.venName,
+        programId: input.programId,
+        facilityId: input.facilityId,
+        resourceType: input.resourceType,
+        maxLoadKw: input.maxLoadKw,
+        capabilities: input.capabilities ? JSON.stringify(input.capabilities) : null,
+        status: "REGISTERED",
+      }).returning();
+      return { ...row, source: "database" };
     }),
 
   // ── VTN status ───────────────────────────────────────────────────────────────
@@ -493,16 +305,10 @@ export const demandResponseRouter = router({
           source: "database",
         };
       }
-    } catch {
-      // fall through
+    } catch (err) {
+      if (err instanceof TRPCError) throw err;
+      throw new TRPCError({ code: "INTERNAL_SERVER_ERROR", message: err instanceof Error ? err.message : "Unknown error" });
     }
-    // Simulated summary
-    return {
-      totalPrograms: 2, activePrograms: 2,
-      totalEvents: 2, activeEvents: 1, scheduledEvents: 1,
-      totalVens: 3, registeredVens: 2, pendingVens: 1,
-      totalAvailableKw: 150, source: "simulated",
-    };
   }),
 
   /**
@@ -510,7 +316,7 @@ export const demandResponseRouter = router({
    * tag at a given future time. Used to pre-fill DR event payload values with
    * forecast-derived baseline and recommended curtailment.
    */
-  getForecastBaseline: publicProcedure
+  getForecastBaseline: protectedProcedure
     .input(
       z.object({
         tag: z.string().min(1),
@@ -545,17 +351,10 @@ export const demandResponseRouter = router({
           source: "openstef",
         };
       }
-      // Simulated baseline
-      const simBaseline = 750 + Math.round(Math.random() * 200 - 100);
-      const simHeadroom = Math.max(simBaseline - 200, 0);
-      return {
-        tag,
-        baselineKw: simBaseline,
-        availableHeadroomKw: simHeadroom,
-        recommendedCurtailmentKw: Math.round(simHeadroom * 0.8),
-        forecastPoints: 0,
-        source: "simulated",
-      };
+      throw new TRPCError({
+        code: "SERVICE_UNAVAILABLE",
+        message: `OpenSTEF forecast unavailable for tag ${tag}`,
+      });
     }),
 
   /**
@@ -590,21 +389,12 @@ export const demandResponseRouter = router({
       let event: { payloadValue: number | null; programId: string; eventId: string } | null = null;
       let vens: Array<{ venId: string; facilityId: string | null; availableKw: number | null }> = [];
 
-      try {
-        const db = await getDb();
-        if (!db) throw new Error("no db");
-        const events = await db.select().from(drEvents).where(eq(drEvents.eventId, input.eventId));
-        if (events.length === 0) throw new Error(`Event ${input.eventId} not found`);
-        event = events[0];
-        vens = await db.select().from(drVens).where(eq(drVens.programId, event.programId));
-      } catch (err) {
-        // Simulation fallback
-        const simEvents = simulatedEvents();
-        const simEvent = simEvents.find((e) => e.eventId === input.eventId);
-        if (!simEvent) throw new Error(`Event ${input.eventId} not found`);
-        event = { payloadValue: simEvent.payloadValue, programId: simEvent.programId, eventId: simEvent.eventId };
-        vens = simulatedVens(simEvent.programId).filter((v) => v.status === "REGISTERED");
-      }
+      const db = await getDb();
+      if (!db) throw new TRPCError({ code: "INTERNAL_SERVER_ERROR", message: "Database unavailable" });
+      const events = await db.select().from(drEvents).where(eq(drEvents.eventId, input.eventId));
+      if (events.length === 0) throw new TRPCError({ code: "NOT_FOUND", message: `Event ${input.eventId} not found` });
+      event = events[0];
+      vens = await db.select().from(drVens).where(eq(drVens.programId, event.programId));
 
       const curtailmentKw = event.payloadValue ?? 100;
 
@@ -707,7 +497,7 @@ export const demandResponseRouter = router({
    * getAuditLog — DR event audit log for regulatory reporting.
    * Returns per-VEN dispatch records with setpoint, baseline, OPC-UA status.
    */
-  getAuditLog: publicProcedure
+  getAuditLog: protectedProcedure
     .input(
       z.object({
         eventId: z.string().optional(),
@@ -728,33 +518,11 @@ export const demandResponseRouter = router({
         const rows = conditions.length > 0
           ? await query.where(conditions.length === 1 ? conditions[0] : and(...conditions))
           : await query;
-        if (rows.length > 0) return { entries: rows, source: "database" };
-      } catch {
-        // fall through to simulation
+        return { entries: rows, source: "database" };
+      } catch (err) {
+        if (err instanceof TRPCError) throw err;
+        throw new TRPCError({ code: "INTERNAL_SERVER_ERROR", message: err instanceof Error ? err.message : "Unknown error" });
       }
-      // Simulated audit log
-      const now = Date.now();
-      return {
-        entries: Array.from({ length: 8 }, (_, i) => ({
-          id: i + 1,
-          eventId: `EVT-${String((i % 2) + 1).padStart(3, "0")}`,
-          programId: i % 2 === 0 ? "PROG-GCC-001" : "PROG-DR-002",
-          venId: `VEN-${["COMP", "PUMP", "HVAC", "COMP"][i % 4]}-${String((i % 3) + 1).padStart(3, "0")}`,
-          tag: `FAC-${String((i % 4) + 1).padStart(3, "0")}.DEMAND_SETPOINT_KW`,
-          setpointKw: 200 + i * 15,
-          baselineKw: 800,
-          actualKw: 215 + i * 15 + Math.random() * 20,
-          deviationKw: Math.random() * 20 - 10,
-          curtailmentKw: 570 + i * 8,
-          opcuaStatus: i % 5 === 0 ? "FAILED" : "SENT",
-          dispatchedAt: new Date(now - i * 3600000).toISOString(),
-          confirmedAt: i % 5 === 0 ? null : new Date(now - i * 3600000 + 30000).toISOString(),
-          regulatoryRef: "FERC Order 2222 / OpenADR 3.1",
-          notes: i % 5 === 0 ? "OPC-UA write-back timeout" : "Setpoint applied successfully",
-          createdAt: new Date(now - i * 3600000).toISOString(),
-        })),
-        source: "simulated",
-      };
     }),
 
   /** Generate a regulatory compliance report for a date range */
@@ -780,40 +548,21 @@ export const demandResponseRouter = router({
       };
       let entries: AuditEntry[] = [];
 
-      if (db) {
-        try {
-          const { drAuditLog } = await import("../../drizzle/schema");
-          const { gte, lte, and: andOp } = await import("drizzle-orm");
-          const rows = await db.select().from(drAuditLog)
-            .where(andOp(gte(drAuditLog.dispatchedAt, new Date(start)), lte(drAuditLog.dispatchedAt, new Date(end))))
-            .orderBy(drAuditLog.dispatchedAt);
-          entries = rows.map((r) => ({
-            id: r.id, eventId: r.eventId, programId: r.programId ?? "", venId: r.venId ?? "", tag: r.tag ?? "",
-            setpointKw: r.setpointKw ?? 0, baselineKw: r.baselineKw ?? 0, actualKw: r.actualKw,
-            deviationKw: r.deviationKw, curtailmentKw: r.curtailmentKw ?? 0, opcuaStatus: r.opcuaStatus ?? "",
-            dispatchedAt: new Date(r.dispatchedAt).toISOString(),
-            confirmedAt: r.confirmedAt ? new Date(r.confirmedAt).toISOString() : null,
-            regulatoryRef: r.regulatoryRef, notes: r.notes,
-          }));
-        } catch { /* fall through */ }
-      }
+      if (!db) throw new TRPCError({ code: "INTERNAL_SERVER_ERROR", message: "Database unavailable" });
 
-      if (entries.length === 0) {
-        const hours = Math.min(Math.floor((end - start) / 3600000), 24);
-        entries = Array.from({ length: hours }, (_, i) => ({
-          id: i + 1, eventId: `EVT-${String((i % 3) + 1).padStart(3, "0")}`,
-          programId: i % 2 === 0 ? "PROG-GCC-001" : "PROG-DR-002",
-          venId: `VEN-COMP-${String((i % 3) + 1).padStart(3, "0")}`,
-          tag: `FAC-${String((i % 4) + 1).padStart(3, "0")}.DEMAND_SETPOINT_KW`,
-          setpointKw: 200 + i * 10, baselineKw: 800,
-          actualKw: 215 + i * 10 + Math.random() * 20,
-          deviationKw: Math.random() * 20 - 10, curtailmentKw: 570 + i * 5,
-          opcuaStatus: i % 8 === 0 ? "FAILED" : "SENT",
-          dispatchedAt: new Date(start + i * 3600000).toISOString(),
-          confirmedAt: i % 8 === 0 ? null : new Date(start + i * 3600000 + 30000).toISOString(),
-          regulatoryRef: "FERC Order 2222 / OpenADR 3.1", notes: i % 8 === 0 ? "OPC-UA timeout" : "OK",
-        }));
-      }
+      const { drAuditLog } = await import("../../drizzle/schema");
+      const { gte, lte, and: andOp } = await import("drizzle-orm");
+      const rows = await db.select().from(drAuditLog)
+        .where(andOp(gte(drAuditLog.dispatchedAt, new Date(start)), lte(drAuditLog.dispatchedAt, new Date(end))))
+        .orderBy(drAuditLog.dispatchedAt);
+      entries = rows.map((r) => ({
+        id: r.id, eventId: r.eventId, programId: r.programId ?? "", venId: r.venId ?? "", tag: r.tag ?? "",
+        setpointKw: r.setpointKw ?? 0, baselineKw: r.baselineKw ?? 0, actualKw: r.actualKw,
+        deviationKw: r.deviationKw, curtailmentKw: r.curtailmentKw ?? 0, opcuaStatus: r.opcuaStatus ?? "",
+        dispatchedAt: new Date(r.dispatchedAt).toISOString(),
+        confirmedAt: r.confirmedAt ? new Date(r.confirmedAt).toISOString() : null,
+        regulatoryRef: r.regulatoryRef, notes: r.notes,
+      }));
 
       const totalEvents = new Set(entries.map((e) => e.eventId)).size;
       const totalDispatches = entries.length;
@@ -864,43 +613,23 @@ export const demandResponseRouter = router({
         dispatchedAt: string; confirmedAt: string | null;
         regulatoryRef: string | null; notes: string | null;
       };
-      let entries: AuditEntry[] = [];
-      if (db) {
-        try {
-          const { drAuditLog } = await import("../../drizzle/schema");
-          const { gte, lte, and: andOp } = await import("drizzle-orm");
-          const rows = await db.select().from(drAuditLog)
-            .where(andOp(gte(drAuditLog.dispatchedAt, new Date(start)), lte(drAuditLog.dispatchedAt, new Date(end))))
-            .orderBy(drAuditLog.dispatchedAt);
-          entries = rows.map((r) => ({
-            id: r.id, eventId: r.eventId, programId: r.programId ?? "",
-            venId: r.venId ?? "", tag: r.tag ?? "",
-            setpointKw: r.setpointKw ?? 0, baselineKw: r.baselineKw ?? 0,
-            actualKw: r.actualKw, deviationKw: r.deviationKw,
-            curtailmentKw: r.curtailmentKw ?? 0, opcuaStatus: r.opcuaStatus ?? "",
-            dispatchedAt: new Date(r.dispatchedAt).toISOString(),
-            confirmedAt: r.confirmedAt ? new Date(r.confirmedAt).toISOString() : null,
-            regulatoryRef: r.regulatoryRef, notes: r.notes,
-          }));
-        } catch { /* fall through to simulation */ }
-      }
-      if (entries.length === 0) {
-        const hours = Math.min(Math.floor((end - start) / 3600000), 24);
-        entries = Array.from({ length: hours }, (_, i) => ({
-          id: i + 1,
-          eventId: `EVT-${String((i % 3) + 1).padStart(3, "0")}`,
-          programId: i % 2 === 0 ? "PROG-GCC-001" : "PROG-DR-002",
-          venId: `VEN-COMP-${String((i % 3) + 1).padStart(3, "0")}`,
-          tag: `FAC-${String((i % 4) + 1).padStart(3, "0")}.DEMAND_SETPOINT_KW`,
-          setpointKw: 200 + i * 10, baselineKw: 800,
-          actualKw: 215 + i * 10, deviationKw: 5.0,
-          curtailmentKw: 570 + i * 5, opcuaStatus: i % 8 === 0 ? "FAILED" : "SENT",
-          dispatchedAt: new Date(start + i * 3600000).toISOString(),
-          confirmedAt: i % 8 === 0 ? null : new Date(start + i * 3600000 + 30000).toISOString(),
-          regulatoryRef: "FERC Order 2222 / OpenADR 3.1",
-          notes: i % 8 === 0 ? "OPC-UA timeout" : "OK",
-        }));
-      }
+      if (!db) throw new TRPCError({ code: "INTERNAL_SERVER_ERROR", message: "Database unavailable" });
+
+      const { drAuditLog } = await import("../../drizzle/schema");
+      const { gte, lte, and: andOp } = await import("drizzle-orm");
+      const rows = await db.select().from(drAuditLog)
+        .where(andOp(gte(drAuditLog.dispatchedAt, new Date(start)), lte(drAuditLog.dispatchedAt, new Date(end))))
+        .orderBy(drAuditLog.dispatchedAt);
+      const entries: AuditEntry[] = rows.map((r) => ({
+        id: r.id, eventId: r.eventId, programId: r.programId ?? "",
+        venId: r.venId ?? "", tag: r.tag ?? "",
+        setpointKw: r.setpointKw ?? 0, baselineKw: r.baselineKw ?? 0,
+        actualKw: r.actualKw, deviationKw: r.deviationKw,
+        curtailmentKw: r.curtailmentKw ?? 0, opcuaStatus: r.opcuaStatus ?? "",
+        dispatchedAt: new Date(r.dispatchedAt).toISOString(),
+        confirmedAt: r.confirmedAt ? new Date(r.confirmedAt).toISOString() : null,
+        regulatoryRef: r.regulatoryRef, notes: r.notes,
+      }));
       const totalEvents = new Set(entries.map((e) => e.eventId)).size;
       const totalDispatches = entries.length;
       const successfulDispatches = entries.filter((e) => e.opcuaStatus === "SENT").length;

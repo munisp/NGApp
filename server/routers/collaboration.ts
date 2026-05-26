@@ -5,7 +5,7 @@
  */
 
 import { z } from "zod";
-import { publicProcedure, protectedProcedure, router } from "../_core/trpc";
+import { protectedProcedure, router } from "../_core/trpc";
 import { getCollabRoomStats, getCollabRoom } from "../collaboration";
 import { invokeLLM } from "../_core/llm";
 
@@ -41,14 +41,14 @@ export const collaborationRouter = router({
   /**
    * Get all active collaboration rooms and their user counts
    */
-  roomStats: publicProcedure.query(() => {
+  roomStats: protectedProcedure.query(() => {
     return getCollabRoomStats();
   }),
 
   /**
    * Get a specific room's state
    */
-  roomState: publicProcedure
+  roomState: protectedProcedure
     .input(z.object({ wellId: z.string() }))
     .query(({ input }) => {
       return getCollabRoom(input.wellId);

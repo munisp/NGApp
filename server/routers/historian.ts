@@ -28,30 +28,7 @@ const TAG_COLUMN_MAP: Record<string, string> = {
   DOWNHOLE_TEMP: "bht",
 };
 
-/** Deterministic synthetic fallback — no Math.random, uses sin/cos wave */
-function syntheticTimeSeries(
-  tagName: string,
-  fromTs: number,
-  toTs: number,
-  resolution: string,
-): { ts: number; value: number }[] {
-  const intervalMs: Record<string, number> = {
-    raw: 1000, "1m": 60000, "5m": 300000, "1h": 3600000, "1d": 86400000,
-  };
-  const step = intervalMs[resolution] ?? 3600000;
-  const seed = tagName.split("").reduce((a, c) => a + c.charCodeAt(0), 0);
-  const base = (seed % 500) + 100;
-  const points: { ts: number; value: number }[] = [];
-  let ts = fromTs;
-  let i = 0;
-  while (ts <= toTs && points.length < 1000) {
-    const value = Math.round((base + Math.sin(i * 0.3) * 15 + Math.cos(i * 0.7) * 8) * 100) / 100;
-    points.push({ ts, value });
-    ts += step;
-    i++;
-  }
-  return points;
-}
+
 
 export const historianRouter = router({
   // ── Stream Registry ───────────────────────────────────────────────────
@@ -169,40 +146,28 @@ export const historianRouter = router({
       const metric = dotIdx > 0 ? tagName.slice(dotIdx + 1).toUpperCase() : "TUBING_PRESSURE";
       const column = TAG_COLUMN_MAP[metric] ?? "tubing_pressure";
 
-      if (db) {
-        try {
-          const rows = await db.select({
-            ts: telemetryReadings.recordedAt,
-            value: sql<number>`${sql.raw(column)}`,
-          }).from(telemetryReadings)
-            .where(and(
-              eq(telemetryReadings.wellId, wellId),
-              gte(telemetryReadings.recordedAt, new Date(fromTs)),
-              lte(telemetryReadings.recordedAt, new Date(toTs)),
-            ))
-            .orderBy(telemetryReadings.recordedAt)
-            .limit(1000);
+      if (!db) throw new TRPCError({ code: "INTERNAL_SERVER_ERROR", message: "Database unavailable" });
 
-          if (rows.length > 0) {
-            return {
-              tagName,
-              resolution,
-              points: rows.map(r => ({
-                ts: new Date(r.ts).getTime(),
-                value: Number(r.value ?? 0),
-              })),
-              source: "db" as const,
-            };
-          }
-        } catch { /* fall through to synthetic */ }
-      }
+      const rows = await db.select({
+        ts: telemetryReadings.recordedAt,
+        value: sql<number>`${sql.raw(column)}`,
+      }).from(telemetryReadings)
+        .where(and(
+          eq(telemetryReadings.wellId, wellId),
+          gte(telemetryReadings.recordedAt, new Date(fromTs)),
+          lte(telemetryReadings.recordedAt, new Date(toTs)),
+        ))
+        .orderBy(telemetryReadings.recordedAt)
+        .limit(1000);
 
-      // Deterministic synthetic fallback (no Math.random)
       return {
         tagName,
         resolution,
-        points: syntheticTimeSeries(tagName, fromTs, toTs, resolution),
-        source: "synthetic" as const,
+        points: rows.map(r => ({
+          ts: new Date(r.ts).getTime(),
+          value: Number(r.value ?? 0),
+        })),
+        source: "db" as const,
       };
     }),
 

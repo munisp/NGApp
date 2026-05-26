@@ -7,7 +7,7 @@
  */
 
 import { z } from "zod";
-import { publicProcedure, protectedProcedure, router } from "../_core/trpc";
+import { protectedProcedure, router } from "../_core/trpc";
 import { TRPCError } from "@trpc/server";
 import { getDb } from "../db";
 
@@ -60,53 +60,6 @@ async function fetchOpenstef<T>(path: string, init?: RequestInit): Promise<T> {
   }
 }
 
-// ─── Simulation fallback (used when service is down) ─────────────────────────
-
-function simulateForecast(tag: string, horizonHours: number, resolutionMinutes: number) {
-  const now = new Date();
-  const steps = (horizonHours * 60) / resolutionMinutes;
-  const forecast = [];
-
-  for (let i = 0; i < steps; i++) {
-    const ts = new Date(now.getTime() + i * resolutionMinutes * 60_000);
-    const hour = ts.getUTCHours();
-    const hourFactor = 1 + 0.3 * Math.sin((Math.PI * (hour - 6)) / 12);
-    const isWeekend = ts.getUTCDay() === 0 || ts.getUTCDay() === 6;
-    const dayFactor = isWeekend ? 0.9 : 1.0;
-    const p50 = 800 * hourFactor * dayFactor;
-    const uncertainty = 30 + 10 * (i / steps);
-    forecast.push({
-      timestamp: ts.toISOString(),
-      p05: Math.round(Math.max(p50 - 1.645 * uncertainty, 100) * 10) / 10,
-      p50: Math.round(p50 * 10) / 10,
-      p95: Math.round((p50 + 1.645 * uncertainty) * 10) / 10,
-      is_forecast: true,
-    });
-  }
-
-  return {
-    tag,
-    generated_at: now.toISOString(),
-    horizon_hours: horizonHours,
-    resolution_minutes: resolutionMinutes,
-    forecast,
-    model_type: "simulated_fourier",
-    feature_importance: {
-      lag_24h: 0.28,
-      lag_168h: 0.19,
-      hour_sin: 0.14,
-      ambient_temp_c: 0.11,
-      suction_pressure_bar: 0.09,
-      roll_mean_24h: 0.08,
-      is_weekend: 0.06,
-      compressor_efficiency: 0.05,
-    },
-    baseline_kw: 800,
-    available_headroom_kw: 600,
-    source: "simulated",
-  };
-}
-
 // ─── Router ───────────────────────────────────────────────────────────────────
 
 export const openStefRouter = router({
@@ -132,7 +85,7 @@ export const openStefRouter = router({
    * Get 48h probabilistic forecast for a tag.
    * Falls back to simulation if the Python service is unavailable.
    */
-  getForecast: publicProcedure
+  getForecast: protectedProcedure
     .input(
       z.object({
         tag: z.string().min(1),
@@ -141,105 +94,51 @@ export const openStefRouter = router({
       })
     )
     .query(async ({ input }) => {
-      try {
-        const data = await fetchOpenstef<z.infer<typeof ForecastResultSchema>>(
-          `/forecast/${encodeURIComponent(input.tag)}?horizon_hours=${input.horizonHours}&resolution_minutes=${input.resolutionMinutes}`
-        );
-        return { ...data, online: true };
-      } catch (err) {
-        if (err instanceof TRPCError && err.code === "SERVICE_UNAVAILABLE") {
-          // Graceful degradation: return simulated forecast
-          return {
-            ...simulateForecast(input.tag, input.horizonHours, input.resolutionMinutes),
-            online: false,
-          };
-        }
-        throw err;
-      }
+      const data = await fetchOpenstef<z.infer<typeof ForecastResultSchema>>(
+        `/forecast/${encodeURIComponent(input.tag)}?horizon_hours=${input.horizonHours}&resolution_minutes=${input.resolutionMinutes}`
+      );
+      return { ...data, online: true };
     }),
 
   /**
    * Get DR settlement baseline for a tag.
    * Rolling 10-day same-hour-of-day / same-day-of-week average.
    */
-  getBaseline: publicProcedure
+  getBaseline: protectedProcedure
     .input(z.object({ tag: z.string().min(1) }))
     .query(async ({ input }) => {
-      try {
-        return await fetchOpenstef<{
-          tag: string;
-          baseline_kw: number;
-          min_safe_load_kw: number;
-          available_headroom_kw: number;
-          calculated_at: string;
-          method: string;
-        }>(`/baseline/${encodeURIComponent(input.tag)}`);
-      } catch {
-        return {
-          tag: input.tag,
-          baseline_kw: 800,
-          min_safe_load_kw: 200,
-          available_headroom_kw: 600,
-          calculated_at: new Date().toISOString(),
-          method: "simulated",
-        };
-      }
+      return fetchOpenstef<{
+        tag: string;
+        baseline_kw: number;
+        min_safe_load_kw: number;
+        available_headroom_kw: number;
+        calculated_at: string;
+        method: string;
+      }>(`/baseline/${encodeURIComponent(input.tag)}`);
     }),
 
   /**
    * Real-time curtailment availability check for OpenADR VTN event dispatch.
    */
-  getAvailability: publicProcedure
+  getAvailability: protectedProcedure
     .input(z.object({ tag: z.string().min(1) }))
     .query(async ({ input }) => {
-      try {
-        return await fetchOpenstef<{
-          tag: string;
-          current_demand_kw: number;
-          min_safe_load_kw: number;
-          available_headroom_kw: number;
-          available_for_dr: boolean;
-          max_curtailment_kw: number;
-          checked_at: string;
-        }>(`/availability/${encodeURIComponent(input.tag)}`);
-      } catch {
-        // Simulated availability
-        const currentDemand = 800 + Math.round(Math.random() * 100 - 50);
-        const minSafe = 200;
-        const headroom = Math.max(currentDemand - minSafe, 0);
-        return {
-          tag: input.tag,
-          current_demand_kw: currentDemand,
-          min_safe_load_kw: minSafe,
-          available_headroom_kw: headroom,
-          available_for_dr: headroom > 50,
-          max_curtailment_kw: Math.round(headroom * 0.8),
-          checked_at: new Date().toISOString(),
-        };
-      }
+      return fetchOpenstef<{
+        tag: string;
+        current_demand_kw: number;
+        min_safe_load_kw: number;
+        available_headroom_kw: number;
+        available_for_dr: boolean;
+        max_curtailment_kw: number;
+        checked_at: string;
+      }>(`/availability/${encodeURIComponent(input.tag)}`);
     }),
 
   /**
    * List all forecastable tags.
    */
   listTags: protectedProcedure.query(async () => {
-    try {
-      return await fetchOpenstef<{ tags: unknown[] }>("/tags");
-    } catch {
-      // Return a minimal simulated tag list
-      return {
-        tags: ["FACILITY_DEMAND_KW", "COMPRESSOR_DEMAND_KW", "PUMP_DEMAND_KW", "PROCESSING_DEMAND_KW"].flatMap(
-          (t) =>
-            [1, 2, 3, 4].map((w) => ({
-              tag: `W-${String(w).padStart(3, "0")}.${t}`,
-              role: "target",
-              description: t.replace(/_/g, " ").replace("KW", "(kW)"),
-              unit: "kW",
-              forecastable: true,
-            }))
-        ),
-      };
-    }
+    return fetchOpenstef<{ tags: unknown[] }>("/tags");
   }),
 
   /**
@@ -261,7 +160,7 @@ export const openStefRouter = router({
     )
     .mutation(async ({ input }) => {
       const db = await getDb();
-      if (!db) return { saved: false, reason: "db unavailable" };
+      if (!db) throw new TRPCError({ code: "INTERNAL_SERVER_ERROR", message: "Database unavailable" });
       const { modelMetrics } = await import("../../drizzle/schema");
       await db.insert(modelMetrics).values({
         tag: input.tag,
@@ -281,28 +180,11 @@ export const openStefRouter = router({
   /**
    * Get model accuracy metrics history for a tag (for trend chart on Infrastructure page).
    */
-  getModelMetrics: publicProcedure
+  getModelMetrics: protectedProcedure
     .input(z.object({ tag: z.string(), limit: z.number().int().default(30) }))
     .query(async ({ input }) => {
       const db = await getDb();
-      if (!db) {
-        // Return simulated metrics history
-        const now = Date.now();
-        return Array.from({ length: 14 }, (_, i) => ({
-          id: i + 1,
-          tag: input.tag,
-          modelType: "xgb_quantile",
-          mae: +(18 + Math.random() * 12).toFixed(2),
-          rmse: +(25 + Math.random() * 15).toFixed(2),
-          mape: +(4 + Math.random() * 3).toFixed(2),
-          bias: +(-2 + Math.random() * 4).toFixed(2),
-          r2: +(0.88 + Math.random() * 0.1).toFixed(3),
-          trainingSamples: Math.floor(2000 + Math.random() * 1000),
-          horizon: 48,
-          trainedAt: new Date(now - i * 24 * 3600000).toISOString(),
-          createdAt: new Date(now - i * 24 * 3600000).toISOString(),
-        }));
-      }
+      if (!db) throw new TRPCError({ code: "INTERNAL_SERVER_ERROR", message: "Database unavailable" });
       const { modelMetrics } = await import("../../drizzle/schema");
       const { desc, eq } = await import("drizzle-orm");
       return db
@@ -345,20 +227,12 @@ export const openStefRouter = router({
           body: JSON.stringify(input),
         });
         return { success: true, ...result };
-      } catch {
-        // Service offline — return graceful degradation so PTW workflow does not fail
-        return {
-          success: false,
-          status: "service_unavailable",
-          tag: input.tag,
-          algorithm: "n/a",
-          data_points: 0,
-          mae: 0,
-          rmse: 0,
-          mape: 0,
-          trained_at: new Date().toISOString(),
-          trigger: input.reason,
-        };
+      } catch (err) {
+        if (err instanceof TRPCError) throw err;
+        throw new TRPCError({
+          code: "SERVICE_UNAVAILABLE",
+          message: `OpenSTEF retrain failed: ${err instanceof Error ? err.message : "unknown"}`,
+        });
       }
     }),
 
@@ -366,21 +240,11 @@ export const openStefRouter = router({
    * Get model training status.
    */
   modelStatus: protectedProcedure.query(async () => {
-    try {
-      return await fetchOpenstef<{
-        model_count: number;
-        model_dir: string;
-        models: unknown[];
-        openstef_enabled: boolean;
-      }>("/model/status");
-    } catch {
-      return {
-        model_count: 0,
-        model_dir: "/tmp/openstef_models",
-        models: [],
-        openstef_enabled: false,
-        online: false,
-      };
-    }
+    return fetchOpenstef<{
+      model_count: number;
+      model_dir: string;
+      models: unknown[];
+      openstef_enabled: boolean;
+    }>("/model/status");
   }),
 });

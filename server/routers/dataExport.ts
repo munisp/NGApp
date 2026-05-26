@@ -1,13 +1,13 @@
 /**
- * dataExport.ts — Production Data Export Router (v54.0)
+ * dataExport.ts — Production Data Export Router (v55.0)
  *
- * Provides CSV and JSON export endpoints for:
- * - Production data (oil/gas/water rates)
- * - Telemetry history
- * - Alarm history
- * - Audit log
- * - Well KPI summary
- * - Physics engine results
+ * Provides CSV and JSON export endpoints backed by real DB queries:
+ * - Production data (oil/gas/water rates from production_records)
+ * - Telemetry history (from telemetry_readings)
+ * - Alarm history (from alarms)
+ * - Audit log (from audit_log)
+ * - Well KPI summary (aggregated from wells + telemetry + alarms)
+ * - Physics engine results (from well_physics_params)
  *
  * All exports are streamed via S3 upload and return a presigned download URL.
  */
@@ -16,6 +16,16 @@ import { z } from "zod";
 import { router, protectedProcedure } from "../_core/trpc";
 import { getDb } from "../db";
 import { storagePut } from "../storage";
+import { TRPCError } from "@trpc/server";
+import {
+  productionRecords,
+  alarms,
+  wells,
+  telemetryReadings,
+  auditLog,
+  wellPhysicsParams,
+} from "../../drizzle/schema";
+import { desc, eq, and, gte, sql } from "drizzle-orm";
 
 // ─── CSV helpers ──────────────────────────────────────────────────────────────
 
@@ -51,77 +61,17 @@ async function uploadExport(
   return url;
 }
 
-// ─── Synthetic data generators (fallback when DB unavailable) ─────────────────
-
-const WELLS = ["WELL-001", "WELL-002", "WELL-003", "WELL-004", "WELL-005", "WELL-006"];
-
-function genProductionRows(days: number) {
-  const rows: Record<string, unknown>[] = [];
-  const now = Date.now();
-  for (let d = days - 1; d >= 0; d--) {
-    for (const wellId of WELLS) {
-      const date = new Date(now - d * 86_400_000);
-      rows.push({
-        date: date.toISOString().slice(0, 10),
-        well_id: wellId,
-        oil_rate_bopd: Math.round(800 + Math.random() * 400),
-        gas_rate_mscfd: parseFloat((1.2 + Math.random() * 0.8).toFixed(3)),
-        water_rate_bwpd: Math.round(200 + Math.random() * 300),
-        water_cut_pct: parseFloat((15 + Math.random() * 20).toFixed(1)),
-        gor_scf_bbl: Math.round(800 + Math.random() * 200),
-        fwhp_psia: Math.round(1100 + Math.random() * 300),
-        uptime_pct: parseFloat((92 + Math.random() * 7).toFixed(1)),
-      });
-    }
-  }
-  return rows;
-}
-
-function genAlarmRows(limit: number) {
-  const severities = ["CRITICAL", "HIGH", "MEDIUM", "LOW"];
-  const types = ["HIGH_PRESSURE", "LOW_FLOW", "ESP_FAULT", "SAND_ALERT", "TEMP_HIGH", "COMM_LOSS"];
-  const rows: Record<string, unknown>[] = [];
-  const now = Date.now();
-  for (let i = 0; i < limit; i++) {
-    const wellId = WELLS[Math.floor(Math.random() * WELLS.length)];
-    const sev = severities[Math.floor(Math.random() * severities.length)];
-    const type = types[Math.floor(Math.random() * types.length)];
-    rows.push({
-      id: `ALM-${String(i + 1).padStart(4, "0")}`,
-      timestamp: new Date(now - Math.random() * 7 * 86_400_000).toISOString(),
-      well_id: wellId,
-      severity: sev,
-      type,
-      message: `${type.replace(/_/g, " ")} detected on ${wellId}`,
-      acknowledged: Math.random() > 0.3 ? "YES" : "NO",
-      resolved: Math.random() > 0.5 ? "YES" : "NO",
-    });
-  }
-  return rows.sort((a, b) => String(b.timestamp).localeCompare(String(a.timestamp)));
-}
-
-function genKpiRows() {
-  return WELLS.map((wellId, i) => ({
-    well_id: wellId,
-    status: ["PRODUCING", "PRODUCING", "PRODUCING", "PRODUCING", "TESTING", "SHUT-IN"][i],
-    oil_rate_bopd: Math.round(800 + i * 200 + Math.random() * 100),
-    gas_rate_mscfd: parseFloat((0.8 + i * 0.3).toFixed(2)),
-    water_cut_pct: Math.round(15 + i * 5),
-    fwhp_psia: Math.round(1200 - i * 80),
-    uptime_pct: Math.round(92 + Math.random() * 7),
-    risk_level: ["LOW", "LOW", "MEDIUM", "HIGH", "LOW", "CRITICAL"][i],
-    risk_score: [12, 25, 45, 72, 18, 91][i],
-    active_alarms: [0, 1, 2, 3, 0, 5][i],
-    last_updated: new Date().toISOString(),
-  }));
+async function requireDb() {
+  const db = await getDb();
+  if (!db) throw new TRPCError({ code: "INTERNAL_SERVER_ERROR", message: "Database unavailable" });
+  return db;
 }
 
 // ─── Router ───────────────────────────────────────────────────────────────────
 
 export const dataExportRouter = router({
   /**
-   * Export production data as CSV or JSON.
-   * Returns a presigned S3 download URL.
+   * Export production data as CSV or JSON from production_records table.
    */
   production: protectedProcedure
     .input(z.object({
@@ -130,10 +80,29 @@ export const dataExportRouter = router({
       wellIds: z.array(z.string()).optional(),
     }))
     .mutation(async ({ input }) => {
-      let rows = genProductionRows(input.days);
+      const db = await requireDb();
+      const cutoff = new Date(Date.now() - input.days * 86_400_000);
+
+      const conds = [gte(productionRecords.date, cutoff)];
       if (input.wellIds?.length) {
-        rows = rows.filter(r => input.wellIds!.includes(r.well_id as string));
+        conds.push(sql`${productionRecords.wellId} = ANY(${input.wellIds})`);
       }
+
+      const dbRows = await db.select().from(productionRecords)
+        .where(and(...conds))
+        .orderBy(desc(productionRecords.date))
+        .limit(50000);
+
+      const rows: Record<string, unknown>[] = dbRows.map(r => ({
+        date: r.date instanceof Date ? r.date.toISOString().slice(0, 10) : String(r.date),
+        well_id: r.wellId,
+        oil_bbls: r.oilBbls,
+        gas_mmscf: r.gasMmscf,
+        water_bbls: r.waterBbls,
+        injection_bbls: r.injectionBbls,
+        uptime_hours: r.uptimeHours,
+        downtime: r.downtime ?? "",
+      }));
 
       const filename = `production-export-${input.days}d.${input.format}`;
       const contentType = input.format === "csv" ? "text/csv" : "application/json";
@@ -151,19 +120,39 @@ export const dataExportRouter = router({
     }),
 
   /**
-   * Export alarm history as CSV or JSON.
+   * Export alarm history from the alarms table.
    */
   alarms: protectedProcedure
     .input(z.object({
       format:   z.enum(["csv", "json"]).default("csv"),
       limit:    z.number().min(10).max(10000).default(500),
-      severity: z.enum(["CRITICAL", "HIGH", "MEDIUM", "LOW", "ALL"]).default("ALL"),
+      severity: z.number().int().min(1).max(5).optional(),
     }))
     .mutation(async ({ input }) => {
-      let rows = genAlarmRows(input.limit);
-      if (input.severity !== "ALL") {
-        rows = rows.filter(r => r.severity === input.severity);
+      const db = await requireDb();
+
+      const conds = [];
+      if (input.severity !== undefined) {
+        conds.push(eq(alarms.severity, input.severity));
       }
+
+      const dbRows = await db.select().from(alarms)
+        .where(conds.length ? and(...conds) : undefined)
+        .orderBy(desc(alarms.createdAt))
+        .limit(input.limit);
+
+      const rows: Record<string, unknown>[] = dbRows.map(r => ({
+        id: r.alarmId,
+        timestamp: r.createdAt?.toISOString() ?? "",
+        well_id: r.wellId,
+        tag: r.tag,
+        severity: r.severity,
+        description: r.description,
+        state: r.state,
+        acknowledged_by: r.acknowledgedBy ?? "",
+        acknowledged_at: r.acknowledgedAt?.toISOString() ?? "",
+        cleared_at: r.clearedAt?.toISOString() ?? "",
+      }));
 
       const filename = `alarms-export-${input.limit}.${input.format}`;
       const contentType = input.format === "csv" ? "text/csv" : "application/json";
@@ -181,14 +170,45 @@ export const dataExportRouter = router({
     }),
 
   /**
-   * Export well KPI summary as CSV or JSON.
+   * Export well KPI summary aggregated from wells + telemetry + alarms.
    */
   wellKpi: protectedProcedure
     .input(z.object({
       format: z.enum(["csv", "json"]).default("csv"),
     }))
     .mutation(async ({ input }) => {
-      const rows = genKpiRows();
+      const db = await requireDb();
+
+      const wellRows = await db.select().from(wells).orderBy(wells.wellId);
+      const rows: Record<string, unknown>[] = [];
+
+      for (const w of wellRows) {
+        const [latestTelemetry] = await db.select()
+          .from(telemetryReadings)
+          .where(eq(telemetryReadings.wellId, w.wellId))
+          .orderBy(desc(telemetryReadings.recordedAt))
+          .limit(1);
+
+        const [alarmCount] = await db.select({ count: sql<number>`count(*)` })
+          .from(alarms)
+          .where(and(
+            eq(alarms.wellId, w.wellId),
+            eq(alarms.state, "UNACKNOWLEDGED"),
+          ));
+
+        rows.push({
+          well_id: w.wellId,
+          name: w.name,
+          status: w.status,
+          oil_rate_bopd: latestTelemetry?.oilRate ?? 0,
+          gas_rate_mscfd: latestTelemetry?.gasRate ?? 0,
+          water_cut_pct: latestTelemetry?.waterCut ?? 0,
+          fwhp_psia: latestTelemetry?.tubingPressure ?? 0,
+          active_alarms: Number(alarmCount?.count ?? 0),
+          last_updated: latestTelemetry?.recordedAt?.toISOString() ?? "",
+        });
+      }
+
       const filename = `well-kpi-summary.${input.format}`;
       const contentType = input.format === "csv" ? "text/csv" : "application/json";
       const data = input.format === "csv" ? toCSV(rows) : JSON.stringify(rows, null, 2);
@@ -205,7 +225,7 @@ export const dataExportRouter = router({
     }),
 
   /**
-   * Export audit log as CSV or JSON.
+   * Export audit log from the audit_log table.
    */
   auditLog: protectedProcedure
     .input(z.object({
@@ -213,30 +233,22 @@ export const dataExportRouter = router({
       limit:  z.number().min(10).max(5000).default(200),
     }))
     .mutation(async ({ input }) => {
-      // Try DB first, fall back to empty
-      let rows: Record<string, unknown>[] = [];
-      try {
-        const db = await getDb();
-        if (db) {
-          const { auditLog } = await import("../../drizzle/schema");
-          const { desc } = await import("drizzle-orm");
-          const dbRows = await db.select().from(auditLog)
-            .orderBy(desc(auditLog.createdAt))
-            .limit(input.limit);
-          rows = dbRows.map(r => ({
-            id:          r.id,
-            timestamp:   r.createdAt?.toISOString() ?? "",
-            user_id:     r.userId,
-            user_email:  r.userEmail ?? "",
-            action:      r.action,
-            resource:    r.resource,
-            resource_id: r.resourceId ?? "",
-            details:     JSON.stringify(r.details ?? {}),
-          }));
-        }
-      } catch {
-        // DB unavailable — return empty export
-      }
+      const db = await requireDb();
+
+      const dbRows = await db.select().from(auditLog)
+        .orderBy(desc(auditLog.createdAt))
+        .limit(input.limit);
+
+      const rows = dbRows.map(r => ({
+        id:          r.id,
+        timestamp:   r.createdAt?.toISOString() ?? "",
+        user_id:     r.userId,
+        user_email:  r.userEmail ?? "",
+        action:      r.action,
+        resource:    r.resource,
+        resource_id: r.resourceId ?? "",
+        details:     JSON.stringify(r.details ?? {}),
+      }));
 
       const filename = `audit-log-export.${input.format}`;
       const contentType = input.format === "csv" ? "text/csv" : "application/json";
@@ -254,32 +266,28 @@ export const dataExportRouter = router({
     }),
 
   /**
-   * Export physics engine results bundle as JSON.
-   * Returns a pre-computed sample dataset for all 6 wells.
+   * Export physics engine results from well_physics_params table.
    */
   physicsResults: protectedProcedure
     .input(z.object({
       format: z.enum(["json"]).default("json"),
     }))
     .mutation(async ({ input }) => {
-      const results = WELLS.map((wellId, i) => ({
-        well_id: wellId,
+      const db = await requireDb();
+
+      const dbRows = await db.select().from(wellPhysicsParams).orderBy(wellPhysicsParams.wellId);
+      const results = dbRows.map(r => ({
+        well_id: r.wellId,
         computed_at: new Date().toISOString(),
-        nodal: {
-          operating_rate_bpd: Math.round(800 + i * 200),
-          operating_bhp_psia: Math.round(2500 - i * 200),
-          aof_bpd: Math.round(1800 + i * 300),
-        },
-        geomechanics: {
-          fracture_gradient_ppg: parseFloat((14.5 + i * 0.2).toFixed(2)),
-          pore_pressure_ppg:     parseFloat((9.5 + i * 0.1).toFixed(2)),
-          wellbore_stability:    ["STABLE", "STABLE", "STABLE", "MARGINAL", "STABLE", "UNSTABLE"][i],
-        },
-        sand_onset: {
-          critical_drawdown_psi: Math.round(800 - i * 80),
-          sand_risk:             ["LOW", "LOW", "MEDIUM", "HIGH", "LOW", "CRITICAL"][i],
-        },
-        eur_mbbl: Math.round(2500 - i * 200),
+        reservoir_pressure_psi: r.reservoirPressurePsi,
+        q_max_bpd: r.qMaxBpd,
+        skin_factor: r.skinFactor,
+        tvd_ft: r.tvdFt,
+        water_cut_fraction: r.waterCutFraction,
+        gor_scf_per_bbl: r.gorScfPerBbl,
+        qi: r.qi,
+        di: r.di,
+        b: r.b,
       }));
 
       const filename = `physics-results-export.json`;

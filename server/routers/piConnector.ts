@@ -7,7 +7,7 @@ import { TRPCError } from "@trpc/server";
  */
 
 import { z } from "zod";
-import { publicProcedure, protectedProcedure, router } from "../_core/trpc";
+import { protectedProcedure, router } from "../_core/trpc";
 import {
   getPIServerInfo,
   searchPITags,
@@ -29,7 +29,7 @@ export const piConnectorRouter = router({
   /**
    * Search for PI tags by name pattern.
    */
-  searchTags: publicProcedure
+  searchTags: protectedProcedure
     .input(z.object({
       query: z.string().default(""),
       maxCount: z.number().min(1).max(500).default(50),
@@ -41,7 +41,7 @@ export const piConnectorRouter = router({
   /**
    * Get the current (snapshot) value for a PI tag.
    */
-  tagValue: publicProcedure
+  tagValue: protectedProcedure
     .input(z.object({ webId: z.string() }))
     .query(async ({ input }) => {
       return getPITagValue(input.webId);
@@ -50,7 +50,7 @@ export const piConnectorRouter = router({
   /**
    * Get historical recorded values for a PI tag.
    */
-  historicalData: publicProcedure
+  historicalData: protectedProcedure
     .input(z.object({
       webId: z.string(),
       tagName: z.string(),
@@ -71,7 +71,7 @@ export const piConnectorRouter = router({
   /**
    * Get current values for multiple PI tags in one batch request.
    */
-  bulkValues: publicProcedure
+  bulkValues: protectedProcedure
     .input(z.object({ webIds: z.array(z.string()).max(200) }))
     .query(async ({ input }) => {
       return getBulkPITagValues(input.webIds);
@@ -80,7 +80,7 @@ export const piConnectorRouter = router({
   /**
    * Browse the PI Asset Framework (AF) element hierarchy.
    */
-  browseElements: publicProcedure
+  browseElements: protectedProcedure
     .input(z.object({
       assetServerName: z.string().optional(),
       databaseName: z.string().optional(),

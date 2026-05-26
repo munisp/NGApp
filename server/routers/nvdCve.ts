@@ -1,5 +1,5 @@
 import { z } from "zod";
-import { publicProcedure, router } from "../_core/trpc";
+import { protectedProcedure, router } from "../_core/trpc";
 
 // ─── NIST NVD API v2 types ────────────────────────────────────────────────────
 
@@ -68,7 +68,7 @@ function getSeverityColor(score: number): string {
 
 export const nvdCveRouter = router({
   // Fetch latest ICS/OT-relevant CVEs from NIST NVD API v2
-  fetchLatest: publicProcedure
+  fetchLatest: protectedProcedure
     .input(z.object({
       keyword: z.string().optional().default("SCADA"),
       resultsPerPage: z.number().min(1).max(50).optional().default(20),
@@ -166,7 +166,7 @@ export const nvdCveRouter = router({
     }),
 
   // Fetch CVEs for a specific keyword (for asset-specific searches)
-  searchByKeyword: publicProcedure
+  searchByKeyword: protectedProcedure
     .input(z.object({
       keyword: z.string().min(2).max(100),
     }))
