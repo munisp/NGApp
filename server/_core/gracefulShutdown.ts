@@ -13,6 +13,7 @@
  */
 
 import type { Server } from 'http';
+import logger from './logger';
 
 const SHUTDOWN_TIMEOUT_MS = parseInt(process.env.SHUTDOWN_TIMEOUT_MS ?? '30000', 10);
 
@@ -58,11 +59,19 @@ export function registerGracefulShutdown(server: Server): void {
     // Stop accepting new connections
     server.close((err) => {
       if (err) {
-        console.error('[GracefulShutdown] Error closing server:', err);
+        logger.error({ err }, '[GracefulShutdown] Error closing server');
       } else {
-        console.log('[GracefulShutdown] Server closed — no new connections accepted');
+        logger.info('[GracefulShutdown] Server closed — no new connections accepted');
       }
     });
+
+    // Close DB pool
+    try {
+      const { closePool } = await import('../db');
+      await closePool();
+    } catch (e) {
+      logger.error({ err: e }, '[GracefulShutdown] Error closing DB pool');
+    }
 
     // Wait for in-flight requests with timeout
     const deadline = Date.now() + SHUTDOWN_TIMEOUT_MS;

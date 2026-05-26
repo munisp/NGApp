@@ -4,6 +4,7 @@
  * digital twin, ML predictions, site connectivity, actuator commands, audit log
  */
 import { z } from "zod";
+import { TRPCError } from "@trpc/server";
 import { router, protectedProcedure, adminProcedure } from "../_core/trpc";
 import { getDb } from "../db";
 import {
@@ -1701,7 +1702,10 @@ export const digitalTwinExtRouter = router({
         parameter: input.parameter,
         values: input.values,
       });
-      return result ?? { anomalies: [], anomaly_count: 0, method: "unavailable", simulation: true };
+      if (!result) {
+        throw new TRPCError({ code: "SERVICE_UNAVAILABLE", message: "ML anomaly detection service unavailable" });
+      }
+      return result;
     }),
 
   /**

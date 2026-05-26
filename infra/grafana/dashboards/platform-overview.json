@@ -1,0 +1,114 @@
+{
+  "dashboard": {
+    "title": "OG-RMM Platform Overview",
+    "uid": "og-rmm-overview",
+    "tags": ["og-rmm", "platform"],
+    "timezone": "utc",
+    "panels": [
+      {
+        "id": 1,
+        "title": "API Request Rate",
+        "type": "timeseries",
+        "gridPos": { "h": 8, "w": 12, "x": 0, "y": 0 },
+        "targets": [
+          {
+            "expr": "rate(http_server_requests_seconds_count{service=\"og-rmm-server\"}[5m])",
+            "legendFormat": "{{method}} {{route}}"
+          }
+        ]
+      },
+      {
+        "id": 2,
+        "title": "API Latency (p50/p95/p99)",
+        "type": "timeseries",
+        "gridPos": { "h": 8, "w": 12, "x": 12, "y": 0 },
+        "targets": [
+          {
+            "expr": "histogram_quantile(0.50, rate(http_server_requests_seconds_bucket{service=\"og-rmm-server\"}[5m]))",
+            "legendFormat": "p50"
+          },
+          {
+            "expr": "histogram_quantile(0.95, rate(http_server_requests_seconds_bucket{service=\"og-rmm-server\"}[5m]))",
+            "legendFormat": "p95"
+          },
+          {
+            "expr": "histogram_quantile(0.99, rate(http_server_requests_seconds_bucket{service=\"og-rmm-server\"}[5m]))",
+            "legendFormat": "p99"
+          }
+        ]
+      },
+      {
+        "id": 3,
+        "title": "Error Rate",
+        "type": "stat",
+        "gridPos": { "h": 4, "w": 6, "x": 0, "y": 8 },
+        "targets": [
+          {
+            "expr": "rate(http_server_requests_seconds_count{status=~\"5..\"}[5m]) / rate(http_server_requests_seconds_count[5m]) * 100",
+            "legendFormat": "Error %"
+          }
+        ]
+      },
+      {
+        "id": 4,
+        "title": "DB Connection Pool",
+        "type": "timeseries",
+        "gridPos": { "h": 8, "w": 12, "x": 0, "y": 12 },
+        "targets": [
+          {
+            "expr": "pg_stat_activity_count{datname=\"og_rmm\"}",
+            "legendFormat": "Active Connections"
+          }
+        ]
+      },
+      {
+        "id": 5,
+        "title": "Redis Cache Hit Rate",
+        "type": "gauge",
+        "gridPos": { "h": 4, "w": 6, "x": 6, "y": 8 },
+        "targets": [
+          {
+            "expr": "redis_keyspace_hits_total / (redis_keyspace_hits_total + redis_keyspace_misses_total) * 100",
+            "legendFormat": "Hit Rate %"
+          }
+        ]
+      },
+      {
+        "id": 6,
+        "title": "Kafka Consumer Lag",
+        "type": "timeseries",
+        "gridPos": { "h": 8, "w": 12, "x": 12, "y": 12 },
+        "targets": [
+          {
+            "expr": "kafka_consumergroup_lag{group=\"og-rmm-worker\"}",
+            "legendFormat": "{{topic}} partition {{partition}}"
+          }
+        ]
+      },
+      {
+        "id": 7,
+        "title": "Active Alarms by Severity",
+        "type": "piechart",
+        "gridPos": { "h": 8, "w": 12, "x": 0, "y": 20 },
+        "targets": [
+          {
+            "expr": "count by (severity) (og_rmm_alarms_active)",
+            "legendFormat": "{{severity}}"
+          }
+        ]
+      },
+      {
+        "id": 8,
+        "title": "DLQ Depth",
+        "type": "stat",
+        "gridPos": { "h": 4, "w": 6, "x": 12, "y": 8 },
+        "targets": [
+          {
+            "expr": "kafka_consumergroup_lag{group=\"og-rmm-worker\",topic=\"og.dlq\"}",
+            "legendFormat": "DLQ Messages"
+          }
+        ]
+      }
+    ]
+  }
+}

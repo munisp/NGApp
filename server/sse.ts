@@ -130,11 +130,10 @@ async function pollAndBroadcast() {
   }
 
   if (!db) {
-    // No DB — send simulated data to all connected clients
+    // No DB — notify clients that telemetry is unavailable
     Array.from(clients.keys()).forEach(wellId => {
       if (wellId === "*") return;
-      const simData = simulateTelemetry(wellId);
-      sendToClients(wellId, { type: "telemetry", wellId, data: simData, simulated: true });
+      sendToClients(wellId, { type: "error", wellId, message: "Database unavailable" });
     });
     return;
   }
@@ -155,10 +154,6 @@ async function pollAndBroadcast() {
           lastTelemetryId.set(wellId, latest.id);
           sendToClients(wellId, { type: "telemetry", wellId, data: latest });
         }
-      } else {
-        // No DB data yet — send simulated
-        const simData = simulateTelemetry(wellId);
-        sendToClients(wellId, { type: "telemetry", wellId, data: simData, simulated: true });
       }
 
       // Get active unacknowledged alarms for this well

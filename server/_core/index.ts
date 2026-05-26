@@ -31,6 +31,11 @@ import { attachCollaborationWS } from "../collaboration";
 import { apiVersionMiddleware, getVersionInfo } from "./apiVersioning";
 import helmet from "helmet";
 import rateLimit from "express-rate-limit";
+import { corsMiddleware } from "./corsConfig";
+import { requestIdMiddleware } from "./requestId";
+import { idempotencyMiddleware } from "./idempotency";
+import { initSentry, getSentryErrorHandler } from "./sentryInit";
+import logger from "./logger";
 
 function isPortAvailable(port: number): Promise<boolean> {
   return new Promise(resolve => {
@@ -52,6 +57,9 @@ async function findAvailablePort(startPort: number = 3000): Promise<number> {
 }
 
 async function startServer() {
+  // Initialize Sentry before Express app (must be first)
+  initSentry();
+
   const app = express();
   const server = createServer(app);
   // Attach real-time collaboration WebSocket server
@@ -59,6 +67,15 @@ async function startServer() {
 
   // Trust reverse proxy (Manus hosting / nginx) — required for rate-limit IP detection
   app.set("trust proxy", 1);
+
+  // ── CORS ────────────────────────────────────────────────────────────────────
+  app.use(corsMiddleware);
+
+  // ── Request ID / Correlation ID ────────────────────────────────────────────
+  app.use(requestIdMiddleware);
+
+  // ── Idempotency keys for mutation safety ───────────────────────────────────
+  app.use(idempotencyMiddleware);
 
   // ── Health endpoint (used by load balancers and monitoring) ─────────────────
   app.get("/health", (_req, res) => {
@@ -265,6 +282,14 @@ async function startServer() {
   // Drone inspection media upload (photos, videos, thermal images → S3)
   app.use(droneImageUploadRouter);
   // tRPC API
+  // Per-endpoint rate limiting (stricter for expensive operations)
+  const aiLimiter = rateLimit({ windowMs: 60 * 1000, max: 30, standardHeaders: true, legacyHeaders: false, message: { error: "AI/ML rate limit exceeded" } });
+  app.use("/api/trpc/aiCopilot", aiLimiter);
+  app.use("/api/trpc/aiAdvanced", aiLimiter);
+  const exportLimiter = rateLimit({ windowMs: 60 * 1000, max: 10, standardHeaders: true, legacyHeaders: false, message: { error: "Export rate limit exceeded" } });
+  app.use("/api/trpc/dataExport", exportLimiter);
+
+  // tRPC API
   app.use(
     "/api/trpc",
     createExpressMiddleware({
@@ -272,6 +297,9 @@ async function startServer() {
       createContext,
     })
   );
+
+  // Sentry error handler (must be after routes)
+  app.use(getSentryErrorHandler());
 
   // ── Static / Vite ──────────────────────────────────────────────────────────
   if (process.env.NODE_ENV === "development") {
@@ -288,7 +316,7 @@ async function startServer() {
   }
 
   server.listen(port, () => {
-    console.log(`Server running on http://localhost:${port}/`);
+    logger.info({ port }, `Server running on http://localhost:${port}/`);
     // Start background services
     startAlarmNotifier();
     // Probe PI Web API connection (non-blocking)

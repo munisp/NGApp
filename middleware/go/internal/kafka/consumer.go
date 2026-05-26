@@ -6,6 +6,7 @@ package kafka
 import (
 	"context"
 	"encoding/json"
+	"fmt"
 	"log"
 	"time"
 
@@ -18,6 +19,10 @@ const (
 	TopicSensorReadings = "og.sensor.readings"
 	TopicAlarmsAll      = "og.alarms.all"
 	TopicAlarmsCritical = "og.alarms.critical"
+	TopicDLQ            = "og.dlq"
+
+	// Max retries before sending to DLQ
+	maxRetries = 3
 )
 
 // SensorReading mirrors the payload published by field edge devices.
@@ -48,18 +53,21 @@ type Consumer interface {
 // ─── Real consumer ────────────────────────────────────────────────────────────
 
 type realConsumer struct {
-	consumer *confluent.Consumer
-	cache    *cache.Client
-	stats    consumerStats
+	consumer  *confluent.Consumer
+	producer  *confluent.Producer
+	cache     *cache.Client
+	stats     consumerStats
 }
 
 type consumerStats struct {
 	MessagesProcessed int64
 	Errors            int64
+	DLQMessages       int64
 	LastMessage       time.Time
 }
 
 // NewConsumer creates a Confluent Kafka consumer subscribed to sensor and alarm topics.
+// Includes a DLQ producer for failed messages.
 func NewConsumer(brokers string, cacheClient *cache.Client) (Consumer, error) {
 	c, err := confluent.NewConsumer(&confluent.ConfigMap{
 		"bootstrap.servers":  brokers,
@@ -71,23 +79,39 @@ func NewConsumer(brokers string, cacheClient *cache.Client) (Consumer, error) {
 		return nil, err
 	}
 
-	topics := []string{TopicSensorReadings, TopicAlarmsAll, TopicAlarmsCritical}
-	if err := c.SubscribeTopics(topics, nil); err != nil {
+	// DLQ producer for failed messages
+	p, err := confluent.NewProducer(&confluent.ConfigMap{
+		"bootstrap.servers": brokers,
+		"acks":              "all",
+	})
+	if err != nil {
 		c.Close()
 		return nil, err
 	}
+	go func() {
+		for range p.Events() {
+		}
+	}()
 
-	return &realConsumer{consumer: c, cache: cacheClient}, nil
+	topics := []string{TopicSensorReadings, TopicAlarmsAll, TopicAlarmsCritical}
+	if err := c.SubscribeTopics(topics, nil); err != nil {
+		c.Close()
+		p.Close()
+		return nil, err
+	}
+
+	return &realConsumer{consumer: c, producer: p, cache: cacheClient}, nil
 }
 
 func (rc *realConsumer) Start(ctx context.Context) {
-	log.Printf("[kafka] Consumer started on topics: %s, %s, %s",
-		TopicSensorReadings, TopicAlarmsAll, TopicAlarmsCritical)
+	log.Printf("[kafka] Consumer started on topics: %s, %s, %s (DLQ: %s)",
+		TopicSensorReadings, TopicAlarmsAll, TopicAlarmsCritical, TopicDLQ)
 
 	for {
 		select {
 		case <-ctx.Done():
 			rc.consumer.Close()
+			rc.producer.Close()
 			return
 		default:
 			msg, err := rc.consumer.ReadMessage(200 * time.Millisecond)
@@ -104,45 +128,94 @@ func (rc *realConsumer) Start(ctx context.Context) {
 			rc.stats.LastMessage = time.Now()
 
 			topic := *msg.TopicPartition.Topic
+			var processErr error
 			switch topic {
 			case TopicSensorReadings:
-				rc.handleSensorReading(ctx, msg.Value)
+				processErr = rc.handleSensorReadingWithRetry(ctx, msg.Value)
 			case TopicAlarmsCritical:
-				rc.handleCriticalAlarm(ctx, msg.Value)
+				processErr = rc.handleCriticalAlarmWithRetry(ctx, msg.Value)
+			}
+
+			if processErr != nil {
+				rc.sendToDLQ(topic, msg.Value, processErr)
 			}
 		}
 	}
 }
 
-func (rc *realConsumer) handleSensorReading(ctx context.Context, data []byte) {
-	var reading SensorReading
-	if err := json.Unmarshal(data, &reading); err != nil {
-		log.Printf("[kafka] Invalid sensor reading: %v", err)
-		return
+func (rc *realConsumer) sendToDLQ(originalTopic string, data []byte, err error) {
+	dlqTopic := TopicDLQ
+	headers := []confluent.Header{
+		{Key: "original-topic", Value: []byte(originalTopic)},
+		{Key: "error", Value: []byte(err.Error())},
+		{Key: "timestamp", Value: []byte(time.Now().UTC().Format(time.RFC3339))},
 	}
-	// Cache latest value per tag (TTL 5 min)
-	key := "sensor:" + reading.WellID + ":" + reading.Tag
-	_ = rc.cache.Set(ctx, key, reading, 5*time.Minute)
+	rc.producer.Produce(&confluent.Message{
+		TopicPartition: confluent.TopicPartition{Topic: &dlqTopic, Partition: confluent.PartitionAny},
+		Value:          data,
+		Headers:        headers,
+	}, nil)
+	rc.stats.DLQMessages++
+	log.Printf("[kafka] Message sent to DLQ from topic=%s error=%v", originalTopic, err)
 }
 
-func (rc *realConsumer) handleCriticalAlarm(ctx context.Context, data []byte) {
+func (rc *realConsumer) handleSensorReadingWithRetry(ctx context.Context, data []byte) error {
+	var lastErr error
+	for i := 0; i < maxRetries; i++ {
+		if err := rc.processSensorReading(ctx, data); err != nil {
+			lastErr = err
+			backoff := time.Duration(1<<uint(i)) * 100 * time.Millisecond
+			time.Sleep(backoff)
+			continue
+		}
+		return nil
+	}
+	return lastErr
+}
+
+func (rc *realConsumer) handleCriticalAlarmWithRetry(ctx context.Context, data []byte) error {
+	var lastErr error
+	for i := 0; i < maxRetries; i++ {
+		if err := rc.processCriticalAlarm(ctx, data); err != nil {
+			lastErr = err
+			backoff := time.Duration(1<<uint(i)) * 100 * time.Millisecond
+			time.Sleep(backoff)
+			continue
+		}
+		return nil
+	}
+	return lastErr
+}
+
+func (rc *realConsumer) processSensorReading(ctx context.Context, data []byte) error {
+	var reading SensorReading
+	if err := json.Unmarshal(data, &reading); err != nil {
+		return fmt.Errorf("invalid sensor reading: %w", err)
+	}
+	key := "sensor:" + reading.WellID + ":" + reading.Tag
+	return rc.cache.Set(ctx, key, reading, 5*time.Minute)
+}
+
+func (rc *realConsumer) processCriticalAlarm(ctx context.Context, data []byte) error {
 	var alarm AlarmEvent
 	if err := json.Unmarshal(data, &alarm); err != nil {
-		log.Printf("[kafka] Invalid alarm event: %v", err)
-		return
+		return fmt.Errorf("invalid alarm event: %w", err)
 	}
-	// Publish to Redis channel for Node.js SSE / push notification handler
 	if err := rc.cache.Publish(ctx, "alarms:critical", alarm); err != nil {
-		log.Printf("[kafka] Redis publish failed: %v", err)
+		return fmt.Errorf("redis publish failed: %w", err)
 	}
 	log.Printf("[kafka] Critical alarm forwarded: well=%s sev=%d msg=%s",
 		alarm.WellID, alarm.Severity, alarm.Message)
+	return nil
 }
+
+
 
 func (rc *realConsumer) Stats() map[string]any {
 	return map[string]any{
 		"messagesProcessed": rc.stats.MessagesProcessed,
 		"errors":            rc.stats.Errors,
+		"dlqMessages":       rc.stats.DLQMessages,
 		"lastMessage":       rc.stats.LastMessage,
 		"mode":              "kafka",
 	}

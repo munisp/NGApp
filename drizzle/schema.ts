@@ -103,6 +103,7 @@ export const wells = pgTable("wells", {
   porosityFraction: real("porosity_fraction"),
   netPayFt: real("net_pay_ft"),
   // ───────────────────────────────────────────────────────────────────────────
+  deletedAt: timestamp("deleted_at"),
   createdAt: timestamp("created_at").defaultNow().notNull(),
   updatedAt: timestamp("updated_at").defaultNow().notNull(),
 });
@@ -161,6 +162,7 @@ export const alarms = pgTable("alarms", {
   isa182Category: varchar("isa182_category", { length: 32 }),
   isStanding: boolean("is_standing").default(false),
   isChattering: boolean("is_chattering").default(false),
+  deletedAt: timestamp("deleted_at"),
   createdAt: timestamp("created_at").defaultNow().notNull(),
   updatedAt: timestamp("updated_at").defaultNow().notNull(),
 });
@@ -230,6 +232,7 @@ export const workovers = pgTable("workovers", {
   calibrationSensorId: varchar("calibration_sensor_id", { length: 64 }),
   startDate: timestamp("start_date"),
   completedDate: timestamp("completed_date"),
+  deletedAt: timestamp("deleted_at"),
   createdAt: timestamp("created_at").defaultNow().notNull(),
   updatedAt: timestamp("updated_at").defaultNow().notNull(),
 });
@@ -268,6 +271,7 @@ export const calibrationRecords = pgTable("calibration_records", {
   technician: varchar("technician", { length: 128 }),
   notes: text("notes"),
   workoverId: integer("workover_id"),
+  deletedAt: timestamp("deleted_at"),
   createdAt: timestamp("created_at").defaultNow().notNull(),
   updatedAt: timestamp("updated_at").defaultNow().notNull(),
 });
@@ -301,6 +305,7 @@ export const permits = pgTable("permits", {
   temporalWorkflowId: varchar("temporal_workflow_id", { length: 128 }),
   issuerSignatureUrl: text("issuer_signature_url"),
   approverSignatureUrl: text("approver_signature_url"),
+  deletedAt: timestamp("deleted_at"),
   createdAt: timestamp("created_at").defaultNow().notNull(),
   updatedAt: timestamp("updated_at").defaultNow().notNull(),
 });
@@ -434,6 +439,7 @@ export const financialEntries = pgTable("financial_entries", {
   mojalooopRef: varchar("mojalooop_ref", { length: 64 }),
   status: entryStatusEnum("status").default("PENDING").notNull(),
   valueDate: timestamp("value_date"),
+  deletedAt: timestamp("deleted_at"),
   createdAt: timestamp("created_at").defaultNow().notNull(),
 });
 export type FinancialEntry = typeof financialEntries.$inferSelect;
@@ -496,6 +502,7 @@ export const regulatoryReports = pgTable("regulatory_reports", {
   submissionRef: varchar("submission_ref", { length: 128 }),
   fileUrl: varchar("file_url", { length: 512 }),
   notes: text("notes"),
+  deletedAt: timestamp("deleted_at"),
   createdAt: timestamp("created_at").defaultNow().notNull(),
   updatedAt: timestamp("updated_at").defaultNow().notNull(),
 });
@@ -522,6 +529,7 @@ export const hseIncidents = pgTable("hse_incidents", {
   lostTimeDays: integer("lost_time_days").default(0),
   occurredAt: timestamp("occurred_at").notNull(),
   closedAt: timestamp("closed_at"),
+  deletedAt: timestamp("deleted_at"),
   createdAt: timestamp("created_at").defaultNow().notNull(),
   updatedAt: timestamp("updated_at").defaultNow().notNull(),
 });
@@ -631,6 +639,7 @@ export const silAssessments = pgTable("sil_assessments", {
   status: silStatusEnum("status").notNull().default("NOT_STARTED"),
   notes: text("notes"),
   createdBy: integer("created_by"),
+  deletedAt: timestamp("deleted_at"),
   createdAt: timestamp("created_at").defaultNow().notNull(),
   updatedAt: timestamp("updated_at").defaultNow().notNull(),
 });
@@ -729,6 +738,7 @@ export const devices = pgTable("devices", {
   registeredBy: integer("registered_by"),
   notes: text("notes"),
   tags: text("tags"),
+  deletedAt: timestamp("deleted_at"),
   createdAt: timestamp("created_at").defaultNow().notNull(),
   updatedAt: timestamp("updated_at").defaultNow().notNull(),
 });
@@ -1145,6 +1155,7 @@ export const damageAssessments = pgTable("damage_assessments", {
   // Metadata
   createdBy: varchar("created_by", { length: 128 }),
   updatedBy: varchar("updated_by", { length: 128 }),
+  deletedAt: timestamp("deleted_at"),
   createdAt: timestamp("created_at").defaultNow().notNull(),
   updatedAt: timestamp("updated_at").defaultNow().notNull(),
 });
@@ -1187,6 +1198,7 @@ export const repairTickets = pgTable("repair_tickets", {
   assignedContractorId: integer("assigned_contractor_id"),                 // FK → contractors.id
   notes: text("notes"),
   createdBy: varchar("created_by", { length: 128 }),
+  deletedAt: timestamp("deleted_at"),
   createdAt: timestamp("created_at").defaultNow().notNull(),
   updatedAt: timestamp("updated_at").defaultNow().notNull(),
 });
@@ -1545,6 +1557,7 @@ export const productionForecasts = pgTable("production_forecasts", {
   oilPriceUsdPerBbl: real("oil_price_usd_per_bbl").default(70),
   npv10M: real("npv10_m"),
   createdBy: varchar("created_by", { length: 64 }),
+  deletedAt: timestamp("deleted_at"),
   createdAt: timestamp("created_at").defaultNow().notNull(),
   updatedAt: timestamp("updated_at").defaultNow().notNull(),
 });
@@ -1979,6 +1992,7 @@ export const cmmsWorkOrders = pgTable("cmms_work_orders", {
   syncStatus: varchar("sync_status", { length: 32 }).notNull().default("pending"),
   lastSyncedAt: timestamp("last_synced_at"),
   syncError: text("sync_error"),
+  deletedAt: timestamp("deleted_at"),
   createdAt: timestamp("created_at").defaultNow().notNull(),
   updatedAt: timestamp("updated_at").defaultNow().notNull(),
 });
@@ -2152,6 +2166,7 @@ export const droneInspections = pgTable("drone_inspections", {
   mediaUrls: text("media_urls"), // JSON array of S3 URLs for photos/videos
   reportUrl: text("report_url"), // Final inspection report PDF URL
   aiDefectSummary: text("ai_defect_summary"), // AI-generated defect analysis
+  deletedAt: timestamp("deleted_at"),
   createdAt: timestamp("created_at").defaultNow().notNull(),
   updatedAt: timestamp("updated_at").defaultNow().notNull(),
 });
@@ -2312,3 +2327,72 @@ export const opcuaServerNodes = pgTable("opcua_server_nodes", {
 });
 export type OpcuaServerNode = typeof opcuaServerNodes.$inferSelect;
 export type InsertOpcuaServerNode = typeof opcuaServerNodes.$inferInsert;
+
+// ═══════════════════════════════════════════════════════════════════════════
+// v56 PLATFORM IMPROVEMENTS — Soft Delete, Idempotency, Feature Flags, DQ
+// ═══════════════════════════════════════════════════════════════════════════
+
+// ─── Idempotency Keys ─────────────────────────────────────────────────────
+export const idempotencyKeys = pgTable("idempotency_keys", {
+  id: serial("id").primaryKey(),
+  key: varchar("key", { length: 128 }).notNull().unique(),
+  userId: varchar("user_id", { length: 128 }).notNull(),
+  route: varchar("route", { length: 256 }).notNull(),
+  status: varchar("status", { length: 16 }).notNull().default("processing"),
+  responseStatus: integer("response_status"),
+  responseBody: text("response_body"),
+  createdAt: timestamp("created_at").defaultNow().notNull(),
+  expiresAt: timestamp("expires_at").notNull(),
+});
+export type IdempotencyKey = typeof idempotencyKeys.$inferSelect;
+export type InsertIdempotencyKey = typeof idempotencyKeys.$inferInsert;
+
+// ─── Feature Flags ────────────────────────────────────────────────────────
+export const featureFlags = pgTable("feature_flags", {
+  id: serial("id").primaryKey(),
+  flagKey: varchar("flag_key", { length: 64 }).notNull().unique(),
+  name: varchar("name", { length: 128 }).notNull(),
+  description: text("description"),
+  enabled: boolean("enabled").notNull().default(false),
+  tenantIds: text("tenant_ids"),
+  percentage: integer("percentage").default(100),
+  createdBy: varchar("created_by", { length: 128 }),
+  createdAt: timestamp("created_at").defaultNow().notNull(),
+  updatedAt: timestamp("updated_at").defaultNow().notNull(),
+});
+export type FeatureFlag = typeof featureFlags.$inferSelect;
+export type InsertFeatureFlag = typeof featureFlags.$inferInsert;
+
+// ─── Data Quality Rules ───────────────────────────────────────────────────
+export const dataQualityRules = pgTable("data_quality_rules", {
+  id: serial("id").primaryKey(),
+  ruleName: varchar("rule_name", { length: 128 }).notNull(),
+  sensorType: varchar("sensor_type", { length: 64 }).notNull(),
+  minValue: real("min_value"),
+  maxValue: real("max_value"),
+  maxRateOfChange: real("max_rate_of_change"),
+  unit: varchar("unit", { length: 16 }),
+  enabled: boolean("enabled").notNull().default(true),
+  createdAt: timestamp("created_at").defaultNow().notNull(),
+  updatedAt: timestamp("updated_at").defaultNow().notNull(),
+});
+export type DataQualityRule = typeof dataQualityRules.$inferSelect;
+export type InsertDataQualityRule = typeof dataQualityRules.$inferInsert;
+
+export const dataQualityViolations = pgTable("data_quality_violations", {
+  id: serial("id").primaryKey(),
+  ruleId: integer("rule_id").notNull(),
+  wellId: varchar("well_id", { length: 32 }).notNull(),
+  sensorType: varchar("sensor_type", { length: 64 }).notNull(),
+  value: real("value").notNull(),
+  expectedRange: varchar("expected_range", { length: 64 }),
+  violationType: varchar("violation_type", { length: 32 }).notNull(),
+  severity: varchar("severity", { length: 16 }).notNull().default("warning"),
+  acknowledged: boolean("acknowledged").notNull().default(false),
+  acknowledgedBy: varchar("acknowledged_by", { length: 128 }),
+  acknowledgedAt: timestamp("acknowledged_at"),
+  detectedAt: timestamp("detected_at").defaultNow().notNull(),
+  createdAt: timestamp("created_at").defaultNow().notNull(),
+});
+export type DataQualityViolation = typeof dataQualityViolations.$inferSelect;
+export type InsertDataQualityViolation = typeof dataQualityViolations.$inferInsert;
