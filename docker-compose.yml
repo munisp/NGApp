@@ -1,0 +1,299 @@
+##############################################################################
+# NGApp Insurance Platform — Consolidated Docker Compose
+# Reduces 72 theoretical containers to 12 (83% reduction)
+# Domain-bounded service groups with shared infrastructure
+##############################################################################
+
+version: "3.9"
+
+x-common-env: &common-env
+  POSTGRES_URL: postgres://ngapp:ngapp_secret@postgres:5432/ngapp?sslmode=disable
+  REDIS_ADDR: redis:6379
+  KAFKA_BROKERS: kafka:9092
+  OPENSEARCH_URL: http://opensearch:9200
+  KEYCLOAK_REALM_URL: http://keycloak:8080/realms/insurance
+  KEYCLOAK_CLIENT_ID: ngapp-service
+  KEYCLOAK_ADMIN_URL: http://keycloak:8080
+  PERMIFY_URL: http://permify:3476
+  APISIX_ADMIN_URL: http://apisix:9180
+  MOJALOOP_URL: http://mojaloop-sim:4000
+  FLUVIO_ENDPOINT: fluvio:9003
+  TIGERBEETLE_ADDR: tigerbeetle:3000
+  DAPR_HTTP_PORT: "3500"
+  LOG_LEVEL: info
+
+x-healthcheck: &healthcheck
+  interval: 30s
+  timeout: 5s
+  retries: 3
+  start_period: 40s
+
+services:
+  ##########################################################################
+  # Infrastructure Layer (3 containers)
+  ##########################################################################
+
+  postgres:
+    image: postgres:16-alpine
+    environment:
+      POSTGRES_USER: ngapp
+      POSTGRES_PASSWORD: ngapp_secret
+      POSTGRES_DB: ngapp
+    ports:
+      - "5432:5432"
+    volumes:
+      - pgdata:/var/lib/postgresql/data
+      - ./infrastructure/init-db:/docker-entrypoint-initdb.d
+    healthcheck:
+      <<: *healthcheck
+      test: ["CMD-SHELL", "pg_isready -U ngapp"]
+    deploy:
+      resources:
+        limits:
+          memory: 512M
+
+  redis:
+    image: redis:7-alpine
+    command: redis-server --maxmemory 256mb --maxmemory-policy allkeys-lru --requirepass ""
+    ports:
+      - "6379:6379"
+    volumes:
+      - redisdata:/data
+    healthcheck:
+      <<: *healthcheck
+      test: ["CMD", "redis-cli", "ping"]
+    deploy:
+      resources:
+        limits:
+          memory: 256M
+
+  kafka:
+    image: bitnami/kafka:3.7
+    environment:
+      KAFKA_CFG_NODE_ID: 0
+      KAFKA_CFG_PROCESS_ROLES: controller,broker
+      KAFKA_CFG_LISTENERS: PLAINTEXT://:9092,CONTROLLER://:9093
+      KAFKA_CFG_LISTENER_SECURITY_PROTOCOL_MAP: CONTROLLER:PLAINTEXT,PLAINTEXT:PLAINTEXT
+      KAFKA_CFG_CONTROLLER_QUORUM_VOTERS: 0@kafka:9093
+      KAFKA_CFG_CONTROLLER_LISTENER_NAMES: CONTROLLER
+      KAFKA_CFG_AUTO_CREATE_TOPICS_ENABLE: "true"
+    ports:
+      - "9092:9092"
+    volumes:
+      - kafkadata:/bitnami/kafka
+    healthcheck:
+      <<: *healthcheck
+      test: ["CMD-SHELL", "kafka-broker-api-versions.sh --bootstrap-server localhost:9092"]
+    deploy:
+      resources:
+        limits:
+          memory: 512M
+
+  ##########################################################################
+  # Application Layer — Consolidated Services (9 containers)
+  ##########################################################################
+
+  # Container 1: Customer Portal (Frontend + tRPC Backend)
+  portal:
+    build:
+      context: ./customer-portal-full
+      dockerfile: Dockerfile
+    ports:
+      - "3000:3000"
+    environment:
+      <<: *common-env
+      NODE_ENV: production
+      DATABASE_URL: postgres://ngapp:ngapp_secret@postgres:5432/ngapp?sslmode=disable
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+    healthcheck:
+      <<: *healthcheck
+      test: ["CMD", "node", "-e", "require('http').get('http://localhost:3000/api/health', (r) => {process.exit(r.statusCode === 200 ? 0 : 1)})"]
+
+  # Container 2: Core Insurance Services (Policy, Claims, Customer, Verification)
+  core-services:
+    build:
+      context: .
+      dockerfile: ./infrastructure/docker/core-services.Dockerfile
+    ports:
+      - "8080:8080"
+    environment:
+      <<: *common-env
+      SERVICE_GROUP: core
+      HTTP_PORT: "8080"
+      GRPC_PORT: "50051"
+    depends_on:
+      postgres:
+        condition: service_healthy
+      kafka:
+        condition: service_healthy
+    healthcheck:
+      <<: *healthcheck
+      test: ["CMD", "wget", "--spider", "-q", "http://localhost:8080/health"]
+
+  # Container 3: KYC/KYB Services (Orchestrator, AML, Identity Matching)
+  kyc-services:
+    build:
+      context: .
+      dockerfile: ./infrastructure/docker/kyc-services.Dockerfile
+    ports:
+      - "8085:8085"
+    environment:
+      <<: *common-env
+      SERVICE_GROUP: kyc
+      HTTP_PORT: "8085"
+      GRPC_PORT: "50054"
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+      kafka:
+        condition: service_healthy
+    healthcheck:
+      <<: *healthcheck
+      test: ["CMD", "wget", "--spider", "-q", "http://localhost:8085/health"]
+
+  # Container 4: ML Services (DeepFace, OCR, Liveness Detection)
+  ml-services:
+    build:
+      context: .
+      dockerfile: ./infrastructure/docker/ml-services.Dockerfile
+    ports:
+      - "8110:8110"
+    environment:
+      <<: *common-env
+      SERVICE_GROUP: ml
+      HTTP_PORT: "8110"
+    depends_on:
+      postgres:
+        condition: service_healthy
+    healthcheck:
+      <<: *healthcheck
+      test: ["CMD", "curl", "-f", "http://localhost:8110/health"]
+    deploy:
+      resources:
+        limits:
+          memory: 2G
+
+  # Container 5: AI Platform (Inference, Training, Continuous Training, Lakehouse)
+  ai-platform:
+    build:
+      context: .
+      dockerfile: ./infrastructure/docker/ai-platform.Dockerfile
+    ports:
+      - "8200:8200"
+    environment:
+      <<: *common-env
+      SERVICE_GROUP: ai
+      HTTP_PORT: "8200"
+      LAKEHOUSE_STORE: /data/lakehouse
+      MODEL_STORE: /data/models
+    volumes:
+      - aidata:/data
+    depends_on:
+      postgres:
+        condition: service_healthy
+    healthcheck:
+      <<: *healthcheck
+      test: ["CMD", "curl", "-f", "http://localhost:8200/health"]
+    deploy:
+      resources:
+        limits:
+          memory: 4G
+
+  # Container 6: Insurance Operations (Actuarial, Underwriting, Claims Adjudication, Reinsurance)
+  insurance-ops:
+    build:
+      context: .
+      dockerfile: ./infrastructure/docker/insurance-ops.Dockerfile
+    ports:
+      - "8400:8400"
+    environment:
+      <<: *common-env
+      SERVICE_GROUP: insurance-ops
+      HTTP_PORT: "8400"
+      GRPC_PORT: "50055"
+    depends_on:
+      postgres:
+        condition: service_healthy
+      kafka:
+        condition: service_healthy
+    healthcheck:
+      <<: *healthcheck
+      test: ["CMD", "wget", "--spider", "-q", "http://localhost:8400/health"]
+
+  # Container 7: Financial Services (Payment, Premium Finance, Multi-Currency, Reconciliation)
+  financial:
+    build:
+      context: .
+      dockerfile: ./infrastructure/docker/financial.Dockerfile
+    ports:
+      - "8500:8500"
+    environment:
+      <<: *common-env
+      SERVICE_GROUP: financial
+      HTTP_PORT: "8500"
+      GRPC_PORT: "50053"
+    depends_on:
+      postgres:
+        condition: service_healthy
+      kafka:
+        condition: service_healthy
+    healthcheck:
+      <<: *healthcheck
+      test: ["CMD", "wget", "--spider", "-q", "http://localhost:8500/health"]
+
+  # Container 8: Compliance (NAICOM, NDPR, IFRS17, Regulatory, Audit Trail)
+  compliance:
+    build:
+      context: .
+      dockerfile: ./infrastructure/docker/compliance.Dockerfile
+    ports:
+      - "8600:8600"
+    environment:
+      <<: *common-env
+      SERVICE_GROUP: compliance
+      HTTP_PORT: "8600"
+    depends_on:
+      postgres:
+        condition: service_healthy
+      kafka:
+        condition: service_healthy
+    healthcheck:
+      <<: *healthcheck
+      test: ["CMD", "wget", "--spider", "-q", "http://localhost:8600/health"]
+
+  # Container 9: Communication (Notification, Multi-Language, Gamification)
+  communication:
+    build:
+      context: .
+      dockerfile: ./infrastructure/docker/communication.Dockerfile
+    ports:
+      - "8700:8700"
+    environment:
+      <<: *common-env
+      SERVICE_GROUP: communication
+      HTTP_PORT: "8700"
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+    healthcheck:
+      <<: *healthcheck
+      test: ["CMD", "wget", "--spider", "-q", "http://localhost:8700/health"]
+
+volumes:
+  pgdata:
+  redisdata:
+  kafkadata:
+  aidata:
+
+networks:
+  default:
+    name: ngapp-network
+    driver: bridge

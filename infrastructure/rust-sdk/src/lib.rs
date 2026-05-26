@@ -13,5 +13,11 @@ pub mod opensearch;
 pub mod fluvio;
 pub mod dapr;
 pub mod platform;
+pub mod circuit_breaker;
+pub mod graceful;
+pub mod observability;
 
 pub use platform::{Platform, PlatformConfig};
+pub use circuit_breaker::{CircuitBreaker, CircuitBreakerConfig, RetryConfig, retry_with_backoff};
+pub use graceful::{GracefulShutdown, HealthRegistry};
+pub use observability::Metrics;
