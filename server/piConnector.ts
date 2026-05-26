@@ -204,39 +204,34 @@ export async function searchPITags(
   const client = getPIClient();
 
   if (!client) {
-    return generateSimulatedTags(query, maxCount);
+    throw new Error("[PI Connector] PI Web API not configured. Set PI_WEB_API_URL environment variable.");
   }
 
-  try {
-    const res = await client.get("/piwebapi/dataservers", {
-      params: { selectedFields: "Items.WebId;Items.Name" },
-    });
-    const serverWebId = res.data.Items?.[0]?.WebId;
-    if (!serverWebId) return [];
+  const res = await client.get("/piwebapi/dataservers", {
+    params: { selectedFields: "Items.WebId;Items.Name" },
+  });
+  const serverWebId = res.data.Items?.[0]?.WebId;
+  if (!serverWebId) return [];
 
-    const tagsRes = await client.get(`/piwebapi/dataservers/${serverWebId}/points`, {
-      params: {
-        nameFilter: `*${query}*`,
-        maxCount,
-        selectedFields: "Items.WebId;Items.Name;Items.Descriptor;Items.PointType;Items.EngineeringUnits;Items.Zero;Items.Span",
-      },
-    });
+  const tagsRes = await client.get(`/piwebapi/dataservers/${serverWebId}/points`, {
+    params: {
+      nameFilter: `*${query}*`,
+      maxCount,
+      selectedFields: "Items.WebId;Items.Name;Items.Descriptor;Items.PointType;Items.EngineeringUnits;Items.Zero;Items.Span",
+    },
+  });
 
-    return (tagsRes.data.Items ?? []).map((item: Record<string, unknown>) => ({
-      webId: item.WebId as string,
-      name: item.Name as string,
-      path: `\\\\${res.data.Items[0].Name}\\${item.Name}`,
-      descriptor: item.Descriptor as string ?? "",
-      pointType: item.PointType as string ?? "Float32",
-      engineeringUnits: item.EngineeringUnits as string ?? "",
-      zero: Number(item.Zero ?? 0),
-      span: Number(item.Span ?? 100),
-      serverName: res.data.Items[0].Name as string,
-    }));
-  } catch (err) {
-    console.error("[PI Connector] Tag search failed:", err instanceof Error ? err.message : err);
-    return generateSimulatedTags(query, maxCount);
-  }
+  return (tagsRes.data.Items ?? []).map((item: Record<string, unknown>) => ({
+    webId: item.WebId as string,
+    name: item.Name as string,
+    path: `\\\\${res.data.Items[0].Name}\\${item.Name}`,
+    descriptor: item.Descriptor as string ?? "",
+    pointType: item.PointType as string ?? "Float32",
+    engineeringUnits: item.EngineeringUnits as string ?? "",
+    zero: Number(item.Zero ?? 0),
+    span: Number(item.Span ?? 100),
+    serverName: res.data.Items[0].Name as string,
+  }));
 }
 
 // ─── CURRENT VALUE ────────────────────────────────────────────────────────────
@@ -248,23 +243,11 @@ export async function getPITagValue(webId: string): Promise<PIValue | null> {
   const client = getPIClient();
 
   if (!client) {
-    return {
-      timestamp: new Date().toISOString(),
-      value: Math.random() * 100,
-      good: true,
-      questionable: false,
-      substituted: false,
-      annotated: false,
-    };
+    throw new Error("[PI Connector] PI Web API not configured. Set PI_WEB_API_URL environment variable.");
   }
 
-  try {
-    const res = await client.get(`/piwebapi/streams/${webId}/value`);
-    return mapPIValue(res.data);
-  } catch (err) {
-    console.error("[PI Connector] Tag value failed:", err instanceof Error ? err.message : err);
-    return null;
-  }
+  const res = await client.get(`/piwebapi/streams/${webId}/value`);
+  return mapPIValue(res.data);
 }
 
 // ─── HISTORICAL DATA ──────────────────────────────────────────────────────────
@@ -283,32 +266,27 @@ export async function getPIHistoricalData(
   const client = getPIClient();
 
   if (!client) {
-    return generateSimulatedHistory(webId, tagName, startTime, endTime, maxCount);
+    throw new Error("[PI Connector] PI Web API not configured. Set PI_WEB_API_URL environment variable.");
   }
 
-  try {
-    const res = await client.get(`/piwebapi/streams/${webId}/recorded`, {
-      params: {
-        startTime,
-        endTime,
-        maxCount,
-        selectedFields: "Items.Timestamp;Items.Value;Items.Good;Items.Questionable;Items.Substituted;Items.Annotated",
-      },
-    });
-
-    const values = (res.data.Items ?? []).map(mapPIValue);
-    return {
-      tagName,
-      webId,
-      values,
+  const res = await client.get(`/piwebapi/streams/${webId}/recorded`, {
+    params: {
       startTime,
       endTime,
-      count: values.length,
-    };
-  } catch (err) {
-    console.error("[PI Connector] Historical data failed:", err instanceof Error ? err.message : err);
-    return generateSimulatedHistory(webId, tagName, startTime, endTime, maxCount);
-  }
+      maxCount,
+      selectedFields: "Items.Timestamp;Items.Value;Items.Good;Items.Questionable;Items.Substituted;Items.Annotated",
+    },
+  });
+
+  const values = (res.data.Items ?? []).map(mapPIValue);
+  return {
+    tagName,
+    webId,
+    values,
+    startTime,
+    endTime,
+    count: values.length,
+  };
 }
 
 // ─── BULK CURRENT VALUES ──────────────────────────────────────────────────────
@@ -323,16 +301,7 @@ export async function getBulkPITagValues(
   const client = getPIClient();
 
   if (!client) {
-    return Object.fromEntries(
-      webIds.map(id => [id, {
-        timestamp: new Date().toISOString(),
-        value: Math.random() * 100,
-        good: true,
-        questionable: false,
-        substituted: false,
-        annotated: false,
-      }])
-    );
+    throw new Error("[PI Connector] PI Web API not configured. Set PI_WEB_API_URL environment variable.");
   }
 
   try {
@@ -375,42 +344,37 @@ export async function browsePIElements(
   const client = getPIClient();
 
   if (!client) {
-    return generateSimulatedElements(elementPath);
+    throw new Error("[PI Connector] PI Web API not configured. Set PI_WEB_API_URL environment variable.");
   }
 
-  try {
-    // Get asset servers
-    const asRes = await client.get("/piwebapi/assetservers");
-    const asServer = asRes.data.Items?.find(
-      (s: Record<string, unknown>) => !assetServerName || s.Name === assetServerName
-    );
-    if (!asServer) return [];
+  // Get asset servers
+  const asRes = await client.get("/piwebapi/assetservers");
+  const asServer = asRes.data.Items?.find(
+    (s: Record<string, unknown>) => !assetServerName || s.Name === assetServerName
+  );
+  if (!asServer) return [];
 
-    // Get databases
-    const dbRes = await client.get(`/piwebapi/assetservers/${asServer.WebId}/assetdatabases`);
-    const db = dbRes.data.Items?.find(
-      (d: Record<string, unknown>) => !databaseName || d.Name === databaseName
-    );
-    if (!db) return [];
+  // Get databases
+  const dbRes = await client.get(`/piwebapi/assetservers/${asServer.WebId}/assetdatabases`);
+  const db = dbRes.data.Items?.find(
+    (d: Record<string, unknown>) => !databaseName || d.Name === databaseName
+  );
+  if (!db) return [];
 
-    // Get elements
-    const elemRes = await client.get(`/piwebapi/assetdatabases/${db.WebId}/elements`, {
-      params: { selectedFields: "Items.WebId;Items.Name;Items.Description;Items.Path;Items.TemplateName;Items.HasChildren" },
-    });
+  // Get elements
+  const elemRes = await client.get(`/piwebapi/assetdatabases/${db.WebId}/elements`, {
+    params: { selectedFields: "Items.WebId;Items.Name;Items.Description;Items.Path;Items.TemplateName;Items.HasChildren" },
+  });
 
-    return (elemRes.data.Items ?? []).map((el: Record<string, unknown>) => ({
-      webId: el.WebId as string,
-      name: el.Name as string,
-      description: el.Description as string ?? "",
-      path: el.Path as string ?? "",
-      templateName: el.TemplateName as string,
-      hasChildren: Boolean(el.HasChildren),
-      attributes: [],
-    }));
-  } catch (err) {
-    console.error("[PI Connector] Element browse failed:", err instanceof Error ? err.message : err);
-    return generateSimulatedElements(elementPath);
-  }
+  return (elemRes.data.Items ?? []).map((el: Record<string, unknown>) => ({
+    webId: el.WebId as string,
+    name: el.Name as string,
+    description: el.Description as string ?? "",
+    path: el.Path as string ?? "",
+    templateName: el.TemplateName as string,
+    hasChildren: Boolean(el.HasChildren),
+    attributes: [],
+  }));
 }
 
 // ─── HELPERS ─────────────────────────────────────────────────────────────────
@@ -439,94 +403,4 @@ function mapPIValue(raw: Record<string, unknown>): PIValue {
   };
 }
 
-// ─── SIMULATION DATA ──────────────────────────────────────────────────────────
 
-const SIM_TAG_TEMPLATES = [
-  { suffix: "PRESSURE_TUBING", units: "psi", zero: 0, span: 5000, type: "Float32" },
-  { suffix: "PRESSURE_CASING", units: "psi", zero: 0, span: 3000, type: "Float32" },
-  { suffix: "TEMP_WELLHEAD", units: "degF", zero: 50, span: 250, type: "Float32" },
-  { suffix: "FLOW_OIL", units: "BPD", zero: 0, span: 2000, type: "Float32" },
-  { suffix: "FLOW_GAS", units: "MMSCFD", zero: 0, span: 50, type: "Float32" },
-  { suffix: "FLOW_WATER", units: "BPD", zero: 0, span: 500, type: "Float32" },
-  { suffix: "ESP_CURRENT", units: "A", zero: 0, span: 200, type: "Float32" },
-  { suffix: "ESP_FREQUENCY", units: "Hz", zero: 0, span: 70, type: "Float32" },
-  { suffix: "VIB_X", units: "in/s", zero: 0, span: 1, type: "Float32" },
-  { suffix: "VIB_Y", units: "in/s", zero: 0, span: 1, type: "Float32" },
-];
-
-const SIM_WELLS = ["PB-047", "PB-052", "KW-001", "KW-002", "UAE-001", "UAE-002", "GOM-001", "NS-001"];
-
-function generateSimulatedTags(query: string, maxCount: number): PITag[] {
-  const tags: PITag[] = [];
-  for (const well of SIM_WELLS) {
-    for (const tmpl of SIM_TAG_TEMPLATES) {
-      const name = `${well}.${tmpl.suffix}`;
-      if (query && !name.toLowerCase().includes(query.toLowerCase())) continue;
-      tags.push({
-        webId: `sim-${well}-${tmpl.suffix}`.toLowerCase().replace(/[^a-z0-9-]/g, "-"),
-        name,
-        path: `\\\\SIM-PISERVER01\\${name}`,
-        descriptor: `${well} ${tmpl.suffix.replace(/_/g, " ")}`,
-        pointType: tmpl.type,
-        engineeringUnits: tmpl.units,
-        zero: tmpl.zero,
-        span: tmpl.span,
-        serverName: "SIM-PISERVER01",
-      });
-      if (tags.length >= maxCount) return tags;
-    }
-  }
-  return tags;
-}
-
-function generateSimulatedHistory(
-  webId: string,
-  tagName: string,
-  startTime: string,
-  endTime: string,
-  maxCount: number
-): PIHistoricalData {
-  const start = new Date(startTime).getTime();
-  const end = new Date(endTime).getTime();
-  const interval = Math.max(Math.floor((end - start) / maxCount), 1000);
-  const values: PIValue[] = [];
-
-  let baseValue = 1000 + Math.random() * 500;
-  for (let t = start; t <= end && values.length < maxCount; t += interval) {
-    baseValue += (Math.random() - 0.5) * 20;
-    values.push({
-      timestamp: new Date(t).toISOString(),
-      value: Math.max(0, baseValue),
-      good: Math.random() > 0.02,
-      questionable: false,
-      substituted: false,
-      annotated: false,
-    });
-  }
-
-  return { tagName, webId, values, startTime, endTime, count: values.length };
-}
-
-function generateSimulatedElements(path?: string): PIElement[] {
-  const depth = path ? path.split("\\").length : 0;
-  if (depth === 0) {
-    return SIM_WELLS.slice(0, 4).map(well => ({
-      webId: `sim-el-${well.toLowerCase()}`,
-      name: well,
-      description: `Well ${well} asset element`,
-      path: `\\\\SIM-AF\\OG-RMM\\${well}`,
-      templateName: "Well",
-      hasChildren: true,
-      attributes: [],
-    }));
-  }
-  return SIM_TAG_TEMPLATES.slice(0, 5).map(tmpl => ({
-    webId: `sim-attr-${tmpl.suffix.toLowerCase()}`,
-    name: tmpl.suffix.replace(/_/g, " "),
-    description: `${tmpl.suffix} attribute`,
-    path: `${path}|${tmpl.suffix}`,
-    templateName: "Sensor",
-    hasChildren: false,
-    attributes: [],
-  }));
-}

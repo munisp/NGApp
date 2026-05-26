@@ -50,7 +50,7 @@ import { cacheRouter } from "./routers/cache";
 import { streamingRouter } from "./routers/streaming";
 import { ledgerRouter } from "./routers/ledger";
 import { workflowsRouter } from "./routers/workflows";
-import { lakehouseRouter, lakehouseExtRouter } from "./routers/lakehouse";
+import { lakehouseRouter } from "./routers/lakehouse";
 import { demandResponseRouter } from "./routers/demandResponse";
 import { authzRouter } from "./routers/authz";
 import { openStefRouter } from "./routers/openstef";
@@ -185,7 +185,7 @@ export const appRouter = router({
   damageAssessment: damageAssessmentRouter,
   alertThresholds: alertThresholdsRouter,
   // ── v23.0 Lakehouse Extension: Rust DataFusion + Python Sedona + DuckDB ──────
-  lakehouseExt: lakehouseExtRouter,
+
   // ── v35.0 Trexm Co-Creation: Geomechanics, Mud, Sand, Water, Heavy Oil, Liquid Loading ──
   geomechanics: geomechanicsRouter,
   mudManagement: mudManagementRouter,

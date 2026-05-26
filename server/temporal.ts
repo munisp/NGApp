@@ -2,8 +2,7 @@
  * temporal.ts — Temporal workflow client for durable workover state machines
  *
  * Connects to the Temporal server defined in docker-compose.yml.
- * When TEMPORAL_ADDRESS is not set (local dev without Docker), all operations
- * degrade gracefully and return mock workflow IDs so the UI remains functional.
+ * Requires TEMPORAL_ADDRESS to be set. Throws on connection failure.
  *
  * Workflow types defined here mirror the Go alarm-manager Temporal activities:
  *   - workover.execute      → Full workover lifecycle (plan → mobilize → execute → demob)
@@ -21,25 +20,19 @@ let temporalClient: Client | null = null;
 
 /**
  * Get or create the Temporal client singleton.
- * Returns null when TEMPORAL_ADDRESS is not configured.
+ * Throws when TEMPORAL_ADDRESS is not configured or connection fails.
  */
-export async function getTemporalClient(): Promise<Client | null> {
+export async function getTemporalClient(): Promise<Client> {
   if (!TEMPORAL_ADDRESS) {
-    console.warn("[Temporal] TEMPORAL_ADDRESS not set — running in simulation mode");
-    return null;
+    throw new Error("[Temporal] TEMPORAL_ADDRESS not configured. Set the environment variable to connect.");
   }
 
   if (temporalClient) return temporalClient;
 
-  try {
-    const connection = await Connection.connect({ address: TEMPORAL_ADDRESS });
-    temporalClient = new Client({ connection, namespace: TEMPORAL_NAMESPACE });
-    console.log(`[Temporal] Connected to ${TEMPORAL_ADDRESS} (namespace: ${TEMPORAL_NAMESPACE})`);
-    return temporalClient;
-  } catch (err) {
-    console.error("[Temporal] Connection failed:", err instanceof Error ? err.message : err);
-    return null;
-  }
+  const connection = await Connection.connect({ address: TEMPORAL_ADDRESS });
+  temporalClient = new Client({ connection, namespace: TEMPORAL_NAMESPACE });
+  console.log(`[Temporal] Connected to ${TEMPORAL_ADDRESS} (namespace: ${TEMPORAL_NAMESPACE})`);
+  return temporalClient;
 }
 
 // ─── WORKFLOW TYPES ───────────────────────────────────────────────────────────
@@ -58,7 +51,7 @@ export interface WorkoverWorkflowInput {
 export interface WorkflowStatus {
   workflowId: string;
   runId: string;
-  status: "RUNNING" | "COMPLETED" | "FAILED" | "CANCELLED" | "TIMED_OUT" | "SIMULATED";
+  status: "RUNNING" | "COMPLETED" | "FAILED" | "CANCELLED" | "TIMED_OUT";
   startTime: string;
   closeTime?: string;
   workflowType: string;
@@ -69,39 +62,20 @@ export interface WorkflowStatus {
 
 /**
  * Start a workover execution workflow.
- * Returns a workflow handle with workflowId and runId.
  */
 export async function startWorkoverWorkflow(
   input: WorkoverWorkflowInput
-): Promise<{ workflowId: string; runId: string; simulated: boolean }> {
+): Promise<{ workflowId: string; runId: string }> {
   const client = await getTemporalClient();
-
-  if (!client) {
-    // Simulation mode: return a deterministic fake workflow ID
-    const workflowId = `sim-workover-${input.workoverJobId}-${Date.now()}`;
-    console.log(`[Temporal] Simulated workflow started: ${workflowId}`);
-    return { workflowId, runId: `sim-run-${Date.now()}`, simulated: true };
-  }
-
   const workflowId = `workover-${input.workoverJobId}`;
 
-  try {
-    const handle = await client.workflow.start("workoverExecute", {
-      taskQueue: TEMPORAL_TASK_QUEUE,
-      workflowId,
-      args: [input],
-    });
+  const handle = await client.workflow.start("workoverExecute", {
+    taskQueue: TEMPORAL_TASK_QUEUE,
+    workflowId,
+    args: [input],
+  });
 
-    return { workflowId: handle.workflowId, runId: handle.firstExecutionRunId, simulated: false };
-  } catch (err) {
-    console.error("[Temporal] Failed to start workflow:", err instanceof Error ? err.message : err);
-    // Fallback to simulation on error
-    return {
-      workflowId: `fallback-${workflowId}-${Date.now()}`,
-      runId: `fallback-run-${Date.now()}`,
-      simulated: true,
-    };
-  }
+  return { workflowId: handle.workflowId, runId: handle.firstExecutionRunId };
 }
 
 /**
@@ -109,52 +83,30 @@ export async function startWorkoverWorkflow(
  */
 export async function cancelWorkflow(workflowId: string): Promise<boolean> {
   const client = await getTemporalClient();
-  if (!client) {
-    console.log(`[Temporal] Simulated cancel: ${workflowId}`);
-    return true;
-  }
-
-  try {
-    const handle = client.workflow.getHandle(workflowId);
-    await handle.cancel();
-    return true;
-  } catch (err) {
-    console.error("[Temporal] Cancel failed:", err instanceof Error ? err.message : err);
-    return false;
-  }
+  const handle = client.workflow.getHandle(workflowId);
+  await handle.cancel();
+  return true;
 }
 
 /**
  * List recent workflows for a given workflow type.
- * Returns simulated data when Temporal is not available.
  */
 export async function listWorkflows(
   workflowType?: string,
   limit = 20
 ): Promise<WorkflowStatus[]> {
   const client = await getTemporalClient();
+  const results: WorkflowStatus[] = [];
+  const query = workflowType
+    ? `WorkflowType = "${workflowType}"`
+    : undefined;
 
-  if (!client) {
-    // Return simulated workflow list for UI development
-    return generateSimulatedWorkflows(limit);
+  for await (const workflow of client.workflow.list({ query, pageSize: limit })) {
+    results.push(mapWorkflowInfo(workflow));
+    if (results.length >= limit) break;
   }
 
-  try {
-    const results: WorkflowStatus[] = [];
-    const query = workflowType
-      ? `WorkflowType = "${workflowType}"`
-      : undefined;
-
-    for await (const workflow of client.workflow.list({ query, pageSize: limit })) {
-      results.push(mapWorkflowInfo(workflow));
-      if (results.length >= limit) break;
-    }
-
-    return results;
-  } catch (err) {
-    console.error("[Temporal] List workflows failed:", err instanceof Error ? err.message : err);
-    return generateSimulatedWorkflows(limit);
-  }
+  return results;
 }
 
 /**
@@ -162,17 +114,6 @@ export async function listWorkflows(
  */
 export async function getWorkflowStatus(workflowId: string): Promise<WorkflowStatus | null> {
   const client = await getTemporalClient();
-
-  if (!client) {
-    return {
-      workflowId,
-      runId: `sim-run-${workflowId}`,
-      status: "SIMULATED",
-      startTime: new Date().toISOString(),
-      workflowType: "workoverExecute",
-      taskQueue: TEMPORAL_TASK_QUEUE,
-    };
-  }
 
   try {
     const handle = client.workflow.getHandle(workflowId);
@@ -208,32 +149,6 @@ function mapWorkflowInfo(info: WorkflowExecutionInfo | WorkflowExecutionDescript
   };
 }
 
-const SIMULATED_WELL_IDS = ["PB-047", "PB-052", "KW-001", "UAE-001", "GOM-001"];
-const SIMULATED_JOB_TYPES = ["PUMP_CHANGE", "TUBING_REPLACEMENT", "ACIDIZING", "PERFORATION", "WELLBORE_CLEANOUT"];
-const SIMULATED_STATUSES: WorkflowStatus["status"][] = ["RUNNING", "RUNNING", "COMPLETED", "COMPLETED", "FAILED", "CANCELLED"];
-
-function generateSimulatedWorkflows(count: number): WorkflowStatus[] {
-  return Array.from({ length: Math.min(count, 12) }, (_, i) => {
-    const wellId = SIMULATED_WELL_IDS[i % SIMULATED_WELL_IDS.length];
-    const jobType = SIMULATED_JOB_TYPES[i % SIMULATED_JOB_TYPES.length];
-    const status = SIMULATED_STATUSES[i % SIMULATED_STATUSES.length];
-    const startTime = new Date(Date.now() - (i + 1) * 3 * 3600 * 1000);
-    const closeTime = status !== "RUNNING"
-      ? new Date(startTime.getTime() + (i + 1) * 1800 * 1000).toISOString()
-      : undefined;
-
-    return {
-      workflowId: `sim-workover-WO-${String(1000 + i).padStart(4, "0")}`,
-      runId: `sim-run-${i + 1}`,
-      status,
-      startTime: startTime.toISOString(),
-      closeTime,
-      workflowType: "workoverExecute",
-      taskQueue: TEMPORAL_TASK_QUEUE,
-    };
-  });
-}
-
 // ─── INCIDENT TRIAGE WORKFLOW ─────────────────────────────────────────────────
 
 export interface IncidentTriageWorkflowInput {
@@ -246,31 +161,19 @@ export interface IncidentTriageWorkflowInput {
 
 /**
  * Start an IncidentTriageWorkflow via Temporal.
- * Falls back to simulation when Temporal is unavailable.
  */
 export async function startIncidentTriageWorkflow(
   input: IncidentTriageWorkflowInput
-): Promise<{ workflowId: string; runId: string; simulated: boolean }> {
+): Promise<{ workflowId: string; runId: string }> {
   const client = await getTemporalClient();
-  if (!client) {
-    const workflowId = `incident-triage-sim-${input.eventId}-${Date.now()}`;
-    console.log(`[Temporal] Simulated IncidentTriageWorkflow: ${workflowId}`);
-    return { workflowId, runId: `run-sim-${Date.now()}`, simulated: true };
-  }
-  try {
-    const workflowId = `incident-triage-${input.eventId}-${Date.now()}`;
-    const handle = await (client as any).start("IncidentTriageWorkflow", {
-      taskQueue: TEMPORAL_TASK_QUEUE,
-      workflowId,
-      args: [input],
-    });
-    console.log(`[Temporal] Started IncidentTriageWorkflow: ${workflowId}`);
-    return { workflowId: handle.workflowId, runId: handle.firstExecutionRunId, simulated: false };
-  } catch (err) {
-    console.error("[Temporal] startIncidentTriageWorkflow failed:", err);
-    const workflowId = `incident-triage-err-${input.eventId}-${Date.now()}`;
-    return { workflowId, runId: `run-err-${Date.now()}`, simulated: true };
-  }
+  const workflowId = `incident-triage-${input.eventId}-${Date.now()}`;
+  const handle = await client.workflow.start("IncidentTriageWorkflow", {
+    taskQueue: TEMPORAL_TASK_QUEUE,
+    workflowId,
+    args: [input],
+  });
+  console.log(`[Temporal] Started IncidentTriageWorkflow: ${workflowId}`);
+  return { workflowId: handle.workflowId, runId: handle.firstExecutionRunId };
 }
 
 /**

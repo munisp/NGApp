@@ -3,11 +3,10 @@
  *
  * Provides a thin wrapper around the Go middleware worker's internal HTTP API
  * for publishing sensor readings and alarm events to Kafka.
- * Falls back to a no-op stub when the Go worker is unavailable.
+ * Requires the Go worker to be running.
  */
 
 const WORKER_URL = process.env.GO_WORKER_URL ?? "http://localhost:8090";
-const WORKER_ENABLED = process.env.GO_WORKER_ENABLED !== "false";
 
 // ─── Types ─────────────────────────────────────────────────────────────────────
 
@@ -32,7 +31,7 @@ export interface KafkaStats {
   messagesProcessed: number;
   errors: number;
   lastMessage: string | null;
-  mode: "kafka" | "simulated";
+  mode: "kafka" | "unavailable";
 }
 
 // ─── Client ────────────────────────────────────────────────────────────────────
@@ -51,34 +50,28 @@ async function workerFetch(path: string, options?: RequestInit): Promise<Respons
 }
 
 /**
- * Publish a sensor reading to the Kafka topic og.sensor.readings.
- * The Go worker handles the actual Kafka produce operation.
+ * Publish a sensor reading to Kafka via the Go worker.
  */
 export async function publishSensorReading(reading: SensorReading): Promise<void> {
-  if (!WORKER_ENABLED) return;
-  try {
-    await workerFetch("/kafka/publish/sensor", {
-      method: "POST",
-      body: JSON.stringify(reading),
-    });
-  } catch {
-    // Non-critical — sensor data loss is acceptable in degraded mode
+  const res = await workerFetch("/kafka/publish/sensor", {
+    method: "POST",
+    body: JSON.stringify(reading),
+  });
+  if (!res.ok) {
+    throw new Error(`Kafka publish sensor failed: HTTP ${res.status}`);
   }
 }
 
 /**
- * Publish an alarm event to the appropriate Kafka topic.
- * Critical alarms (severity >= 4) go to og.alarms.critical.
+ * Publish an alarm event to Kafka.
  */
 export async function publishAlarmEvent(alarm: AlarmEvent): Promise<void> {
-  if (!WORKER_ENABLED) return;
-  try {
-    await workerFetch("/kafka/publish/alarm", {
-      method: "POST",
-      body: JSON.stringify(alarm),
-    });
-  } catch {
-    // Non-critical — alarm events are also stored in DB
+  const res = await workerFetch("/kafka/publish/alarm", {
+    method: "POST",
+    body: JSON.stringify(alarm),
+  });
+  if (!res.ok) {
+    throw new Error(`Kafka publish alarm failed: HTTP ${res.status}`);
   }
 }
 
@@ -86,15 +79,12 @@ export async function publishAlarmEvent(alarm: AlarmEvent): Promise<void> {
  * Get Kafka consumer statistics from the Go worker.
  */
 export async function getKafkaStats(): Promise<KafkaStats> {
-  if (!WORKER_ENABLED) {
-    return { messagesProcessed: 0, errors: 0, lastMessage: null, mode: "simulated" };
-  }
   try {
     const res = await workerFetch("/kafka/stats");
     if (!res.ok) throw new Error(`HTTP ${res.status}`);
     return await res.json() as KafkaStats;
   } catch {
-    return { messagesProcessed: 0, errors: 0, lastMessage: null, mode: "simulated" };
+    return { messagesProcessed: 0, errors: 0, lastMessage: null, mode: "unavailable" };
   }
 }
 
@@ -102,7 +92,6 @@ export async function getKafkaStats(): Promise<KafkaStats> {
  * Check if the Go worker is healthy.
  */
 export async function isWorkerHealthy(): Promise<boolean> {
-  if (!WORKER_ENABLED) return false;
   try {
     const res = await workerFetch("/health");
     return res.ok;
@@ -115,14 +104,9 @@ export async function isWorkerHealthy(): Promise<boolean> {
  * Get overall worker status including all middleware service stats.
  */
 export async function getWorkerStatus(): Promise<Record<string, unknown>> {
-  if (!WORKER_ENABLED) {
-    return { mode: "disabled", services: {} };
+  const res = await workerFetch("/status");
+  if (!res.ok) {
+    throw new Error(`Worker status failed: HTTP ${res.status}`);
   }
-  try {
-    const res = await workerFetch("/status");
-    if (!res.ok) throw new Error(`HTTP ${res.status}`);
-    return await res.json() as Record<string, unknown>;
-  } catch {
-    return { mode: "unavailable", services: {} };
-  }
+  return await res.json() as Record<string, unknown>;
 }
