@@ -72,11 +72,9 @@ jobs:
           platforms: linux/amd64,linux/arm64
       
       - name: Scan image for vulnerabilities
-        uses: aquasecurity/trivy-action@0.30.0
-        with:
-          image-ref: ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}/${{ matrix.service.name }}:${{ github.sha }}
-          format: 'sarif'
-          output: 'trivy-results.sarif'
+        run: |
+          curl -sfL https://raw.githubusercontent.com/aquasecurity/trivy/main/contrib/install.sh | sh -s -- -b /usr/local/bin
+          trivy image --format sarif --output trivy-results.sarif ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}/${{ matrix.service.name }}:${{ github.sha }} || true
         continue-on-error: true
       
       - name: Upload Trivy scan results

@@ -12,12 +12,14 @@ import (
 
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/codes"
+	"google.golang.org/grpc/keepalive"
 	"google.golang.org/grpc/status"
 	"google.golang.org/protobuf/types/known/timestamppb"
 
 	"github.com/payment-switch/go-services/internal/database"
 	"github.com/payment-switch/go-services/internal/tigerbeetle"
 	pb "github.com/payment-switch/go-services/pkg/grpc/ledger"
+	grpcInterceptors "github.com/payment-switch/go-services/pkg/grpc/interceptors"
 )
 
 // server implements the LedgerService gRPC server
@@ -347,6 +349,21 @@ func main() {
 	grpcServer := grpc.NewServer(
 		grpc.MaxRecvMsgSize(10*1024*1024), // 10MB
 		grpc.MaxSendMsgSize(10*1024*1024), // 10MB
+		grpc.ChainUnaryInterceptor(
+			grpcInterceptors.ServerUnaryRecoveryInterceptor(),
+			grpcInterceptors.ServerUnaryLoggingInterceptor(),
+		),
+		grpc.KeepaliveParams(keepalive.ServerParameters{
+			MaxConnectionIdle:     5 * time.Minute,
+			MaxConnectionAge:      30 * time.Minute,
+			MaxConnectionAgeGrace: 10 * time.Second,
+			Time:                  30 * time.Second,
+			Timeout:               10 * time.Second,
+		}),
+		grpc.KeepaliveEnforcementPolicy(keepalive.EnforcementPolicy{
+			MinTime:             10 * time.Second,
+			PermitWithoutStream: true,
+		}),
 	)
 
 	pb.RegisterLedgerServiceServer(grpcServer, &server{
