@@ -71,7 +71,7 @@ async function scoreAuditCompliance(pool: Pool, orgId: number): Promise<number> 
 async function scoreDpiaCompletion(pool: Pool, orgId: number): Promise<number> {
   const { rows: [row] } = await pool.query(
     `SELECT COUNT(*)::int AS total,
-            COUNT(CASE WHEN dpia_status = 'completed' THEN 1 END)::int AS completed
+            COUNT(CASE WHEN dpia_status = 'approved' THEN 1 END)::int AS completed
      FROM dpia_assessments WHERE organization_id = $1`, [orgId]
   );
   if (row.total === 0) return 100;
