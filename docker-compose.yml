@@ -17,7 +17,7 @@ x-postgres-env: &postgres-env
   POSTGRES_HOST: postgres
   POSTGRES_PORT: "5432"
   POSTGRES_USER: ogrmm
-  POSTGRES_PASSWORD: ogrmm_secret
+  POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-ogrmm_secret}
   POSTGRES_DB: ogrmm
 
 x-kafka-env: &kafka-env
@@ -44,7 +44,7 @@ services:
     restart: unless-stopped
     environment:
       POSTGRES_USER: ogrmm
-      POSTGRES_PASSWORD: ogrmm_secret
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-ogrmm_secret}
       POSTGRES_DB: ogrmm
       POSTGRES_INITDB_ARGS: "--encoding=UTF8 --locale=en_US.utf8"
     volumes:
@@ -84,7 +84,7 @@ services:
     environment:
       DOCKER_INFLUXDB_INIT_MODE: setup
       DOCKER_INFLUXDB_INIT_USERNAME: ogrmm
-      DOCKER_INFLUXDB_INIT_PASSWORD: ogrmm_influx_secret
+      DOCKER_INFLUXDB_INIT_PASSWORD: ${INFLUXDB_PASSWORD:-ogrmm_influx_secret}
       DOCKER_INFLUXDB_INIT_ORG: apex-energy
       DOCKER_INFLUXDB_INIT_BUCKET: telemetry
       DOCKER_INFLUXDB_INIT_ADMIN_TOKEN: ogrmm-influx-token-dev
@@ -217,7 +217,7 @@ services:
       DB: postgresql
       DB_PORT: "5432"
       POSTGRES_USER: ogrmm
-      POSTGRES_PWD: ogrmm_secret
+      POSTGRES_PWD: ${POSTGRES_PASSWORD:-ogrmm_secret}
       POSTGRES_SEEDS: postgres
       DYNAMIC_CONFIG_FILE_PATH: /etc/temporal/config/dynamicconfig/development.yaml
     volumes:
@@ -782,7 +782,7 @@ services:
       OPENCTI_TOKEN: ${OPENCTI_TOKEN:-}
       GRAFANA_ONCALL_URL: ${GRAFANA_ONCALL_URL:-}
       GRAFANA_ONCALL_TOKEN: ${GRAFANA_ONCALL_TOKEN:-}
-      DATABASE_URL: postgres://ogrmm:ogrmm_secret@postgres:5432/ogrmm
+      DATABASE_URL: postgres://ogrmm:${POSTGRES_PASSWORD:-ogrmm_secret}@postgres:5432/ogrmm
     depends_on:
       - temporal
       - postgres
@@ -878,7 +878,7 @@ volumes:
       DATAPLANE_GRPC_PORT: "50052"
       KAFKA_BROKERS: ${KAFKA_BROKERS:-redpanda:9092}
       KAFKA_TOPIC_TELEMETRY: ${KAFKA_TOPIC_TELEMETRY:-og-telemetry}
-      DATABASE_URL: postgres://ogrmm:ogrmm_secret@postgres:5432/ogrmm
+      DATABASE_URL: postgres://ogrmm:${POSTGRES_PASSWORD:-ogrmm_secret}@postgres:5432/ogrmm
     ports:
       - "50052:50052"
     depends_on:
@@ -951,7 +951,7 @@ volumes:
       KC_DB: postgres
       KC_DB_URL: jdbc:postgresql://postgres:5432/ogrmm
       KC_DB_USERNAME: ogrmm
-      KC_DB_PASSWORD: ogrmm_secret
+      KC_DB_PASSWORD: ${POSTGRES_PASSWORD:-ogrmm_secret}
       KC_HOSTNAME_STRICT: "false"
       KC_HTTP_ENABLED: "true"
     depends_on:
