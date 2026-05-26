@@ -1,6 +1,6 @@
 import { TRPCError } from "@trpc/server";
 import { z } from "zod";
-import { publicProcedure, protectedProcedure, router } from "../_core/trpc";
+import { protectedProcedure, router } from "../_core/trpc";
 import nodemailer from "nodemailer";
 import { getDb, getPool } from "../db";
 import { shiftHandovers } from "../../drizzle/schema";
@@ -170,7 +170,7 @@ function buildShiftHandoverEmail(report: z.infer<typeof ShiftReportSchema>): str
 
 export const shiftHandoverRouter = router({
   // List recent handover records for history panel
-  list: publicProcedure
+  list: protectedProcedure
     .input(z.object({ limit: z.number().default(20) }).optional())
     .query(async ({ input }) => {
       const db = await getDb();
@@ -241,7 +241,7 @@ export const shiftHandoverRouter = router({
       return updated;
     }),
 
-  sendEmail: publicProcedure
+  sendEmail: protectedProcedure
     .input(ShiftReportSchema)
     .mutation(async ({ input }) => {
       // Build transporter — uses SMTP_HOST/PORT/USER/PASS env vars if set,
@@ -292,7 +292,7 @@ export const shiftHandoverRouter = router({
     }),
 
   // Generate a shift report summary from live DB state
-  generateReport: publicProcedure
+  generateReport: protectedProcedure
     .input(z.object({
       shiftType: z.enum(["DAY", "NIGHT"]),
     }))

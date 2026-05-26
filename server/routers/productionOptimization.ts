@@ -5,7 +5,7 @@ import { TRPCError } from "@trpc/server";
  */
 
 import { z } from "zod";
-import { router, publicProcedure, protectedProcedure, adminProcedure} from "../_core/trpc";
+import { router, protectedProcedure, adminProcedure } from "../_core/trpc";
 import { getDb } from "../db";
 import { declineCurveParams, productionRecords, wells } from "../../drizzle/schema";
 import { eq, desc, and, gte, lte } from "drizzle-orm";
@@ -119,7 +119,7 @@ export const productionOptimizationRouter = router({
   /**
    * List all saved decline curve parameters.
    */
-  listCurves: publicProcedure
+  listCurves: protectedProcedure
     .input(z.object({ wellId: z.string().optional(), limit: z.number().default(50) }))
     .query(async ({ input }) => {
       const db = await getDb();
@@ -200,7 +200,7 @@ export const productionOptimizationRouter = router({
   /**
    * Generate forecast points for a given set of decline curve parameters.
    */
-  forecast: publicProcedure
+  forecast: protectedProcedure
     .input(z.object({
       qi: z.number(),
       di: z.number(),
@@ -252,7 +252,7 @@ export const productionOptimizationRouter = router({
    * Choke/pump setpoint advisor based on simplified IPR/VLP intersection.
    * Uses Vogel's IPR model and a simplified VLP correlation.
    */
-  setpointAdvisor: publicProcedure
+  setpointAdvisor: protectedProcedure
     .input(z.object({
       wellId: z.string(),
       reservoirPressure: z.number().describe("psi"),
@@ -413,7 +413,7 @@ export const productionOptimizationRouter = router({
    * sufficient production history, returns wells ranked by remaining EUR.
    * Used by the multi-well comparison chart.
    */
-  portfolioEUR: publicProcedure
+  portfolioEUR: protectedProcedure
     .input(z.object({
       lookbackDays: z.number().default(90),
       economicLimit: z.number().default(5),

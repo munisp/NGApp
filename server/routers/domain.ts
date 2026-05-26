@@ -4,7 +4,7 @@
  * digital twin, ML predictions, site connectivity, actuator commands, audit log
  */
 import { z } from "zod";
-import { router, publicProcedure, protectedProcedure, adminProcedure} from "../_core/trpc";
+import { router, protectedProcedure, adminProcedure } from "../_core/trpc";
 import { getDb } from "../db";
 import {
   calibrationRecords, fpsoVessels, hpuUnits, subseaTrees,
@@ -18,7 +18,7 @@ import { nanoid } from "nanoid";
 
 // ─── CALIBRATION ──────────────────────────────────────────────────────────────
 export const calibrationRouter = router({
-  list: publicProcedure
+  list: protectedProcedure
     .input(z.object({
       wellId: z.string().optional(),
       status: z.enum(["CURRENT","DUE_SOON","OVERDUE","IN_PROGRESS","FAILED"]).optional(),
@@ -118,7 +118,7 @@ export const fpsoRouter = router({
     return db.select().from(fpsoVessels).orderBy(fpsoVessels.name);
   }),
 
-  vessel: publicProcedure
+  vessel: protectedProcedure
     .input(z.object({ vesselId: z.string() }))
     .query(async ({ input }) => {
       const db = await getDb();
@@ -169,7 +169,7 @@ export const fpsoRouter = router({
       return { success: true };
     }),
 
-  hpuUnits: publicProcedure
+  hpuUnits: protectedProcedure
     .input(z.object({ fpsoId: z.string().optional(), wellId: z.string().optional() }))
     .query(async ({ input }) => {
       const db = await getDb();
@@ -197,7 +197,7 @@ export const fpsoRouter = router({
       return { success: true };
     }),
 
-  subseaTrees: publicProcedure
+  subseaTrees: protectedProcedure
     .input(z.object({ fpsoId: z.string().optional(), wellId: z.string().optional() }))
     .query(async ({ input }) => {
       const db = await getDb();
@@ -271,7 +271,7 @@ export const connectivityRouter = router({
 
 // ─── ACTUATOR COMMANDS ────────────────────────────────────────────────────────
 export const actuatorRouter = router({
-  list: publicProcedure
+  list: protectedProcedure
     .input(z.object({ wellId: z.string().optional(), limit: z.number().default(50) }))
     .query(async ({ input }) => {
       const db = await getDb();
@@ -328,7 +328,7 @@ export const actuatorRouter = router({
 
 // ─── HSE INCIDENTS ────────────────────────────────────────────────────────────
 export const hseRouter = router({
-  list: publicProcedure
+  list: protectedProcedure
     .input(z.object({
       wellId: z.string().optional(),
       severity: z.enum(["LOW","MEDIUM","HIGH","CRITICAL"]).optional(),
@@ -465,7 +465,7 @@ export const hseRouter = router({
 
 // ─── CYBERSECURITY ────────────────────────────────────────────────────────────
 export const cybersecurityRouter = router({
-  events: publicProcedure
+  events: protectedProcedure
     .input(z.object({
       severity: z.enum(["LOW","MEDIUM","HIGH","CRITICAL"]).optional(),
       mitigated: z.boolean().optional(),
@@ -529,7 +529,7 @@ export const cybersecurityRouter = router({
 
 // ─── REGULATORY REPORTS ───────────────────────────────────────────────────────
 export const regulatoryRouter = router({
-  list: publicProcedure
+  list: protectedProcedure
     .input(z.object({
       reportType: z.enum(["API_14C","BSEE_OGOR","EPA_SUBPART_W","MOCCAE","ADNOC_HSE","KOC_ENV","NCSC_INCIDENT"]).optional(),
       status: z.enum(["DRAFT","PENDING","SUBMITTED","ACCEPTED","REJECTED"]).optional(),
@@ -688,7 +688,7 @@ export const regulatoryRouter = router({
   /**
    * List submission history — all SUBMITTED/ACCEPTED/REJECTED reports with refs.
    */
-  submissionHistory: publicProcedure
+  submissionHistory: protectedProcedure
     .input(z.object({
       limit: z.number().default(100),
       status: z.enum(["SUBMITTED", "ACCEPTED", "REJECTED"]).optional(),
@@ -922,7 +922,7 @@ export const regulatoryRouter = router({
 
 // ─── ML PREDICTIONS ───────────────────────────────────────────────────────────
 export const mlRouter = router({
-  predictions: publicProcedure
+  predictions: protectedProcedure
     .input(z.object({
       wellId: z.string().optional(),
       modelType: z.enum(["ESP_FAILURE","ANOMALY_DETECTION","PRODUCTION_FORECAST","DECLINE_CURVE"]).optional(),
@@ -940,7 +940,7 @@ export const mlRouter = router({
         .limit(input.limit);
     }),
 
-  latestByWell: publicProcedure
+  latestByWell: protectedProcedure
     .input(z.object({ wellId: z.string() }))
     .query(async ({ input }) => {
       const db = await getDb();
@@ -977,7 +977,7 @@ export const mlRouter = router({
 
 // ─── DIGITAL TWIN ─────────────────────────────────────────────────────────────
 export const digitalTwinRouter = router({
-  scenarios: publicProcedure
+  scenarios: protectedProcedure
     .input(z.object({ wellId: z.string().optional(), limit: z.number().default(20) }))
     .query(async ({ input }) => {
       const db = await getDb();
@@ -1026,7 +1026,7 @@ export const digitalTwinRouter = router({
    * Get calibrated physics parameters for a well.
    * Falls back to sensible defaults if no params exist yet.
    */
-  getPhysicsParams: publicProcedure
+  getPhysicsParams: protectedProcedure
     .input(z.object({ wellId: z.string() }))
     .query(async ({ input }) => {
       const db = await getDb();
@@ -1136,7 +1136,7 @@ export const digitalTwinRouter = router({
   /**
    * Get the latest telemetry reading for a well (for real-time DT sync).
    */
-  getLatestTelemetry: publicProcedure
+  getLatestTelemetry: protectedProcedure
     .input(z.object({ wellId: z.string() }))
     .query(async ({ input }) => {
       const db = await getDb();
@@ -1151,7 +1151,7 @@ export const digitalTwinRouter = router({
   /**
    * Get decline curve params for a well (from declineCurveParams table).
    */
-  getDeclineCurve: publicProcedure
+  getDeclineCurve: protectedProcedure
     .input(z.object({ wellId: z.string() }))
     .query(async ({ input }) => {
       const db = await getDb();
@@ -1282,7 +1282,7 @@ Return a JSON array of exactly 3 recommendations, each with these fields:
 
 // ─── PRODUCTION RECORDS ───────────────────────────────────────────────────────
 export const productionRouter = router({
-  list: publicProcedure
+  list: protectedProcedure
     .input(z.object({
       wellId: z.string().optional(),
       from: z.string().optional(),
@@ -1341,7 +1341,7 @@ export const productionRouter = router({
 
 // ─── AUDIT LOG ────────────────────────────────────────────────────────────────
 export const auditRouter = router({
-  list: publicProcedure
+  list: protectedProcedure
     .input(z.object({
       resource: z.string().optional(),
       limit: z.number().default(100),
@@ -1414,7 +1414,7 @@ export const digitalTwinExtRouter = router({
    * Get all wells from DB with their physics parameters for the Digital Twin.
    * Returns wells enriched with physics columns for IPR/VLP computation.
    */
-  listWellsWithPhysics: publicProcedure
+  listWellsWithPhysics: protectedProcedure
     .input(z.object({ limit: z.number().default(50) }))
     .query(async ({ input }) => {
       const db = await getDb();
@@ -1451,7 +1451,7 @@ export const digitalTwinExtRouter = router({
    * Run sensitivity analysis for a well parameter.
    * Returns an array of {parameter, value, rateBpd} for tornado chart.
    */
-  sensitivityAnalysis: publicProcedure
+  sensitivityAnalysis: protectedProcedure
     .input(z.object({
       wellId: z.string(),
       baseReservoirPressure: z.number(),
@@ -1552,7 +1552,7 @@ export const digitalTwinExtRouter = router({
    * Compare multiple scenarios side-by-side.
    * Returns a matrix of {scenarioId, wellId, name, predictedRate, delta, ...}.
    */
-  compareScenarios: publicProcedure
+  compareScenarios: protectedProcedure
     .input(z.object({
       wellId: z.string(),
       scenarioIds: z.array(z.number()).min(1).max(10),
@@ -1684,7 +1684,7 @@ export const digitalTwinExtRouter = router({
   /**
    * Detect anomalies in well telemetry using the Python ML service.
    */
-  detectAnomalies: publicProcedure
+  detectAnomalies: protectedProcedure
     .input(z.object({
       wellId: z.string(),
       parameter: z.string(),

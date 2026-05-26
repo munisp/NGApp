@@ -1,13 +1,13 @@
 import { TRPCError } from "@trpc/server";
 import { z } from "zod";
-import { router, publicProcedure, protectedProcedure } from "../_core/trpc";
+import { router, protectedProcedure } from "../_core/trpc";
 import { getDb } from "../db";
 import { financialEntries, allocationRecords, mojaloopSettlements } from "../../drizzle/schema";
 import { eq, desc, and, gte, lte, sql } from "drizzle-orm";
 import { nanoid } from "nanoid";
 
 export const financialsRouter = router({
-  list: publicProcedure
+  list: protectedProcedure
     .input(z.object({
       wellId: z.string().optional(),
       entryType: z.enum(["REVENUE","ROYALTY","OPEX","CAPEX","TAX","SETTLEMENT","ADJUSTMENT"]).optional(),
@@ -90,7 +90,7 @@ export const financialsRouter = router({
       return { success: true };
     }),
 
-  allocations: publicProcedure
+  allocations: protectedProcedure
     .input(z.object({ wellId: z.string().optional(), limit: z.number().default(50) }))
     .query(async ({ input }) => {
       const db = await getDb();
@@ -130,7 +130,7 @@ export const financialsRouter = router({
 
   // ─── MOJALOOP SETTLEMENTS (FRQ-011, BRQ-003) ────────────────────────────────
 
-  settlements: publicProcedure
+  settlements: protectedProcedure
     .input(z.object({
       status: z.enum(["PENDING","PROCESSING","COMPLETED","FAILED"]).optional(),
       settlementType: z.string().optional(),
@@ -208,7 +208,7 @@ export const financialsRouter = router({
       return { settlementId, mojaloopQuoteId, status: "PROCESSING" };
     }),
 
-  monthlyTrend: publicProcedure
+  monthlyTrend: protectedProcedure
     .input(z.object({ months: z.number().default(12) }))
     .query(async ({ input }) => {
       const db = await getDb();

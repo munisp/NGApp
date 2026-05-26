@@ -1,6 +1,6 @@
 import { TRPCError } from "@trpc/server";
 import { z } from "zod";
-import { router, publicProcedure, protectedProcedure, adminProcedure} from "../_core/trpc";
+import { router, protectedProcedure, adminProcedure } from "../_core/trpc";
 import { getDb } from "../db";
 import { wells, telemetryReadings, alarms, workovers, productionRecords, alarmRules } from "../../drizzle/schema";
 import { eq, desc, and, gte, sql } from "drizzle-orm";
@@ -9,7 +9,7 @@ import { withCache, cacheDel, TTL, cachePublish } from "../cache";
 
 export const wellsRouter = router({
   // ── Wells CRUD ────────────────────────────────────────────────────────────────────────
-  list: publicProcedure
+  list: protectedProcedure
     .input(z.object({
       status: z.enum(["ACTIVE","SHUT_IN","DRILLING","WORKOVER","ABANDONED"]).optional(),
       field: z.string().optional(),
@@ -41,7 +41,7 @@ export const wellsRouter = router({
       });
     }),
 
-  get: publicProcedure
+  get: protectedProcedure
     .input(z.object({ wellId: z.string() }))
     .query(async ({ input }) => {
       const db = await getDb();
@@ -50,7 +50,7 @@ export const wellsRouter = router({
       return row ?? null;
     }),
 
-  getById: publicProcedure
+  getById: protectedProcedure
     .input(z.object({ id: z.number() }))
     .query(async ({ input }) => {
       try {
@@ -136,7 +136,7 @@ export const wellsRouter = router({
     }),
 
   // ── Telemetry ───────────────────────────────────────────────────────────────
-  telemetry: publicProcedure
+  telemetry: protectedProcedure
     .input(z.object({
       wellId: z.string(),
       hours: z.number().default(24),
@@ -161,7 +161,7 @@ export const wellsRouter = router({
       }
     }),
 
-  latestTelemetry: publicProcedure
+  latestTelemetry: protectedProcedure
     .input(z.object({ wellId: z.string() }))
     .query(async ({ input }) => {
       const db = await getDb();
@@ -173,7 +173,7 @@ export const wellsRouter = router({
       return row ?? null;
     }),
 
-  ingestTelemetry: publicProcedure
+  ingestTelemetry: protectedProcedure
     .input(z.object({
       wellId: z.string(),
       tubingPressure: z.number().optional(),
@@ -279,7 +279,7 @@ export const wellsRouter = router({
     }),
 
   // ── Alarm Rules CRUD ────────────────────────────────────────────────────────
-  alarmRules: publicProcedure
+  alarmRules: protectedProcedure
     .input(z.object({ wellId: z.string().optional() }))
     .query(async ({ input }) => {
       const db = await getDb();
@@ -349,7 +349,7 @@ export const wellsRouter = router({
     }),
 
   // ── Alarms ──────────────────────────────────────────────────────────────────
-  alarms: publicProcedure
+  alarms: protectedProcedure
     .input(z.object({
       wellId: z.string().optional(),
       state: z.enum(["UNACKNOWLEDGED","ACKNOWLEDGED","CLEARED","SUPPRESSED"]).optional(),
@@ -367,7 +367,7 @@ export const wellsRouter = router({
         .limit(input.limit);
     }),
 
-  allAlarms: publicProcedure
+  allAlarms: protectedProcedure
     .input(z.object({
       state: z.enum(["UNACKNOWLEDGED","ACKNOWLEDGED","CLEARED","SUPPRESSED"]).optional(),
       limit: z.number().default(100),
@@ -429,7 +429,7 @@ export const wellsRouter = router({
     }),
 
   // ── Workovers ───────────────────────────────────────────────────────────────
-  workovers: publicProcedure
+  workovers: protectedProcedure
     .input(z.object({
       wellId: z.string().optional(),
       status: z.enum(["PLANNED","MOBILIZING","IN_PROGRESS","SUSPENDED","COMPLETED","CANCELLED"]).optional(),
@@ -453,7 +453,7 @@ export const wellsRouter = router({
       }
     }),
 
-  allWorkovers: publicProcedure
+  allWorkovers: protectedProcedure
     .input(z.object({ limit: z.number().default(100) }))
     .query(async ({ input }) => {
       const db = await getDb();
@@ -542,7 +542,7 @@ export const wellsRouter = router({
     return { active: Number(stats?.active ?? 0), critical: Number(stats?.critical ?? 0), newToday: 0 };
   }),
 
-  activeAlarms: publicProcedure
+  activeAlarms: protectedProcedure
     .input(z.object({ limit: z.number().default(5) }))
     .query(async ({ input }) => {
       try {
@@ -559,7 +559,7 @@ export const wellsRouter = router({
       }
     }),
 
-  productionTrend: publicProcedure
+  productionTrend: protectedProcedure
     .input(z.object({ days: z.number().default(14) }))
     .query(async ({ input }) => {
       const db = await getDb();
@@ -577,7 +577,7 @@ export const wellsRouter = router({
     }),
 
   // ── Per-well KPI Summary (for 6-well consolidated dashboard) ───────────────────
-  kpiSummary: publicProcedure.query(async () => {
+  kpiSummary: protectedProcedure.query(async () => {
     const db = await getDb();
     if (!db) return [];
     try {

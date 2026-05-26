@@ -1,6 +1,6 @@
 import { TRPCError } from "@trpc/server";
 import { z } from "zod";
-import { publicProcedure, router, protectedProcedure} from "../_core/trpc";
+import { protectedProcedure, router } from "../_core/trpc";
 import { nanoid } from "nanoid";
 
 // ─── Types ────────────────────────────────────────────────────────────────────
@@ -171,7 +171,7 @@ seedPermits();
 // ─── Router ───────────────────────────────────────────────────────────────────
 
 export const permitToWorkRouter = router({
-  list: publicProcedure
+  list: protectedProcedure
     .input(z.object({
       status: z.enum(["DRAFT", "PENDING_APPROVAL", "APPROVED", "ACTIVE", "SUSPENDED", "CLOSED", "CANCELLED", "ALL"]).optional().default("ALL"),
       type: z.string().optional(),
@@ -196,7 +196,7 @@ export const permitToWorkRouter = router({
       return list;
     }),
 
-  getById: publicProcedure
+  getById: protectedProcedure
     .input(z.object({ id: z.string() }))
     .query(({ input }) => {
       const permit = permits.get(input.id);
@@ -204,7 +204,7 @@ export const permitToWorkRouter = router({
       return permit;
     }),
 
-  create: publicProcedure
+  create: protectedProcedure
     .input(z.object({
       type: z.enum(["HOT_WORK", "CONFINED_SPACE", "ELECTRICAL_ISOLATION", "COLD_WORK", "EXCAVATION", "WORKING_AT_HEIGHT", "RADIATION"]),
       title: z.string().min(5),
@@ -239,7 +239,7 @@ export const permitToWorkRouter = router({
       return newPermit;
     }),
 
-  approve: publicProcedure
+  approve: protectedProcedure
     .input(z.object({
       id: z.string(),
       approvedBy: z.string(),
@@ -268,7 +268,7 @@ export const permitToWorkRouter = router({
       return permit;
     }),
 
-  activate: publicProcedure
+  activate: protectedProcedure
     .input(z.object({
       id: z.string(),
       activatedBy: z.string(),
@@ -294,7 +294,7 @@ export const permitToWorkRouter = router({
       return permit;
     }),
 
-  close: publicProcedure
+  close: protectedProcedure
     .input(z.object({
       id: z.string(),
       closedBy: z.string(),
@@ -325,7 +325,7 @@ export const permitToWorkRouter = router({
       return permit;
     }),
 
-  addComment: publicProcedure
+  addComment: protectedProcedure
     .input(z.object({
       id: z.string(),
       author: z.string(),
@@ -348,7 +348,7 @@ export const permitToWorkRouter = router({
       return comment;
     }),
 
-  saveSignature: publicProcedure
+  saveSignature: protectedProcedure
     .input(z.object({
       id: z.string(),
       role: z.enum(["issuer", "approver"]),

@@ -14,7 +14,7 @@ import { TRPCError } from "@trpc/server";
 
 import { z } from "zod";
 import { desc, eq, and } from "drizzle-orm";
-import { publicProcedure, protectedProcedure, adminProcedure, router } from "../_core/trpc";
+import { protectedProcedure, adminProcedure, router } from "../_core/trpc";
 import { getDb } from "../db";
 import {
   silAssessments,
@@ -246,7 +246,7 @@ export const silCertificationRouter = router({
   /**
    * Get a single assessment with its controls and gaps.
    */
-  getAssessment: publicProcedure
+  getAssessment: protectedProcedure
     .input(z.object({ id: z.number() }))
     .query(async ({ input }) => {
       try {

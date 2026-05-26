@@ -16,7 +16,7 @@
 import { z } from "zod";
 import { eq, desc, count, and, lt } from "drizzle-orm";
 import crypto from "crypto";
-import { protectedProcedure, publicProcedure, router, adminProcedure} from "../_core/trpc";
+import { protectedProcedure, router, adminProcedure } from "../_core/trpc";
 import { getDb } from "../db";
 import { devices, wells } from "../../drizzle/schema";
 import { TRPCError } from "@trpc/server";
@@ -174,7 +174,7 @@ export const deviceManagementRouter = router({
     }),
 
   // ── Device heartbeat (public, token-gated) ───────────────────────────────────
-  heartbeat: publicProcedure
+  heartbeat: protectedProcedure
     .input(z.object({
       deviceId: z.string(),
       token: z.string(),
