@@ -27,7 +27,7 @@ if (!stripeKey) {
   throw new Error("STRIPE_SECRET_KEY environment variable is required");
 }
 const stripe = new Stripe(stripeKey, {
-  apiVersion: "2026-03-25.dahlia",
+  apiVersion: "2026-04-22.dahlia",
 });
 
 export const paymentsRouter = router({

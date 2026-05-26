@@ -24,7 +24,7 @@ export interface SearchResult<T> {
   took: number;
 }
 
-const authHeader = OPENSEARCH_PASS
+const authHeader: Record<string, string> = OPENSEARCH_PASS
   ? { Authorization: `Basic ${Buffer.from(`${OPENSEARCH_USER}:${OPENSEARCH_PASS}`).toString("base64")}` }
   : {};
 
@@ -54,7 +54,7 @@ export async function bulkIndex(index: string, docs: OpenSearchDocument[]): Prom
   const body = lines.join("\n") + "\n";
   await fetch(`${OPENSEARCH_URL}/_bulk`, {
     method: "POST",
-    headers: { "Content-Type": "application/x-ndjson", ...authHeader },
+    headers: { "Content-Type": "application/x-ndjson", ...authHeader } as Record<string, string>,
     body,
     signal: AbortSignal.timeout(15_000),
   });
