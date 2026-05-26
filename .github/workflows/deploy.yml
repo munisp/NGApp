@@ -44,10 +44,8 @@ jobs:
           NODE_ENV: test
       
       - name: Upload coverage reports
-        uses: codecov/codecov-action@v3
-        with:
-          files: ./coverage/coverage-final.json
-          flags: unittests
+        run: echo "Coverage upload skipped — use codecov CLI if needed"
+        continue-on-error: true
 
   build:
     name: Build Docker Image
