@@ -1,0 +1,9 @@
+{
+  "query": "\nCREATE TABLE IF NOT EXISTS push_log (\n  id SERIAL PRIMARY KEY,\n  user_id VARCHAR(128) NOT NULL,\n  title VARCHAR(256) NOT NULL,\n  body TEXT,\n  tag VARCHAR(64),\n  url VARCHAR(512),\n  sent_at TIMESTAMP NOT NULL DEFAULT NOW()\n);\nCREATE INDEX IF NOT EXISTS push_log_user_idx ON push_log(user_id, sent_at DESC);\n",
+  "command": "mysql --batch --raw --column-names --default-character-set=utf8mb4 --host gateway04.us-east-1.prod.aws.tidbcloud.com --port 4000 --user 2t5rixfHAYLQmtB.033db82f385c --database KDV4VuP2aAGuW7WLgvDFQk --execute \nCREATE TABLE IF NOT EXISTS push_log (\n  id SERIAL PRIMARY KEY,\n  user_id VARCHAR(128) NOT NULL,\n  title VARCHAR(256) NOT NULL,\n  body TEXT,\n  tag VARCHAR(64),\n  url VARCHAR(512),\n  sent_at TIMESTAMP NOT NULL DEFAULT NOW()\n);\nCREATE INDEX IF NOT EXISTS push_log_user_idx ON push_log(user_id, sent_at DESC);\n",
+  "rows": [],
+  "messages": [],
+  "stdout": "",
+  "stderr": "",
+  "execution_time_ms": 1297
+}

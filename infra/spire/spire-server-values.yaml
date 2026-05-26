@@ -1,0 +1,108 @@
+# ─── SPIRE Server Helm Values ─────────────────────────────────────────────────
+# SPIFFE/SPIRE workload identity for IEC 62443 SR 1.2 (software process identification)
+# and SR 3.1 (communications integrity via mTLS).
+#
+# Install:
+#   helm repo add spiffe https://spiffe.github.io/helm-charts
+#   helm repo update
+#   helm install spire-server spiffe/spire \
+#     -n spire-system --create-namespace \
+#     -f infra/spire/spire-server-values.yaml
+#
+# Architecture:
+#   - SPIRE Server: issues SVIDs (X.509 certificates) to workloads
+#   - SPIRE Agent: runs as DaemonSet on every node, attests workloads
+#   - SPIFFE IDs: spiffe://og-rmm.internal/<namespace>/<service>
+#
+# Trust domain: og-rmm.internal
+# Certificate rotation: every 1 hour (IEC 62443 SR 3.1 requirement)
+# Attestation: Kubernetes workload attestor (pod SA + namespace + labels)
+
+global:
+  trustDomain: og-rmm.internal
+
+spire-server:
+  enabled: true
+  replicaCount: 2  # HA for production
+
+  # ── CA configuration ────────────────────────────────────────────────────────
+  ca_subject:
+    country: KW
+    organization: OG-RMM Platform
+    common_name: og-rmm.internal
+
+  # ── JWT SVID issuer ─────────────────────────────────────────────────────────
+  jwtIssuer: https://spire.og-rmm.internal
+
+  # ── Key manager: disk (production: use AWS KMS or Vault) ───────────────────
+  keyManager:
+    disk:
+      enabled: true
+      directory: /run/spire/data/keys
+
+  # ── Data store: SQLite (production: use PostgreSQL) ────────────────────────
+  dataStore:
+    sql:
+      databaseType: postgres
+      connectionString: "host=postgresql port=5432 user=spire password=${SPIRE_DB_PASSWORD} dbname=spire sslmode=require"
+
+  # ── Node attestation: Kubernetes PSAT ─────────────────────────────────────
+  nodeAttestor:
+    k8sPsat:
+      enabled: true
+      serviceAccountAllowList:
+        - "spire-system:spire-agent"
+
+  # ── SVID TTL: 1 hour (IEC 62443 SR 3.1) ──────────────────────────────────
+  svidTTL: 1h
+  caTTL: 24h
+
+  # ── Federation with external trust domains ─────────────────────────────────
+  # Uncomment to federate with KPC/ADNOC PKI for cross-domain mTLS
+  # federation:
+  #   bundleEndpoint:
+  #     address: 0.0.0.0
+  #     port: 8443
+  #   federatesWith:
+  #     - trustDomain: kpc.internal
+  #       bundleEndpointURL: https://spire.kpc.internal:8443/bundle
+  #     - trustDomain: adnoc.internal
+  #       bundleEndpointURL: https://spire.adnoc.internal:8443/bundle
+
+  resources:
+    requests:
+      cpu: "100m"
+      memory: "128Mi"
+    limits:
+      cpu: "500m"
+      memory: "512Mi"
+
+  persistence:
+    enabled: true
+    size: 1Gi
+
+spire-agent:
+  enabled: true
+
+  # ── Workload attestor: Kubernetes ──────────────────────────────────────────
+  workloadAttestors:
+    k8s:
+      enabled: true
+      skipKubeletVerification: false
+
+  # ── Socket path for workload API ───────────────────────────────────────────
+  socketPath: /run/spire/sockets/agent.sock
+
+  resources:
+    requests:
+      cpu: "50m"
+      memory: "64Mi"
+    limits:
+      cpu: "200m"
+      memory: "256Mi"
+
+spiffe-csi-driver:
+  enabled: true  # Mounts SVID certificates as volumes into pods
+
+spiffe-oidc-discovery-provider:
+  enabled: true  # Enables JWT SVID validation for service-to-service auth

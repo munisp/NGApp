@@ -1,0 +1,1 @@
+ALTER TABLE "regulatory_reports" ADD COLUMN "submission_ref" varchar(128);

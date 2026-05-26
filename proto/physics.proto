@@ -1,0 +1,98 @@
+syntax = "proto3";
+package og.physics.v1;
+option go_package = "github.com/og-rmm/platform/proto/physics";
+
+// ─── Nodal Analysis (IPR + VLP intersection) ────────────────────────────────
+
+message NodalRequest {
+  string well_id            = 1;
+  double reservoir_pressure = 2;  // PSI
+  double q_max              = 3;  // BPD (AOF)
+  double skin_factor        = 4;  // dimensionless
+  double esp_frequency_hz   = 5;  // Hz
+  double wellhead_pressure  = 6;  // PSI
+  double tvd_ft             = 7;  // ft
+  double fluid_gradient     = 8;  // psi/ft
+  double water_cut          = 9;  // fraction 0-1
+  double gor_scf_per_bbl    = 10; // scf/bbl
+  int32  points             = 11; // curve resolution (default 50)
+}
+
+message CurvePoint {
+  double q   = 1;  // BPD
+  double pwf = 2;  // PSI
+}
+
+message OperatingPoint {
+  double q   = 1;  // BPD
+  double pwf = 2;  // PSI
+}
+
+message NodalResponse {
+  repeated CurvePoint ipr_curve     = 1;
+  repeated CurvePoint vlp_curve     = 2;
+  OperatingPoint      operating_point = 3;
+  double              delta_q_bpd   = 4;  // vs baseline
+  double              efficiency    = 5;  // 0-1
+  string              model_version = 6;
+}
+
+// ─── Arps Decline Curve ──────────────────────────────────────────────────────
+
+message DeclineRequest {
+  string well_id   = 1;
+  double qi        = 2;  // initial rate BPD
+  double di        = 3;  // initial decline rate (fraction/month)
+  double b         = 4;  // Arps b-factor (0=exponential, 0-1=hyperbolic, 1=harmonic)
+  int32  months    = 5;  // forecast horizon
+}
+
+message DeclinePoint {
+  int32  month      = 1;
+  double rate_bpd   = 2;
+  double cumulative_mbbl = 3;
+}
+
+message DeclineResponse {
+  repeated DeclinePoint points     = 1;
+  double                eur_mbbl   = 2;  // estimated ultimate recovery
+  double                eur_12mo   = 3;  // 12-month EUR
+  double                eur_36mo   = 4;  // 36-month EUR
+  string                model_version = 5;
+}
+
+// ─── Sensitivity / Tornado Analysis ─────────────────────────────────────────
+
+message SensitivityRequest {
+  string well_id              = 1;
+  double base_q_bpd           = 2;
+  double reservoir_pressure   = 3;
+  double q_max                = 4;
+  double skin_factor          = 5;
+  double esp_frequency_hz     = 6;
+  double fluid_gradient       = 7;
+  double tvd_ft               = 8;
+  double wellhead_pressure    = 9;
+  double water_cut            = 10;
+  double variation_pct        = 11; // default 15%
+}
+
+message SensitivityBar {
+  string label     = 1;
+  double low_delta = 2;  // BPD delta at low end
+  double high_delta = 3; // BPD delta at high end
+  double abs_range = 4;  // |high - low|
+}
+
+message SensitivityResponse {
+  repeated SensitivityBar bars    = 1;
+  string                  model_version = 2;
+}
+
+// ─── Service ─────────────────────────────────────────────────────────────────
+
+service PhysicsEngine {
+  rpc ComputeNodal      (NodalRequest)       returns (NodalResponse);
+  rpc ComputeDecline    (DeclineRequest)     returns (DeclineResponse);
+  rpc ComputeSensitivity(SensitivityRequest) returns (SensitivityResponse);
+}

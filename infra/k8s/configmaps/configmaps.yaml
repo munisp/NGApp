@@ -1,0 +1,24 @@
+---
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: protocol-adapter-config
+  namespace: og-rmm
+data:
+  mqtt_broker_url: "tcp://mosquitto:1883"
+  platform_api_url: "http://og-rmm-app:3000/api/trpc"
+  modbus_host: "rtus.og-rmm.svc.cluster.local"
+  poll_interval_sec: "30"
+  batch_size: "100"
+  mqtt_topic_prefix: "spBv1.0"
+---
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: og-rmm-app-config
+  namespace: og-rmm
+data:
+  NODE_ENV: "production"
+  PHYSICS_ENGINE_URL: "http://physics-engine:8080"
+  ML_SERVICE_URL: "http://ml-service:8000"
+  PROTOCOL_ADAPTER_URL: "http://protocol-adapter:8090"

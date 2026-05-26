@@ -1,0 +1,9 @@
+{
+  "query": "CREATE TABLE IF NOT EXISTS push_log (\n  id INT AUTO_INCREMENT PRIMARY KEY,\n  user_id TEXT,\n  title TEXT NOT NULL,\n  body TEXT NOT NULL,\n  tag TEXT,\n  sent_at TIMESTAMP DEFAULT NOW() NOT NULL,\n  well_id TEXT,\n  alarm_id TEXT,\n  channel VARCHAR(32)\n);",
+  "command": "mysql --batch --raw --column-names --default-character-set=utf8mb4 --host gateway04.us-east-1.prod.aws.tidbcloud.com --port 4000 --user 2t5rixfHAYLQmtB.033db82f385c --database KDV4VuP2aAGuW7WLgvDFQk --execute CREATE TABLE IF NOT EXISTS push_log (\n  id INT AUTO_INCREMENT PRIMARY KEY,\n  user_id TEXT,\n  title TEXT NOT NULL,\n  body TEXT NOT NULL,\n  tag TEXT,\n  sent_at TIMESTAMP DEFAULT NOW() NOT NULL,\n  well_id TEXT,\n  alarm_id TEXT,\n  channel VARCHAR(32)\n);",
+  "rows": [],
+  "messages": [],
+  "stdout": "",
+  "stderr": "",
+  "execution_time_ms": 434
+}

@@ -1,0 +1,106 @@
+# KubeCost Helm Values — Oil & Gas Platform Cloud Cost Management
+# Spec: Cross-cutting concern — FinOps for multi-cloud K8s deployment
+# Chart: cost-analyzer/cost-analyzer >= 2.3.0
+
+global:
+  prometheus:
+    enabled: true
+    fqdn: http://prometheus:9090
+
+  grafana:
+    enabled: true
+    proxy: false
+    domainName: grafana:3000
+
+  podAnnotations:
+    "spiffe.io/spiffeid": "spiffe://og-rmm.cluster.local/ns/kubecost/sa/kubecost"
+
+kubecostToken: ""  # Set via secret: KUBECOST_TOKEN
+
+# Cost model settings
+kubecostModel:
+  image: gcr.io/kubecost1/cost-model:prod-2.3.0
+  resources:
+    requests:
+      cpu: 200m
+      memory: 256Mi
+    limits:
+      cpu: 800m
+      memory: 1Gi
+
+  # Data retention
+  etlDailyStoreDurationDays: 365
+  etlHourlyStoreDurationHours: 168  # 7 days
+  etlWeeklyStoreDurationWeeks: 52
+
+  # Multi-cloud pricing
+  cloudCost:
+    enabled: true
+    refreshRateHours: 6
+    runWindowDays: 3
+
+  # Custom pricing for on-prem / bare metal nodes
+  customPricesEnabled: true
+  defaultModelPricing:
+    CPU: "0.031611"
+    spotCPU: "0.006655"
+    RAM: "0.004237"
+    spotRAM: "0.000892"
+    GPU: "0.95"
+    storage: "0.00005479452"
+    zoneNetworkEgress: "0.01"
+    regionNetworkEgress: "0.01"
+    internetNetworkEgress: "0.12"
+
+# Cost allocation by OG namespace/label
+kubecostProductConfigs:
+  clusterName: og-rmm-production
+  currencyCode: USD
+  azureBillingRegion: US
+  labelMappingVars:
+    namespace_external_label: og_namespace
+    controller_external_label: og_service
+    product_external_label: og_product
+    team_external_label: og_team
+    environment_external_label: og_environment
+    department_external_label: og_department
+
+  # Alert thresholds
+  alerts:
+    - type: budget
+      threshold: 10000  # $10k/month budget alert
+      window: month
+      aggregation: namespace
+      filter: og-rmm
+    - type: efficiency
+      threshold: 0.4  # Alert if efficiency drops below 40%
+      window: 7d
+      aggregation: cluster
+
+# Savings recommendations
+savings:
+  enabled: true
+  requestSizing:
+    enabled: true
+    targetCPUUtilization: 0.65
+    targetRAMUtilization: 0.65
+
+# RBAC
+serviceAccount:
+  create: true
+  name: kubecost
+  annotations:
+    "spiffe.io/spiffeid": "spiffe://og-rmm.cluster.local/ns/kubecost/sa/kubecost"
+
+# Ingress
+ingress:
+  enabled: true
+  className: nginx
+  annotations:
+    nginx.ingress.kubernetes.io/auth-type: basic
+    nginx.ingress.kubernetes.io/auth-secret: kubecost-auth
+  hosts:
+    - host: kubecost.og-rmm.internal
+      paths:
+        - path: /
+          pathType: Prefix

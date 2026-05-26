@@ -1,0 +1,181 @@
+# ─── UAE Sovereign Cloud Profile ─────────────────────────────────────────────
+# Compliant with:
+#   - UAE NESA Information Assurance Standards (IAS-188)
+#   - ADNOC Process Control Specification (ADNOC-PROC-CTRL-001)
+#   - UAE TRA Cloud Computing Regulatory Framework
+#   - UAE Cybersecurity Council Executive Directive
+#   - IEC 62443 SL-2 (OT Security)
+#   - IEC 61511 SIL-2/3 (Functional Safety — offshore SIL-3)
+#   - ISO 27001:2022
+#
+# Deployment target: UAE Sovereign Cloud
+#   Approved providers: G42 Cloud (ADQ), Etisalat Cloud, du Cloud
+#   ADNOC-approved: G42 Cloud (Abu Dhabi) — preferred
+#
+# Usage:
+#   helm install og-rmm ./og-rmm-platform \
+#     -f profiles/uae/values.yaml \
+#     --namespace og-rmm-uae \
+#     --create-namespace
+
+global:
+  region: "uae"
+  # UAE-approved container registry (G42 Cloud / ADNOC private registry)
+  imageRegistry: "registry.g42cloud.ae"
+  imagePullPolicy: Always
+  dataResidency:
+    enabled: true
+    country: "AE"
+    # Encryption keys in UAE — G42 Cloud KMS (Abu Dhabi)
+    encryptionKeyRegion: "ae-abudhabi-1"
+    dataEgressBlocked: true
+    # UAE TRA requirement: data must not leave UAE borders
+    geoFencing: true
+  tls:
+    enabled: true
+    certManager: true
+    # UAE TRA-approved CA
+    issuerName: "uae-tra-pki-issuer"
+    minVersion: "TLSv1.3"
+    # Post-quantum TLS (CRYSTALS-Kyber hybrid) — ME-06
+    postQuantumHybrid:
+      enabled: false  # Enable when CRYSTALS-Kyber support is deployed
+      algorithm: "X25519Kyber768"
+  networkPolicies:
+    enabled: true
+    egressWhitelist:
+      - "10.0.0.0/8"
+      - "172.16.0.0/12"
+      - "192.168.0.0/16"
+      # G42 Cloud internal ranges
+      - "100.64.0.0/10"
+  podSecurityStandards:
+    level: "restricted"
+  ncscClassification:
+    enabled: true
+    defaultLevel: "confidential"
+
+# ─── API Gateway — UAE-specific settings ──────────────────────────────────────
+apiGateway:
+  replicaCount: 3
+  env:
+    JWT_EXPIRY: "4h"
+    CORS_ORIGINS: "https://og-rmm.adnoc.ae"
+    # ADNOC Active Directory federation
+    KEYCLOAK_REALM: "adnoc-realm"
+    KEYCLOAK_URL: "https://sso.adnoc.ae/auth"
+    DEFAULT_LOCALE: "ar-AE"
+    TIMEZONE: "Asia/Dubai"
+    # ADNOC vendor portal integration (ME-11)
+    ADNOC_VENDOR_PORTAL_URL: "https://vendor.adnoc.ae/api/v1"
+    ADNOC_VENDOR_PORTAL_API_KEY: ""  # Set via sealed secret
+  ingress:
+    hosts:
+      - host: "og-rmm.adnoc.ae"
+        paths:
+          - path: /
+            pathType: Prefix
+    annotations:
+      nginx.ingress.kubernetes.io/ssl-redirect: "true"
+      # ADNOC WAF (F5 BIG-IP)
+      nginx.ingress.kubernetes.io/configuration-snippet: |
+        proxy_set_header X-ADNOC-Security-Zone "OT-DMZ";
+        proxy_set_header X-ADNOC-Classification "CONFIDENTIAL";
+
+# ─── Financial Ledger — UAE AED currency ──────────────────────────────────────
+financialLedger:
+  env:
+    DEFAULT_CURRENCY: "AED"
+    ROYALTY_RATE_PCT: "12.5"  # ADNOC standard royalty rate
+    # ADNOC SAP integration
+    ADNOC_SAP_ENDPOINT: "https://sap.adnoc.ae/api/v1"
+    # UAE VAT (5%) compliance
+    VAT_RATE_PCT: "5"
+    VAT_REGISTRATION: ""  # Set via sealed secret
+
+# ─── PostgreSQL — UAE data residency ──────────────────────────────────────────
+postgresql:
+  primary:
+    persistence:
+      storageClass: "g42-encrypted-ssd-ae"
+    extendedConfiguration: |
+      ssl = on
+      ssl_min_protocol_version = 'TLSv1.3'
+      log_connections = on
+      log_disconnections = on
+      log_duration = on
+      log_statement = 'ddl'
+      row_security = on
+      # ADNOC audit requirement: log all DML
+      log_statement = 'all'
+  backup:
+    enabled: true
+    cronjob:
+      schedule: "0 1 * * *"  # 01:00 GST daily
+      destination: "s3://og-rmm-backup-ae/postgresql"
+
+# ─── MinIO — UAE in-country storage ───────────────────────────────────────────
+minio:
+  topologySpreadConstraints:
+    - maxSkew: 1
+      topologyKey: "topology.kubernetes.io/zone"
+      whenUnsatisfiable: DoNotSchedule
+  env:
+    # G42 Cloud KMS integration
+    MINIO_KMS_KES_ENDPOINT: "https://kes.g42cloud.ae:7373"
+    MINIO_KMS_KES_CERT_FILE: "/etc/kes/client.crt"
+    MINIO_KMS_KES_KEY_FILE: "/etc/kes/client.key"
+
+# ─── ADNOC Process Control Specification compliance ───────────────────────────
+adnocProcessControl:
+  enabled: true
+  specVersion: "ADNOC-PROC-CTRL-001-Rev3"
+  # ADNOC-required historian tags
+  historianTags:
+    enabled: true
+    namingConvention: "ADNOC"  # <FACILITY>-<UNIT>-<INSTRUMENT>-<SUFFIX>
+  # ADNOC alarm management (ISA-18.2 mandatory)
+  alarmManagement:
+    maxAlarmRate: 10  # alarms/operator/10min per ADNOC standard
+    standingAlarmLimit: 5
+    chattingAlarmThreshold: 3  # per 10 minutes
+  # ADNOC data retention
+  dataRetention:
+    rawTelemetry: "3y"
+    aggregated1h: "15y"
+    aggregated1d: "30y"
+    alarms: "10y"
+    financials: "10y"
+    audit: "10y"
+
+# ─── Locale and calendar ──────────────────────────────────────────────────────
+locale:
+  defaultLanguage: "ar"
+  supportedLanguages: ["ar", "en"]
+  timezone: "Asia/Dubai"
+  hijriCalendar:
+    enabled: true
+    displayFormat: "dd/MM/yyyy (iDD/iMM/iYYYY)"
+  # UAE working week: Monday–Friday
+  workingWeek:
+    start: 1  # Monday
+    end: 5    # Friday
+    weekendDays: [6, 0]  # Saturday, Sunday
+
+# ─── ADNOC-specific monitoring ────────────────────────────────────────────────
+monitoring:
+  alertmanager:
+    receivers:
+      - name: "adnoc-ioc"
+        webhook_configs:
+          - url: "https://ioc.adnoc.ae/webhooks/og-rmm"
+            send_resolved: true
+      - name: "adnoc-security-ops"
+        webhook_configs:
+          - url: "https://soc.adnoc.ae/webhooks/og-rmm"
+            send_resolved: true
+  alertLanguage: "ar"
+  # ADNOC Integrated Operations Centre integration
+  iocIntegration:
+    enabled: true
+    endpoint: "https://ioc.adnoc.ae/api/v1"

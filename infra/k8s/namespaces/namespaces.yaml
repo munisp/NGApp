@@ -1,0 +1,63 @@
+# OG-RMM Platform — Kubernetes Namespace Manifests
+# Spec: IEC 62443 §23.1 — Namespace isolation for security zones
+# Apply: kubectl apply -f infra/k8s/namespaces/namespaces.yaml
+---
+apiVersion: v1
+kind: Namespace
+metadata:
+  name: og-rmm
+  labels:
+    app.kubernetes.io/part-of: og-rmm-platform
+    og-rmm/security-zone: application
+    pod-security.kubernetes.io/enforce: restricted
+    pod-security.kubernetes.io/enforce-version: latest
+---
+apiVersion: v1
+kind: Namespace
+metadata:
+  name: og-rmm-data
+  labels:
+    app.kubernetes.io/part-of: og-rmm-platform
+    og-rmm/security-zone: data
+    pod-security.kubernetes.io/enforce: baseline
+    pod-security.kubernetes.io/enforce-version: latest
+---
+apiVersion: v1
+kind: Namespace
+metadata:
+  name: og-rmm-edge
+  labels:
+    app.kubernetes.io/part-of: og-rmm-platform
+    og-rmm/security-zone: edge
+    pod-security.kubernetes.io/enforce: baseline
+    pod-security.kubernetes.io/enforce-version: latest
+---
+apiVersion: v1
+kind: Namespace
+metadata:
+  name: og-rmm-security
+  labels:
+    app.kubernetes.io/part-of: og-rmm-platform
+    og-rmm/security-zone: security-ops
+    pod-security.kubernetes.io/enforce: restricted
+    pod-security.kubernetes.io/enforce-version: latest
+---
+apiVersion: v1
+kind: Namespace
+metadata:
+  name: og-rmm-observability
+  labels:
+    app.kubernetes.io/part-of: og-rmm-platform
+    og-rmm/security-zone: observability
+    pod-security.kubernetes.io/enforce: baseline
+    pod-security.kubernetes.io/enforce-version: latest
+---
+apiVersion: v1
+kind: Namespace
+metadata:
+  name: og-rmm-workflow
+  labels:
+    app.kubernetes.io/part-of: og-rmm-platform
+    og-rmm/security-zone: workflow
+    pod-security.kubernetes.io/enforce: restricted
+    pod-security.kubernetes.io/enforce-version: latest

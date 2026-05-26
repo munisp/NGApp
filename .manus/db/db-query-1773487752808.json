@@ -1,0 +1,9 @@
+{
+  "query": "CREATE TABLE IF NOT EXISTS incident_triage (\n  id SERIAL PRIMARY KEY,\n  event_id VARCHAR(32) NOT NULL UNIQUE,\n  workflow_id VARCHAR(128),\n  status VARCHAR(32) NOT NULL DEFAULT 'PENDING',\n  opencti_score INTEGER DEFAULT 0,\n  tlp_classification VARCHAR(16) DEFAULT 'TLP:WHITE',\n  final_severity VARCHAR(16),\n  node_isolated BOOLEAN DEFAULT false,\n  network_policy_id VARCHAR(128),\n  alert_group_id VARCHAR(128),\n  recommended_action TEXT,\n  node_readmitted_at TIMESTAMP,\n  node_readmitted_by VARCHAR(128),\n  completed_at TIMESTAMP,\n  created_at TIMESTAMP NOT NULL DEFAULT NOW(),\n  updated_at TIMESTAMP NOT NULL DEFAULT NOW()\n);",
+  "command": "mysql --batch --raw --column-names --default-character-set=utf8mb4 --host gateway04.us-east-1.prod.aws.tidbcloud.com --port 4000 --user 2t5rixfHAYLQmtB.033db82f385c --database KDV4VuP2aAGuW7WLgvDFQk --execute CREATE TABLE IF NOT EXISTS incident_triage (\n  id SERIAL PRIMARY KEY,\n  event_id VARCHAR(32) NOT NULL UNIQUE,\n  workflow_id VARCHAR(128),\n  status VARCHAR(32) NOT NULL DEFAULT 'PENDING',\n  opencti_score INTEGER DEFAULT 0,\n  tlp_classification VARCHAR(16) DEFAULT 'TLP:WHITE',\n  final_severity VARCHAR(16),\n  node_isolated BOOLEAN DEFAULT false,\n  network_policy_id VARCHAR(128),\n  alert_group_id VARCHAR(128),\n  recommended_action TEXT,\n  node_readmitted_at TIMESTAMP,\n  node_readmitted_by VARCHAR(128),\n  completed_at TIMESTAMP,\n  created_at TIMESTAMP NOT NULL DEFAULT NOW(),\n  updated_at TIMESTAMP NOT NULL DEFAULT NOW()\n);",
+  "rows": [],
+  "messages": [],
+  "stdout": "",
+  "stderr": "",
+  "execution_time_ms": 1221
+}

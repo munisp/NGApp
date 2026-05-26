@@ -1,0 +1,377 @@
+version: "3.9"
+
+# OG-RMM Platform — Full Middleware Stack
+# Services: Kafka, Zookeeper, Redis, Keycloak, Permify, Temporal, TigerBeetle,
+#           MinIO, Apache Spark + Delta Lake, OpenLEADR VTN, APISIX, Dapr
+#
+# Usage:
+#   docker compose -f docker-compose.middleware.yml up -d
+#   docker compose -f docker-compose.middleware.yml down -v
+
+networks:
+  og-rmm-net:
+    driver: bridge
+
+volumes:
+  zookeeper-data:
+  kafka-data:
+  redis-data:
+  keycloak-data:
+  permify-data:
+  temporal-data:
+  tigerbeetle-data:
+  minio-data:
+  apisix-data:
+
+# ─────────────────────────────────────────────
+# 1. ZOOKEEPER (Kafka dependency)
+# ─────────────────────────────────────────────
+services:
+  zookeeper:
+    image: confluentinc/cp-zookeeper:7.6.0
+    container_name: og-zookeeper
+    environment:
+      ZOOKEEPER_CLIENT_PORT: 2181
+      ZOOKEEPER_TICK_TIME: 2000
+    volumes:
+      - zookeeper-data:/var/lib/zookeeper/data
+    networks:
+      - og-rmm-net
+    healthcheck:
+      test: ["CMD", "nc", "-z", "localhost", "2181"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+# ─────────────────────────────────────────────
+# 2. KAFKA (Event streaming backbone)
+# ─────────────────────────────────────────────
+  kafka:
+    image: confluentinc/cp-kafka:7.6.0
+    container_name: og-kafka
+    depends_on:
+      zookeeper:
+        condition: service_healthy
+    ports:
+      - "9092:9092"
+      - "9093:9093"
+    environment:
+      KAFKA_BROKER_ID: 1
+      KAFKA_ZOOKEEPER_CONNECT: zookeeper:2181
+      KAFKA_LISTENER_SECURITY_PROTOCOL_MAP: PLAINTEXT:PLAINTEXT,PLAINTEXT_HOST:PLAINTEXT
+      KAFKA_ADVERTISED_LISTENERS: PLAINTEXT://kafka:29092,PLAINTEXT_HOST://localhost:9092
+      KAFKA_OFFSETS_TOPIC_REPLICATION_FACTOR: 1
+      KAFKA_GROUP_INITIAL_REBALANCE_DELAY_MS: 0
+      KAFKA_AUTO_CREATE_TOPICS_ENABLE: "true"
+      KAFKA_LOG_RETENTION_HOURS: 168
+    volumes:
+      - kafka-data:/var/lib/kafka/data
+    networks:
+      - og-rmm-net
+    healthcheck:
+      test: ["CMD", "kafka-broker-api-versions", "--bootstrap-server", "localhost:9092"]
+      interval: 15s
+      timeout: 10s
+      retries: 5
+
+# ─────────────────────────────────────────────
+# 3. KAFKA UI (Topic management dashboard)
+# ─────────────────────────────────────────────
+  kafka-ui:
+    image: provectuslabs/kafka-ui:latest
+    container_name: og-kafka-ui
+    depends_on:
+      kafka:
+        condition: service_healthy
+    ports:
+      - "8080:8080"
+    environment:
+      KAFKA_CLUSTERS_0_NAME: og-rmm
+      KAFKA_CLUSTERS_0_BOOTSTRAPSERVERS: kafka:29092
+    networks:
+      - og-rmm-net
+
+# ─────────────────────────────────────────────
+# 4. REDIS (Cache + pub/sub + Dapr state store)
+# ─────────────────────────────────────────────
+  redis:
+    image: redis:7.2-alpine
+    container_name: og-redis
+    ports:
+      - "6379:6379"
+    command: redis-server --appendonly yes --maxmemory 512mb --maxmemory-policy allkeys-lru
+    volumes:
+      - redis-data:/data
+    networks:
+      - og-rmm-net
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 5s
+      timeout: 3s
+      retries: 5
+
+# ─────────────────────────────────────────────
+# 5. KEYCLOAK (Identity and SSO)
+# ─────────────────────────────────────────────
+  keycloak:
+    image: quay.io/keycloak/keycloak:24.0
+    container_name: og-keycloak
+    ports:
+      - "8180:8080"
+    environment:
+      KEYCLOAK_ADMIN: admin
+      KEYCLOAK_ADMIN_PASSWORD: og_admin_2026
+      KC_DB: dev-mem
+      KC_HOSTNAME_STRICT: "false"
+      KC_HTTP_ENABLED: "true"
+    command: start-dev --import-realm
+    volumes:
+      - ./middleware/config/keycloak:/opt/keycloak/data/import
+    networks:
+      - og-rmm-net
+    healthcheck:
+      test: ["CMD-SHELL", "curl -f http://localhost:8080/health/ready || exit 1"]
+      interval: 30s
+      timeout: 10s
+      retries: 10
+      start_period: 60s
+
+# ─────────────────────────────────────────────
+# 6. PERMIFY (Fine-grained authorization)
+# ─────────────────────────────────────────────
+  permify:
+    image: ghcr.io/permify/permify:latest
+    container_name: og-permify
+    ports:
+      - "3476:3476"
+      - "3478:3478"
+    command: serve
+    environment:
+      PERMIFY_DATABASE_ENGINE: memory
+      PERMIFY_SERVER_PORT: 3476
+      PERMIFY_GRPC_PORT: 3478
+    networks:
+      - og-rmm-net
+    healthcheck:
+      test: ["CMD-SHELL", "curl -f http://localhost:3476/healthz || exit 1"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+# ─────────────────────────────────────────────
+# 7. TEMPORAL (Workflow orchestration)
+# ─────────────────────────────────────────────
+  temporal:
+    image: temporalio/auto-setup:1.24
+    container_name: og-temporal
+    ports:
+      - "7233:7233"
+    environment:
+      - DB=sqlite
+      - TEMPORAL_ADDRESS=temporal:7233
+      - DYNAMIC_CONFIG_FILE_PATH=/etc/temporal/config/dynamicconfig.yaml
+    volumes:
+      - temporal-data:/etc/db
+      - ./middleware/config/temporal:/etc/temporal/config
+    networks:
+      - og-rmm-net
+    healthcheck:
+      test: ["CMD", "tctl", "--address", "temporal:7233", "cluster", "health"]
+      interval: 15s
+      timeout: 10s
+      retries: 10
+      start_period: 30s
+
+  temporal-ui:
+    image: temporalio/ui:2.26
+    container_name: og-temporal-ui
+    depends_on:
+      - temporal
+    ports:
+      - "8088:8080"
+    environment:
+      TEMPORAL_ADDRESS: temporal:7233
+      TEMPORAL_CORS_ORIGINS: "http://localhost:3000"
+    networks:
+      - og-rmm-net
+
+# ─────────────────────────────────────────────
+# 8. TIGERBEETLE (Financial-grade ledger)
+# ─────────────────────────────────────────────
+  tigerbeetle:
+    image: ghcr.io/tigerbeetle/tigerbeetle:0.16.11
+    container_name: og-tigerbeetle
+    ports:
+      - "3000:3000"
+    command: >
+      sh -c "
+        if [ ! -f /data/0_0.tigerbeetle ]; then
+          ./tigerbeetle format --cluster=0 --replica=0 --replica-count=1 /data/0_0.tigerbeetle;
+        fi &&
+        ./tigerbeetle start --addresses=0.0.0.0:3000 /data/0_0.tigerbeetle
+      "
+    volumes:
+      - tigerbeetle-data:/data
+    networks:
+      - og-rmm-net
+
+# ─────────────────────────────────────────────
+# 9. MINIO (S3-compatible object storage for Delta Lake)
+# ─────────────────────────────────────────────
+  minio:
+    image: minio/minio:latest
+    container_name: og-minio
+    ports:
+      - "9000:9000"
+      - "9001:9001"
+    environment:
+      MINIO_ROOT_USER: ogrmm_minio
+      MINIO_ROOT_PASSWORD: ogrmm_minio_secret_2026
+    command: server /data --console-address ":9001"
+    volumes:
+      - minio-data:/data
+    networks:
+      - og-rmm-net
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:9000/minio/health/live"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+# ─────────────────────────────────────────────
+# 10. APACHE SPARK (Delta Lake compute engine)
+# ─────────────────────────────────────────────
+  spark-master:
+    image: bitnami/spark:3.5
+    container_name: og-spark-master
+    ports:
+      - "8181:8080"
+      - "7077:7077"
+    environment:
+      SPARK_MODE: master
+      SPARK_MASTER_HOST: spark-master
+      AWS_ACCESS_KEY_ID: ogrmm_minio
+      AWS_SECRET_ACCESS_KEY: ogrmm_minio_secret_2026
+    networks:
+      - og-rmm-net
+
+  spark-worker:
+    image: bitnami/spark:3.5
+    container_name: og-spark-worker
+    depends_on:
+      - spark-master
+    environment:
+      SPARK_MODE: worker
+      SPARK_MASTER_URL: spark://spark-master:7077
+      SPARK_WORKER_MEMORY: 2G
+      SPARK_WORKER_CORES: 2
+      AWS_ACCESS_KEY_ID: ogrmm_minio
+      AWS_SECRET_ACCESS_KEY: ogrmm_minio_secret_2026
+    networks:
+      - og-rmm-net
+
+# ─────────────────────────────────────────────
+# 11. OPENLEADR VTN (Demand response server)
+# ─────────────────────────────────────────────
+  openleadr-vtn:
+    image: openleadr/openleadr-vtn:latest
+    container_name: og-openleadr-vtn
+    ports:
+      - "3001:3001"
+    environment:
+      DATABASE_URL: postgresql://ogrmm:ogrmm_secure_2026@host.docker.internal:5432/og_rmm
+      VTN_URL: http://openleadr-vtn:3001
+      AUTH_ENABLED: "false"
+    networks:
+      - og-rmm-net
+    extra_hosts:
+      - "host.docker.internal:host-gateway"
+
+# ─────────────────────────────────────────────
+# 12. APISIX (API Gateway)
+# ─────────────────────────────────────────────
+  apisix:
+    image: apache/apisix:3.9.0-debian
+    container_name: og-apisix
+    ports:
+      - "9080:9080"
+      - "9443:9443"
+      - "9180:9180"
+    volumes:
+      - ./middleware/config/apisix/config.yaml:/usr/local/apisix/conf/config.yaml
+      - apisix-data:/usr/local/apisix/logs
+    networks:
+      - og-rmm-net
+    depends_on:
+      - apisix-etcd
+
+  apisix-etcd:
+    image: bitnami/etcd:3.5
+    container_name: og-apisix-etcd
+    environment:
+      ALLOW_NONE_AUTHENTICATION: "yes"
+      ETCD_ADVERTISE_CLIENT_URLS: http://apisix-etcd:2379
+    networks:
+      - og-rmm-net
+
+  apisix-dashboard:
+    image: apache/apisix-dashboard:3.0.1-alpine
+    container_name: og-apisix-dashboard
+    ports:
+      - "9082:9000"
+    volumes:
+      - ./middleware/config/apisix/dashboard.yaml:/usr/local/apisix-dashboard/conf/conf.yaml
+    networks:
+      - og-rmm-net
+    depends_on:
+      - apisix-etcd
+
+# ─────────────────────────────────────────────
+# 13. RTDIP QUERY API (Python FastAPI)
+# ─────────────────────────────────────────────
+  rtdip-api:
+    build:
+      context: ./middleware/python
+      dockerfile: Dockerfile.rtdip
+    container_name: og-rtdip-api
+    ports:
+      - "8000:8000"
+    environment:
+      MINIO_ENDPOINT: minio:9000
+      MINIO_ACCESS_KEY: ogrmm_minio
+      MINIO_SECRET_KEY: ogrmm_minio_secret_2026
+      SPARK_MASTER: spark://spark-master:7077
+      DELTA_TABLE_PATH: s3a://og-rmm-lakehouse/pcdm
+    depends_on:
+      - minio
+      - spark-master
+    networks:
+      - og-rmm-net
+
+# ─────────────────────────────────────────────
+# 14. GO MIDDLEWARE WORKER
+# ─────────────────────────────────────────────
+  go-worker:
+    build:
+      context: ./middleware/go
+      dockerfile: Dockerfile
+    container_name: og-go-worker
+    environment:
+      KAFKA_BROKERS: kafka:29092
+      REDIS_URL: redis:6379
+      TEMPORAL_HOST: temporal:7233
+      TIGERBEETLE_ADDRESS: tigerbeetle:3000
+      PERMIFY_URL: http://permify:3476
+      PERMIFY_GRPC: permify:3478
+      OG_RMM_API_URL: http://host.docker.internal:3000
+    depends_on:
+      kafka:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+      temporal:
+        condition: service_healthy
+    networks:
+      - og-rmm-net
+    extra_hosts:
+      - "host.docker.internal:host-gateway"

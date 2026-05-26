@@ -1,0 +1,88 @@
+{
+  "__inputs": [],
+  "__requires": [
+    { "type": "grafana", "id": "grafana", "name": "Grafana", "version": "10.0.0" },
+    { "type": "datasource", "id": "prometheus", "name": "Prometheus", "version": "1.0.0" }
+  ],
+  "annotations": { "list": [] },
+  "description": "Go telemetry ingestion service metrics — throughput, latency, Kafka lag, InfluxDB write rate",
+  "editable": true,
+  "graphTooltip": 1,
+  "id": null,
+  "links": [],
+  "panels": [
+    {
+      "datasource": { "type": "prometheus", "uid": "og-rmm-prometheus" },
+      "fieldConfig": { "defaults": { "unit": "reqps", "color": { "mode": "thresholds" }, "thresholds": { "mode": "absolute", "steps": [{ "color": "red", "value": null }, { "color": "yellow", "value": 50000 }, { "color": "green", "value": 200000 }] } } },
+      "gridPos": { "h": 4, "w": 6, "x": 0, "y": 0 },
+      "id": 1,
+      "options": { "colorMode": "background", "graphMode": "area", "reduceOptions": { "calcs": ["lastNotNull"] } },
+      "title": "Telemetry Ingest Rate (pts/sec)",
+      "type": "stat",
+      "targets": [{ "datasource": { "type": "prometheus", "uid": "og-rmm-prometheus" }, "expr": "rate(og_telemetry_readings_total[1m])", "legendFormat": "ingest rate", "refId": "A" }]
+    },
+    {
+      "datasource": { "type": "prometheus", "uid": "og-rmm-prometheus" },
+      "fieldConfig": { "defaults": { "unit": "ms", "color": { "mode": "thresholds" }, "thresholds": { "mode": "absolute", "steps": [{ "color": "green", "value": null }, { "color": "yellow", "value": 50 }, { "color": "red", "value": 200 }] } } },
+      "gridPos": { "h": 4, "w": 6, "x": 6, "y": 0 },
+      "id": 2,
+      "options": { "colorMode": "background", "graphMode": "none", "reduceOptions": { "calcs": ["mean"] } },
+      "title": "P99 Ingest Latency (ms)",
+      "type": "stat",
+      "targets": [{ "datasource": { "type": "prometheus", "uid": "og-rmm-prometheus" }, "expr": "histogram_quantile(0.99, rate(og_telemetry_ingest_duration_seconds_bucket[5m])) * 1000", "legendFormat": "p99", "refId": "A" }]
+    },
+    {
+      "datasource": { "type": "prometheus", "uid": "og-rmm-prometheus" },
+      "fieldConfig": { "defaults": { "unit": "short", "color": { "mode": "thresholds" }, "thresholds": { "mode": "absolute", "steps": [{ "color": "green", "value": null }, { "color": "yellow", "value": 1000 }, { "color": "red", "value": 10000 }] } } },
+      "gridPos": { "h": 4, "w": 6, "x": 12, "y": 0 },
+      "id": 3,
+      "options": { "colorMode": "background", "graphMode": "none", "reduceOptions": { "calcs": ["lastNotNull"] } },
+      "title": "Kafka Consumer Lag",
+      "type": "stat",
+      "targets": [{ "datasource": { "type": "prometheus", "uid": "og-rmm-prometheus" }, "expr": "sum(kafka_consumer_group_lag{group=\"og-telemetry-consumer\"})", "legendFormat": "consumer lag", "refId": "A" }]
+    },
+    {
+      "datasource": { "type": "prometheus", "uid": "og-rmm-prometheus" },
+      "fieldConfig": { "defaults": { "unit": "short" } },
+      "gridPos": { "h": 4, "w": 6, "x": 18, "y": 0 },
+      "id": 4,
+      "options": { "colorMode": "background", "graphMode": "none", "reduceOptions": { "calcs": ["lastNotNull"] } },
+      "title": "InfluxDB Write Errors (5m)",
+      "type": "stat",
+      "targets": [{ "datasource": { "type": "prometheus", "uid": "og-rmm-prometheus" }, "expr": "increase(og_influxdb_write_errors_total[5m])", "legendFormat": "write errors", "refId": "A" }]
+    },
+    {
+      "datasource": { "type": "prometheus", "uid": "og-rmm-prometheus" },
+      "fieldConfig": { "defaults": { "unit": "reqps", "color": { "mode": "palette-classic" } } },
+      "gridPos": { "h": 8, "w": 12, "x": 0, "y": 4 },
+      "id": 5,
+      "options": { "tooltip": { "mode": "multi" } },
+      "title": "Telemetry Throughput by Sensor Type",
+      "type": "timeseries",
+      "targets": [{ "datasource": { "type": "prometheus", "uid": "og-rmm-prometheus" }, "expr": "rate(og_telemetry_readings_total[1m])", "legendFormat": "{{sensor_type}}", "refId": "A" }]
+    },
+    {
+      "datasource": { "type": "prometheus", "uid": "og-rmm-prometheus" },
+      "fieldConfig": { "defaults": { "unit": "ms", "color": { "mode": "palette-classic" } } },
+      "gridPos": { "h": 8, "w": 12, "x": 12, "y": 4 },
+      "id": 6,
+      "options": { "tooltip": { "mode": "multi" } },
+      "title": "End-to-End Ingest Latency Percentiles",
+      "type": "timeseries",
+      "targets": [
+        { "datasource": { "type": "prometheus", "uid": "og-rmm-prometheus" }, "expr": "histogram_quantile(0.50, rate(og_telemetry_ingest_duration_seconds_bucket[5m])) * 1000", "legendFormat": "p50", "refId": "A" },
+        { "datasource": { "type": "prometheus", "uid": "og-rmm-prometheus" }, "expr": "histogram_quantile(0.95, rate(og_telemetry_ingest_duration_seconds_bucket[5m])) * 1000", "legendFormat": "p95", "refId": "B" },
+        { "datasource": { "type": "prometheus", "uid": "og-rmm-prometheus" }, "expr": "histogram_quantile(0.99, rate(og_telemetry_ingest_duration_seconds_bucket[5m])) * 1000", "legendFormat": "p99", "refId": "C" }
+      ]
+    }
+  ],
+  "refresh": "10s",
+  "schemaVersion": 38,
+  "tags": ["og-rmm", "telemetry", "kafka", "influxdb"],
+  "time": { "from": "now-1h", "to": "now" },
+  "timepicker": {},
+  "timezone": "browser",
+  "title": "Telemetry Throughput",
+  "uid": "og-rmm-telemetry-throughput",
+  "version": 1
+}

@@ -1,0 +1,319 @@
+# ─── OG RMM Platform — Default Helm Values ───────────────────────────────────
+# Override with profile-specific values:
+#   helm install og-rmm . -f profiles/kuwait/values.yaml
+#   helm install og-rmm . -f profiles/uae/values.yaml
+
+global:
+  # Deployment region profile: "us", "kuwait", "uae", "onprem"
+  region: "us"
+  # Image registry — override for in-country sovereign registries
+  imageRegistry: "registry.og-rmm.internal"
+  imagePullPolicy: IfNotPresent
+  # Data residency enforcement
+  dataResidency:
+    enabled: false
+    country: ""  # "KW" or "AE"
+    encryptionKeyRegion: ""
+  # TLS configuration
+  tls:
+    enabled: true
+    certManager: true
+    issuerName: "letsencrypt-prod"
+  # Network policy enforcement
+  networkPolicies:
+    enabled: true
+  # Pod Security Standards
+  podSecurityStandards:
+    level: "restricted"  # baseline | restricted
+
+# ─── API Gateway (Go) ─────────────────────────────────────────────────────────
+apiGateway:
+  enabled: true
+  replicaCount: 2
+  image:
+    repository: og-rmm/api-gateway
+    tag: "1.0.0"
+  resources:
+    requests:
+      cpu: "250m"
+      memory: "256Mi"
+    limits:
+      cpu: "1000m"
+      memory: "512Mi"
+  service:
+    type: ClusterIP
+    port: 8080
+  ingress:
+    enabled: true
+    className: "nginx"
+    annotations:
+      nginx.ingress.kubernetes.io/ssl-redirect: "true"
+      nginx.ingress.kubernetes.io/rate-limit: "100"
+    hosts:
+      - host: "api.og-rmm.internal"
+        paths:
+          - path: /
+            pathType: Prefix
+  autoscaling:
+    enabled: true
+    minReplicas: 2
+    maxReplicas: 10
+    targetCPUUtilizationPercentage: 70
+  env:
+    JWT_EXPIRY: "8h"
+    RATE_LIMIT_RPS: "100"
+    CORS_ORIGINS: "https://og-rmm.internal"
+
+# ─── Well Management Service (Go) ─────────────────────────────────────────────
+wellManagement:
+  enabled: true
+  replicaCount: 2
+  image:
+    repository: og-rmm/well-management
+    tag: "1.0.0"
+  resources:
+    requests:
+      cpu: "200m"
+      memory: "256Mi"
+    limits:
+      cpu: "500m"
+      memory: "512Mi"
+
+# ─── Telemetry Ingestion Service (Go) ─────────────────────────────────────────
+telemetryIngestion:
+  enabled: true
+  replicaCount: 3
+  image:
+    repository: og-rmm/telemetry-ingestion
+    tag: "1.0.0"
+  resources:
+    requests:
+      cpu: "500m"
+      memory: "512Mi"
+    limits:
+      cpu: "2000m"
+      memory: "2Gi"
+  # High-throughput configuration
+  env:
+    BATCH_SIZE: "1000"
+    FLUSH_INTERVAL_MS: "500"
+    KAFKA_PARTITIONS: "12"
+
+# ─── Alarm Manager (Go + Temporal) ────────────────────────────────────────────
+alarmManager:
+  enabled: true
+  replicaCount: 2
+  image:
+    repository: og-rmm/alarm-manager
+    tag: "1.0.0"
+  resources:
+    requests:
+      cpu: "250m"
+      memory: "256Mi"
+    limits:
+      cpu: "1000m"
+      memory: "512Mi"
+
+# ─── Financial Ledger (Go + TigerBeetle) ──────────────────────────────────────
+financialLedger:
+  enabled: true
+  replicaCount: 1  # TigerBeetle is single-node; HA via TigerBeetle cluster
+  image:
+    repository: og-rmm/financial-ledger
+    tag: "1.0.0"
+  resources:
+    requests:
+      cpu: "250m"
+      memory: "512Mi"
+    limits:
+      cpu: "1000m"
+      memory: "1Gi"
+
+# ─── Edge Agent (Rust) ────────────────────────────────────────────────────────
+edgeAgent:
+  enabled: true
+  # DaemonSet for field deployment — one per edge node
+  deploymentType: DaemonSet
+  image:
+    repository: og-rmm/edge-agent
+    tag: "1.0.0"
+  resources:
+    requests:
+      cpu: "100m"
+      memory: "128Mi"
+    limits:
+      cpu: "500m"
+      memory: "256Mi"
+  env:
+    MQTT_BROKER: "mqtt://mosquitto:1883"
+    OPCUA_DISCOVERY_INTERVAL_SEC: "30"
+    DNP3_POLL_INTERVAL_SEC: "5"
+    MODBUS_POLL_INTERVAL_SEC: "1"
+
+# ─── Stream Processor (Rust) ──────────────────────────────────────────────────
+streamProcessor:
+  enabled: true
+  replicaCount: 3
+  image:
+    repository: og-rmm/stream-processor
+    tag: "1.0.0"
+  resources:
+    requests:
+      cpu: "500m"
+      memory: "512Mi"
+    limits:
+      cpu: "2000m"
+      memory: "2Gi"
+
+# ─── Analytics Service (Python) ───────────────────────────────────────────────
+analyticsService:
+  enabled: true
+  replicaCount: 2
+  image:
+    repository: og-rmm/analytics-service
+    tag: "1.0.0"
+  resources:
+    requests:
+      cpu: "500m"
+      memory: "1Gi"
+    limits:
+      cpu: "2000m"
+      memory: "4Gi"
+
+# ─── ML Pipeline (Python) ─────────────────────────────────────────────────────
+mlPipeline:
+  enabled: true
+  replicaCount: 1
+  image:
+    repository: og-rmm/ml-pipeline
+    tag: "1.0.0"
+  resources:
+    requests:
+      cpu: "1000m"
+      memory: "2Gi"
+    limits:
+      cpu: "4000m"
+      memory: "8Gi"
+  # GPU support for inference
+  gpu:
+    enabled: false
+    count: 0
+
+# ─── Frontend (TypeScript/React) ──────────────────────────────────────────────
+frontend:
+  enabled: true
+  replicaCount: 2
+  image:
+    repository: og-rmm/frontend
+    tag: "1.0.0"
+  resources:
+    requests:
+      cpu: "100m"
+      memory: "128Mi"
+    limits:
+      cpu: "500m"
+      memory: "256Mi"
+  service:
+    type: ClusterIP
+    port: 3000
+  ingress:
+    enabled: true
+    className: "nginx"
+    hosts:
+      - host: "og-rmm.internal"
+        paths:
+          - path: /
+            pathType: Prefix
+
+# ─── PostgreSQL ───────────────────────────────────────────────────────────────
+postgresql:
+  enabled: true
+  auth:
+    postgresPassword: ""  # Set via sealed secret
+    database: "og_rmm"
+  primary:
+    persistence:
+      enabled: true
+      size: "500Gi"
+      storageClass: "fast-ssd"
+    resources:
+      requests:
+        cpu: "1000m"
+        memory: "4Gi"
+      limits:
+        cpu: "4000m"
+        memory: "16Gi"
+  readReplicas:
+    replicaCount: 2
+    persistence:
+      enabled: true
+      size: "500Gi"
+  # TimescaleDB extension
+  initdbScripts:
+    init.sql: |
+      CREATE EXTENSION IF NOT EXISTS timescaledb CASCADE;
+      CREATE EXTENSION IF NOT EXISTS postgis;
+      CREATE EXTENSION IF NOT EXISTS pg_stat_statements;
+
+# ─── Redis ────────────────────────────────────────────────────────────────────
+redis:
+  enabled: true
+  architecture: replication
+  auth:
+    enabled: true
+    password: ""  # Set via sealed secret
+  master:
+    persistence:
+      enabled: true
+      size: "20Gi"
+
+# ─── Redpanda (Kafka-compatible) ──────────────────────────────────────────────
+redpanda:
+  enabled: true
+  statefulset:
+    replicas: 3
+  storage:
+    persistentVolume:
+      enabled: true
+      size: "100Gi"
+      storageClass: "fast-ssd"
+  resources:
+    requests:
+      cpu: "1000m"
+      memory: "2Gi"
+    limits:
+      cpu: "4000m"
+      memory: "8Gi"
+
+# ─── InfluxDB ─────────────────────────────────────────────────────────────────
+influxdb:
+  enabled: true
+  persistence:
+    enabled: true
+    size: "200Gi"
+    storageClass: "fast-ssd"
+  resources:
+    requests:
+      cpu: "500m"
+      memory: "2Gi"
+    limits:
+      cpu: "2000m"
+      memory: "8Gi"
+
+# ─── MinIO (S3-compatible object storage) ─────────────────────────────────────
+minio:
+  enabled: true
+  mode: distributed
+  replicas: 4
+  persistence:
+    enabled: true
+    size: "1Ti"
+    storageClass: "standard"
+
+# ─── Temporal (Workflow Engine) ───────────────────────────────────────────────
+temporal:
+  enabled: true
+  server:
+    replicaCount: 2
+  persistence:
+    defaultStore: postgres

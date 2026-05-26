@@ -1,0 +1,29 @@
+{
+  "cookies": [
+    {
+      "name": "app_session_id",
+      "value": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJvcGVuSWQiOiJlMmUtYWRtaW4tdXNlciIsImFwcElkIjoiS0RWNFZ1UDJhQUd1VzdXTGd2REZRayIsIm5hbWUiOiJFMkUgQWRtaW4iLCJleHAiOjE4MDUwNDE4NDZ9.9dy__0ZGpUtndqULZOz_cQVPnw8KXbSqwrpw1WWToA4",
+      "domain": "localhost",
+      "path": "/",
+      "expires": 1805041846,
+      "httpOnly": true,
+      "secure": false,
+      "sameSite": "Lax"
+    }
+  ],
+  "origins": [
+    {
+      "origin": "http://localhost:3000",
+      "localStorage": [
+        {
+          "name": "i18nextLng",
+          "value": "en"
+        },
+        {
+          "name": "manus-runtime-user-info",
+          "value": "{\"id\":34,\"openId\":\"e2e-admin-user\",\"name\":\"E2E Admin\",\"email\":\"e2e-admin@ogrmm.test\",\"phone\":null,\"loginMethod\":\"e2e\",\"role\":\"admin\",\"createdAt\":\"2026-03-14T10:52:59.567Z\",\"updatedAt\":\"2026-03-14T10:52:59.567Z\",\"lastSignedIn\":\"2026-03-14T16:30:32.171Z\"}"
+        }
+      ]
+    }
+  ]
+}

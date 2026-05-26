@@ -1,0 +1,92 @@
+---
+# ArgoCD ApplicationSet — OG-RMM Platform Multi-Region
+# Spec: IEC 62443 §23.2 — Sovereign cloud deployment for Kuwait (KPC/KOC) and UAE (ADNOC)
+#
+# The ApplicationSet controller generates one ArgoCD Application per region,
+# each pointing to the region-specific Helm values overlay.
+#
+# Regions:
+#   - production-us:     US cloud (development/staging)
+#   - production-kuwait: Kuwait sovereign cloud (KPC/KOC) — data residency enforced
+#   - production-uae:    UAE sovereign cloud (ADNOC) — data residency enforced
+#
+# Apply:
+#   kubectl apply -f infra/argocd/platform-appset.yaml
+apiVersion: argoproj.io/v1alpha1
+kind: ApplicationSet
+metadata:
+  name: og-rmm-platform-regions
+  namespace: argocd
+  labels:
+    app.kubernetes.io/name: og-rmm-platform
+    app.kubernetes.io/managed-by: argocd
+spec:
+  generators:
+    - list:
+        elements:
+          - region: production-us
+            cluster: https://kubernetes.default.svc
+            namespace: platform-core
+            valuesFile: values.yaml
+            dataResidency: "false"
+            country: ""
+
+          - region: production-kuwait
+            cluster: https://kpc-k8s.og-rmm.internal:6443
+            namespace: platform-core
+            valuesFile: ../../profiles/kuwait/values.yaml
+            dataResidency: "true"
+            country: KW
+
+          - region: production-uae
+            cluster: https://adnoc-k8s.og-rmm.internal:6443
+            namespace: platform-core
+            valuesFile: ../../profiles/uae/values.yaml
+            dataResidency: "true"
+            country: AE
+
+  template:
+    metadata:
+      name: "og-rmm-{{region}}"
+      namespace: argocd
+      labels:
+        app.kubernetes.io/name: og-rmm-platform
+        og-rmm/region: "{{region}}"
+        og-rmm/compliance: iec-62443
+      annotations:
+        notifications.argoproj.io/subscribe.on-sync-failed.slack: platform-alerts
+        notifications.argoproj.io/subscribe.on-health-degraded.slack: platform-alerts
+    spec:
+      project: default
+      source:
+        repoURL: https://github.com/og-rmm/og-rmm-platform.git
+        targetRevision: HEAD
+        path: infra/helm/og-rmm-platform
+        helm:
+          releaseName: og-rmm
+          valueFiles:
+            - values.yaml
+            - "{{valuesFile}}"
+          parameters:
+            - name: global.dataResidency.enabled
+              value: "{{dataResidency}}"
+            - name: global.dataResidency.country
+              value: "{{country}}"
+      destination:
+        server: "{{cluster}}"
+        namespace: "{{namespace}}"
+      syncPolicy:
+        automated:
+          prune: true
+          selfHeal: true
+          allowEmpty: false
+        syncOptions:
+          - CreateNamespace=true
+          - ServerSideApply=true
+        retry:
+          limit: 5
+          backoff:
+            duration: 5s
+            factor: 2
+            maxDuration: 3m
+      revisionHistoryLimit: 5

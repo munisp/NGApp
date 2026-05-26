@@ -1,0 +1,19 @@
+[package]
+name = "stream-processor"
+version = "0.1.0"
+edition = "2021"
+description = "Real-time anomaly detection and rolling statistics on the telemetry stream."
+
+[[bin]]
+name = "stream-processor"
+path = "src/main.rs"
+
+[dependencies]
+tokio = { version = "1", features = ["full"] }
+serde = { version = "1", features = ["derive"] }
+serde_json = "1"
+tracing = "0.1"
+tracing-subscriber = { version = "0.3", features = ["env-filter", "json"] }
+chrono = { version = "0.4", features = ["serde"] }
+anyhow = "1"
+thiserror = "1"
