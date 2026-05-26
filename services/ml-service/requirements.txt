@@ -13,4 +13,5 @@ scikit-learn==1.6.0
 # Arps curve fitting (optional — uses grid search if absent)
 scipy==1.14.1
 # PINN Surrogate — Physics-Informed Neural Network
-torch==2.5.1+cpu --extra-index-url https://download.pytorch.org/whl/cpu
+--extra-index-url https://download.pytorch.org/whl/cpu
+torch==2.5.1+cpu
