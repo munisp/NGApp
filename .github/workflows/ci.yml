@@ -195,6 +195,13 @@ jobs:
       - name: Push database schema
         run: pnpm db:push
 
+      - name: Start application server
+        run: |
+          pnpm dev &
+          for i in $(seq 1 30); do curl -sf http://localhost:3000 > /dev/null && break || sleep 2; done
+        env:
+          PORT: "3000"
+
       - name: Run Playwright E2E tests
         run: npx playwright test
         env:
