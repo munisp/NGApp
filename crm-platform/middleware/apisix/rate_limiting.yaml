@@ -1,0 +1,164 @@
+# APISIX Rate Limiting and Health Check Configuration
+# Apply via APISIX Admin API or declarative config
+
+# Global rate limiting plugin
+plugins:
+  limit-req:
+    rate: 100
+    burst: 50
+    rejected_code: 429
+    key_type: "var"
+    key: "remote_addr"
+
+  limit-count:
+    count: 1000
+    time_window: 3600
+    rejected_code: 429
+    policy: "redis-cluster"
+    redis_cluster_nodes:
+      - "redis-master.banking-crm.svc:6379"
+    redis_password: "${REDIS_PASSWORD}"
+    redis_cluster_name: "crm-rate-limit"
+    key_type: "var"
+    key: "consumer_name"
+
+  limit-conn:
+    conn: 200
+    burst: 50
+    default_conn_delay: 0.1
+    rejected_code: 503
+    key_type: "var"
+    key: "remote_addr"
+
+---
+# CRM API Routes with rate limiting and health checks
+routes:
+  - uri: /api/v1/customers/*
+    upstream_id: crm-customer-service
+    plugins:
+      limit-req:
+        rate: 50
+        burst: 20
+      proxy-rewrite:
+        regex_uri: ["^/api/v1/customers/(.*)", "/$1"]
+      openid-connect:
+        discovery: "http://keycloak:8080/realms/banking-crm/.well-known/openid-configuration"
+        client_id: "apisix-gateway"
+        client_secret: "${KEYCLOAK_CLIENT_SECRET}"
+        bearer_only: true
+        scope: "openid"
+
+  - uri: /api/v1/campaigns/*
+    upstream_id: crm-campaign-service
+    plugins:
+      limit-req:
+        rate: 30
+        burst: 10
+      openid-connect:
+        discovery: "http://keycloak:8080/realms/banking-crm/.well-known/openid-configuration"
+        bearer_only: true
+
+  - uri: /api/v1/payments/*
+    upstream_id: payment-service
+    plugins:
+      limit-req:
+        rate: 200
+        burst: 100
+      limit-count:
+        count: 10000
+        time_window: 3600
+
+  - uri: /api/v1/analytics/*
+    upstream_id: analytics-service
+    plugins:
+      limit-req:
+        rate: 20
+        burst: 5
+
+---
+# Upstream definitions with health checks
+upstreams:
+  - id: crm-customer-service
+    type: roundrobin
+    nodes:
+      "crm-customer-service.banking-crm.svc:8080": 1
+    checks:
+      active:
+        type: http
+        http_path: /health
+        healthy:
+          interval: 5
+          successes: 2
+        unhealthy:
+          interval: 3
+          http_failures: 3
+          tcp_failures: 3
+      passive:
+        healthy:
+          http_statuses: [200, 201, 204]
+          successes: 3
+        unhealthy:
+          http_statuses: [500, 502, 503]
+          http_failures: 3
+          tcp_failures: 3
+    timeout:
+      connect: 5
+      send: 10
+      read: 30
+
+  - id: crm-campaign-service
+    type: roundrobin
+    nodes:
+      "crm-campaign-service.banking-crm.svc:8080": 1
+    checks:
+      active:
+        type: http
+        http_path: /health
+        healthy:
+          interval: 5
+          successes: 2
+        unhealthy:
+          interval: 3
+          http_failures: 3
+    timeout:
+      connect: 5
+      send: 10
+      read: 30
+
+  - id: payment-service
+    type: roundrobin
+    nodes:
+      "payment-service.banking-crm.svc:8080": 1
+    checks:
+      active:
+        type: http
+        http_path: /health
+        healthy:
+          interval: 3
+          successes: 2
+        unhealthy:
+          interval: 2
+          http_failures: 2
+    timeout:
+      connect: 5
+      send: 10
+      read: 60
+
+  - id: analytics-service
+    type: roundrobin
+    nodes:
+      "analytics-service.banking-crm.svc:8080": 1
+    checks:
+      active:
+        type: http
+        http_path: /health
+        healthy:
+          interval: 10
+          successes: 2
+        unhealthy:
+          interval: 5
+          http_failures: 3
+    timeout:
+      connect: 5
+      send: 10
+      read: 120

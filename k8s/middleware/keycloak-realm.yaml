@@ -1,0 +1,171 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: keycloak-realm-config
+  namespace: banking-crm
+  labels:
+    app: keycloak
+    app.kubernetes.io/name: keycloak
+    app.kubernetes.io/part-of: banking-crm-integration
+data:
+  banking-crm-realm.json: |
+    {
+      "realm": "banking-crm",
+      "enabled": true,
+      "displayName": "Banking CRM Platform",
+      "loginWithEmailAllowed": true,
+      "duplicateEmailsAllowed": false,
+      "registrationAllowed": false,
+      "resetPasswordAllowed": true,
+      "verifyEmail": true,
+      "sslRequired": "external",
+      "bruteForceProtected": true,
+      "permanentLockout": false,
+      "maxFailureWaitSeconds": 900,
+      "minimumQuickLoginWaitSeconds": 60,
+      "waitIncrementSeconds": 60,
+      "quickLoginCheckMilliSeconds": 1000,
+      "maxDeltaTimeSeconds": 43200,
+      "failureFactor": 5,
+      "passwordPolicy": "length(12) and upperCase(1) and lowerCase(1) and digits(1) and specialChars(1) and notUsername() and passwordHistory(5)",
+      "accessTokenLifespan": 900,
+      "accessTokenLifespanForImplicitFlow": 900,
+      "ssoSessionIdleTimeout": 1800,
+      "ssoSessionMaxLifespan": 36000,
+      "offlineSessionIdleTimeout": 2592000,
+      "accessCodeLifespan": 60,
+      "accessCodeLifespanLogin": 1800,
+      "actionTokenGeneratedByAdminLifespan": 43200,
+      "actionTokenGeneratedByUserLifespan": 300,
+      "roles": {
+        "realm": [
+          { "name": "platform-admin", "description": "Full platform administration" },
+          { "name": "tenant-admin", "description": "Tenant administration" },
+          { "name": "tenant-manager", "description": "Tenant management (campaigns, reports)" },
+          { "name": "tenant-agent", "description": "Agent banking operations" },
+          { "name": "tenant-viewer", "description": "Read-only access" },
+          { "name": "api-consumer", "description": "API access for external systems" }
+        ]
+      },
+      "clients": [
+        {
+          "clientId": "crm-backend",
+          "name": "CRM Backend Service",
+          "enabled": true,
+          "protocol": "openid-connect",
+          "publicClient": false,
+          "bearerOnly": false,
+          "standardFlowEnabled": false,
+          "serviceAccountsEnabled": true,
+          "directAccessGrantsEnabled": true,
+          "authorizationServicesEnabled": true,
+          "attributes": {
+            "access.token.lifespan": "900"
+          }
+        },
+        {
+          "clientId": "crm-frontend",
+          "name": "CRM Frontend SPA",
+          "enabled": true,
+          "protocol": "openid-connect",
+          "publicClient": true,
+          "standardFlowEnabled": true,
+          "implicitFlowEnabled": false,
+          "directAccessGrantsEnabled": false,
+          "redirectUris": [
+            "https://crm.banking-crm.svc/*",
+            "http://localhost:3000/*"
+          ],
+          "webOrigins": [
+            "https://crm.banking-crm.svc",
+            "http://localhost:3000"
+          ],
+          "attributes": {
+            "pkce.code.challenge.method": "S256"
+          }
+        },
+        {
+          "clientId": "apisix-gateway",
+          "name": "APISIX API Gateway",
+          "enabled": true,
+          "protocol": "openid-connect",
+          "publicClient": false,
+          "bearerOnly": true,
+          "standardFlowEnabled": false,
+          "serviceAccountsEnabled": true
+        },
+        {
+          "clientId": "mobile-app",
+          "name": "CRM Mobile Application",
+          "enabled": true,
+          "protocol": "openid-connect",
+          "publicClient": true,
+          "standardFlowEnabled": true,
+          "redirectUris": ["bankingcrm://callback"],
+          "attributes": {
+            "pkce.code.challenge.method": "S256"
+          }
+        }
+      ],
+      "clientScopes": [
+        {
+          "name": "tenant",
+          "protocol": "openid-connect",
+          "protocolMappers": [
+            {
+              "name": "tenant-id-mapper",
+              "protocol": "openid-connect",
+              "protocolMapper": "oidc-usermodel-attribute-mapper",
+              "config": {
+                "user.attribute": "tenant_id",
+                "claim.name": "tenant_id",
+                "jsonType.label": "String",
+                "id.token.claim": "true",
+                "access.token.claim": "true",
+                "userinfo.token.claim": "true"
+              }
+            }
+          ]
+        },
+        {
+          "name": "permissions",
+          "protocol": "openid-connect",
+          "protocolMappers": [
+            {
+              "name": "permissions-mapper",
+              "protocol": "openid-connect",
+              "protocolMapper": "oidc-usermodel-attribute-mapper",
+              "config": {
+                "user.attribute": "permissions",
+                "claim.name": "permissions",
+                "jsonType.label": "JSON",
+                "multivalued": "true",
+                "access.token.claim": "true"
+              }
+            }
+          ]
+        }
+      ],
+      "identityProviders": [],
+      "smtpServer": {
+        "host": "smtp.sendgrid.net",
+        "port": "587",
+        "starttls": "true",
+        "auth": "true",
+        "from": "noreply@banking-crm.ng"
+      },
+      "eventsConfig": {
+        "eventsEnabled": true,
+        "eventsListeners": ["jboss-logging"],
+        "enabledEventTypes": [
+          "LOGIN", "LOGIN_ERROR", "LOGOUT",
+          "REGISTER", "REGISTER_ERROR",
+          "CODE_TO_TOKEN", "CODE_TO_TOKEN_ERROR",
+          "CLIENT_LOGIN", "CLIENT_LOGIN_ERROR",
+          "UPDATE_PASSWORD", "UPDATE_PASSWORD_ERROR",
+          "GRANT_CONSENT", "REVOKE_GRANT"
+        ],
+        "adminEventsEnabled": true,
+        "adminEventsDetailsEnabled": true
+      }
+    }

@@ -20,7 +20,8 @@ type: Opaque
 data:
   # Base64 encoded values - replace with actual values
   postgres-password: REPLACE_WITH_BASE64_ENCODED_PASSWORD  # Generate: echo -n "your-password" | base64
-  permify-secret-key: cGVybWlmeV9zZWNyZXRfa2V5XzEyMw==  # permify_secret_key_123
+  # Generate: openssl rand -base64 32 | base64
+  permify-secret-key: REPLACE_WITH_BASE64_ENCODED_SECRET
 ---
 apiVersion: v1
 kind: ConfigMap
@@ -36,9 +37,12 @@ data:
         enabled: true
         port: 3477
         cors_allowed_origins:
-          - "*"
+          - "https://crm.banking-crm.svc"
+          - "https://admin.banking-crm.svc"
         cors_allowed_headers:
-          - "*"
+          - "Authorization"
+          - "Content-Type"
+          - "X-Tenant-ID"
     logger:
       level: info
       output: stdout
@@ -46,7 +50,7 @@ data:
       method: preshared
       preshared:
         keys:
-          - "permify_secret_key_123"
+          - "${PERMIFY_SECRET_KEY}"
     database:
       engine: postgres
       uri: "postgres://permify:permify_password@permify-postgres:5432/permify?sslmode=disable"

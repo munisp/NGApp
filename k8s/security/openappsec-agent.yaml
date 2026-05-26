@@ -1,0 +1,129 @@
+apiVersion: apps/v1
+kind: DaemonSet
+metadata:
+  name: openappsec-agent
+  namespace: banking-crm
+  labels:
+    app: openappsec-agent
+    app.kubernetes.io/name: openappsec
+    app.kubernetes.io/component: waf-agent
+    app.kubernetes.io/part-of: banking-crm-integration
+spec:
+  selector:
+    matchLabels:
+      app: openappsec-agent
+  updateStrategy:
+    type: RollingUpdate
+    rollingUpdate:
+      maxUnavailable: 1
+  template:
+    metadata:
+      labels:
+        app: openappsec-agent
+      annotations:
+        prometheus.io/scrape: "true"
+        prometheus.io/port: "8181"
+    spec:
+      hostNetwork: false
+      serviceAccountName: openappsec-agent
+      containers:
+      - name: agent
+        image: ghcr.io/openappsec/agent:1.0.0
+        ports:
+        - containerPort: 8181
+          name: metrics
+        - containerPort: 30443
+          name: https-proxy
+        env:
+        - name: LEARNING_MODE
+          value: "true"
+        - name: POLICY_PATH
+          value: /etc/openappsec/policy.yaml
+        - name: LOG_LEVEL
+          value: info
+        - name: METRICS_PORT
+          value: "8181"
+        - name: NODE_NAME
+          valueFrom:
+            fieldRef:
+              fieldPath: spec.nodeName
+        resources:
+          limits:
+            cpu: "1"
+            memory: "1Gi"
+          requests:
+            cpu: "250m"
+            memory: "256Mi"
+        readinessProbe:
+          httpGet:
+            path: /health
+            port: 8181
+          initialDelaySeconds: 10
+          periodSeconds: 15
+        livenessProbe:
+          httpGet:
+            path: /health
+            port: 8181
+          initialDelaySeconds: 30
+          periodSeconds: 30
+        volumeMounts:
+        - name: policy
+          mountPath: /etc/openappsec
+        - name: geoip
+          mountPath: /var/lib/openappsec/geoip
+      volumes:
+      - name: policy
+        configMap:
+          name: openappsec-config
+      - name: geoip
+        emptyDir: {}
+---
+apiVersion: v1
+kind: ServiceAccount
+metadata:
+  name: openappsec-agent
+  namespace: banking-crm
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRole
+metadata:
+  name: openappsec-agent
+rules:
+- apiGroups: [""]
+  resources: ["pods", "services", "endpoints"]
+  verbs: ["get", "list", "watch"]
+- apiGroups: ["networking.k8s.io"]
+  resources: ["ingresses"]
+  verbs: ["get", "list", "watch"]
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRoleBinding
+metadata:
+  name: openappsec-agent
+roleRef:
+  apiGroup: rbac.authorization.k8s.io
+  kind: ClusterRole
+  name: openappsec-agent
+subjects:
+- kind: ServiceAccount
+  name: openappsec-agent
+  namespace: banking-crm
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: openappsec-agent
+  namespace: banking-crm
+  labels:
+    app: openappsec-agent
+  annotations:
+    prometheus.io/scrape: "true"
+    prometheus.io/port: "8181"
+spec:
+  type: ClusterIP
+  ports:
+  - port: 8181
+    targetPort: 8181
+    name: metrics
+  selector:
+    app: openappsec-agent
