@@ -219,7 +219,7 @@ export async function recalculateComplianceScore(orgId: number): Promise<Scoring
 
 export async function recalculateAllScores(): Promise<number> {
   const pool = getPool();
-  const { rows } = await pool.query(`SELECT id FROM organizations WHERE status = 'active'`);
+  const { rows } = await pool.query(`SELECT id FROM organizations WHERE compliance_status IS NOT NULL`);
   let count = 0;
   for (const row of rows) {
     await recalculateComplianceScore(row.id);
