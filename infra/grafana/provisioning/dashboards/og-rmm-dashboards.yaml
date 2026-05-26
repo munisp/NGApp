@@ -1,0 +1,15 @@
+# Grafana Dashboard Provisioning — Oil & Gas RMM Platform
+# Loads all JSON dashboards from the /dashboards directory automatically.
+
+apiVersion: 1
+
+providers:
+  - name: OG-RMM-Dashboards
+    orgId: 1
+    type: file
+    disableDeletion: false
+    updateIntervalSeconds: 30
+    allowUiUpdates: true
+    options:
+      path: /etc/grafana/dashboards
+      foldersFromFilesStructure: true

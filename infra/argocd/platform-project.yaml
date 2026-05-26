@@ -1,0 +1,103 @@
+---
+# ArgoCD AppProject — OG-RMM Platform
+# Defines RBAC boundaries, source repositories, and allowed resource types.
+# Spec: IEC 62443 §23.2 — GitOps access control
+apiVersion: argoproj.io/v1alpha1
+kind: AppProject
+metadata:
+  name: og-rmm
+  namespace: argocd
+  labels:
+    app.kubernetes.io/name: og-rmm-platform
+spec:
+  description: "OG-RMM Platform — Oil & Gas Remote Monitoring & Management"
+
+  # ── Allowed source repositories ────────────────────────────────────────────
+  sourceRepos:
+    - https://github.com/og-rmm/og-rmm-platform.git
+    - https://charts.bitnami.com/bitnami
+    - https://charts.redpanda.com
+    - https://helm.releases.hashicorp.com  # Vault
+    - https://spiffe.github.io/helm-charts # SPIRE
+
+  # ── Allowed destination clusters and namespaces ────────────────────────────
+  destinations:
+    - server: https://kubernetes.default.svc
+      namespace: platform-core
+    - server: https://kubernetes.default.svc
+      namespace: ot-edge
+    - server: https://kubernetes.default.svc
+      namespace: security-ops
+    - server: https://kubernetes.default.svc
+      namespace: data-pipeline
+    - server: https://kpc-k8s.og-rmm.internal:6443
+      namespace: platform-core
+    - server: https://adnoc-k8s.og-rmm.internal:6443
+      namespace: platform-core
+
+  # ── Allowed Kubernetes resource types ──────────────────────────────────────
+  clusterResourceWhitelist:
+    - group: ""
+      kind: Namespace
+    - group: rbac.authorization.k8s.io
+      kind: ClusterRole
+    - group: rbac.authorization.k8s.io
+      kind: ClusterRoleBinding
+    - group: apiextensions.k8s.io
+      kind: CustomResourceDefinition
+    - group: spire.spiffe.io
+      kind: SpiffeID
+
+  namespaceResourceWhitelist:
+    - group: ""
+      kind: "*"
+    - group: apps
+      kind: "*"
+    - group: networking.k8s.io
+      kind: "*"
+    - group: policy
+      kind: "*"
+    - group: autoscaling
+      kind: "*"
+    - group: batch
+      kind: "*"
+    - group: rbac.authorization.k8s.io
+      kind: "*"
+    - group: spire.spiffe.io
+      kind: "*"
+
+  # ── RBAC roles ─────────────────────────────────────────────────────────────
+  roles:
+    - name: platform-admin
+      description: "Full access to OG-RMM platform applications"
+      policies:
+        - p, proj:og-rmm:platform-admin, applications, *, og-rmm/*, allow
+      groups:
+        - og-rmm:platform-admins
+
+    - name: platform-readonly
+      description: "Read-only access for auditors and operators"
+      policies:
+        - p, proj:og-rmm:platform-readonly, applications, get, og-rmm/*, allow
+      groups:
+        - og-rmm:operators
+        - og-rmm:auditors
+
+    - name: security-ops
+      description: "Security team — can sync security-ops namespace only"
+      policies:
+        - p, proj:og-rmm:security-ops, applications, sync, og-rmm/og-rmm-production-us, allow
+      groups:
+        - og-rmm:security-team
+
+  # ── Sync windows ───────────────────────────────────────────────────────────
+  # Block automated syncs during peak production hours (06:00-18:00 Gulf time)
+  # Manual syncs are always allowed.
+  syncWindows:
+    - kind: deny
+      schedule: "0 3-15 * * *"  # 06:00-18:00 Gulf Standard Time (UTC+3)
+      duration: 12h
+      applications:
+        - "og-rmm-production-kuwait"
+        - "og-rmm-production-uae"
+      manualSync: true  # Manual override always permitted

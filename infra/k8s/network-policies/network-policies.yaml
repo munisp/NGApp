@@ -1,0 +1,159 @@
+# OG-RMM Platform — Kubernetes NetworkPolicy Manifests
+# Spec: IEC 62443 §21.1 SR 5.1 — Network segmentation between security zones
+# Apply: kubectl apply -f infra/k8s/network-policies/network-policies.yaml
+---
+# Default deny all ingress/egress in the application namespace
+apiVersion: networking.k8s.io/v1
+kind: NetworkPolicy
+metadata:
+  name: default-deny-all
+  namespace: og-rmm
+spec:
+  podSelector: {}
+  policyTypes:
+    - Ingress
+    - Egress
+---
+# Allow ingress to the web app from the ingress controller only
+apiVersion: networking.k8s.io/v1
+kind: NetworkPolicy
+metadata:
+  name: allow-ingress-controller
+  namespace: og-rmm
+spec:
+  podSelector:
+    matchLabels:
+      app: og-rmm-web
+  policyTypes:
+    - Ingress
+  ingress:
+    - from:
+        - namespaceSelector:
+            matchLabels:
+              kubernetes.io/metadata.name: ingress-nginx
+      ports:
+        - protocol: TCP
+          port: 3000
+---
+# Allow web app to reach the data namespace (PostgreSQL, Redis, InfluxDB)
+apiVersion: networking.k8s.io/v1
+kind: NetworkPolicy
+metadata:
+  name: allow-web-to-data
+  namespace: og-rmm
+spec:
+  podSelector:
+    matchLabels:
+      app: og-rmm-web
+  policyTypes:
+    - Egress
+  egress:
+    - to:
+        - namespaceSelector:
+            matchLabels:
+              kubernetes.io/metadata.name: og-rmm-data
+      ports:
+        - protocol: TCP
+          port: 5432   # PostgreSQL
+        - protocol: TCP
+          port: 6379   # Redis
+        - protocol: TCP
+          port: 8086   # InfluxDB
+        - protocol: TCP
+          port: 6030   # TDengine
+---
+# Allow web app to reach the workflow namespace (Temporal)
+apiVersion: networking.k8s.io/v1
+kind: NetworkPolicy
+metadata:
+  name: allow-web-to-workflow
+  namespace: og-rmm
+spec:
+  podSelector:
+    matchLabels:
+      app: og-rmm-web
+  policyTypes:
+    - Egress
+  egress:
+    - to:
+        - namespaceSelector:
+            matchLabels:
+              kubernetes.io/metadata.name: og-rmm-workflow
+      ports:
+        - protocol: TCP
+          port: 7233   # Temporal frontend
+---
+# Allow workflow namespace to reach data namespace
+apiVersion: networking.k8s.io/v1
+kind: NetworkPolicy
+metadata:
+  name: allow-workflow-to-data
+  namespace: og-rmm-workflow
+spec:
+  podSelector: {}
+  policyTypes:
+    - Egress
+  egress:
+    - to:
+        - namespaceSelector:
+            matchLabels:
+              kubernetes.io/metadata.name: og-rmm-data
+---
+# Allow edge namespace to reach data namespace (sensor data ingestion)
+apiVersion: networking.k8s.io/v1
+kind: NetworkPolicy
+metadata:
+  name: allow-edge-to-data
+  namespace: og-rmm-edge
+spec:
+  podSelector: {}
+  policyTypes:
+    - Egress
+  egress:
+    - to:
+        - namespaceSelector:
+            matchLabels:
+              kubernetes.io/metadata.name: og-rmm-data
+      ports:
+        - protocol: TCP
+          port: 9092   # Redpanda/Kafka
+        - protocol: TCP
+          port: 8086   # InfluxDB
+---
+# Allow security namespace to reach all namespaces (Wazuh needs full visibility)
+apiVersion: networking.k8s.io/v1
+kind: NetworkPolicy
+metadata:
+  name: allow-security-egress-all
+  namespace: og-rmm-security
+spec:
+  podSelector:
+    matchLabels:
+      app: wazuh-manager
+  policyTypes:
+    - Egress
+  egress:
+    - {}   # Wazuh manager needs unrestricted egress for SIEM correlation
+---
+# Allow observability namespace to scrape all namespaces (Prometheus)
+apiVersion: networking.k8s.io/v1
+kind: NetworkPolicy
+metadata:
+  name: allow-observability-scrape
+  namespace: og-rmm-observability
+spec:
+  podSelector:
+    matchLabels:
+      app: prometheus
+  policyTypes:
+    - Egress
+  egress:
+    - to:
+        - namespaceSelector: {}
+      ports:
+        - protocol: TCP
+          port: 9090
+        - protocol: TCP
+          port: 8080
+        - protocol: TCP
+          port: 8888

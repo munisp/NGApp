@@ -1,0 +1,57 @@
+syntax = "proto3";
+package og.dataplane.v1;
+option go_package = "github.com/og-rmm/platform/proto/dataplane";
+
+import "google/protobuf/timestamp.proto";
+
+// ─── Telemetry ───────────────────────────────────────────────────────────────
+
+message TelemetryReading {
+  string    well_id              = 1;
+  double    tubing_pressure_psi  = 2;
+  double    casing_pressure_psi  = 3;
+  double    flow_rate_bpd        = 4;
+  double    bhp_psi              = 5;
+  double    temperature_f        = 6;
+  double    gas_rate_mmscfd      = 7;
+  double    water_cut            = 8;
+  string    source               = 9;  // "kafka" | "mqtt" | "modbus" | "opcua"
+  google.protobuf.Timestamp ts   = 10;
+}
+
+message IngestResponse {
+  bool   accepted   = 1;
+  string reading_id = 2;
+  string error      = 3;
+}
+
+// ─── Device Heartbeat ────────────────────────────────────────────────────────
+
+message HeartbeatRequest {
+  string device_id        = 1;
+  string firmware_version = 2;
+  string ip_address       = 3;
+  map<string, string> metadata = 4;
+}
+
+message HeartbeatResponse {
+  bool   accepted   = 1;
+  string command    = 2;  // optional command to device: "reboot" | "update" | ""
+  string error      = 3;
+}
+
+// ─── Streaming Bridge (Fluvio → SSE) ────────────────────────────────────────
+
+message StreamEvent {
+  string topic   = 1;
+  bytes  payload = 2;
+  google.protobuf.Timestamp ts = 3;
+}
+
+// ─── Service ─────────────────────────────────────────────────────────────────
+
+service DataPlane {
+  rpc IngestTelemetry (TelemetryReading)  returns (IngestResponse);
+  rpc Heartbeat       (HeartbeatRequest)  returns (HeartbeatResponse);
+  rpc StreamEvents    (StreamEvent)       returns (IngestResponse);
+}

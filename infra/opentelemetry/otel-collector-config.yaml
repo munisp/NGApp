@@ -1,0 +1,179 @@
+# OpenTelemetry Collector Configuration — Oil & Gas Platform
+# Spec: NFR-003 — Distributed tracing, metrics, and logging pipeline
+# Version: otel/opentelemetry-collector-contrib:0.99.0
+
+receivers:
+  # OTLP receiver — accepts traces/metrics/logs from all platform services
+  otlp:
+    protocols:
+      grpc:
+        endpoint: 0.0.0.0:4317
+      http:
+        endpoint: 0.0.0.0:4318
+        cors:
+          allowed_origins:
+            - "https://*.manus.space"
+            - "http://localhost:*"
+
+  # Prometheus scrape — pull metrics from platform services
+  prometheus:
+    config:
+      scrape_configs:
+        - job_name: "og-rmm-api"
+          scrape_interval: 15s
+          static_configs:
+            - targets: ["og-rmm-api:9090"]
+              labels:
+                service: "og-rmm-api"
+                environment: "production"
+
+        - job_name: "og-telemetry-ingestion"
+          scrape_interval: 15s
+          static_configs:
+            - targets: ["og-rmm-telemetry:9090"]
+              labels:
+                service: "telemetry-ingestion"
+
+        - job_name: "og-financial-ledger"
+          scrape_interval: 30s
+          static_configs:
+            - targets: ["og-rmm-financial-ledger:9090"]
+              labels:
+                service: "financial-ledger"
+
+        - job_name: "og-workflow-engine"
+          scrape_interval: 30s
+          static_configs:
+            - targets: ["og-rmm-workflow-engine:9090"]
+              labels:
+                service: "workflow-engine"
+
+        - job_name: "redpanda"
+          scrape_interval: 30s
+          static_configs:
+            - targets: ["og-rmm-redpanda:9644"]
+              labels:
+                service: "redpanda"
+
+        - job_name: "temporal"
+          scrape_interval: 30s
+          static_configs:
+            - targets: ["og-rmm-temporal:8000"]
+              labels:
+                service: "temporal"
+
+  # Host metrics — CPU, memory, disk, network
+  hostmetrics:
+    collection_interval: 30s
+    scrapers:
+      cpu:
+        metrics:
+          system.cpu.utilization:
+            enabled: true
+      memory:
+      disk:
+      network:
+      filesystem:
+      load:
+      processes:
+
+  # Kafka receiver — consume telemetry events for log pipeline
+  kafka:
+    brokers: ["redpanda:9092"]
+    topic: "og-telemetry"
+    group_id: "otel-collector"
+    encoding: raw
+
+processors:
+  # Batch processor — reduce export overhead
+  batch:
+    timeout: 5s
+    send_batch_size: 1024
+    send_batch_max_size: 2048
+
+  # Memory limiter — prevent OOM
+  memory_limiter:
+    check_interval: 1s
+    limit_mib: 512
+    spike_limit_mib: 128
+
+  # Resource detection — add cloud/k8s metadata
+  resourcedetection:
+    detectors: [env, system, docker, k8snode]
+    timeout: 5s
+    override: false
+
+  # Attributes processor — add OG-specific tags
+  attributes:
+    actions:
+      - key: deployment.environment
+        value: production
+        action: upsert
+      - key: service.namespace
+        value: og-rmm
+        action: upsert
+      - key: platform.region
+        from_attribute: REGION
+        action: upsert
+
+  # Filter processor — drop low-value health check spans
+  filter:
+    traces:
+      span:
+        - 'attributes["http.route"] == "/health"'
+        - 'attributes["http.route"] == "/metrics"'
+
+exporters:
+  # Jaeger — distributed tracing backend
+  otlp/jaeger:
+    endpoint: "jaeger:4317"
+    tls:
+      insecure: true
+
+  # Prometheus remote write — push metrics to Prometheus
+  prometheusremotewrite:
+    endpoint: "http://prometheus:9090/api/v1/write"
+    tls:
+      insecure: true
+    resource_to_telemetry_conversion:
+      enabled: true
+
+  # OpenSearch — log aggregation
+  opensearch:
+    endpoints: ["https://og-opensearch:9200"]
+    index: "og-otel-logs"
+    username: "og_platform"
+    password: "${OPENSEARCH_PASSWORD}"
+    tls:
+      insecure_skip_verify: true
+
+  # Debug exporter (development only)
+  debug:
+    verbosity: basic
+
+  # Logging exporter
+  logging:
+    loglevel: info
+
+service:
+  pipelines:
+    traces:
+      receivers: [otlp]
+      processors: [memory_limiter, resourcedetection, attributes, filter, batch]
+      exporters: [otlp/jaeger, logging]
+
+    metrics:
+      receivers: [otlp, prometheus, hostmetrics]
+      processors: [memory_limiter, resourcedetection, attributes, batch]
+      exporters: [prometheusremotewrite]
+
+    logs:
+      receivers: [otlp, kafka]
+      processors: [memory_limiter, resourcedetection, attributes, batch]
+      exporters: [opensearch, logging]
+
+  telemetry:
+    logs:
+      level: info
+    metrics:
+      address: 0.0.0.0:8888

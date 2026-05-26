@@ -1,0 +1,87 @@
+{
+  "__inputs": [],
+  "__requires": [
+    { "type": "grafana", "id": "grafana", "name": "Grafana", "version": "10.0.0" },
+    { "type": "datasource", "id": "postgres", "name": "PostgreSQL", "version": "1.0.0" }
+  ],
+  "annotations": { "list": [] },
+  "description": "Financial KPIs — revenue, OPEX, lifting cost, LOE per BOE, workover spend",
+  "editable": true,
+  "graphTooltip": 1,
+  "id": null,
+  "links": [],
+  "panels": [
+    {
+      "datasource": { "type": "postgres", "uid": "og-rmm-postgres" },
+      "fieldConfig": { "defaults": { "unit": "currencyUSD", "color": { "mode": "thresholds" }, "thresholds": { "mode": "absolute", "steps": [{ "color": "red", "value": null }, { "color": "yellow", "value": 500000 }, { "color": "green", "value": 1000000 }] } } },
+      "gridPos": { "h": 4, "w": 6, "x": 0, "y": 0 },
+      "id": 1,
+      "options": { "colorMode": "background", "graphMode": "area", "reduceOptions": { "calcs": ["sum"] } },
+      "title": "Revenue MTD (USD)",
+      "type": "stat",
+      "targets": [{ "datasource": { "type": "postgres", "uid": "og-rmm-postgres" }, "rawSql": "SELECT COALESCE(SUM(amount), 0) AS value FROM ledger_entries WHERE type = 'REVENUE' AND transaction_date >= DATE_TRUNC('month', NOW())", "format": "table", "refId": "A" }]
+    },
+    {
+      "datasource": { "type": "postgres", "uid": "og-rmm-postgres" },
+      "fieldConfig": { "defaults": { "unit": "currencyUSD" } },
+      "gridPos": { "h": 4, "w": 6, "x": 6, "y": 0 },
+      "id": 2,
+      "options": { "colorMode": "background", "graphMode": "none", "reduceOptions": { "calcs": ["sum"] } },
+      "title": "OPEX MTD (USD)",
+      "type": "stat",
+      "targets": [{ "datasource": { "type": "postgres", "uid": "og-rmm-postgres" }, "rawSql": "SELECT COALESCE(SUM(amount), 0) AS value FROM ledger_entries WHERE type = 'OPEX' AND transaction_date >= DATE_TRUNC('month', NOW())", "format": "table", "refId": "A" }]
+    },
+    {
+      "datasource": { "type": "postgres", "uid": "og-rmm-postgres" },
+      "fieldConfig": { "defaults": { "unit": "currencyUSD" } },
+      "gridPos": { "h": 4, "w": 6, "x": 12, "y": 0 },
+      "id": 3,
+      "options": { "colorMode": "background", "graphMode": "none", "reduceOptions": { "calcs": ["sum"] } },
+      "title": "Workover Spend MTD (USD)",
+      "type": "stat",
+      "targets": [{ "datasource": { "type": "postgres", "uid": "og-rmm-postgres" }, "rawSql": "SELECT COALESCE(SUM(actual_cost), 0) AS value FROM workovers WHERE created_at >= DATE_TRUNC('month', NOW())", "format": "table", "refId": "A" }]
+    },
+    {
+      "datasource": { "type": "postgres", "uid": "og-rmm-postgres" },
+      "fieldConfig": { "defaults": { "unit": "currencyUSD" } },
+      "gridPos": { "h": 4, "w": 6, "x": 18, "y": 0 },
+      "id": 4,
+      "options": { "colorMode": "background", "graphMode": "none", "reduceOptions": { "calcs": ["lastNotNull"] } },
+      "title": "Lifting Cost (USD/BOE)",
+      "type": "stat",
+      "targets": [{ "datasource": { "type": "postgres", "uid": "og-rmm-postgres" }, "rawSql": "SELECT ROUND(COALESCE(SUM(le.amount) FILTER (WHERE le.type = 'OPEX') / NULLIF(SUM(pr.oil_rate_bopd) * 30, 0), 0)::numeric, 2) AS value FROM ledger_entries le CROSS JOIN (SELECT AVG(oil_rate_bopd) AS oil_rate_bopd FROM production_records WHERE recorded_at >= DATE_TRUNC('month', NOW())) pr WHERE le.transaction_date >= DATE_TRUNC('month', NOW()) AND le.type = 'OPEX'", "format": "table", "refId": "A" }]
+    },
+    {
+      "datasource": { "type": "postgres", "uid": "og-rmm-postgres" },
+      "fieldConfig": { "defaults": { "unit": "currencyUSD", "color": { "mode": "palette-classic" } } },
+      "gridPos": { "h": 8, "w": 12, "x": 0, "y": 4 },
+      "id": 5,
+      "options": { "tooltip": { "mode": "multi" } },
+      "title": "Revenue vs OPEX (Monthly)",
+      "type": "timeseries",
+      "targets": [
+        { "datasource": { "type": "postgres", "uid": "og-rmm-postgres" }, "rawSql": "SELECT DATE_TRUNC('month', transaction_date) AS time, 'Revenue' AS metric, SUM(amount) AS value FROM ledger_entries WHERE type = 'REVENUE' AND transaction_date >= NOW() - INTERVAL '12 months' GROUP BY time ORDER BY time", "format": "time_series", "refId": "A" },
+        { "datasource": { "type": "postgres", "uid": "og-rmm-postgres" }, "rawSql": "SELECT DATE_TRUNC('month', transaction_date) AS time, 'OPEX' AS metric, SUM(amount) AS value FROM ledger_entries WHERE type = 'OPEX' AND transaction_date >= NOW() - INTERVAL '12 months' GROUP BY time ORDER BY time", "format": "time_series", "refId": "B" }
+      ]
+    },
+    {
+      "datasource": { "type": "postgres", "uid": "og-rmm-postgres" },
+      "fieldConfig": { "defaults": { "unit": "currencyUSD" } },
+      "gridPos": { "h": 8, "w": 12, "x": 12, "y": 4 },
+      "id": 6,
+      "options": { "pieType": "donut", "tooltip": { "mode": "single" } },
+      "title": "OPEX Breakdown by Category",
+      "type": "piechart",
+      "targets": [{ "datasource": { "type": "postgres", "uid": "og-rmm-postgres" }, "rawSql": "SELECT category AS metric, SUM(amount) AS value FROM ledger_entries WHERE type = 'OPEX' AND transaction_date >= DATE_TRUNC('month', NOW()) GROUP BY category ORDER BY value DESC", "format": "table", "refId": "A" }]
+    }
+  ],
+  "refresh": "5m",
+  "schemaVersion": 38,
+  "tags": ["og-rmm", "financial", "opex", "revenue"],
+  "time": { "from": "now-30d", "to": "now" },
+  "timepicker": {},
+  "timezone": "browser",
+  "title": "Financial KPIs",
+  "uid": "og-rmm-financial-kpis",
+  "version": 1
+}

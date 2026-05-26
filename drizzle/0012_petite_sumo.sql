@@ -1,0 +1,22 @@
+CREATE TABLE "mojaloop_settlements" (
+	"id" serial PRIMARY KEY NOT NULL,
+	"settlement_id" varchar(32) NOT NULL,
+	"counterparty" varchar(256) NOT NULL,
+	"counterparty_id_type" varchar(32) DEFAULT 'ACCOUNT_ID' NOT NULL,
+	"counterparty_id_value" varchar(128) NOT NULL,
+	"amount_usd" varchar(32) NOT NULL,
+	"currency" varchar(8) DEFAULT 'USD' NOT NULL,
+	"settlement_type" varchar(32) NOT NULL,
+	"well_id" varchar(32),
+	"status" varchar(32) DEFAULT 'PENDING' NOT NULL,
+	"mojaloop_transfer_id" varchar(128),
+	"mojaloop_quote_id" varchar(128),
+	"error_code" varchar(16),
+	"error_message" text,
+	"initiated_by" varchar(128),
+	"completed_at" timestamp,
+	"value_date" timestamp,
+	"created_at" timestamp DEFAULT now() NOT NULL,
+	"updated_at" timestamp DEFAULT now() NOT NULL,
+	CONSTRAINT "mojaloop_settlements_settlement_id_unique" UNIQUE("settlement_id")
+);

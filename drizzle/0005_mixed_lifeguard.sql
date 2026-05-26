@@ -1,0 +1,1 @@
+ALTER TYPE "public"."permit_status" ADD VALUE 'EXPIRED';

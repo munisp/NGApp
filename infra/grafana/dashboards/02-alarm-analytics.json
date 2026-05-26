@@ -1,0 +1,94 @@
+{
+  "__inputs": [],
+  "__requires": [
+    { "type": "grafana", "id": "grafana", "name": "Grafana", "version": "10.0.0" },
+    { "type": "datasource", "id": "postgres", "name": "PostgreSQL", "version": "1.0.0" }
+  ],
+  "annotations": { "list": [] },
+  "description": "ISA-18.2 alarm analytics — alarm rate, MTTACK, flood detection, bad actor wells",
+  "editable": true,
+  "graphTooltip": 1,
+  "id": null,
+  "links": [],
+  "panels": [
+    {
+      "datasource": { "type": "postgres", "uid": "og-rmm-postgres" },
+      "fieldConfig": { "defaults": { "unit": "short", "color": { "mode": "thresholds" }, "thresholds": { "mode": "absolute", "steps": [{ "color": "green", "value": null }, { "color": "yellow", "value": 10 }, { "color": "red", "value": 30 }] } } },
+      "gridPos": { "h": 4, "w": 6, "x": 0, "y": 0 },
+      "id": 1,
+      "options": { "colorMode": "background", "graphMode": "area", "reduceOptions": { "calcs": ["lastNotNull"] } },
+      "title": "Alarm Rate (last hour)",
+      "type": "stat",
+      "targets": [{ "datasource": { "type": "postgres", "uid": "og-rmm-postgres" }, "rawSql": "SELECT COUNT(*) AS value FROM alarms WHERE occurred_at >= NOW() - INTERVAL '1 hour'", "format": "table", "refId": "A" }]
+    },
+    {
+      "datasource": { "type": "postgres", "uid": "og-rmm-postgres" },
+      "fieldConfig": { "defaults": { "unit": "s", "color": { "mode": "thresholds" }, "thresholds": { "mode": "absolute", "steps": [{ "color": "green", "value": null }, { "color": "yellow", "value": 300 }, { "color": "red", "value": 900 }] } } },
+      "gridPos": { "h": 4, "w": 6, "x": 6, "y": 0 },
+      "id": 2,
+      "options": { "colorMode": "background", "graphMode": "none", "reduceOptions": { "calcs": ["mean"] } },
+      "title": "MTTACK — Mean Time to Acknowledge (s)",
+      "type": "stat",
+      "targets": [{ "datasource": { "type": "postgres", "uid": "og-rmm-postgres" }, "rawSql": "SELECT COALESCE(AVG(EXTRACT(EPOCH FROM (acknowledged_at - occurred_at))), 0) AS value FROM alarms WHERE acknowledged_at IS NOT NULL AND occurred_at >= NOW() - INTERVAL '7 days'", "format": "table", "refId": "A" }]
+    },
+    {
+      "datasource": { "type": "postgres", "uid": "og-rmm-postgres" },
+      "fieldConfig": { "defaults": { "unit": "short" } },
+      "gridPos": { "h": 4, "w": 6, "x": 12, "y": 0 },
+      "id": 3,
+      "options": { "colorMode": "background", "graphMode": "none", "reduceOptions": { "calcs": ["lastNotNull"] } },
+      "title": "Unacknowledged Alarms",
+      "type": "stat",
+      "targets": [{ "datasource": { "type": "postgres", "uid": "og-rmm-postgres" }, "rawSql": "SELECT COUNT(*) AS value FROM alarms WHERE state = 'ACTIVE' AND acknowledged_at IS NULL", "format": "table", "refId": "A" }]
+    },
+    {
+      "datasource": { "type": "postgres", "uid": "og-rmm-postgres" },
+      "fieldConfig": { "defaults": { "unit": "percent", "min": 0, "max": 100 } },
+      "gridPos": { "h": 4, "w": 6, "x": 18, "y": 0 },
+      "id": 4,
+      "options": { "colorMode": "background", "graphMode": "none", "reduceOptions": { "calcs": ["lastNotNull"] } },
+      "title": "Alarm Acknowledgement Rate (7d)",
+      "type": "stat",
+      "targets": [{ "datasource": { "type": "postgres", "uid": "og-rmm-postgres" }, "rawSql": "SELECT ROUND(100.0 * COUNT(acknowledged_at) / NULLIF(COUNT(*), 0), 1) AS value FROM alarms WHERE occurred_at >= NOW() - INTERVAL '7 days'", "format": "table", "refId": "A" }]
+    },
+    {
+      "datasource": { "type": "postgres", "uid": "og-rmm-postgres" },
+      "fieldConfig": { "defaults": { "unit": "short", "color": { "mode": "palette-classic" } } },
+      "gridPos": { "h": 8, "w": 12, "x": 0, "y": 4 },
+      "id": 5,
+      "options": { "tooltip": { "mode": "multi" } },
+      "title": "Alarm Rate by Severity (24h, 1h buckets)",
+      "type": "timeseries",
+      "targets": [{ "datasource": { "type": "postgres", "uid": "og-rmm-postgres" }, "rawSql": "SELECT DATE_TRUNC('hour', occurred_at) AS time, severity AS metric, COUNT(*) AS value FROM alarms WHERE occurred_at >= NOW() - INTERVAL '24 hours' GROUP BY time, severity ORDER BY time", "format": "time_series", "refId": "A" }]
+    },
+    {
+      "datasource": { "type": "postgres", "uid": "og-rmm-postgres" },
+      "fieldConfig": { "defaults": { "unit": "short" } },
+      "gridPos": { "h": 8, "w": 12, "x": 12, "y": 4 },
+      "id": 6,
+      "options": { "pieType": "pie", "tooltip": { "mode": "single" } },
+      "title": "Alarm Distribution by Type",
+      "type": "piechart",
+      "targets": [{ "datasource": { "type": "postgres", "uid": "og-rmm-postgres" }, "rawSql": "SELECT tag AS metric, COUNT(*) AS value FROM alarms WHERE occurred_at >= NOW() - INTERVAL '7 days' GROUP BY tag ORDER BY value DESC LIMIT 10", "format": "table", "refId": "A" }]
+    },
+    {
+      "datasource": { "type": "postgres", "uid": "og-rmm-postgres" },
+      "fieldConfig": { "defaults": { "custom": { "align": "auto" } } },
+      "gridPos": { "h": 8, "w": 24, "x": 0, "y": 12 },
+      "id": 7,
+      "options": { "sortBy": [{ "displayName": "Alarm Count", "desc": true }] },
+      "title": "Bad Actor Wells — Top 10 by Alarm Count (7d)",
+      "type": "table",
+      "targets": [{ "datasource": { "type": "postgres", "uid": "og-rmm-postgres" }, "rawSql": "SELECT w.name AS \"Well\", w.field AS \"Field\", COUNT(*) AS \"Alarm Count\", COUNT(*) FILTER (WHERE a.severity = 'CRITICAL') AS \"Critical\", COUNT(*) FILTER (WHERE a.severity = 'HIGH') AS \"High\", ROUND(AVG(EXTRACT(EPOCH FROM (a.acknowledged_at - a.occurred_at))) FILTER (WHERE a.acknowledged_at IS NOT NULL), 0) AS \"Avg MTTACK (s)\" FROM alarms a JOIN wells w ON w.id = a.well_id WHERE a.occurred_at >= NOW() - INTERVAL '7 days' GROUP BY w.id, w.name, w.field ORDER BY COUNT(*) DESC LIMIT 10", "format": "table", "refId": "A" }]
+    }
+  ],
+  "refresh": "1m",
+  "schemaVersion": 38,
+  "tags": ["og-rmm", "alarms", "isa-18.2"],
+  "time": { "from": "now-24h", "to": "now" },
+  "timepicker": {},
+  "timezone": "browser",
+  "title": "Alarm Analytics (ISA-18.2)",
+  "uid": "og-rmm-alarm-analytics",
+  "version": 1
+}

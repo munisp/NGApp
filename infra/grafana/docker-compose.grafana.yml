@@ -1,0 +1,51 @@
+# Grafana Observability Stack — Oil & Gas RMM Platform
+# Run: docker compose -f docker-compose.grafana.yml up -d
+# Access: http://localhost:3001 (admin/admin — change on first login)
+version: "3.9"
+
+services:
+  grafana:
+    image: grafana/grafana-oss:10.4.2
+    container_name: og-rmm-grafana
+    restart: unless-stopped
+    ports:
+      - "3001:3000"
+    environment:
+      GF_SECURITY_ADMIN_USER: admin
+      GF_SECURITY_ADMIN_PASSWORD: ${GRAFANA_ADMIN_PASSWORD:-ogrmm-grafana-2024}
+      GF_SERVER_ROOT_URL: ${GRAFANA_ROOT_URL:-http://localhost:3001}
+      GF_SERVER_SERVE_FROM_SUB_PATH: "false"
+      GF_AUTH_ANONYMOUS_ENABLED: "false"
+      GF_AUTH_DISABLE_LOGIN_FORM: "false"
+      # Allow embedding in iframes (for PWA embed page)
+      GF_SECURITY_ALLOW_EMBEDDING: "true"
+      GF_SECURITY_COOKIE_SAMESITE: disabled
+      # Provisioning
+      GF_PATHS_PROVISIONING: /etc/grafana/provisioning
+      # Plugins
+      GF_INSTALL_PLUGINS: grafana-opensearch-datasource
+      # PostgreSQL datasource env
+      POSTGRES_HOST: ${POSTGRES_HOST:-host.docker.internal}
+      POSTGRES_USER: ${POSTGRES_USER:-ogrmm}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-ogrmm}
+      INFLUXDB_URL: ${INFLUXDB_URL:-http://host.docker.internal:8086}
+      INFLUXDB_TOKEN: ${INFLUXDB_TOKEN:-og-rmm-dev-token}
+      INFLUXDB_ORG: ${INFLUXDB_ORG:-og-rmm}
+      INFLUXDB_BUCKET: ${INFLUXDB_BUCKET:-telemetry}
+      PROMETHEUS_URL: ${PROMETHEUS_URL:-http://host.docker.internal:9090}
+      OPENSEARCH_URL: ${OPENSEARCH_URL:-http://host.docker.internal:9200}
+    volumes:
+      - ./provisioning:/etc/grafana/provisioning:ro
+      - ./dashboards:/etc/grafana/dashboards:ro
+      - grafana-data:/var/lib/grafana
+    extra_hosts:
+      - "host.docker.internal:host-gateway"
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:3000/api/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+
+volumes:
+  grafana-data:
+    driver: local

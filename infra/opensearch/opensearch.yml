@@ -1,0 +1,45 @@
+# OpenSearch 2.x Configuration — Oil & Gas Log Aggregation & Observability
+# Spec: NFR-001 — Centralized logging, full-text search, audit trail
+
+cluster.name: og-rmm-opensearch
+node.name: og-opensearch-node-1
+
+# Network
+network.host: 0.0.0.0
+http.port: 9200
+transport.port: 9300
+
+# Discovery
+discovery.type: single-node
+# For cluster mode:
+# discovery.seed_hosts: ["og-opensearch-node-1", "og-opensearch-node-2"]
+# cluster.initial_cluster_manager_nodes: ["og-opensearch-node-1"]
+
+# Paths
+path.data: /var/lib/opensearch/data
+path.logs: /var/log/opensearch
+
+# Memory
+bootstrap.memory_lock: true
+
+# Security plugin (OpenSearch Security)
+plugins.security.ssl.transport.pemcert_filepath: certs/node.pem
+plugins.security.ssl.transport.pemkey_filepath: certs/node-key.pem
+plugins.security.ssl.transport.pemtrustedcas_filepath: certs/root-ca.pem
+plugins.security.ssl.transport.enforce_hostname_verification: false
+plugins.security.ssl.http.enabled: true
+plugins.security.ssl.http.pemcert_filepath: certs/node.pem
+plugins.security.ssl.http.pemkey_filepath: certs/node-key.pem
+plugins.security.ssl.http.pemtrustedcas_filepath: certs/root-ca.pem
+plugins.security.allow_unsafe_democertificates: true
+plugins.security.allow_default_init_securityindex: true
+plugins.security.authcz.admin_dn:
+  - "CN=admin,OU=OG-RMM,O=OilGas,C=US"
+plugins.security.audit.type: internal_opensearch
+plugins.security.enable_snapshot_restore_privilege: true
+plugins.security.check_snapshot_restore_write_privileges: true
+plugins.security.restapi.roles_enabled: ["all_access", "security_rest_api_access"]
+
+# Index settings
+action.auto_create_index: true
+indices.query.bool.max_clause_count: 4096

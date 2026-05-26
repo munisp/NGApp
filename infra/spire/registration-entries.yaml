@@ -1,0 +1,195 @@
+---
+# SPIRE Registration Entries — OG-RMM Platform Services
+# Spec: IEC 62443 SR 1.2 — Software process identification via SPIFFE IDs
+#
+# Each entry assigns a SPIFFE ID to a Kubernetes workload based on:
+#   - Namespace
+#   - Service account name
+#   - Pod labels (optional, for fine-grained control)
+#
+# SPIFFE ID format: spiffe://og-rmm.internal/<namespace>/<service>
+#
+# Apply registration entries:
+#   kubectl exec -n spire-system spire-server-0 -- \
+#     spire-server entry create -f /entries/registration-entries.yaml
+#
+# Or use the SPIRE Controller Manager (recommended for production):
+#   kubectl apply -f infra/spire/spire-controller-manager-entries.yaml
+
+# ─── Platform Core Services ────────────────────────────────────────────────────
+
+apiVersion: spire.spiffe.io/v1alpha1
+kind: ClusterSPIFFEID
+metadata:
+  name: og-rmm-platform-app
+  labels:
+    app.kubernetes.io/managed-by: spire-controller-manager
+    og-rmm/compliance: iec-62443-sr-1.2
+spec:
+  spiffeIDTemplate: "spiffe://og-rmm.internal/platform-core/og-rmm-platform"
+  podSelector:
+    matchLabels:
+      app.kubernetes.io/name: og-rmm-platform
+  namespaceSelector:
+    matchNames:
+      - platform-core
+
+---
+apiVersion: spire.spiffe.io/v1alpha1
+kind: ClusterSPIFFEID
+metadata:
+  name: og-rmm-api-gateway
+spec:
+  spiffeIDTemplate: "spiffe://og-rmm.internal/platform-core/api-gateway"
+  podSelector:
+    matchLabels:
+      app.kubernetes.io/name: api-gateway
+  namespaceSelector:
+    matchNames:
+      - platform-core
+
+---
+apiVersion: spire.spiffe.io/v1alpha1
+kind: ClusterSPIFFEID
+metadata:
+  name: og-rmm-workflow-engine
+spec:
+  spiffeIDTemplate: "spiffe://og-rmm.internal/platform-core/workflow-engine"
+  podSelector:
+    matchLabels:
+      app.kubernetes.io/name: workflow-engine
+  namespaceSelector:
+    matchNames:
+      - platform-core
+
+---
+apiVersion: spire.spiffe.io/v1alpha1
+kind: ClusterSPIFFEID
+metadata:
+  name: og-rmm-financial-ledger
+spec:
+  spiffeIDTemplate: "spiffe://og-rmm.internal/platform-core/financial-ledger"
+  podSelector:
+    matchLabels:
+      app.kubernetes.io/name: financial-ledger
+  namespaceSelector:
+    matchNames:
+      - platform-core
+
+---
+# ─── OT Edge Services ──────────────────────────────────────────────────────────
+
+apiVersion: spire.spiffe.io/v1alpha1
+kind: ClusterSPIFFEID
+metadata:
+  name: og-rmm-rust-edge-agent
+spec:
+  spiffeIDTemplate: "spiffe://og-rmm.internal/ot-edge/rust-edge-agent"
+  podSelector:
+    matchLabels:
+      app.kubernetes.io/name: rust-edge-agent
+  namespaceSelector:
+    matchNames:
+      - ot-edge
+
+---
+apiVersion: spire.spiffe.io/v1alpha1
+kind: ClusterSPIFFEID
+metadata:
+  name: og-rmm-fledge-bridge
+spec:
+  spiffeIDTemplate: "spiffe://og-rmm.internal/ot-edge/fledge-bridge"
+  podSelector:
+    matchLabels:
+      app.kubernetes.io/name: fledge-bridge
+  namespaceSelector:
+    matchNames:
+      - ot-edge
+
+---
+# ─── Data Pipeline Services ────────────────────────────────────────────────────
+
+apiVersion: spire.spiffe.io/v1alpha1
+kind: ClusterSPIFFEID
+metadata:
+  name: og-rmm-kafka-consumer
+spec:
+  spiffeIDTemplate: "spiffe://og-rmm.internal/data-pipeline/kafka-consumer"
+  podSelector:
+    matchLabels:
+      app.kubernetes.io/name: kafka-consumer
+  namespaceSelector:
+    matchNames:
+      - data-pipeline
+
+---
+apiVersion: spire.spiffe.io/v1alpha1
+kind: ClusterSPIFFEID
+metadata:
+  name: og-rmm-ml-pipeline
+spec:
+  spiffeIDTemplate: "spiffe://og-rmm.internal/data-pipeline/ml-pipeline"
+  podSelector:
+    matchLabels:
+      app.kubernetes.io/name: ml-pipeline
+  namespaceSelector:
+    matchNames:
+      - data-pipeline
+
+---
+apiVersion: spire.spiffe.io/v1alpha1
+kind: ClusterSPIFFEID
+metadata:
+  name: og-rmm-sedona-geospatial
+spec:
+  spiffeIDTemplate: "spiffe://og-rmm.internal/data-pipeline/sedona-geospatial"
+  podSelector:
+    matchLabels:
+      app.kubernetes.io/name: sedona-geospatial
+  namespaceSelector:
+    matchNames:
+      - data-pipeline
+
+---
+# ─── Security Operations ───────────────────────────────────────────────────────
+
+apiVersion: spire.spiffe.io/v1alpha1
+kind: ClusterSPIFFEID
+metadata:
+  name: og-rmm-wazuh-manager
+spec:
+  spiffeIDTemplate: "spiffe://og-rmm.internal/security-ops/wazuh-manager"
+  podSelector:
+    matchLabels:
+      app.kubernetes.io/name: wazuh-manager
+  namespaceSelector:
+    matchNames:
+      - security-ops
+
+---
+apiVersion: spire.spiffe.io/v1alpha1
+kind: ClusterSPIFFEID
+metadata:
+  name: og-rmm-opencti
+spec:
+  spiffeIDTemplate: "spiffe://og-rmm.internal/security-ops/opencti"
+  podSelector:
+    matchLabels:
+      app.kubernetes.io/name: opencti
+  namespaceSelector:
+    matchNames:
+      - security-ops
+
+---
+apiVersion: spire.spiffe.io/v1alpha1
+kind: ClusterSPIFFEID
+metadata:
+  name: og-rmm-grafana-oncall
+spec:
+  spiffeIDTemplate: "spiffe://og-rmm.internal/security-ops/grafana-oncall"
+  podSelector:
+    matchLabels:
+      app.kubernetes.io/name: grafana-oncall
+  namespaceSelector:
+    matchNames:
+      - security-ops

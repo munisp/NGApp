@@ -1,0 +1,33 @@
+---
+apiVersion: policy/v1
+kind: PodDisruptionBudget
+metadata:
+  name: protocol-adapter-pdb
+  namespace: og-rmm
+spec:
+  minAvailable: 1
+  selector:
+    matchLabels:
+      app: protocol-adapter
+---
+apiVersion: policy/v1
+kind: PodDisruptionBudget
+metadata:
+  name: physics-engine-pdb
+  namespace: og-rmm
+spec:
+  minAvailable: 1
+  selector:
+    matchLabels:
+      app: physics-engine
+---
+apiVersion: policy/v1
+kind: PodDisruptionBudget
+metadata:
+  name: og-rmm-app-pdb
+  namespace: og-rmm
+spec:
+  minAvailable: 2
+  selector:
+    matchLabels:
+      app: og-rmm-app

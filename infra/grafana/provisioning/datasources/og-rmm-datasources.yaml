@@ -1,0 +1,79 @@
+# Grafana Datasource Provisioning — Oil & Gas RMM Platform
+# Spec: NFR-003 — Observability, real-time KPI dashboards
+# Grafana version: 10.x+
+# All datasources are provisioned as code; no manual UI configuration needed.
+
+apiVersion: 1
+
+datasources:
+  # ─── PostgreSQL (primary operational data) ──────────────────────────────────
+  - name: OG-RMM-PostgreSQL
+    type: postgres
+    uid: og-rmm-postgres
+    url: ${POSTGRES_HOST:localhost}:5432
+    database: og_rmm
+    user: ${POSTGRES_USER:ogrmm}
+    secureJsonData:
+      password: ${POSTGRES_PASSWORD:ogrmm}
+    jsonData:
+      sslmode: disable
+      maxOpenConns: 10
+      maxIdleConns: 5
+      connMaxLifetime: 14400
+      postgresVersion: 1400
+      timescaledb: true          # Enable TimescaleDB time-series functions
+    isDefault: true
+    editable: false
+
+  # ─── InfluxDB (high-frequency sensor historian) ─────────────────────────────
+  - name: OG-RMM-InfluxDB
+    type: influxdb
+    uid: og-rmm-influx
+    url: ${INFLUXDB_URL:http://localhost:8086}
+    jsonData:
+      version: Flux
+      organization: ${INFLUXDB_ORG:og-rmm}
+      defaultBucket: ${INFLUXDB_BUCKET:telemetry}
+    secureJsonData:
+      token: ${INFLUXDB_TOKEN:og-rmm-dev-token}
+    editable: false
+
+  # ─── Prometheus (service metrics from OTel collector) ───────────────────────
+  - name: OG-RMM-Prometheus
+    type: prometheus
+    uid: og-rmm-prometheus
+    url: ${PROMETHEUS_URL:http://localhost:9090}
+    jsonData:
+      httpMethod: POST
+      exemplarTraceIdDestinations:
+        - name: traceID
+          datasourceUid: og-rmm-tempo
+    editable: false
+
+  # ─── OpenSearch (audit logs, alarm events, full-text search) ────────────────
+  - name: OG-RMM-OpenSearch
+    type: grafana-opensearch-datasource
+    uid: og-rmm-opensearch
+    url: ${OPENSEARCH_URL:http://localhost:9200}
+    jsonData:
+      database: og-alarms-*
+      interval: Daily
+      timeField: "@timestamp"
+      esVersion: "2.0.0"
+      logMessageField: message
+      logLevelField: severity
+    editable: false
+
+  # ─── Tempo (distributed tracing from OTel) ──────────────────────────────────
+  - name: OG-RMM-Tempo
+    type: tempo
+    uid: og-rmm-tempo
+    url: ${TEMPO_URL:http://localhost:3200}
+    jsonData:
+      tracesToLogsV2:
+        datasourceUid: og-rmm-opensearch
+        spanStartTimeShift: "-1h"
+        spanEndTimeShift: "1h"
+        filterByTraceID: true
+        filterBySpanID: false
+    editable: false

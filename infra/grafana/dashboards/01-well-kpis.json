@@ -1,0 +1,173 @@
+{
+  "__inputs": [],
+  "__requires": [
+    { "type": "grafana", "id": "grafana", "name": "Grafana", "version": "10.0.0" },
+    { "type": "datasource", "id": "postgres", "name": "PostgreSQL", "version": "1.0.0" }
+  ],
+  "annotations": { "list": [] },
+  "description": "Real-time well production KPIs — oil rate, water cut, GOR, wellhead pressure, ESP status",
+  "editable": true,
+  "fiscalYearStartMonth": 0,
+  "graphTooltip": 1,
+  "id": null,
+  "links": [],
+  "panels": [
+    {
+      "datasource": { "type": "postgres", "uid": "og-rmm-postgres" },
+      "fieldConfig": {
+        "defaults": {
+          "color": { "mode": "thresholds" },
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              { "color": "red", "value": null },
+              { "color": "yellow", "value": 50 },
+              { "color": "green", "value": 80 }
+            ]
+          },
+          "unit": "short"
+        }
+      },
+      "gridPos": { "h": 4, "w": 4, "x": 0, "y": 0 },
+      "id": 1,
+      "options": { "colorMode": "background", "graphMode": "none", "justifyMode": "center", "orientation": "auto", "reduceOptions": { "calcs": ["lastNotNull"] } },
+      "title": "Active Wells",
+      "type": "stat",
+      "targets": [
+        {
+          "datasource": { "type": "postgres", "uid": "og-rmm-postgres" },
+          "rawSql": "SELECT COUNT(*) AS value FROM wells WHERE status = 'ACTIVE'",
+          "format": "table",
+          "refId": "A"
+        }
+      ]
+    },
+    {
+      "datasource": { "type": "postgres", "uid": "og-rmm-postgres" },
+      "fieldConfig": {
+        "defaults": { "unit": "bbl/d", "color": { "mode": "palette-classic" } }
+      },
+      "gridPos": { "h": 4, "w": 4, "x": 4, "y": 0 },
+      "id": 2,
+      "options": { "colorMode": "background", "graphMode": "area", "justifyMode": "center", "orientation": "auto", "reduceOptions": { "calcs": ["lastNotNull"] } },
+      "title": "Total Oil Rate (bbl/d)",
+      "type": "stat",
+      "targets": [
+        {
+          "datasource": { "type": "postgres", "uid": "og-rmm-postgres" },
+          "rawSql": "SELECT COALESCE(SUM(oil_rate_bopd), 0) AS value FROM production_records WHERE recorded_at >= NOW() - INTERVAL '24 hours'",
+          "format": "table",
+          "refId": "A"
+        }
+      ]
+    },
+    {
+      "datasource": { "type": "postgres", "uid": "og-rmm-postgres" },
+      "fieldConfig": {
+        "defaults": { "unit": "percent", "min": 0, "max": 100 }
+      },
+      "gridPos": { "h": 4, "w": 4, "x": 8, "y": 0 },
+      "id": 3,
+      "options": { "colorMode": "background", "graphMode": "none", "justifyMode": "center", "orientation": "auto", "reduceOptions": { "calcs": ["mean"] } },
+      "title": "Avg Water Cut (%)",
+      "type": "stat",
+      "targets": [
+        {
+          "datasource": { "type": "postgres", "uid": "og-rmm-postgres" },
+          "rawSql": "SELECT COALESCE(AVG(water_cut_pct), 0) AS value FROM production_records WHERE recorded_at >= NOW() - INTERVAL '24 hours'",
+          "format": "table",
+          "refId": "A"
+        }
+      ]
+    },
+    {
+      "datasource": { "type": "postgres", "uid": "og-rmm-postgres" },
+      "fieldConfig": {
+        "defaults": {
+          "color": { "mode": "thresholds" },
+          "thresholds": { "mode": "absolute", "steps": [{ "color": "green", "value": null }, { "color": "red", "value": 1 }] }
+        }
+      },
+      "gridPos": { "h": 4, "w": 4, "x": 12, "y": 0 },
+      "id": 4,
+      "options": { "colorMode": "background", "graphMode": "none", "justifyMode": "center", "orientation": "auto", "reduceOptions": { "calcs": ["lastNotNull"] } },
+      "title": "Active Critical Alarms",
+      "type": "stat",
+      "targets": [
+        {
+          "datasource": { "type": "postgres", "uid": "og-rmm-postgres" },
+          "rawSql": "SELECT COUNT(*) AS value FROM alarms WHERE state = 'ACTIVE' AND severity = 'CRITICAL'",
+          "format": "table",
+          "refId": "A"
+        }
+      ]
+    },
+    {
+      "datasource": { "type": "postgres", "uid": "og-rmm-postgres" },
+      "fieldConfig": {
+        "defaults": { "unit": "bbl/d", "color": { "mode": "palette-classic" } },
+        "overrides": []
+      },
+      "gridPos": { "h": 8, "w": 12, "x": 0, "y": 4 },
+      "id": 5,
+      "options": { "tooltip": { "mode": "multi" } },
+      "title": "Oil Production Rate — Top 10 Wells (24h)",
+      "type": "timeseries",
+      "targets": [
+        {
+          "datasource": { "type": "postgres", "uid": "og-rmm-postgres" },
+          "rawSql": "SELECT recorded_at AS time, w.name AS metric, pr.oil_rate_bopd AS value FROM production_records pr JOIN wells w ON w.id = pr.well_id WHERE pr.recorded_at >= NOW() - INTERVAL '24 hours' AND w.id IN (SELECT well_id FROM production_records WHERE recorded_at >= NOW() - INTERVAL '24 hours' GROUP BY well_id ORDER BY AVG(oil_rate_bopd) DESC LIMIT 10) ORDER BY time",
+          "format": "time_series",
+          "refId": "A"
+        }
+      ]
+    },
+    {
+      "datasource": { "type": "postgres", "uid": "og-rmm-postgres" },
+      "fieldConfig": {
+        "defaults": { "unit": "short", "color": { "mode": "palette-classic" } }
+      },
+      "gridPos": { "h": 8, "w": 12, "x": 12, "y": 4 },
+      "id": 6,
+      "options": { "tooltip": { "mode": "multi" } },
+      "title": "Alarm Events by Severity (7d)",
+      "type": "timeseries",
+      "targets": [
+        {
+          "datasource": { "type": "postgres", "uid": "og-rmm-postgres" },
+          "rawSql": "SELECT DATE_TRUNC('hour', occurred_at) AS time, severity AS metric, COUNT(*) AS value FROM alarms WHERE occurred_at >= NOW() - INTERVAL '7 days' GROUP BY time, severity ORDER BY time",
+          "format": "time_series",
+          "refId": "A"
+        }
+      ]
+    },
+    {
+      "datasource": { "type": "postgres", "uid": "og-rmm-postgres" },
+      "fieldConfig": {
+        "defaults": { "custom": { "align": "auto" } }
+      },
+      "gridPos": { "h": 8, "w": 24, "x": 0, "y": 12 },
+      "id": 7,
+      "options": { "sortBy": [{ "displayName": "Oil Rate (bbl/d)", "desc": true }] },
+      "title": "Well Production Summary",
+      "type": "table",
+      "targets": [
+        {
+          "datasource": { "type": "postgres", "uid": "og-rmm-postgres" },
+          "rawSql": "SELECT w.name AS \"Well\", w.field AS \"Field\", w.status AS \"Status\", ROUND(AVG(pr.oil_rate_bopd)::numeric, 1) AS \"Oil Rate (bbl/d)\", ROUND(AVG(pr.gas_rate_mcfd)::numeric, 1) AS \"Gas Rate (Mscf/d)\", ROUND(AVG(pr.water_cut_pct)::numeric, 1) AS \"Water Cut (%)\", ROUND(AVG(pr.wellhead_pressure_psi)::numeric, 0) AS \"WHP (psi)\" FROM wells w LEFT JOIN production_records pr ON pr.well_id = w.id AND pr.recorded_at >= NOW() - INTERVAL '24 hours' GROUP BY w.id, w.name, w.field, w.status ORDER BY AVG(pr.oil_rate_bopd) DESC NULLS LAST LIMIT 50",
+          "format": "table",
+          "refId": "A"
+        }
+      ]
+    }
+  ],
+  "refresh": "30s",
+  "schemaVersion": 38,
+  "tags": ["og-rmm", "production", "wells"],
+  "time": { "from": "now-24h", "to": "now" },
+  "timepicker": {},
+  "timezone": "browser",
+  "title": "Well Production KPIs",
+  "uid": "og-rmm-well-kpis",
+  "version": 1
+}

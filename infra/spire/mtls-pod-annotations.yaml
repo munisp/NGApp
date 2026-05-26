@@ -1,0 +1,62 @@
+---
+# SPIFFE/SPIRE mTLS Pod Annotations — OG-RMM Platform
+# Spec: IEC 62443 SR 1.2 (workload identity) + SR 3.1 (communications integrity)
+#
+# These annotations are applied to all platform service Deployments via Kustomize patches.
+# The SPIFFE CSI driver mounts the SVID certificate bundle at /run/spire/sockets/
+# so each service can establish mTLS with any other service in the trust domain.
+#
+# Usage in application code:
+#   - Read the X.509 SVID from /run/spire/sockets/agent.sock (Unix socket)
+#   - Use the SVID as the client certificate for outbound mTLS connections
+#   - Validate peer SVIDs against the trust bundle at /run/spire/bundle/bundle.crt
+#
+# Go example (using go-spiffe library):
+#   source, err := workloadapi.NewX509Source(ctx,
+#     workloadapi.WithClientOptions(workloadapi.WithAddr("unix:///run/spire/sockets/agent.sock")))
+#   tlsConfig := tlsconfig.MTLSClientConfig(source, source, tlsconfig.AuthorizeAny())
+
+# ─── Kustomize patch for all Deployments ─────────────────────────────────────
+# Apply with: kubectl kustomize infra/spire/ | kubectl apply -f -
+
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: og-rmm-platform  # Replace with actual deployment name
+  namespace: platform-core
+spec:
+  template:
+    metadata:
+      annotations:
+        # SPIFFE CSI driver: mount SVID socket into the pod
+        spiffe.io/spiffeID: "spiffe://og-rmm.internal/platform-core/og-rmm-platform"
+        # IEC 62443 compliance labels
+        og-rmm/iec62443-zone: "Zone 4"
+        og-rmm/iec62443-sl: "SL-3"
+        og-rmm/mtls-enabled: "true"
+    spec:
+      serviceAccountName: og-rmm-platform
+      volumes:
+        # SPIFFE CSI driver mounts the SVID socket
+        - name: spiffe-workload-api
+          csi:
+            driver: "csi.spiffe.io"
+            readOnly: true
+        # Trust bundle for validating peer SVIDs
+        - name: spire-bundle
+          configMap:
+            name: spire-bundle
+      containers:
+        - name: og-rmm-platform
+          volumeMounts:
+            - name: spiffe-workload-api
+              mountPath: /run/spire/sockets
+              readOnly: true
+            - name: spire-bundle
+              mountPath: /run/spire/bundle
+              readOnly: true
+          env:
+            - name: SPIFFE_ENDPOINT_SOCKET
+              value: "unix:///run/spire/sockets/agent.sock"
+            - name: SPIFFE_TRUST_DOMAIN
+              value: "og-rmm.internal"

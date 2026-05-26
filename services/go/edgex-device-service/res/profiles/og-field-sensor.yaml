@@ -1,0 +1,157 @@
+name: "og-field-sensor-profile"
+manufacturer: "OG-RMM Platform"
+model: "OG-SENSOR-V3"
+labels:
+  - "oil-gas"
+  - "field-sensor"
+  - "modbus"
+  - "opc-ua"
+  - "dnp3"
+description: "Oil & Gas field sensor profile supporting Modbus TCP, OPC-UA, and DNP3 protocols"
+
+deviceResources:
+  - name: Pressure
+    isHidden: false
+    description: "Wellhead pressure in psi"
+    attributes:
+      primaryTable: HOLDING_REGISTERS
+      startingAddress: 0
+      rawType: FLOAT32
+    properties:
+      valueType: Float64
+      readWrite: "R"
+      units: psi
+      minimum: "0"
+      maximum: "10000"
+      defaultValue: "0"
+
+  - name: Temperature
+    isHidden: false
+    description: "Wellhead temperature in degrees Celsius"
+    attributes:
+      primaryTable: HOLDING_REGISTERS
+      startingAddress: 2
+      rawType: FLOAT32
+    properties:
+      valueType: Float64
+      readWrite: "R"
+      units: degC
+      minimum: "-40"
+      maximum: "300"
+      defaultValue: "0"
+
+  - name: FlowRate
+    isHidden: false
+    description: "Oil flow rate in barrels per day"
+    attributes:
+      primaryTable: HOLDING_REGISTERS
+      startingAddress: 4
+      rawType: FLOAT32
+    properties:
+      valueType: Float64
+      readWrite: "R"
+      units: bbl/d
+      minimum: "0"
+      maximum: "5000"
+      defaultValue: "0"
+
+  - name: WaterCut
+    isHidden: false
+    description: "Water cut percentage"
+    attributes:
+      primaryTable: HOLDING_REGISTERS
+      startingAddress: 6
+      rawType: FLOAT32
+    properties:
+      valueType: Float64
+      readWrite: "R"
+      units: "%"
+      minimum: "0"
+      maximum: "100"
+      defaultValue: "0"
+
+  - name: GasOilRatio
+    isHidden: false
+    description: "Gas-oil ratio in scf/bbl"
+    attributes:
+      primaryTable: HOLDING_REGISTERS
+      startingAddress: 8
+      rawType: FLOAT32
+    properties:
+      valueType: Float64
+      readWrite: "R"
+      units: scf/bbl
+      minimum: "0"
+      maximum: "100000"
+      defaultValue: "0"
+
+  - name: ESPFrequency
+    isHidden: false
+    description: "ESP drive frequency in Hz"
+    attributes:
+      primaryTable: HOLDING_REGISTERS
+      startingAddress: 10
+      rawType: FLOAT32
+    properties:
+      valueType: Float64
+      readWrite: "RW"
+      units: Hz
+      minimum: "30"
+      maximum: "70"
+      defaultValue: "60"
+
+  - name: ESPCurrent
+    isHidden: false
+    description: "ESP motor current in Amperes"
+    attributes:
+      primaryTable: HOLDING_REGISTERS
+      startingAddress: 12
+      rawType: FLOAT32
+    properties:
+      valueType: Float64
+      readWrite: "R"
+      units: A
+      minimum: "0"
+      maximum: "200"
+      defaultValue: "0"
+
+  - name: ValvePosition
+    isHidden: false
+    description: "Choke valve position (0-100%)"
+    attributes:
+      primaryTable: HOLDING_REGISTERS
+      startingAddress: 14
+      rawType: INT16
+    properties:
+      valueType: Int32
+      readWrite: "RW"
+      units: "%"
+      minimum: "0"
+      maximum: "100"
+      defaultValue: "75"
+
+deviceCommands:
+  - name: AllSensorReadings
+    readWrite: "R"
+    isHidden: false
+    resourceOperations:
+      - { deviceResource: Pressure }
+      - { deviceResource: Temperature }
+      - { deviceResource: FlowRate }
+      - { deviceResource: WaterCut }
+      - { deviceResource: GasOilRatio }
+      - { deviceResource: ESPFrequency }
+      - { deviceResource: ESPCurrent }
+
+  - name: ESPControl
+    readWrite: "RW"
+    isHidden: false
+    resourceOperations:
+      - { deviceResource: ESPFrequency }
+      - { deviceResource: ESPCurrent }
+
+  - name: ValveControl
+    readWrite: "RW"
+    isHidden: false
+    resourceOperations:
+      - { deviceResource: ValvePosition }
