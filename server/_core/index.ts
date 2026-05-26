@@ -271,6 +271,13 @@ async function startServer() {
     });
   });
 
+  // /api/grpc/health — gRPC service health (all 4 proto services)
+  app.get("/api/grpc/health", requireSession, async (_req, res) => {
+    const { grpcHealthCheckAll, getGrpcMetrics } = await import("../grpc/client");
+    const [health, metrics] = await Promise.all([grpcHealthCheckAll(), Promise.resolve(getGrpcMetrics())]);
+    res.json({ services: health, metrics });
+  });
+
   // /api/errors/summary — production error monitoring dashboard
   app.get("/api/errors/summary", requireSession, async (_req, res) => {
     const { getErrorSummary } = await import("../errorMonitoring");
@@ -450,6 +457,30 @@ async function startServer() {
       `ndsep_memory_heap_used_bytes ${mem.heapUsed}`,
       ...cbLines,
     ];
+
+    // gRPC metrics
+    try {
+      const { getGrpcMetrics } = await import("../grpc/client");
+      const grpc = getGrpcMetrics();
+      lines.push(
+        "# HELP ndsep_grpc_calls_total Total gRPC calls",
+        "# TYPE ndsep_grpc_calls_total counter",
+        `ndsep_grpc_calls_total ${grpc.totalCalls}`,
+        "# HELP ndsep_grpc_success_rate gRPC call success rate",
+        "# TYPE ndsep_grpc_success_rate gauge",
+        `ndsep_grpc_success_rate ${grpc.successRate}`,
+        "# HELP ndsep_grpc_avg_latency_ms gRPC average latency in ms",
+        "# TYPE ndsep_grpc_avg_latency_ms gauge",
+        `ndsep_grpc_avg_latency_ms ${grpc.avgLatencyMs}`,
+        "# HELP ndsep_grpc_retries_total Total gRPC retries",
+        "# TYPE ndsep_grpc_retries_total counter",
+        `ndsep_grpc_retries_total ${grpc.retryCount}`,
+        "# HELP ndsep_grpc_circuit_trips_total Total gRPC circuit breaker trips",
+        "# TYPE ndsep_grpc_circuit_trips_total counter",
+        `ndsep_grpc_circuit_trips_total ${grpc.circuitBreakerTrips}`,
+      );
+    } catch { /* gRPC module not yet loaded */ }
+
     res.setHeader("Content-Type", "text/plain; version=0.0.4");
     res.send(lines.join("\n") + "\n");
   });

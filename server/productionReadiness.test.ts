@@ -361,3 +361,148 @@ describe("Area 6: Graceful degradation across the platform", () => {
     expect(src).toContain("half_open");
   });
 });
+
+// ─── 7. gRPC Inter-Service Wiring ──────────────────────────────────────────
+
+describe("Area 7: gRPC inter-service wiring with retries + circuit breakers", () => {
+  it("proto definitions exist for all 4 gRPC services", () => {
+    const proto = fs.readFileSync(path.resolve(SERVER_DIR, "../shared/proto/ndsep.proto"), "utf-8");
+    expect(proto).toContain("service WirediggService");
+    expect(proto).toContain("service LivenessService");
+    expect(proto).toContain("service AuditChainService");
+    expect(proto).toContain("service ComplianceAIService");
+    expect(proto).toContain("syntax = \"proto3\"");
+  });
+
+  it("TypeScript gRPC client has retry interceptor with exponential backoff", () => {
+    const src = readFile("grpc/client.ts");
+    expect(src).toContain("retryInterceptor");
+    expect(src).toContain("backoffMultiplier");
+    expect(src).toContain("maxBackoffMs");
+    expect(src).toContain("retryableStatusCodes");
+    expect(src).toContain("Math.pow");
+  });
+
+  it("TypeScript gRPC client has circuit breaker interceptor", () => {
+    const src = readFile("grpc/client.ts");
+    expect(src).toContain("circuitBreakerInterceptor");
+    expect(src).toContain("getCircuitBreaker");
+    expect(src).toContain("OPEN");
+    expect(src).toContain("circuitBreakerTrips");
+  });
+
+  it("TypeScript gRPC client has deadline propagation", () => {
+    const src = readFile("grpc/client.ts");
+    expect(src).toContain("deadlineInterceptor");
+    expect(src).toContain("grpc-timeout");
+    expect(src).toContain("x-deadline-ms");
+    expect(src).toContain("AbortSignal.timeout");
+  });
+
+  it("TypeScript gRPC client has auth interceptor with internal service token", () => {
+    const src = readFile("grpc/client.ts");
+    expect(src).toContain("authInterceptor");
+    expect(src).toContain("INTERNAL_SERVICE_TOKEN");
+    expect(src).toContain("x-internal-auth");
+    expect(src).toContain("x-request-id");
+  });
+
+  it("TypeScript gRPC client has HTTP fallback for degraded mode", () => {
+    const src = readFile("grpc/client.ts");
+    expect(src).toContain("httpFallback");
+    expect(src).toContain("x-fallback");
+    expect(src).toContain("Falling back to HTTP");
+  });
+
+  it("TypeScript gRPC client exposes metrics for Prometheus", () => {
+    const src = readFile("grpc/client.ts");
+    expect(src).toContain("getGrpcMetrics");
+    expect(src).toContain("totalCalls");
+    expect(src).toContain("successRate");
+    expect(src).toContain("retryCount");
+    expect(src).toContain("byService");
+  });
+
+  it("TypeScript gRPC client has pre-configured clients for all 4 services", () => {
+    const src = readFile("grpc/client.ts");
+    expect(src).toContain("wirediggClient");
+    expect(src).toContain("livenessClient");
+    expect(src).toContain("auditChainClient");
+    expect(src).toContain("complianceAIClient");
+  });
+
+  it("TypeScript gRPC client has channel pooling", () => {
+    const src = readFile("grpc/client.ts");
+    expect(src).toContain("channelPool");
+    expect(src).toContain("GrpcChannel");
+    expect(src).toContain("READY");
+    expect(src).toContain("TRANSIENT_FAILURE");
+    expect(src).toContain("shutdownAllChannels");
+  });
+
+  it("Go workers have gRPC interceptors with circuit breaker + retry", () => {
+    const goSrc = fs.readFileSync(
+      path.resolve(SERVER_DIR, "../workers/go/shared/grpc_interceptors.go"), "utf-8"
+    );
+    expect(goSrc).toContain("GrpcCircuitBreaker");
+    expect(goSrc).toContain("ExecuteWithInterceptors");
+    expect(goSrc).toContain("IsRetryable");
+    expect(goSrc).toContain("retryBackoff");
+    expect(goSrc).toContain("GrpcMetricsSnapshot");
+    expect(goSrc).toContain("INTERNAL_SERVICE_TOKEN");
+  });
+
+  it("Rust workers have gRPC interceptors with circuit breaker + retry", () => {
+    const rustSrc = fs.readFileSync(
+      path.resolve(SERVER_DIR, "../workers/rust/shared/src/grpc_interceptors.rs"), "utf-8"
+    );
+    expect(rustSrc).toContain("CircuitBreaker");
+    expect(rustSrc).toContain("execute_with_interceptors");
+    expect(rustSrc).toContain("is_retryable");
+    expect(rustSrc).toContain("grpc_metrics_snapshot");
+    expect(rustSrc).toContain("GrpcError");
+    expect(rustSrc).toContain("INTERNAL_SERVICE_TOKEN");
+  });
+
+  it("Python workers have gRPC interceptors with circuit breaker + retry", () => {
+    const pySrc = fs.readFileSync(
+      path.resolve(SERVER_DIR, "../workers/python/grpc_interceptors.py"), "utf-8"
+    );
+    expect(pySrc).toContain("GrpcInterceptor");
+    expect(pySrc).toContain("CircuitBreaker");
+    expect(pySrc).toContain("is_retryable");
+    expect(pySrc).toContain("grpc_metrics_snapshot");
+    expect(pySrc).toContain("grpc_http_call");
+    expect(pySrc).toContain("INTERNAL_SERVICE_TOKEN");
+  });
+
+  it("Prometheus metrics endpoint includes gRPC metrics", () => {
+    const src = readFile("_core/index.ts");
+    expect(src).toContain("ndsep_grpc_calls_total");
+    expect(src).toContain("ndsep_grpc_success_rate");
+    expect(src).toContain("ndsep_grpc_avg_latency_ms");
+    expect(src).toContain("ndsep_grpc_retries_total");
+    expect(src).toContain("ndsep_grpc_circuit_trips_total");
+  });
+
+  it("Express app has /api/grpc/health endpoint", () => {
+    const src = readFile("_core/index.ts");
+    expect(src).toContain("/api/grpc/health");
+    expect(src).toContain("grpcHealthCheckAll");
+    expect(src).toContain("getGrpcMetrics");
+  });
+
+  it("gRPC status codes map correctly from HTTP status codes", () => {
+    const src = readFile("grpc/client.ts");
+    expect(src).toContain("400");
+    expect(src).toContain("INVALID_ARGUMENT");
+    expect(src).toContain("401");
+    expect(src).toContain("UNAUTHENTICATED");
+    expect(src).toContain("429");
+    expect(src).toContain("RESOURCE_EXHAUSTED");
+    expect(src).toContain("503");
+    expect(src).toContain("UNAVAILABLE");
+    expect(src).toContain("504");
+    expect(src).toContain("DEADLINE_EXCEEDED");
+  });
+});

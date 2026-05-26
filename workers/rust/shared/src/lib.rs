@@ -8,6 +8,8 @@ use std::env;
 use std::time::Duration;
 use tokio_postgres::{Client, NoTls};
 
+pub mod grpc_interceptors;
+
 pub fn get_db_url() -> String {
     env::var("WORKER_DATABASE_URL").unwrap_or_else(|_| {
         "postgresql://ndsep_user:ndsep_secure_2026@localhost:5432/ndsep_db".to_string()
