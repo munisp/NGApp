@@ -85,23 +85,22 @@ func (p *realProducer) Close() {
 	p.producer.Close()
 }
 
-// ─── Simulated producer ───────────────────────────────────────────────────────
+// ─── Unavailable producer (returned when Kafka is not configured) ─────────────
 
-type simulatedProducer struct{}
+type unavailableProducer struct{}
 
-// NewSimulatedProducer returns a no-op producer for development.
-func NewSimulatedProducer() Producer {
-	return &simulatedProducer{}
+// NewUnavailableProducer returns a producer that returns errors for all operations.
+func NewUnavailableProducer() Producer {
+	log.Println("[kafka] WARNING: Kafka not configured — producer unavailable")
+	return &unavailableProducer{}
 }
 
-func (s *simulatedProducer) PublishSensorReading(_ context.Context, r SensorReading) error {
-	log.Printf("[kafka:sim] SensorReading well=%s tag=%s val=%.2f", r.WellID, r.Tag, r.Value)
-	return nil
+func (u *unavailableProducer) PublishSensorReading(_ context.Context, _ SensorReading) error {
+	return fmt.Errorf("kafka producer not configured: set KAFKA_BROKERS env var")
 }
 
-func (s *simulatedProducer) PublishAlarm(_ context.Context, a AlarmEvent) error {
-	log.Printf("[kafka:sim] Alarm well=%s sev=%d msg=%s", a.WellID, a.Severity, a.Message)
-	return nil
+func (u *unavailableProducer) PublishAlarm(_ context.Context, _ AlarmEvent) error {
+	return fmt.Errorf("kafka producer not configured: set KAFKA_BROKERS env var")
 }
 
-func (s *simulatedProducer) Close() {}
+func (u *unavailableProducer) Close() {}

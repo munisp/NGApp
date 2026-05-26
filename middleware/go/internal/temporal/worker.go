@@ -393,62 +393,36 @@ func (rw *realWorker) submitReportActivity(ctx context.Context, reportID int, au
 	return nil
 }
 
-// ─── Simulated worker ─────────────────────────────────────────────────────────
+// ─── Unavailable worker (returned when Temporal is not configured) ────────────
 
-type simulatedWorker struct {
-	workflows map[string]map[string]any
+type unavailableWorker struct{}
+
+// NewUnavailableWorker returns a worker that returns errors for all operations.
+func NewUnavailableWorker() Worker {
+	log.Println("[temporal] WARNING: Temporal not configured — worker unavailable. Set TEMPORAL_ADDRESS env var.")
+	return &unavailableWorker{}
 }
 
-// NewSimulatedWorker returns an in-memory workflow tracker for development.
-func NewSimulatedWorker() Worker {
-	log.Println("[temporal] Using simulated Temporal worker")
-	return &simulatedWorker{
-		workflows: make(map[string]map[string]any),
-	}
-}
-
-func (s *simulatedWorker) Run(ctx context.Context) error {
+func (u *unavailableWorker) Run(ctx context.Context) error {
+	log.Println("[temporal] Worker not started — Temporal server not configured")
 	<-ctx.Done()
 	return nil
 }
 
-func (s *simulatedWorker) StartWorkflow(_ context.Context, workflowType string, _ any) (string, error) {
-	id := fmt.Sprintf("%s-%d", workflowType, time.Now().UnixMilli())
-	s.workflows[id] = map[string]any{
-		"workflowId": id,
-		"status":     "RUNNING",
-		"startTime":  time.Now(),
-		"type":       workflowType,
-	}
-	return id, nil
+func (u *unavailableWorker) StartWorkflow(_ context.Context, _ string, _ any) (string, error) {
+	return "", fmt.Errorf("temporal not configured: set TEMPORAL_ADDRESS env var")
 }
 
-func (s *simulatedWorker) GetWorkflowStatus(_ context.Context, workflowID string) (map[string]any, error) {
-	if wf, ok := s.workflows[workflowID]; ok {
-		return wf, nil
-	}
-	return map[string]any{
-		"workflowId": workflowID,
-		"status":     "NOT_FOUND",
-	}, nil
+func (u *unavailableWorker) GetWorkflowStatus(_ context.Context, _ string) (map[string]any, error) {
+	return nil, fmt.Errorf("temporal not configured: set TEMPORAL_ADDRESS env var")
 }
 
-func (s *simulatedWorker) SignalWorkflow(_ context.Context, workflowID, signal string, _ any) error {
-	if wf, ok := s.workflows[workflowID]; ok {
-		wf["lastSignal"] = signal
-		if signal == "ptw.close" || signal == "regulatory.callback" {
-			wf["status"] = "COMPLETED"
-		}
-	}
-	return nil
+func (u *unavailableWorker) SignalWorkflow(_ context.Context, _, _ string, _ any) error {
+	return fmt.Errorf("temporal not configured: set TEMPORAL_ADDRESS env var")
 }
 
-func (s *simulatedWorker) TerminateWorkflow(_ context.Context, workflowID, reason string) error {
-	if wf, ok := s.workflows[workflowID]; ok {
-		wf["status"] = "TERMINATED"
-		wf["reason"] = reason
-	}
-	return nil
+func (u *unavailableWorker) TerminateWorkflow(_ context.Context, _, _ string) error {
+	return fmt.Errorf("temporal not configured: set TEMPORAL_ADDRESS env var")
 }
 
 func max(a, b int) int {

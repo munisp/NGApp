@@ -1,14 +1,12 @@
 // Package ledger wraps the TigerBeetle Go client for production accounting.
 // Volumes are stored as integer units × 1000 (i.e. millibbl or mscf).
-// Falls back to an in-memory simulated client when TigerBeetle is unavailable.
+// Returns errors when TigerBeetle is not configured.
 package ledger
 
 import (
 	"context"
 	"fmt"
 	"log"
-	"math/rand"
-	"sync"
 	"time"
 
 	tb "github.com/tigerbeetle/tigerbeetle-go"
@@ -154,77 +152,30 @@ func (c *realClient) GetTransfers(_ context.Context, _ string, _ int) ([]Transfe
 	return []Transfer{}, nil
 }
 
-// ─── Simulated client ─────────────────────────────────────────────────────────
+// ─── Unavailable client (returned when TigerBeetle is not configured) ─────────
 
-type simulatedClient struct {
-	mu       sync.RWMutex
-	accounts map[string]*AccountBalance
-	history  []Transfer
+type unavailableClient struct{}
+
+// NewUnavailableClient returns a client that returns errors for all operations.
+func NewUnavailableClient() LedgerClient {
+	log.Println("[ledger] WARNING: TigerBeetle not configured — ledger unavailable. Set TIGERBEETLE_ADDRESS env var.")
+	return &unavailableClient{}
 }
 
-// NewSimulatedClient returns an in-memory ledger for development/testing.
-func NewSimulatedClient() LedgerClient {
-	log.Println("[ledger] Using simulated TigerBeetle client")
-	return &simulatedClient{
-		accounts: make(map[string]*AccountBalance),
-	}
+func (u *unavailableClient) Close() {}
+
+func (u *unavailableClient) CreateAccount(_ context.Context, _ string, _ uint32, _ uint16) error {
+	return fmt.Errorf("tigerbeetle not configured: set TIGERBEETLE_ADDRESS env var")
 }
 
-func (s *simulatedClient) Close() {}
-
-func (s *simulatedClient) CreateAccount(_ context.Context, id string, _ uint32, _ uint16) error {
-	s.mu.Lock()
-	defer s.mu.Unlock()
-	if _, ok := s.accounts[id]; !ok {
-		s.accounts[id] = &AccountBalance{AccountID: id}
-	}
-	return nil
+func (u *unavailableClient) CreateTransfer(_ context.Context, _ Transfer) error {
+	return fmt.Errorf("tigerbeetle not configured: set TIGERBEETLE_ADDRESS env var")
 }
 
-func (s *simulatedClient) CreateTransfer(_ context.Context, t Transfer) error {
-	s.mu.Lock()
-	defer s.mu.Unlock()
-	if _, ok := s.accounts[t.DebitAccountID]; !ok {
-		s.accounts[t.DebitAccountID] = &AccountBalance{AccountID: t.DebitAccountID}
-	}
-	if _, ok := s.accounts[t.CreditAccountID]; !ok {
-		s.accounts[t.CreditAccountID] = &AccountBalance{AccountID: t.CreditAccountID}
-	}
-	s.accounts[t.DebitAccountID].Debits += t.Amount
-	s.accounts[t.CreditAccountID].Credits += t.Amount
-	s.accounts[t.DebitAccountID].Balance = int64(s.accounts[t.DebitAccountID].Credits) - int64(s.accounts[t.DebitAccountID].Debits)
-	s.accounts[t.CreditAccountID].Balance = int64(s.accounts[t.CreditAccountID].Credits) - int64(s.accounts[t.CreditAccountID].Debits)
-	t.Timestamp = time.Now()
-	s.history = append(s.history, t)
-	return nil
+func (u *unavailableClient) GetAccountBalance(_ context.Context, _ string) (*AccountBalance, error) {
+	return nil, fmt.Errorf("tigerbeetle not configured: set TIGERBEETLE_ADDRESS env var")
 }
 
-func (s *simulatedClient) GetAccountBalance(_ context.Context, accountID string) (*AccountBalance, error) {
-	s.mu.RLock()
-	defer s.mu.RUnlock()
-	if a, ok := s.accounts[accountID]; ok {
-		return a, nil
-	}
-	// Return a seeded balance for demo purposes
-	return &AccountBalance{
-		AccountID: accountID,
-		Debits:    uint64(rand.Intn(50000) + 10000),
-		Credits:   uint64(rand.Intn(80000) + 20000),
-		Balance:   int64(rand.Intn(30000)),
-	}, nil
-}
-
-func (s *simulatedClient) GetTransfers(_ context.Context, accountID string, limit int) ([]Transfer, error) {
-	s.mu.RLock()
-	defer s.mu.RUnlock()
-	var result []Transfer
-	for _, t := range s.history {
-		if t.DebitAccountID == accountID || t.CreditAccountID == accountID {
-			result = append(result, t)
-		}
-	}
-	if len(result) > limit {
-		result = result[len(result)-limit:]
-	}
-	return result, nil
+func (u *unavailableClient) GetTransfers(_ context.Context, _ string, _ int) ([]Transfer, error) {
+	return nil, fmt.Errorf("tigerbeetle not configured: set TIGERBEETLE_ADDRESS env var")
 }

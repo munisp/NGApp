@@ -7,7 +7,6 @@ import (
 	"context"
 	"encoding/json"
 	"log"
-	"math/rand"
 	"time"
 
 	confluent "github.com/confluentinc/confluent-kafka-go/v2/kafka"
@@ -149,57 +148,25 @@ func (rc *realConsumer) Stats() map[string]any {
 	}
 }
 
-// ─── Simulated consumer ───────────────────────────────────────────────────────
+// ─── Unavailable consumer (returned when Kafka is not configured) ─────────────
 
-type simulatedConsumer struct {
-	cache *cache.Client
-	stats consumerStats
+type unavailableConsumer struct{}
+
+// NewUnavailableConsumer returns a consumer that logs a warning and exits.
+func NewUnavailableConsumer() Consumer {
+	log.Println("[kafka] WARNING: Kafka not configured — consumer unavailable")
+	return &unavailableConsumer{}
 }
 
-// NewSimulatedConsumer returns a consumer that generates synthetic sensor data.
-func NewSimulatedConsumer() Consumer {
-	log.Println("[kafka] Using simulated Kafka consumer")
-	return &simulatedConsumer{}
+func (u *unavailableConsumer) Start(ctx context.Context) {
+	log.Println("[kafka] Consumer not started — Kafka broker not configured. Set KAFKA_BROKERS env var.")
+	<-ctx.Done()
 }
 
-func (s *simulatedConsumer) Start(ctx context.Context) {
-	ticker := time.NewTicker(5 * time.Second)
-	defer ticker.Stop()
-
-	wells := []string{"W-001", "W-002", "W-003", "W-004", "W-005"}
-	tags := []string{"WELLHEAD_PRESSURE", "TUBING_TEMP", "CHOKE_POSITION", "GAS_RATE", "OIL_RATE"}
-
-	for {
-		select {
-		case <-ctx.Done():
-			return
-		case <-ticker.C:
-			// Publish a simulated sensor reading to Redis
-			well := wells[rand.Intn(len(wells))]
-			tag := tags[rand.Intn(len(tags))]
-			reading := SensorReading{
-				WellID:    well,
-				Tag:       tag,
-				Value:     rand.Float64()*100 + 50,
-				Unit:      "psi",
-				Quality:   192,
-				Timestamp: time.Now(),
-			}
-			if s.cache != nil {
-				key := "sensor:" + well + ":" + tag
-				_ = s.cache.Set(ctx, key, reading, 5*time.Minute)
-			}
-			s.stats.MessagesProcessed++
-			s.stats.LastMessage = time.Now()
-		}
-	}
-}
-
-func (s *simulatedConsumer) Stats() map[string]any {
+func (u *unavailableConsumer) Stats() map[string]any {
 	return map[string]any{
-		"messagesProcessed": s.stats.MessagesProcessed,
-		"errors":            s.stats.Errors,
-		"lastMessage":       s.stats.LastMessage,
-		"mode":              "simulated",
+		"messagesProcessed": 0,
+		"errors":            0,
+		"mode":              "not_configured",
 	}
 }

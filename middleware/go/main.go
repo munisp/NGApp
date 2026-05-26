@@ -92,8 +92,8 @@ func main() {
 	// ── TigerBeetle ledger client ───────────────────────────────────────────
 	ledgerClient, err := ledger.NewClient(getEnv("TIGERBEETLE_ADDRESS", "localhost:3000"))
 	if err != nil {
-		log.Printf("[ledger] TigerBeetle unavailable (simulation mode): %v", err)
-		ledgerClient = ledger.NewSimulatedClient()
+		log.Printf("[ledger] TigerBeetle unavailable: %v", err)
+		ledgerClient = ledger.NewUnavailableClient()
 	} else {
 		log.Println("[ledger] TigerBeetle connected")
 	}
@@ -138,8 +138,8 @@ func main() {
 		cacheClient,
 	)
 	if err != nil {
-		log.Printf("[temporal] Temporal unavailable (simulation mode): %v", err)
-		temporalWorker = temporal.NewSimulatedWorker()
+		log.Printf("[temporal] Temporal unavailable: %v", err)
+		temporalWorker = temporal.NewUnavailableWorker()
 	} else {
 		log.Println("[temporal] Temporal connected")
 	}
@@ -158,8 +158,8 @@ func main() {
 		cacheClient,
 	)
 	if err != nil {
-		log.Printf("[kafka] Kafka unavailable (simulation mode): %v", err)
-		kafkaConsumer = kafka.NewSimulatedConsumer()
+		log.Printf("[kafka] Kafka unavailable: %v", err)
+		kafkaConsumer = kafka.NewUnavailableConsumer()
 	} else {
 		log.Println("[kafka] Kafka consumer connected")
 	}
