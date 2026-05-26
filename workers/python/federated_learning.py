@@ -179,6 +179,9 @@ async def health():
     return {
         "status": "healthy",
         "service": "federated-learning",
+        "mode": "simulation",
+        "note": "In-memory FedAvg simulation — no distributed participants connected. "
+                "For production, deploy Flower/PySyft with real org endpoints.",
         "model_version": global_model.version,
         "pending_updates": len(pending_updates),
         "participants": len({u.org_id for u in pending_updates}),

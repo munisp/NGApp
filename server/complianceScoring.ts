@@ -71,8 +71,8 @@ async function scoreAuditCompliance(pool: Pool, orgId: number): Promise<number> 
 async function scoreDpiaCompletion(pool: Pool, orgId: number): Promise<number> {
   const { rows: [row] } = await pool.query(
     `SELECT COUNT(*)::int AS total,
-            COUNT(CASE WHEN status = 'completed' THEN 1 END)::int AS completed
-     FROM dpia_records WHERE organization_id = $1`, [orgId]
+            COUNT(CASE WHEN dpia_status = 'completed' THEN 1 END)::int AS completed
+     FROM dpia_assessments WHERE organization_id = $1`, [orgId]
   );
   if (row.total === 0) return 100;
   return Math.round((row.completed / row.total) * 100);
@@ -97,6 +97,73 @@ async function scoreDpoAppointment(pool: Pool, orgId: number): Promise<number> {
   return row.cnt > 0 ? 100 : 0;
 }
 
+async function scoreRopaCurrency(pool: Pool, orgId: number): Promise<number> {
+  const { rows: [row] } = await pool.query(
+    `SELECT COUNT(*)::int AS total,
+            COUNT(CASE WHEN status = 'active' THEN 1 END)::int AS active,
+            COUNT(CASE WHEN last_reviewed_at > NOW() - INTERVAL '1 year' THEN 1 END)::int AS current
+     FROM ropa_records WHERE organization_id = $1`, [orgId]
+  );
+  if (row.total === 0) return 0;
+  const activeRatio = row.active / row.total;
+  const currencyRatio = row.current / row.total;
+  return Math.round((activeRatio * 50 + currencyRatio * 50));
+}
+
+async function scoreConsentManagement(pool: Pool, orgId: number): Promise<number> {
+  const { rows: [row] } = await pool.query(
+    `SELECT COUNT(*)::int AS total,
+            COUNT(CASE WHEN consent_status = 'active' THEN 1 END)::int AS active,
+            COUNT(CASE WHEN consent_status = 'withdrawn' THEN 1 END)::int AS withdrawn,
+            COUNT(CASE WHEN expires_at IS NOT NULL AND expires_at > NOW() THEN 1 END)::int AS valid_expiry
+     FROM consent_records WHERE organization_id = $1`, [orgId]
+  );
+  if (row.total === 0) return 0;
+  const activeRatio = row.active / row.total;
+  const managedWithdrawals = row.withdrawn > 0 ? 1.0 : 0.5;
+  const expiryManagement = row.total > 0 ? row.valid_expiry / row.total : 0;
+  return Math.round((activeRatio * 40 + managedWithdrawals * 30 + expiryManagement * 30));
+}
+
+async function scoreTrainingCompletion(pool: Pool, orgId: number): Promise<number> {
+  const { rows: [row] } = await pool.query(
+    `SELECT COUNT(*)::int AS total,
+            COUNT(CASE WHEN passed = true THEN 1 END)::int AS passed,
+            COUNT(CASE WHEN expires_at IS NULL OR expires_at > NOW() THEN 1 END)::int AS current
+     FROM staff_training_records WHERE organization_id = $1`, [orgId]
+  );
+  if (row.total === 0) return 0;
+  const passRate = row.passed / row.total;
+  const currentRate = row.current / row.total;
+  return Math.round((passRate * 60 + currentRate * 40));
+}
+
+async function scoreDataRetention(pool: Pool, orgId: number): Promise<number> {
+  const { rows: [row] } = await pool.query(
+    `SELECT COUNT(*)::int AS total,
+            COUNT(CASE WHEN is_active = true THEN 1 END)::int AS active,
+            COUNT(CASE WHEN review_date IS NOT NULL AND review_date > NOW() THEN 1 END)::int AS reviewed
+     FROM retention_policies WHERE organization_id = $1`, [orgId]
+  );
+  if (row.total === 0) return 0;
+  const activeRatio = row.active / row.total;
+  const reviewRatio = row.total > 0 ? row.reviewed / row.total : 0;
+  return Math.round((activeRatio * 60 + reviewRatio * 40));
+}
+
+async function scorePrivacyNotices(pool: Pool, orgId: number): Promise<number> {
+  const { rows: [row] } = await pool.query(
+    `SELECT COUNT(*)::int AS total,
+            COUNT(CASE WHEN status = 'published' OR privacy_notice_status = 'published' THEN 1 END)::int AS published,
+            COUNT(CASE WHEN review_date IS NOT NULL AND review_date > NOW() - INTERVAL '1 year' THEN 1 END)::int AS reviewed
+     FROM privacy_notices WHERE organization_id = $1`, [orgId]
+  );
+  if (row.total === 0) return 0;
+  const publishedRatio = row.published / row.total;
+  const reviewedRatio = row.total > 0 ? row.reviewed / row.total : 0;
+  return Math.round((publishedRatio * 60 + reviewedRatio * 40));
+}
+
 export async function recalculateComplianceScore(orgId: number): Promise<ScoringResult> {
   const pool = getPool();
   const breakdown: ScoringResult["breakdown"] = {};
@@ -104,13 +171,13 @@ export async function recalculateComplianceScore(orgId: number): Promise<Scoring
   const scores: Record<string, number> = {
     auditCompliance: await scoreAuditCompliance(pool, orgId),
     dpiaCompletion: await scoreDpiaCompletion(pool, orgId),
-    ropaCurrency: 75, // Default if ROPA module exists
+    ropaCurrency: await scoreRopaCurrency(pool, orgId),
     breachHistory: await scoreBreachHistory(pool, orgId),
     dpoAppointment: await scoreDpoAppointment(pool, orgId),
-    consentManagement: 70,
-    trainingCompletion: 60,
-    dataRetention: 80,
-    privacyNotices: 75,
+    consentManagement: await scoreConsentManagement(pool, orgId),
+    trainingCompletion: await scoreTrainingCompletion(pool, orgId),
+    dataRetention: await scoreDataRetention(pool, orgId),
+    privacyNotices: await scorePrivacyNotices(pool, orgId),
   };
 
   let overallScore = 0;

@@ -1322,7 +1322,31 @@ export async function getOrgScoreTrend(orgId: number): Promise<{ day: string; sc
 export async function getSectorAvgTrend(sector: string): Promise<{ date: string; avgScore: number }[]> {
   const db = await getDb();
   if (!db) return [];
-  // Compute from current org scores with synthetic 30-day series
+
+  const pool = getPool();
+  if (!pool) return [];
+
+  // Query real historical snapshots joined with organizations in this sector
+  const { rows } = await pool.query(
+    `SELECT s.snapshot_date::date AS snap_date,
+            ROUND(AVG(s.overall_score))::int AS avg_score
+     FROM ndpa_compliance_snapshots s
+     JOIN organizations o ON o.id = s.organization_id
+     WHERE o.sector = $1
+       AND s.snapshot_date > NOW() - INTERVAL '30 days'
+     GROUP BY s.snapshot_date::date
+     ORDER BY snap_date ASC`,
+    [sector]
+  );
+
+  if (rows.length > 0) {
+    return rows.map((r: { snap_date: Date; avg_score: number }) => ({
+      date: new Date(r.snap_date).toISOString().slice(0, 10),
+      avgScore: Number(r.avg_score),
+    }));
+  }
+
+  // Fallback: if no historical snapshots exist yet, use current scores as a single data point
   const orgs = await db.select({ complianceScore: organizations.complianceScore })
     .from(organizations)
     .where(and(eq(organizations.sector, sector), isNotNull(organizations.complianceScore)));
@@ -1330,18 +1354,7 @@ export async function getSectorAvgTrend(sector: string): Promise<{ date: string;
   if (orgs.length === 0) return [];
 
   const avg = Math.round(orgs.reduce((s, o) => s + (o.complianceScore ?? 0), 0) / orgs.length);
-  const result: { date: string; avgScore: number }[] = [];
-  for (let i = 29; i >= 0; i--) {
-    const d = new Date();
-    d.setDate(d.getDate() - i);
-    // Add slight variation ±3 around the current average
-    const variation = Math.round((Math.random() - 0.5) * 6);
-    result.push({
-      date: d.toISOString().slice(0, 10),
-      avgScore: Math.max(0, Math.min(100, avg + variation)),
-    });
-  }
-  return result;
+  return [{ date: new Date().toISOString().slice(0, 10), avgScore: avg }];
 }
 
 // ─── Penalty Receipt ─────────────────────────────────────────────────────────

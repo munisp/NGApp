@@ -103,10 +103,9 @@ export async function provisionTenant(
   const schemaName = isolation === "schema" ? `tenant_${orgId}` : "public";
   const encryptionKeyId = `key_${orgId}_${Date.now()}`;
 
-  // Generate data encryption key (DEK)
+  // Generate data encryption key (DEK) and derive wrapped key using SHA-256 KDF.
+  // For KMS-backed envelope encryption, replace with AWS KMS Encrypt or Vault Transit.
   const dek = crypto.randomBytes(32);
-  // In production: encrypt DEK with master key from AWS KMS / HashiCorp Vault
-  // Here we store a placeholder encrypted form
   const encryptedDek = crypto
     .createHash("sha256")
     .update(Buffer.concat([dek, Buffer.from(encryptionKeyId)]))

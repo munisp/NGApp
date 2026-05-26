@@ -6,7 +6,7 @@
  *
  * Service Endpoints (configurable via env):
  *   ML Pipeline:      ML_SERVICE_URL      (default: http://localhost:8200)
- *   Lakehouse:        LAKEHOUSE_URL        (default: http://localhost:8210)
+ *   Lakehouse:        LAKEHOUSE_URL        (default: http://localhost:8140)
  *   Dapr Bindings:    DAPR_APP_URL         (default: http://localhost:8220)
  *   IAM Service:      IAM_SERVICE_URL      (default: http://localhost:8150)
  *   Event Bus:        EVENT_BUS_URL        (default: http://localhost:8160)
