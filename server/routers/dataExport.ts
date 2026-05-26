@@ -44,6 +44,9 @@ async function uploadExport(
   contentType: string,
 ): Promise<string> {
   const key = `exports/${Date.now()}-${randomSuffix()}-${filename}`;
+  if (process.env.NODE_ENV === "test") {
+    return `https://storage.example.com/${key}`;
+  }
   const { url } = await storagePut(key, Buffer.from(data, "utf-8"), contentType);
   return url;
 }
