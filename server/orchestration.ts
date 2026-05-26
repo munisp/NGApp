@@ -49,6 +49,7 @@
 
 import { startWorkflow } from "./temporal";
 import { logger } from "./logger";
+import { withResilience } from "./resilience";
 // ─────────────────────────────────────────────────────────────────────────────
 // Service URLs
 // ─────────────────────────────────────────────────────────────────────────────
@@ -97,27 +98,42 @@ async function callService<T = unknown>(
 ): Promise<OrchestrationResult<T>> {
   const start = Date.now();
   const url = `${serviceUrl}${path}`;
-  try {
-    const controller = new AbortController();
-    const timer = setTimeout(() => controller.abort(), timeoutMs);
+  const serviceName = Object.entries(ORCHESTRATION_SERVICES).find(([, v]) => v === serviceUrl)?.[0] ?? "unknown";
+  const internalToken = process.env.INTERNAL_SERVICE_TOKEN;
+
+  async function singleAttempt(): Promise<OrchestrationResult<T>> {
     const resp = await fetch(url, {
       method,
-      headers: { "Content-Type": "application/json" },
+      headers: {
+        "Content-Type": "application/json",
+        ...(internalToken ? { "X-Internal-Auth": internalToken } : {}),
+      },
       body: body ? JSON.stringify(body) : undefined,
-      signal: controller.signal,
+      signal: AbortSignal.timeout(timeoutMs),
     });
-    clearTimeout(timer);
     const latencyMs = Date.now() - start;
     if (!resp.ok) {
       const text = await resp.text();
-      return { ok: false, error: `HTTP ${resp.status}: ${text}`, service: url, latencyMs };
+      throw new Error(`HTTP ${resp.status}: ${text}`);
     }
     const data = await resp.json() as T;
     return { ok: true, data, service: url, latencyMs };
+  }
+
+  try {
+    return await withResilience(
+      `orch:${serviceName}`,
+      singleAttempt,
+      { failureThreshold: 5, resetTimeoutMs: 30_000 },
+      { maxAttempts: 2, initialDelayMs: 200, isRetryable: (err) => {
+        const msg = err instanceof Error ? err.message : String(err);
+        return msg.includes("ECONNREFUSED") || msg.includes("timeout") || msg.includes("abort") || msg.includes("5");
+      }},
+    );
   } catch (err: unknown) {
     const latencyMs = Date.now() - start;
     const message = err instanceof Error ? err.message : String(err);
-    logger.warn(`[orchestration] Service unavailable: ${url} — ${message}`);
+    logger.warn({ service: serviceName, url, latencyMs, err: message }, "[orchestration] Service call failed after retries");
     return { ok: false, error: message, service: url, latencyMs };
   }
 }

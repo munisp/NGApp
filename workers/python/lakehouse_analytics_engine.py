@@ -637,6 +637,22 @@ def etl_scheduler():
             log.error(f"ETL scheduler error: {e}")
         time.sleep(ETL_INTERVAL)
 
+# ── Graceful Shutdown ─────────────────────────────────────────────────────────
+import signal as _signal
+
+def _graceful_shutdown(signum, _frame):
+    sig_name = _signal.Signals(signum).name
+    log.info(f"[Shutdown] Received {sig_name} — flushing DuckDB and stopping ETL")
+    if HAS_DUCKDB:
+        try:
+            duckdb.connect(str(WAREHOUSE_PATH / "analytics.duckdb")).close()
+        except Exception:
+            pass
+    log.info("[Shutdown] Lakehouse shutdown complete")
+
+_signal.signal(_signal.SIGTERM, _graceful_shutdown)
+_signal.signal(_signal.SIGINT, _graceful_shutdown)
+
 # ── Main ──────────────────────────────────────────────────────────────────────
 if __name__ == "__main__":
     import uvicorn

@@ -1049,7 +1049,9 @@ export const evidencePackagesRouter = router({
   generate: protectedProcedure.input(z.object({ organizationId: z.number().optional(), packageType: z.string().default("compliance_audit"), referenceType: z.string().optional() })).mutation(async ({ input, ctx }) => {
     const crypto = await import('crypto');
     const contentHash = `sha256-${crypto.createHash('sha256').update(JSON.stringify(input)).digest('hex')}`;
-    const hmacSignature = `hmac-${crypto.createHmac('sha256', process.env.JWT_SECRET ?? 'ndsep-secret').update(contentHash).digest('hex').slice(0, 32)}`;
+    const hmacKey = process.env.JWT_SECRET;
+    if (!hmacKey) throw new Error("JWT_SECRET is required for HMAC signing");
+    const hmacSignature = `hmac-${crypto.createHmac('sha256', hmacKey).update(contentHash).digest('hex').slice(0, 32)}`;
     const r = await query(`INSERT INTO evidence_packages (org_id,package_type,reference_type,content_hash,hmac_signature,status,generated_by,created_at) VALUES ($1,$2,$3,$4,$5,'ready',$6,NOW()) RETURNING *`,[input.organizationId??null,input.packageType,input.referenceType??null,contentHash,hmacSignature,ctx.user.id]); return r[0];
   }),
   verify: protectedProcedure.input(z.object({ contentHash: z.string(), hmacSignature: z.string() })).query(async ({ input }) => {

@@ -60,7 +60,7 @@ export function loadConfig(): NdsepConfig {
   const config: NdsepConfig = {
     databaseUrl: required("DATABASE_URL") || `postgresql://${optional("PG_USER", "ndsep_user")}:${required("PG_PASSWORD")}@${optional("PG_HOST", "localhost")}:${optional("PG_PORT", "5432")}/${optional("PG_DATABASE", "ndsep_db")}`,
     databaseReplicaUrl: env.DATABASE_REPLICA_URL ?? null,
-    jwtSecret: required("JWT_SECRET") || "dev-jwt-secret-not-for-production",
+    jwtSecret: required("JWT_SECRET") || (isProd ? "" : "dev-jwt-secret-not-for-production-" + process.pid),
     fieldEncryptionKey: env.FIELD_ENCRYPTION_KEY ?? null,
     port: parseInt(env.PORT ?? "3000", 10),
     nodeEnv: env.NODE_ENV ?? "development",

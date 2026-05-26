@@ -2349,6 +2349,40 @@ def api_retrain_status():
     }
 
 
+# ── Graceful Shutdown ─────────────────────────────────────────────────────────
+import signal as _signal
+import atexit
+
+_shutdown_requested = False
+
+def _graceful_shutdown(signum, frame):
+    global _shutdown_requested
+    sig_name = _signal.Signals(signum).name
+    log.info(f"[Shutdown] Received {sig_name} — shutting down gracefully")
+    _shutdown_requested = True
+    # Stop continuous training if running
+    if continuous_trainer.running:
+        continuous_trainer.stop()
+        log.info("[Shutdown] Continuous training stopped")
+    # Save all model weights before exit
+    try:
+        for name, model in [("gnn", gnn_model), ("lstm", lstm_model), ("autoencoder", ae_model)]:
+            if model is not None and hasattr(model, "state_dict"):
+                path = MODEL_DIR / f"{name}_final.pt"
+                torch.save(model.state_dict(), path)
+                log.info(f"[Shutdown] Saved {name} weights to {path}")
+    except Exception as e:
+        log.warning(f"[Shutdown] Error saving models: {e}")
+    log.info("[Shutdown] Graceful shutdown complete")
+
+_signal.signal(_signal.SIGTERM, _graceful_shutdown)
+_signal.signal(_signal.SIGINT, _graceful_shutdown)
+
+@atexit.register
+def _cleanup():
+    if continuous_trainer.running:
+        continuous_trainer.stop()
+
 # ── Main ──────────────────────────────────────────────────────────────────────
 if __name__ == "__main__":
     import uvicorn

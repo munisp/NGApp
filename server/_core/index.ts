@@ -397,6 +397,23 @@ async function startServer() {
     const poolIdle = pool?.idleCount ?? 0;
     const poolWaiting = pool?.waitingCount ?? 0;
 
+    const { cacheMetrics } = await import("../cache");
+    const cache = cacheMetrics();
+
+    let cbLines: string[] = [];
+    try {
+      const cbStates = getAllCircuitBreakerStates();
+      cbLines = [
+        "# HELP ndsep_circuit_breaker_state Circuit breaker state (0=closed, 1=open, 2=half_open)",
+        "# TYPE ndsep_circuit_breaker_state gauge",
+        ...cbStates.map(cb => `ndsep_circuit_breaker_state{service="${cb.name}"} ${cb.state === "CLOSED" ? 0 : cb.state === "OPEN" ? 1 : 2}`),
+        "# HELP ndsep_circuit_breaker_failures Circuit breaker failure count",
+        "# TYPE ndsep_circuit_breaker_failures gauge",
+        ...cbStates.map(cb => `ndsep_circuit_breaker_failures{service="${cb.name}"} ${cb.failures}`),
+      ];
+    } catch { /* circuit breakers not yet initialized */ }
+
+    const mem = process.memoryUsage();
     const lines = [
       "# HELP ndsep_uptime_seconds Server uptime in seconds",
       "# TYPE ndsep_uptime_seconds gauge",
@@ -416,6 +433,22 @@ async function startServer() {
       "# HELP ndsep_db_pool_waiting Waiting DB pool requests",
       "# TYPE ndsep_db_pool_waiting gauge",
       `ndsep_db_pool_waiting ${poolWaiting}`,
+      "# HELP ndsep_redis_connected Redis connection status (1=connected)",
+      "# TYPE ndsep_redis_connected gauge",
+      `ndsep_redis_connected ${cache.connected ? 1 : 0}`,
+      "# HELP ndsep_redis_hit_rate Cache hit rate percentage",
+      "# TYPE ndsep_redis_hit_rate gauge",
+      `ndsep_redis_hit_rate ${cache.hitRate}`,
+      "# HELP ndsep_redis_errors_total Total Redis errors",
+      "# TYPE ndsep_redis_errors_total counter",
+      `ndsep_redis_errors_total ${cache.errors}`,
+      "# HELP ndsep_memory_rss_bytes Resident set size in bytes",
+      "# TYPE ndsep_memory_rss_bytes gauge",
+      `ndsep_memory_rss_bytes ${mem.rss}`,
+      "# HELP ndsep_memory_heap_used_bytes Heap used in bytes",
+      "# TYPE ndsep_memory_heap_used_bytes gauge",
+      `ndsep_memory_heap_used_bytes ${mem.heapUsed}`,
+      ...cbLines,
     ];
     res.setHeader("Content-Type", "text/plain; version=0.0.4");
     res.send(lines.join("\n") + "\n");
