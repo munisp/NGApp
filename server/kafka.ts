@@ -262,8 +262,8 @@ export async function publishAuditEvent(data: { userId: string; action: string; 
 export function isKafkaConnected(): boolean {
   return kafkaConnected;
 }
-export function getKafkaProducerStatus(): { connected: boolean; brokers: string[]; clientId: string; ssl: boolean; saslEnabled: boolean; produced: number; errors: number } {
-  return { connected: kafkaConnected, brokers: [KAFKA_BOOTSTRAP], clientId: KAFKA_CLIENT_ID, ssl: false, saslEnabled: false, produced, errors };
+export function getKafkaProducerStatus(): { connected: boolean; enabled: boolean; brokers: string[]; clientId: string; ssl: boolean; saslEnabled: boolean; produced: number; errors: number } {
+  return { connected: kafkaConnected, enabled: KAFKA_ENABLED, brokers: [KAFKA_BOOTSTRAP], clientId: KAFKA_CLIENT_ID, ssl: false, saslEnabled: false, produced, errors };
 }
 export async function kafkaSmokeTest(): Promise<{ ok: boolean; topic: string; message: string; latencyMs: number }> {
   const t0 = Date.now();

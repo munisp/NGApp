@@ -17,6 +17,19 @@ const BASE = process.env.FLUVIO_HTTP_URL ?? "http://localhost:9003";
 const ENABLED = process.env.FLUVIO_ENABLED !== "false";
 const TIMEOUT_MS = 5000;
 
+let fluvioConnected = false;
+let produceCount = 0;
+let consumeCount = 0;
+let fluvioErrors = 0;
+
+const NDSEP_EDGE_TOPICS = [
+  "ndsep.telemetry",
+  "ndsep.edge.events",
+  "ndsep.canary",
+  "ndsep.ixp.packets",
+  "ndsep.alerts.realtime",
+];
+
 // ── Types ──────────────────────────────────────────────────────────────────────
 
 export interface FluvioRecord {
@@ -57,8 +70,10 @@ export async function fluvioHealth(): Promise<FluvioHealthResult> {
     const res = await fetch(`${BASE}/health`, { signal: AbortSignal.timeout(TIMEOUT_MS) });
     if (!res.ok) return { healthy: false, error: `HTTP ${res.status}` };
     const data = await res.json();
+    fluvioConnected = true;
     return { healthy: true, version: data.version, topics: data.topics ?? 0 };
   } catch (e: unknown) {
+    fluvioConnected = false;
     logger.warn(`[Fluvio] Health check failed: ${(e instanceof Error ? e.message : String(e))}`);
     return { healthy: false, error: (e instanceof Error ? e.message : String(e)) };
   }
@@ -119,10 +134,12 @@ export async function fluvioProduce(
       body: JSON.stringify({ records: payload }),
       signal: AbortSignal.timeout(TIMEOUT_MS),
     });
-    if (!res.ok) return { success: false, error: `HTTP ${res.status}` };
+    if (!res.ok) { fluvioErrors++; return { success: false, error: `HTTP ${res.status}` }; }
     const data = await res.json();
+    produceCount += records.length;
     return { success: true, offset: data.offset };
   } catch (e: unknown) {
+    fluvioErrors++;
     logger.warn(`[Fluvio] produce(${topic}) failed: ${(e instanceof Error ? e.message : String(e))}`);
     return { success: false, error: (e instanceof Error ? e.message : String(e)) };
   }
@@ -142,10 +159,13 @@ export async function fluvioConsume(
     const res = await fetch(`${BASE}/consume/${encodeURIComponent(topic)}?${params}`, {
       signal: AbortSignal.timeout(TIMEOUT_MS),
     });
-    if (!res.ok) return { records: [], error: `HTTP ${res.status}` };
+    if (!res.ok) { fluvioErrors++; return { records: [], error: `HTTP ${res.status}` }; }
     const data = await res.json();
-    return { records: Array.isArray(data.records) ? data.records : [] };
+    const recs = Array.isArray(data.records) ? data.records : [];
+    consumeCount += recs.length;
+    return { records: recs };
   } catch (e: unknown) {
+    fluvioErrors++;
     logger.warn(`[Fluvio] consume(${topic}) failed: ${(e instanceof Error ? e.message : String(e))}`);
     return { records: [], error: (e instanceof Error ? e.message : String(e)) };
   }
@@ -162,6 +182,42 @@ export async function fluvioIngestTelemetry(
     key: `org-${orgId}`,
     value: { orgId, eventType, payload, ts: Date.now() },
   }]);
+}
+
+// ── Metrics ────────────────────────────────────────────────────────────────────
+
+export function fluvioMetrics() {
+  return {
+    connected: fluvioConnected,
+    enabled: ENABLED,
+    url: BASE,
+    produced: produceCount,
+    consumed: consumeCount,
+    errors: fluvioErrors,
+  };
+}
+
+export { fluvioConnected };
+
+// ── Auto-create NDSEP edge topics on startup ──────────────────────────────────
+
+async function ensureEdgeTopics(): Promise<void> {
+  for (const topic of NDSEP_EDGE_TOPICS) {
+    const result = await fluvioCreateTopic(topic, 1, 1, 86_400_000);
+    if (result.success) {
+      logger.info(`[Fluvio] Auto-created edge topic: ${topic}`);
+    }
+  }
+}
+
+if (ENABLED) {
+  fluvioHealth().then(async (h) => {
+    if (h.healthy) {
+      await ensureEdgeTopics();
+    }
+  }).catch(() => {
+    logger.warn("[Fluvio] Not available — edge streaming disabled (graceful degradation)");
+  });
 }
 
 // ── Smoke test ─────────────────────────────────────────────────────────────────

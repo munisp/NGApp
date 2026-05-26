@@ -159,6 +159,16 @@ export async function unblockIp(ip: string): Promise<boolean> {
 
 // ─── Smoke Test ──────────────────────────────────────────────────────────────
 
+export function openappsecMetrics() {
+  return {
+    connected,
+    enabled: OPENAPPSEC_ENABLED,
+    url: OPENAPPSEC_URL,
+    blockedRequests,
+    errors,
+  };
+}
+
 export async function openappsecSmokeTest() {
   const health = await openappsecHealth();
   const policies = await listPolicies();
@@ -166,7 +176,14 @@ export async function openappsecSmokeTest() {
 }
 
 if (OPENAPPSEC_ENABLED) {
-  openappsecHealth().catch(() => {
+  openappsecHealth().then(async (h) => {
+    if (h.connected) {
+      const result = await syncPolicies();
+      if (result.synced.length > 0) {
+        logger.info({ synced: result.synced }, "[OpenAppSec] Auto-synced WAF policies on startup");
+      }
+    }
+  }).catch(() => {
     logger.warn("[OpenAppSec] Not available — WAF protection using fallback rate limiting");
   });
 }

@@ -28,6 +28,7 @@
  */
 
 import { kafkaProduce } from "./kafka";
+import { daprPublish } from "./dapr";
 import { logger } from "./logger";
 import { captureWarning } from "./errorMonitoring";
 
@@ -86,13 +87,18 @@ export async function publishEvent(
   };
 
   const topic = topicForEvent(type);
-  const ok = await kafkaProduce(topic, aggregateId, event as unknown as Record<string, unknown>, {
-    "event-type": type,
-    "aggregate-type": aggregateType,
-    "correlation-id": event.correlationId!,
-  });
 
-  if (ok) {
+  // Dual-publish: Kafka (primary) + Dapr (secondary, fire-and-forget)
+  const [kafkaOk] = await Promise.all([
+    kafkaProduce(topic, aggregateId, event as unknown as Record<string, unknown>, {
+      "event-type": type,
+      "aggregate-type": aggregateType,
+      "correlation-id": event.correlationId!,
+    }),
+    daprPublish(topic, event as unknown as Record<string, unknown>).catch(() => false),
+  ]);
+
+  if (kafkaOk) {
     published++;
     logger.debug({ type, aggregateId, topic }, "[EventBus] Published");
     return true;

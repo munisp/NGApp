@@ -242,19 +242,9 @@ async function probeMojaloop(): Promise<MiddlewareStatus> {
 }
 
 async function probeTigerBeetle(): Promise<MiddlewareStatus> {
-  const addr = process.env.TIGERBEETLE_ADDRESS;
-  if (!addr) return unconfiguredStatus("TigerBeetle", "ledger");
-  // TigerBeetle uses a custom binary protocol, not HTTP
-  return {
-    name: "TigerBeetle",
-    type: "ledger",
-    status: "degraded",
-    latencyMs: 0,
-    lastCheck: new Date().toISOString(),
-    retries: 0,
-    circuitState: "closed",
-    details: { address: addr, note: "binary protocol — requires TigerBeetle client" },
-  };
+  const tbUrl = process.env.TIGERBEETLE_SERVICE_URL ?? process.env.TIGERBEETLE_HTTP_URL;
+  if (!tbUrl) return unconfiguredStatus("TigerBeetle", "ledger");
+  return httpHealthProbe("TigerBeetle", `${tbUrl}/health`, 3000);
 }
 
 async function probeLakehouse(): Promise<MiddlewareStatus> {
@@ -270,9 +260,9 @@ async function probeDapr(): Promise<MiddlewareStatus> {
 }
 
 async function probeFluvio(): Promise<MiddlewareStatus> {
-  const url = process.env.FLUVIO_SC_URL;
+  const url = process.env.FLUVIO_HTTP_URL ?? process.env.FLUVIO_SC_URL;
   if (!url) return unconfiguredStatus("Fluvio", "streaming");
-  return httpHealthProbe("Fluvio", url);
+  return httpHealthProbe("Fluvio", url, 3000);
 }
 
 async function probeApisix(): Promise<MiddlewareStatus> {

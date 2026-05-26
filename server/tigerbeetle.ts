@@ -16,6 +16,10 @@ import { logger } from "./logger";
 const TB_BASE = process.env.TIGERBEETLE_HTTP_URL ?? "http://localhost:8240";
 const TB_TIMEOUT_MS = 5_000;
 
+let tbTransactions = 0;
+let tbErrors = 0;
+let tbDegraded = 0;
+
 export type TbTransactionType = "penalty" | "fine" | "settlement" | "refund" | "escrow";
 
 export interface TbTransaction {
@@ -76,14 +80,17 @@ export async function createTigerBeetleTransaction(tx: TbTransaction): Promise<T
       return { success: false, error: `HTTP ${res.status}: ${body}`, degraded: true };
     }
     const data = await res.json();
+    tbTransactions++;
     return { success: true, transactionId: data.transaction_id, ledgerEntryId: data.ledger_entry_id };
   } catch (err: unknown) {
     // Graceful degradation — TigerBeetle proxy not running in dev
     const errObj = err as Record<string, unknown>;
     if ((err instanceof Error && err.name === "TimeoutError") || errObj?.code === "ECONNREFUSED" || (errObj?.cause as Record<string, unknown>)?.code === "ECONNREFUSED") {
+      tbDegraded++;
       logger.info("[TigerBeetle] Proxy unreachable — ledger entry skipped (graceful degradation)");
       return { success: false, error: "TigerBeetle proxy unreachable", degraded: true };
     }
+    tbErrors++;
     const errMsg = err instanceof Error ? err.message : String(err);
     logger.error({ err: errMsg }, "[TigerBeetle] Unexpected error");
     return { success: false, error: errMsg || "Unknown error", degraded: true };
@@ -115,6 +122,18 @@ export async function isTigerBeetleHealthy(): Promise<boolean> {
   } catch {
     return false;
   }
+}
+
+/**
+ * Metrics for monitoring and health dashboard.
+ */
+export function tigerbeetleMetrics() {
+  return {
+    url: TB_BASE,
+    transactions: tbTransactions,
+    errors: tbErrors,
+    degraded: tbDegraded,
+  };
 }
 
 /**

@@ -136,3 +136,73 @@ export async function permifyWriteRelationship(
     logger.warn("[permify] Failed to write relationship tuple");
   }
 }
+
+/**
+ * Health check — returns true if Permify is reachable.
+ */
+export async function permifyHealthCheck(): Promise<{
+  connected: boolean;
+  url: string;
+  tenant: string;
+  latencyMs: number;
+}> {
+  const start = Date.now();
+  try {
+    const res = await fetch(`${PERMIFY_URL}/healthz`, {
+      signal: AbortSignal.timeout(2000),
+    });
+    return { connected: res.ok, url: PERMIFY_URL, tenant: PERMIFY_TENANT, latencyMs: Date.now() - start };
+  } catch {
+    return { connected: false, url: PERMIFY_URL, tenant: PERMIFY_TENANT, latencyMs: Date.now() - start };
+  }
+}
+
+/**
+ * Bootstrap the NDSEP authorization schema into Permify.
+ * Idempotent — safe to call on every startup.
+ */
+export async function permifyBootstrapSchema(): Promise<boolean> {
+  const NDSEP_SCHEMA = `
+entity user {}
+
+entity organization {
+  relation admin @user
+  relation compliance_officer @user
+  relation member @user
+
+  action issue_penalty = admin
+  action issue_certificate = admin
+  action approve_transfer = admin
+  action access_pcap = admin
+  action assign_role = admin
+  action view = admin or compliance_officer or member
+}
+
+entity sector {
+  relation regulator @user
+  relation operator @user
+
+  action manage = regulator
+  action view = regulator or operator
+}
+`;
+
+  try {
+    const res = await fetch(
+      `${PERMIFY_URL}/v1/tenants/${PERMIFY_TENANT}/schemas/write`,
+      {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ schema: NDSEP_SCHEMA }),
+        signal: AbortSignal.timeout(5000),
+      }
+    );
+    if (res.ok) {
+      logger.info("[permify] Schema bootstrapped successfully");
+      return true;
+    }
+    return false;
+  } catch {
+    return false;
+  }
+}

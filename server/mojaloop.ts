@@ -151,6 +151,18 @@ export async function executeTransfer(
 
 // ─── Smoke Test ──────────────────────────────────────────────────────────────
 
+export function mojaloopMetrics() {
+  return {
+    connected,
+    enabled: MOJALOOP_ENABLED,
+    hubUrl: MOJALOOP_URL,
+    alsUrl: MOJALOOP_ALS_URL,
+    fspiopSource: MOJALOOP_FSPIOP_SRC,
+    transfers,
+    errors,
+  };
+}
+
 export async function mojalookSmokeTest() {
   const health = await mojalookHealth();
   return {

@@ -265,9 +265,16 @@ export async function opensearchSmokeTest() {
   return { health, indices };
 }
 
-// Initial connection check
+// Initial connection check + auto-create indices
 if (OPENSEARCH_ENABLED) {
-  opensearchHealth().catch(() => {
+  opensearchHealth().then(async (h) => {
+    if (h.connected) {
+      const result = await ensureIndices();
+      if (result.created.length > 0) {
+        logger.info({ created: result.created }, "[OpenSearch] Auto-created indices on startup");
+      }
+    }
+  }).catch(() => {
     logger.warn("[OpenSearch] Not available — full-text search degraded");
   });
 }
