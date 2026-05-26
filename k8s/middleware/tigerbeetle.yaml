@@ -1,0 +1,163 @@
+apiVersion: v1
+kind: Secret
+metadata:
+  name: tigerbeetle-secrets
+  namespace: banking-crm
+type: Opaque
+data:
+  # Generate: openssl rand -base64 32 | base64
+  cluster-id: "MA=="  # 0 (default cluster)
+---
+apiVersion: apps/v1
+kind: StatefulSet
+metadata:
+  name: tigerbeetle
+  namespace: banking-crm
+  labels:
+    app: tigerbeetle
+    app.kubernetes.io/name: tigerbeetle
+    app.kubernetes.io/component: ledger
+    app.kubernetes.io/part-of: banking-crm-integration
+spec:
+  serviceName: tigerbeetle
+  replicas: 3
+  podManagementPolicy: Parallel
+  selector:
+    matchLabels:
+      app: tigerbeetle
+  template:
+    metadata:
+      labels:
+        app: tigerbeetle
+      annotations:
+        prometheus.io/scrape: "true"
+        prometheus.io/port: "3003"
+    spec:
+      terminationGracePeriodSeconds: 60
+      affinity:
+        podAntiAffinity:
+          requiredDuringSchedulingIgnoredDuringExecution:
+          - labelSelector:
+              matchExpressions:
+              - key: app
+                operator: In
+                values:
+                - tigerbeetle
+            topologyKey: kubernetes.io/hostname
+      initContainers:
+      - name: format
+        image: ghcr.io/tigerbeetle/tigerbeetle:0.15.6
+        command:
+        - sh
+        - -c
+        - |
+          if [ ! -f /data/0_$(hostname | sed 's/tigerbeetle-//').tigerbeetle ]; then
+            tigerbeetle format --cluster=0 --replica=$(hostname | sed 's/tigerbeetle-//') --replica-count=3 /data/0_$(hostname | sed 's/tigerbeetle-//').tigerbeetle
+          fi
+        volumeMounts:
+        - name: data
+          mountPath: /data
+      containers:
+      - name: tigerbeetle
+        image: ghcr.io/tigerbeetle/tigerbeetle:0.15.6
+        command:
+        - tigerbeetle
+        - start
+        - --addresses=0.0.0.0:3001,tigerbeetle-1.tigerbeetle.banking-crm.svc:3001,tigerbeetle-2.tigerbeetle.banking-crm.svc:3001
+        args:
+        - /data/0_$(REPLICA_INDEX).tigerbeetle
+        env:
+        - name: REPLICA_INDEX
+          valueFrom:
+            fieldRef:
+              fieldPath: metadata.labels['apps.kubernetes.io/pod-index']
+        ports:
+        - containerPort: 3001
+          name: client
+          protocol: TCP
+        - containerPort: 3002
+          name: replication
+          protocol: TCP
+        resources:
+          limits:
+            cpu: "2"
+            memory: "4Gi"
+          requests:
+            cpu: "1"
+            memory: "2Gi"
+        readinessProbe:
+          tcpSocket:
+            port: 3001
+          initialDelaySeconds: 10
+          periodSeconds: 10
+        livenessProbe:
+          tcpSocket:
+            port: 3001
+          initialDelaySeconds: 30
+          periodSeconds: 30
+        volumeMounts:
+        - name: data
+          mountPath: /data
+  volumeClaimTemplates:
+  - metadata:
+      name: data
+    spec:
+      accessModes: ["ReadWriteOnce"]
+      storageClassName: standard
+      resources:
+        requests:
+          storage: 50Gi
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: tigerbeetle
+  namespace: banking-crm
+  labels:
+    app: tigerbeetle
+    app.kubernetes.io/name: tigerbeetle
+    app.kubernetes.io/part-of: banking-crm-integration
+spec:
+  type: ClusterIP
+  clusterIP: None
+  ports:
+  - port: 3001
+    targetPort: 3001
+    protocol: TCP
+    name: client
+  - port: 3002
+    targetPort: 3002
+    protocol: TCP
+    name: replication
+  selector:
+    app: tigerbeetle
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: tigerbeetle-client
+  namespace: banking-crm
+  labels:
+    app: tigerbeetle
+    app.kubernetes.io/name: tigerbeetle
+    app.kubernetes.io/part-of: banking-crm-integration
+spec:
+  type: ClusterIP
+  ports:
+  - port: 3001
+    targetPort: 3001
+    protocol: TCP
+    name: client
+  selector:
+    app: tigerbeetle
+---
+apiVersion: policy/v1
+kind: PodDisruptionBudget
+metadata:
+  name: tigerbeetle-pdb
+  namespace: banking-crm
+spec:
+  minAvailable: 2
+  selector:
+    matchLabels:
+      app: tigerbeetle

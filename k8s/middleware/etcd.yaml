@@ -1,0 +1,148 @@
+apiVersion: apps/v1
+kind: StatefulSet
+metadata:
+  name: etcd
+  namespace: banking-crm
+  labels:
+    app: etcd
+    app.kubernetes.io/name: etcd
+    app.kubernetes.io/part-of: banking-crm-integration
+    app.kubernetes.io/component: database
+    app.kubernetes.io/version: "3.5.6"
+spec:
+  serviceName: etcd
+  replicas: 3
+  selector:
+    matchLabels:
+      app: etcd
+  template:
+    metadata:
+      labels:
+        app: etcd
+      annotations:
+        prometheus.io/scrape: "true"
+        prometheus.io/port: "2379"
+        prometheus.io/path: "/metrics"
+    spec:
+      terminationGracePeriodSeconds: 30
+      securityContext:
+        runAsUser: 1000
+        runAsGroup: 1000
+        fsGroup: 1000
+      containers:
+      - name: etcd
+        image: bitnami/etcd:3.5.6
+        imagePullPolicy: IfNotPresent
+        ports:
+        - containerPort: 2379
+          name: client
+        - containerPort: 2380
+          name: peer
+        env:
+        - name: BITNAMI_DEBUG
+          value: "false"
+        - name: MY_POD_NAME
+          valueFrom:
+            fieldRef:
+              fieldPath: metadata.name
+        - name: MY_POD_NAMESPACE
+          valueFrom:
+            fieldRef:
+              fieldPath: metadata.namespace
+        - name: ETCD_NAME
+          value: "$(MY_POD_NAME)"
+        - name: ETCD_DATA_DIR
+          value: "/bitnami/etcd/data"
+        - name: ETCD_ADVERTISE_CLIENT_URLS
+          value: "http://$(MY_POD_NAME).etcd.$(MY_POD_NAMESPACE).svc.cluster.local:2379"
+        - name: ETCD_LISTEN_CLIENT_URLS
+          value: "http://0.0.0.0:2379"
+        - name: ETCD_INITIAL_ADVERTISE_PEER_URLS
+          value: "http://$(MY_POD_NAME).etcd.$(MY_POD_NAMESPACE).svc.cluster.local:2380"
+        - name: ETCD_LISTEN_PEER_URLS
+          value: "http://0.0.0.0:2380"
+        - name: ETCD_INITIAL_CLUSTER_TOKEN
+          value: "etcd-cluster-banking-crm"
+        - name: ETCD_INITIAL_CLUSTER_STATE
+          value: "new"
+        - name: ETCD_INITIAL_CLUSTER
+          value: "etcd-0=http://etcd-0.etcd.banking-crm.svc.cluster.local:2380,etcd-1=http://etcd-1.etcd.banking-crm.svc.cluster.local:2380,etcd-2=http://etcd-2.etcd.banking-crm.svc.cluster.local:2380"
+        - name: ALLOW_NONE_AUTHENTICATION
+          value: "yes"
+        - name: ETCD_ROOT_PASSWORD
+          valueFrom:
+            secretKeyRef:
+              name: apisix-secrets
+              key: etcd_password
+        resources:
+          limits:
+            cpu: "1"
+            memory: "1Gi"
+          requests:
+            cpu: "500m"
+            memory: "512Mi"
+        livenessProbe:
+          tcpSocket:
+            port: client
+          initialDelaySeconds: 30
+          periodSeconds: 10
+          timeoutSeconds: 5
+          failureThreshold: 3
+        readinessProbe:
+          tcpSocket:
+            port: client
+          initialDelaySeconds: 15
+          periodSeconds: 5
+          timeoutSeconds: 3
+          failureThreshold: 3
+        volumeMounts:
+        - name: data
+          mountPath: /bitnami/etcd
+  volumeClaimTemplates:
+  - metadata:
+      name: data
+    spec:
+      accessModes: [ "ReadWriteOnce" ]
+      resources:
+        requests:
+          storage: 10Gi
+      storageClassName: standard
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: etcd
+  namespace: banking-crm
+  labels:
+    app: etcd
+    app.kubernetes.io/name: etcd
+    app.kubernetes.io/part-of: banking-crm-integration
+  annotations:
+    prometheus.io/scrape: "true"
+    prometheus.io/port: "2379"
+    prometheus.io/path: "/metrics"
+spec:
+  type: ClusterIP
+  ports:
+  - port: 2379
+    targetPort: 2379
+    protocol: TCP
+    name: client
+  - port: 2380
+    targetPort: 2380
+    protocol: TCP
+    name: peer
+  selector:
+    app: etcd
+---
+apiVersion: policy/v1
+kind: PodDisruptionBudget
+metadata:
+  name: etcd-pdb
+  namespace: banking-crm
+spec:
+  minAvailable: 2
+  selector:
+    matchLabels:
+      app: etcd
+

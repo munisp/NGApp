@@ -1,0 +1,21 @@
+[package]
+name = "remittance-graph"
+version = "0.1.0"
+edition = "2021"
+description = "FalkorDB graph engine for remittance corridor analysis and fraud detection"
+
+[dependencies]
+serde = { version = "1", features = ["derive"] }
+serde_json = "1"
+redis = { version = "0.25", features = ["tokio-comp", "connection-manager"] }
+tokio = { version = "1", features = ["full"] }
+rand = "0.8"
+
+[profile.release]
+lto = true
+codegen-units = 1
+opt-level = 3
+strip = true
+panic = "abort"
+
+[dev-dependencies]

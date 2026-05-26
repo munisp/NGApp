@@ -1,0 +1,37 @@
+# Fraud Detection Service - K8s Service definition
+# This fixes the APISIX upstream → K8s Service mapping gap
+apiVersion: v1
+kind: Service
+metadata:
+  name: fraud-detection
+  namespace: payment-switch
+  labels:
+    app: fraud-detection
+    component: fraud-detection
+spec:
+  type: ClusterIP
+  ports:
+    - name: http
+      port: 8000
+      targetPort: 8000
+      protocol: TCP
+  selector:
+    app: fraud-detection
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: fraud-detection-service
+  namespace: payment-switch
+  labels:
+    app: fraud-detection
+    component: fraud-detection
+spec:
+  type: ClusterIP
+  ports:
+    - name: http
+      port: 8000
+      targetPort: 8000
+      protocol: TCP
+  selector:
+    app: fraud-detection

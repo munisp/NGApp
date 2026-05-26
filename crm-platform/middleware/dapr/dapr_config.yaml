@@ -1,0 +1,177 @@
+apiVersion: dapr.io/v1alpha1
+kind: Configuration
+metadata:
+  name: crm-platform-config
+  namespace: crm-platform
+spec:
+  tracing:
+    samplingRate: "1"
+    otel:
+      endpointAddress: "otel-collector.observability.svc:4317"
+      isSecure: false
+      protocol: grpc
+  metric:
+    enabled: true
+    rules:
+      - name: dapr_http_server_request_count
+        labels:
+          - name: method
+          - name: path
+          - name: status
+  accessControl:
+    defaultAction: deny
+    trustDomain: "crm.platform"
+    policies:
+      - appId: crm-api-gateway
+        defaultAction: allow
+        trustDomain: "crm.platform"
+        namespace: "crm-platform"
+      - appId: crm-customer-service
+        defaultAction: allow
+        trustDomain: "crm.platform"
+        namespace: "crm-platform"
+        operations:
+          - name: /api/v1/customers/*
+            httpVerb: ["GET", "POST", "PUT", "DELETE"]
+            action: allow
+      - appId: crm-campaign-service
+        defaultAction: allow
+        trustDomain: "crm.platform"
+        namespace: "crm-platform"
+      - appId: crm-audit-service
+        defaultAction: allow
+        trustDomain: "crm.platform"
+        namespace: "crm-platform"
+  secrets:
+    scopes:
+      - storeName: kubernetes
+        defaultAccess: deny
+        allowedSecrets:
+          - crm-db-credentials
+          - crm-redis-credentials
+          - crm-kafka-credentials
+          - crm-encryption-keys
+---
+apiVersion: dapr.io/v1alpha1
+kind: Component
+metadata:
+  name: crm-statestore
+  namespace: crm-platform
+spec:
+  type: state.postgresql
+  version: v1
+  metadata:
+    - name: connectionString
+      secretKeyRef:
+        name: crm-db-credentials
+        key: connection-string
+    - name: tableName
+      value: "crm_state"
+    - name: metadataTableName
+      value: "crm_state_metadata"
+    - name: cleanupIntervalInSeconds
+      value: "3600"
+---
+apiVersion: dapr.io/v1alpha1
+kind: Component
+metadata:
+  name: crm-pubsub
+  namespace: crm-platform
+spec:
+  type: pubsub.kafka
+  version: v1
+  metadata:
+    - name: brokers
+      value: "kafka-0.kafka.crm.svc:9092,kafka-1.kafka.crm.svc:9092,kafka-2.kafka.crm.svc:9092"
+    - name: authType
+      value: "password"
+    - name: saslUsername
+      value: "crm-dapr"
+    - name: saslPassword
+      secretKeyRef:
+        name: crm-kafka-credentials
+        key: password
+    - name: saslMechanism
+      value: "SCRAM-SHA-256"
+    - name: consumeRetryInterval
+      value: "200ms"
+    - name: maxRetryCount
+      value: "5"
+    - name: version
+      value: "2.0.0"
+---
+apiVersion: dapr.io/v1alpha1
+kind: Component
+metadata:
+  name: crm-cache
+  namespace: crm-platform
+spec:
+  type: state.redis
+  version: v1
+  metadata:
+    - name: redisHost
+      value: "redis-master.redis.crm.svc:6379"
+    - name: redisPassword
+      secretKeyRef:
+        name: crm-redis-credentials
+        key: password
+    - name: enableTLS
+      value: "true"
+    - name: failover
+      value: "true"
+    - name: sentinelMasterName
+      value: "crm-master"
+---
+apiVersion: dapr.io/v1alpha1
+kind: Component
+metadata:
+  name: crm-bindings-email
+  namespace: crm-platform
+spec:
+  type: bindings.smtp
+  version: v1
+  metadata:
+    - name: host
+      value: "smtp.sendgrid.net"
+    - name: port
+      value: "587"
+    - name: user
+      value: "apikey"
+    - name: password
+      secretKeyRef:
+        name: crm-email-credentials
+        key: api-key
+    - name: emailFrom
+      value: "noreply@crm-platform.ng"
+    - name: emailTo
+      value: ""
+    - name: subject
+      value: ""
+---
+apiVersion: dapr.io/v1alpha1
+kind: Component
+metadata:
+  name: crm-cron-compliance
+  namespace: crm-platform
+spec:
+  type: bindings.cron
+  version: v1
+  metadata:
+    - name: schedule
+      value: "@monthly"
+    - name: direction
+      value: "input"
+---
+apiVersion: dapr.io/v1alpha1
+kind: Component
+metadata:
+  name: crm-cron-retention
+  namespace: crm-platform
+spec:
+  type: bindings.cron
+  version: v1
+  metadata:
+    - name: schedule
+      value: "@weekly"
+    - name: direction
+      value: "input"

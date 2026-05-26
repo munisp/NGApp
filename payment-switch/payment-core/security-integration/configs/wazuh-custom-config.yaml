@@ -1,0 +1,372 @@
+---
+# Kubernetes ConfigMaps for Wazuh Custom Rules, Decoders, and OpenCTI Integration
+
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: wazuh-go-ledger-decoder
+  namespace: security
+  labels:
+    app: wazuh
+    component: decoder
+data:
+  go-ledger-decoder.xml: |
+    <!--
+      Wazuh Custom Decoder for Go Ledger Service
+      Parses structured JSON logs from the Go Ledger service
+    -->
+
+    <decoder name="go-ledger-json">
+      <program_name>go-ledger</program_name>
+      <plugin_decoder>JSON_Decoder</plugin_decoder>
+    </decoder>
+
+    <decoder name="go-ledger-json">
+      <parent>go-ledger-json</parent>
+      <use_own_name>true</use_own_name>
+      <json_decoder>level</json_decoder>
+      <json_decoder>msg</json_decoder>
+      <json_decoder>time</json_decoder>
+      <json_decoder>service</json_decoder>
+      <json_decoder>transaction_id</json_decoder>
+      <json_decoder>account_id</json_decoder>
+      <json_decoder>amount</json_decoder>
+      <json_decoder>currency</json_decoder>
+      <json_decoder>operation</json_decoder>
+      <json_decoder>source_ip</json_decoder>
+      <json_decoder>user_id</json_decoder>
+      <json_decoder>error</json_decoder>
+      <json_decoder>status_code</json_decoder>
+      <json_decoder>response_time_ms</json_decoder>
+    </decoder>
+
+    <decoder name="go-ledger-transfer">
+      <parent>go-ledger-json</parent>
+      <prematch>transfer</prematch>
+      <regex offset="after_parent">\"operation\":\"(\w+)\".*\"from_account\":\"(\w+)\".*\"to_account\":\"(\w+)\".*\"amount\":(\d+)</regex>
+      <order>operation,from_account,to_account,amount</order>
+    </decoder>
+
+    <decoder name="go-ledger-auth-failure">
+      <parent>go-ledger-json</parent>
+      <prematch>authentication failed</prematch>
+      <regex offset="after_parent">\"source_ip\":\"(\d+\.\d+\.\d+\.\d+)\".*\"user_id\":\"([^\"]+)\"</regex>
+      <order>srcip,user</order>
+    </decoder>
+
+---
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: wazuh-go-ledger-rules
+  namespace: security
+  labels:
+    app: wazuh
+    component: rules
+data:
+  go-ledger-rules.xml: |
+    <!--
+      Wazuh Custom Rules for Go Ledger Service Security Monitoring
+      Rule ID range: 100000-100099 (custom application rules)
+    -->
+
+    <group name="go-ledger,application,">
+
+      <!-- Base rule for Go Ledger service -->
+      <rule id="100000" level="0">
+        <decoded_as>go-ledger-json</decoded_as>
+        <description>Go Ledger service event</description>
+      </rule>
+
+      <!-- Authentication failures -->
+      <rule id="100001" level="5">
+        <if_sid>100000</if_sid>
+        <decoded_as>go-ledger-auth-failure</decoded_as>
+        <description>Go Ledger: Authentication failure from $(srcip)</description>
+        <group>authentication_failed,pci_dss_10.2.4,pci_dss_10.2.5,</group>
+      </rule>
+
+      <rule id="100002" level="10" frequency="5" timeframe="300">
+        <if_matched_sid>100001</if_matched_sid>
+        <same_source_ip />
+        <description>Go Ledger: Multiple authentication failures from $(srcip)</description>
+        <mitre>
+          <id>T1110</id>
+        </mitre>
+        <group>authentication_failures,pci_dss_11.4,</group>
+      </rule>
+
+      <!-- Suspicious transaction patterns -->
+      <rule id="100010" level="8">
+        <if_sid>100000</if_sid>
+        <field name="amount">^[1-9]\d{7,}$</field>
+        <description>Go Ledger: Large transaction detected - Amount: $(amount) $(currency)</description>
+        <group>fraud,pci_dss_10.6.1,</group>
+      </rule>
+
+      <rule id="100011" level="10" frequency="5" timeframe="60">
+        <if_matched_sid>100010</if_matched_sid>
+        <same_field>account_id</same_field>
+        <description>Go Ledger: Multiple large transactions from account $(account_id)</description>
+        <mitre>
+          <id>T1537</id>
+        </mitre>
+        <group>fraud,money_laundering,</group>
+      </rule>
+
+      <!-- Critical alerts that should trigger OpenCTI integration -->
+      <rule id="100080" level="12">
+        <if_sid>100002,100011</if_sid>
+        <description>Go Ledger: Critical security event - Trigger threat intelligence correlation</description>
+        <group>critical,opencti_integration,</group>
+      </rule>
+
+    </group>
+
+---
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: wazuh-opencti-integration-script
+  namespace: security
+  labels:
+    app: wazuh
+    component: integration
+data:
+  wazuh_opencti_integration.py: |
+    #!/usr/bin/env python3
+    """
+    Wazuh-OpenCTI Integration Script
+    Sends critical Wazuh alerts to OpenCTI for threat intelligence correlation
+    """
+
+    import json
+    import sys
+    import os
+    import requests
+    from datetime import datetime
+    from pycti import OpenCTIApiClient
+
+    # Configuration
+    OPENCTI_URL = os.getenv('OPENCTI_URL', 'http://opencti-platform.security.svc.cluster.local:8080')
+    OPENCTI_TOKEN = os.getenv('OPENCTI_TOKEN', 'ChangeMe')
+
+    # Initialize OpenCTI client
+    opencti_api_client = OpenCTIApiClient(OPENCTI_URL, OPENCTI_TOKEN)
+
+    def parse_wazuh_alert(alert_json):
+        """Parse Wazuh alert JSON"""
+        try:
+            alert = json.loads(alert_json)
+            return alert
+        except json.JSONDecodeError as e:
+            print(f"Error parsing alert JSON: {e}", file=sys.stderr)
+            return None
+
+    def create_opencti_incident(alert):
+        """Create an incident in OpenCTI from Wazuh alert"""
+        try:
+            alert_level = alert['rule']['level']
+            if alert_level >= 12:
+                severity = 'critical'
+            elif alert_level >= 10:
+                severity = 'high'
+            else:
+                severity = 'medium'
+            
+            incident_name = f"Wazuh Alert: {alert['rule']['description']}"
+            incident_description = f"""
+    Wazuh Security Alert
+
+    **Rule ID**: {alert['rule']['id']}
+    **Rule Description**: {alert['rule']['description']}
+    **Alert Level**: {alert_level}
+    **Timestamp**: {alert['timestamp']}
+
+    **Alert Details**:
+    {json.dumps(alert.get('data', {}), indent=2)}
+    """
+            
+            incident = opencti_api_client.incident.create(
+                name=incident_name,
+                description=incident_description,
+                severity=severity,
+                objective=alert['rule']['description'],
+                first_seen=alert['timestamp'],
+                last_seen=alert['timestamp']
+            )
+            
+            print(f"Created OpenCTI incident: {incident['id']}", file=sys.stderr)
+            return incident
+            
+        except Exception as e:
+            print(f"Error creating OpenCTI incident: {e}", file=sys.stderr)
+            return None
+
+    def main():
+        """Main function"""
+        alert_json = sys.stdin.read()
+        
+        if not alert_json:
+            print("No alert data received", file=sys.stderr)
+            sys.exit(1)
+        
+        alert = parse_wazuh_alert(alert_json)
+        if not alert:
+            sys.exit(1)
+        
+        if 'opencti_integration' not in alert['rule'].get('groups', []):
+            print(f"Alert {alert['rule']['id']} does not require OpenCTI integration", file=sys.stderr)
+            sys.exit(0)
+        
+        print(f"Processing Wazuh alert {alert['rule']['id']} for OpenCTI integration", file=sys.stderr)
+        
+        incident = create_opencti_incident(alert)
+        if not incident:
+            sys.exit(1)
+        
+        print(f"Successfully processed alert and created OpenCTI incident {incident['id']}", file=sys.stderr)
+        sys.exit(0)
+
+    if __name__ == '__main__':
+        main()
+
+---
+apiVersion: v1
+kind: Secret
+metadata:
+  name: opencti-credentials
+  namespace: security
+  labels:
+    app: wazuh
+type: Opaque
+stringData:
+  OPENCTI_URL: "http://opencti-platform.security.svc.cluster.local:8080"
+  OPENCTI_TOKEN: "ChangeMe"
+
+---
+# Updated Wazuh Manager StatefulSet with custom rules, decoders, and integration
+apiVersion: apps/v1
+kind: StatefulSet
+metadata:
+  name: wazuh-manager-with-integration
+  namespace: security
+  labels:
+    app: wazuh
+    component: manager
+spec:
+  serviceName: wazuh-manager
+  replicas: 1
+  selector:
+    matchLabels:
+      app: wazuh
+      component: manager
+  template:
+    metadata:
+      labels:
+        app: wazuh
+        component: manager
+    spec:
+      serviceAccountName: wazuh
+      
+      initContainers:
+        - name: install-dependencies
+          image: wazuh/wazuh-manager:4.7.0
+          command:
+            - /bin/sh
+            - -c
+            - |
+              apt-get update
+              apt-get install -y python3-pip
+              pip3 install pycti requests
+          volumeMounts:
+            - name: dependencies
+              mountPath: /usr/local/lib/python3.9/dist-packages
+      
+      containers:
+        - name: wazuh-manager
+          image: wazuh/wazuh-manager:4.7.0
+          imagePullPolicy: IfNotPresent
+          
+          ports:
+            - name: registration
+              containerPort: 1515
+            - name: cluster
+              containerPort: 1516
+            - name: api
+              containerPort: 55000
+          
+          env:
+            - name: OPENCTI_URL
+              valueFrom:
+                secretKeyRef:
+                  name: opencti-credentials
+                  key: OPENCTI_URL
+            - name: OPENCTI_TOKEN
+              valueFrom:
+                secretKeyRef:
+                  name: opencti-credentials
+                  key: OPENCTI_TOKEN
+          
+          resources:
+            requests:
+              cpu: 1000m
+              memory: 2Gi
+            limits:
+              cpu: 2000m
+              memory: 4Gi
+          
+          volumeMounts:
+            - name: config
+              mountPath: /wazuh-config-mount/etc/ossec.conf
+              subPath: ossec.conf
+            - name: custom-decoders
+              mountPath: /var/ossec/etc/decoders/go-ledger-decoder.xml
+              subPath: go-ledger-decoder.xml
+            - name: custom-rules
+              mountPath: /var/ossec/etc/rules/go-ledger-rules.xml
+              subPath: go-ledger-rules.xml
+            - name: integration-script
+              mountPath: /var/ossec/integrations/wazuh_opencti_integration.py
+              subPath: wazuh_opencti_integration.py
+            - name: dependencies
+              mountPath: /usr/local/lib/python3.9/dist-packages
+            - name: data
+              mountPath: /var/ossec/data
+            - name: logs
+              mountPath: /var/ossec/logs
+      
+      volumes:
+        - name: config
+          configMap:
+            name: wazuh-manager-config
+        - name: custom-decoders
+          configMap:
+            name: wazuh-go-ledger-decoder
+        - name: custom-rules
+          configMap:
+            name: wazuh-go-ledger-rules
+        - name: integration-script
+          configMap:
+            name: wazuh-opencti-integration-script
+            defaultMode: 0755
+        - name: dependencies
+          emptyDir: {}
+  
+  volumeClaimTemplates:
+    - metadata:
+        name: data
+      spec:
+        accessModes: ["ReadWriteOnce"]
+        storageClassName: fast-ssd
+        resources:
+          requests:
+            storage: 50Gi
+    - metadata:
+        name: logs
+      spec:
+        accessModes: ["ReadWriteOnce"]
+        storageClassName: fast-ssd
+        resources:
+          requests:
+            storage: 20Gi

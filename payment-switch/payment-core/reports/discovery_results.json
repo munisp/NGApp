@@ -1,0 +1,429 @@
+{
+  "projects": {
+    "main": {
+      "path": "/home/ubuntu/nextgen-payment-switch",
+      "type": "main_platform",
+      "subdirs": [
+        "deployment",
+        "services",
+        "infrastructure",
+        "docs",
+        "go-services",
+        "protos",
+        "lakehouse-pipelines",
+        "security-integration",
+        "pos-services",
+        "fraud-detection",
+        "integration-adapters",
+        "recommended-features",
+        "data-integration",
+        "monitoring",
+        "nginx"
+      ]
+    },
+    "archives": [
+      {
+        "name": "nextgen-payment-switch-validated.zip",
+        "path": "/home/ubuntu/nextgen-payment-switch-validated.zip",
+        "size": 987698
+      },
+      {
+        "name": "nextgen-payment-switch-complete-implementation.zip",
+        "path": "/home/ubuntu/nextgen-payment-switch-complete-implementation.zip",
+        "size": 973307
+      },
+      {
+        "name": "nextgen-payment-switch-recommendations.zip",
+        "path": "/home/ubuntu/nextgen-payment-switch-recommendations.zip",
+        "size": 913255
+      },
+      {
+        "name": "nextgen-payment-switch-hybrid.zip",
+        "path": "/home/ubuntu/nextgen-payment-switch-hybrid.zip",
+        "size": 712506
+      },
+      {
+        "name": "nextgen-payment-switch-optimized.zip",
+        "path": "/home/ubuntu/nextgen-payment-switch-optimized.zip",
+        "size": 686478
+      },
+      {
+        "name": "nextgen-payment-switch.zip",
+        "path": "/home/ubuntu/nextgen-payment-switch.zip",
+        "size": 659946
+      },
+      {
+        "name": "bi-directional-data-integration.zip",
+        "path": "/home/ubuntu/bi-directional-data-integration.zip",
+        "size": 41784
+      },
+      {
+        "name": "nextgen-payment-switch-lakehouse.zip",
+        "path": "/home/ubuntu/nextgen-payment-switch-lakehouse.zip",
+        "size": 25572
+      },
+      {
+        "name": "nextgen-payment-switch-pos.zip",
+        "path": "/home/ubuntu/nextgen-payment-switch-pos.zip",
+        "size": 25325
+      },
+      {
+        "name": "complete-implementation.zip",
+        "path": "/home/ubuntu/complete-implementation.zip",
+        "size": 21166
+      },
+      {
+        "name": "docker-deployment-package.zip",
+        "path": "/home/ubuntu/docker-deployment-package.zip",
+        "size": 18242
+      },
+      {
+        "name": "nextgen-payment-switch-k8s-dapr.zip",
+        "path": "/home/ubuntu/nextgen-payment-switch-k8s-dapr.zip",
+        "size": 16592
+      },
+      {
+        "name": "nextgen-payment-switch-api-gateway.zip",
+        "path": "/home/ubuntu/nextgen-payment-switch-api-gateway.zip",
+        "size": 16135
+      },
+      {
+        "name": "nextgen-payment-switch-wazuh-opencti-complete.zip",
+        "path": "/home/ubuntu/nextgen-payment-switch-wazuh-opencti-complete.zip",
+        "size": 16044
+      },
+      {
+        "name": "nextgen-payment-switch-opencti-config.zip",
+        "path": "/home/ubuntu/nextgen-payment-switch-opencti-config.zip",
+        "size": 15924
+      },
+      {
+        "name": "nextgen-payment-switch-security.zip",
+        "path": "/home/ubuntu/nextgen-payment-switch-security.zip",
+        "size": 14830
+      },
+      {
+        "name": "nextgen-payment-switch-recommendations-final.zip",
+        "path": "/home/ubuntu/nextgen-payment-switch-recommendations-final.zip",
+        "size": 14494
+      },
+      {
+        "name": "fraud-detection-service.zip",
+        "path": "/home/ubuntu/fraud-detection-service.zip",
+        "size": 13957
+      },
+      {
+        "name": "nextgen-payment-switch-monitoring.zip",
+        "path": "/home/ubuntu/nextgen-payment-switch-monitoring.zip",
+        "size": 12231
+      },
+      {
+        "name": "nextgen-payment-switch-wazuh-opencti.zip",
+        "path": "/home/ubuntu/nextgen-payment-switch-wazuh-opencti.zip",
+        "size": 11592
+      },
+      {
+        "name": "nextgen-payment-switch-workflow-monitoring.zip",
+        "path": "/home/ubuntu/nextgen-payment-switch-workflow-monitoring.zip",
+        "size": 11282
+      },
+      {
+        "name": "nextgen-payment-switch-apisix-integration.zip",
+        "path": "/home/ubuntu/nextgen-payment-switch-apisix-integration.zip",
+        "size": 10387
+      },
+      {
+        "name": "nextgen-payment-switch-cicd.zip",
+        "path": "/home/ubuntu/nextgen-payment-switch-cicd.zip",
+        "size": 9621
+      },
+      {
+        "name": "nextgen-payment-switch-pos-testing.zip",
+        "path": "/home/ubuntu/nextgen-payment-switch-pos-testing.zip",
+        "size": 8220
+      },
+      {
+        "name": "nextgen-payment-switch-tigerbeetle-verification.zip",
+        "path": "/home/ubuntu/nextgen-payment-switch-tigerbeetle-verification.zip",
+        "size": 7896
+      },
+      {
+        "name": "verification-script-complete.zip",
+        "path": "/home/ubuntu/verification-script-complete.zip",
+        "size": 7196
+      },
+      {
+        "name": "nextgen-payment-switch-kubectl-commands.zip",
+        "path": "/home/ubuntu/nextgen-payment-switch-kubectl-commands.zip",
+        "size": 3058
+      }
+    ]
+  },
+  "services": {
+    "payment-gateway": {
+      "path": "/home/ubuntu/nextgen-payment-switch/services/payment-gateway",
+      "has_main": true,
+      "has_router": true,
+      "has_schema": true,
+      "has_dockerfile": true,
+      "files": [
+        "main.py",
+        "main_optimized.py",
+        "schemas.py",
+        "routers.py",
+        "__init__.py"
+      ]
+    },
+    "workflow-orchestrator": {
+      "path": "/home/ubuntu/nextgen-payment-switch/services/workflow-orchestrator",
+      "has_main": false,
+      "has_router": false,
+      "has_schema": false,
+      "has_dockerfile": false,
+      "files": [
+        "payment_workflow.py",
+        "payment_workflow_optimized.py",
+        "payment_workflow_grpc.py"
+      ]
+    },
+    "fraud-detection": {
+      "path": "/home/ubuntu/nextgen-payment-switch/services/fraud-detection",
+      "has_main": true,
+      "has_router": true,
+      "has_schema": true,
+      "has_dockerfile": true,
+      "files": [
+        "main.py",
+        "schemas.py",
+        "routers.py",
+        "__init__.py"
+      ]
+    },
+    "settlement": {
+      "path": "/home/ubuntu/nextgen-payment-switch/services/settlement",
+      "has_main": true,
+      "has_router": true,
+      "has_schema": true,
+      "has_dockerfile": true,
+      "files": [
+        "main.py",
+        "schemas.py",
+        "routers.py",
+        "__init__.py"
+      ]
+    },
+    "database": {
+      "path": "/home/ubuntu/nextgen-payment-switch/services/database",
+      "has_main": false,
+      "has_router": false,
+      "has_schema": false,
+      "has_dockerfile": false,
+      "files": []
+    },
+    "common": {
+      "path": "/home/ubuntu/nextgen-payment-switch/services/common",
+      "has_main": false,
+      "has_router": false,
+      "has_schema": false,
+      "has_dockerfile": false,
+      "files": [
+        "tigerbeetle_client.py",
+        "database.py",
+        "grpc_clients.py"
+      ]
+    },
+    "vpa-service": {
+      "path": "/home/ubuntu/nextgen-payment-switch/services/vpa-service",
+      "has_main": false,
+      "has_router": false,
+      "has_schema": false,
+      "has_dockerfile": false,
+      "files": []
+    },
+    "workflows": {
+      "path": "/home/ubuntu/nextgen-payment-switch/services/workflows",
+      "has_main": false,
+      "has_router": false,
+      "has_schema": false,
+      "has_dockerfile": false,
+      "files": [
+        "qr_payment_workflow.py"
+      ]
+    },
+    "biometric-auth": {
+      "path": "/home/ubuntu/nextgen-payment-switch/services/biometric-auth",
+      "has_main": false,
+      "has_router": false,
+      "has_schema": false,
+      "has_dockerfile": false,
+      "files": []
+    },
+    "instant-settlement": {
+      "path": "/home/ubuntu/nextgen-payment-switch/services/instant-settlement",
+      "has_main": true,
+      "has_router": false,
+      "has_schema": false,
+      "has_dockerfile": false,
+      "files": [
+        "main.py"
+      ]
+    },
+    "fraud-detection-service": {
+      "path": "/home/ubuntu/nextgen-payment-switch/services/fraud-detection-service",
+      "has_main": true,
+      "has_router": true,
+      "has_schema": true,
+      "has_dockerfile": true,
+      "files": [
+        "main.py",
+        "schemas.py",
+        "routers.py",
+        "__init__.py"
+      ]
+    },
+    "offline-payments": {
+      "path": "/home/ubuntu/nextgen-payment-switch/services/offline-payments",
+      "has_main": true,
+      "has_router": true,
+      "has_schema": true,
+      "has_dockerfile": true,
+      "files": [
+        "main.py",
+        "schemas.py",
+        "routers.py",
+        "__init__.py"
+      ]
+    },
+    "unified-api-gateway": {
+      "path": "/home/ubuntu/nextgen-payment-switch/services/unified-api-gateway",
+      "has_main": false,
+      "has_router": false,
+      "has_schema": false,
+      "has_dockerfile": true,
+      "files": []
+    }
+  },
+  "features": {
+    "data_integration": [
+      "/home/ubuntu/nextgen-payment-switch/deployment/kubernetes/kafka-deployment.yaml",
+      "/home/ubuntu/nextgen-payment-switch/data-integration/postgres-lakehouse-pipeline/postgres_lakehouse_batch_sync.py",
+      "/home/ubuntu/nextgen-payment-switch/data-integration/tigerbeetle-cdc/kafka_postgres_sync.py",
+      "/home/ubuntu/nextgen-payment-switch/lakehouse-pipelines",
+      "/home/ubuntu/nextgen-payment-switch/data-integration/postgres-lakehouse-pipeline",
+      "/home/ubuntu/nextgen-payment-switch/lakehouse-pipelines/flink",
+      "/home/ubuntu/nextgen-payment-switch/deployment/kubernetes/lakehouse/flink-streaming.yaml",
+      "/home/ubuntu/nextgen-payment-switch/data-integration/fraud-gnn-lakehouse",
+      "/home/ubuntu/nextgen-payment-switch/data-integration/lakehouse-feedback",
+      "/home/ubuntu/nextgen-payment-switch/data-integration/postgres-lakehouse-pipeline/PostgresLakehouseStreamingJob.java"
+    ],
+    "security": [
+      "/home/ubuntu/nextgen-payment-switch/security-integration/opencti/config/opencti-platform-config.yaml",
+      "/home/ubuntu/nextgen-payment-switch/security-integration/configs/wazuh-integration-config.xml",
+      "/home/ubuntu/nextgen-payment-switch/security-integration/scripts/wazuh_opencti_integration.py",
+      "/home/ubuntu/nextgen-payment-switch/deployment/kubernetes/security/security-alerts-dashboards.yaml",
+      "/home/ubuntu/nextgen-payment-switch/security-integration/opencti",
+      "/home/ubuntu/nextgen-payment-switch/security-integration/wazuh-rules",
+      "/home/ubuntu/nextgen-payment-switch/deployment/kubernetes/security/opencti.yaml",
+      "/home/ubuntu/nextgen-payment-switch/security-integration/opencti/config/opencti-wazuh-deployment.yaml",
+      "/home/ubuntu/nextgen-payment-switch/deployment/kubernetes/security-monitoring.yaml",
+      "/home/ubuntu/nextgen-payment-switch/deployment/SECURITY_MONITORING_DEPLOYMENT_GUIDE.md"
+    ],
+    "pos": [
+      "/home/ubuntu/nextgen-payment-switch/deployment/kubernetes/pos-system/pos-deployments.yaml",
+      "/home/ubuntu/nextgen-payment-switch/pos-services",
+      "/home/ubuntu/nextgen-payment-switch/docker-compose.yml",
+      "/home/ubuntu/nextgen-payment-switch/services/database/postgresql_schema.sql",
+      "/home/ubuntu/nextgen-payment-switch/data-integration/postgres-lakehouse-pipeline/postgres_lakehouse_batch_sync.py",
+      "/home/ubuntu/nextgen-payment-switch/deployment/kubernetes/pos-system",
+      "/home/ubuntu/nextgen-payment-switch/go-services/internal/database/postgres.go",
+      "/home/ubuntu/nextgen-payment-switch/pos-services/pos-gateway",
+      "/home/ubuntu/nextgen-payment-switch/docs/pos-payment-architecture.md",
+      "/home/ubuntu/nextgen-payment-switch/pos-services/workflows/pos_payment_workflow.py"
+    ],
+    "fraud_detection": [
+      "/home/ubuntu/nextgen-payment-switch/fraud-detection/gnn-models",
+      "/home/ubuntu/nextgen-payment-switch/deployment/dapr/fraud-detection-dapr.yaml",
+      "/home/ubuntu/nextgen-payment-switch/data-integration/fraud-gnn-lakehouse/fraud_gnn_training_pipeline.py",
+      "/home/ubuntu/nextgen-payment-switch/fraud-detection",
+      "/home/ubuntu/nextgen-payment-switch/data-integration/fraud-gnn-lakehouse/fraud_score_ingestion.py",
+      "/home/ubuntu/nextgen-payment-switch/services/fraud-detection",
+      "/home/ubuntu/nextgen-payment-switch/deployment/kubernetes/fraud-detection-service.yaml",
+      "/home/ubuntu/nextgen-payment-switch/lakehouse-pipelines/ray/fraud_detection_training.py",
+      "/home/ubuntu/nextgen-payment-switch/services/fraud-detection-service",
+      "/home/ubuntu/nextgen-payment-switch/docs/ai-fraud-detection-architecture.md"
+    ],
+    "api_gateway": [
+      "/home/ubuntu/nextgen-payment-switch/deployment/kubernetes/apisix-security-policies.yaml",
+      "/home/ubuntu/nextgen-payment-switch/recommended-features/enhanced-api-gateway",
+      "/home/ubuntu/nextgen-payment-switch/docs/APISIX_INTEGRATION_GUIDE.md",
+      "/home/ubuntu/nextgen-payment-switch/deployment/kubernetes/apisix-unified-gateway-integrated.yaml",
+      "/home/ubuntu/nextgen-payment-switch/deployment/kubernetes/apisix-gateway.yaml",
+      "/home/ubuntu/nextgen-payment-switch/services/unified-api-gateway",
+      "/home/ubuntu/nextgen-payment-switch/deployment/kubernetes/apisix-unified-gateway-routes.yaml",
+      "/home/ubuntu/nextgen-payment-switch/deployment/kubernetes/unified-api-gateway.yaml",
+      "/home/ubuntu/nextgen-payment-switch/deployment/kubernetes/apisix-routes.yaml",
+      "/home/ubuntu/nextgen-payment-switch/deployment/APISIX_GATEWAY_DEPLOYMENT_GUIDE.md"
+    ],
+    "ledger": [
+      "/home/ubuntu/nextgen-payment-switch/go-services/ledger",
+      "/home/ubuntu/nextgen-payment-switch/deployment/kubernetes/tigerbeetle-statefulset.yaml",
+      "/home/ubuntu/nextgen-payment-switch/data-integration/lakehouse-feedback/lakehouse_tigerbeetle_feedback.py",
+      "/home/ubuntu/nextgen-payment-switch/deployment/kubernetes/go-ledger-service.yaml",
+      "/home/ubuntu/nextgen-payment-switch/protos/ledger.proto",
+      "/home/ubuntu/nextgen-payment-switch/deployment/dapr/ledger-service-dapr.yaml",
+      "/home/ubuntu/nextgen-payment-switch/data-integration/tigerbeetle-cdc",
+      "/home/ubuntu/nextgen-payment-switch/security-integration/wazuh-rules/go-ledger-rules.xml",
+      "/home/ubuntu/nextgen-payment-switch/services/common/tigerbeetle_client.py",
+      "/home/ubuntu/nextgen-payment-switch/go-services/internal/tigerbeetle"
+    ],
+    "workflow": [
+      "/home/ubuntu/nextgen-payment-switch/services/workflow-orchestrator/payment_workflow_optimized.py",
+      "/home/ubuntu/nextgen-payment-switch/services/workflows/qr_payment_workflow.py",
+      "/home/ubuntu/nextgen-payment-switch/services/workflow-orchestrator/payment_workflow.py",
+      "/home/ubuntu/nextgen-payment-switch/deployment/kubernetes/workflow-orchestrator.yaml",
+      "/home/ubuntu/nextgen-payment-switch/services/workflows",
+      "/home/ubuntu/nextgen-payment-switch/deployment/kubernetes/temporal-deployment.yaml",
+      "/home/ubuntu/nextgen-payment-switch/pos-services/workflows/pos_payment_workflow.py",
+      "/home/ubuntu/nextgen-payment-switch/deployment/dapr/workflow-orchestrator-dapr.yaml",
+      "/home/ubuntu/nextgen-payment-switch/security-integration/workflow-orchestrator/decoders/workflow-orchestrator-decoder.xml",
+      "/home/ubuntu/nextgen-payment-switch/security-integration/workflow-orchestrator/configs/wazuh-workflow-config.yaml"
+    ],
+    "monitoring": [
+      "/home/ubuntu/nextgen-payment-switch/security-integration/opencti/config/opencti-platform-config.yaml",
+      "/home/ubuntu/nextgen-payment-switch/deployment/kubernetes/monitoring/prometheus.yaml",
+      "/home/ubuntu/nextgen-payment-switch/security-integration/configs/wazuh-integration-config.xml",
+      "/home/ubuntu/nextgen-payment-switch/security-integration/scripts/wazuh_opencti_integration.py",
+      "/home/ubuntu/nextgen-payment-switch/monitoring/prometheus.yml",
+      "/home/ubuntu/nextgen-payment-switch/security-integration/opencti",
+      "/home/ubuntu/nextgen-payment-switch/deployment/kubernetes/monitoring/grafana.yaml",
+      "/home/ubuntu/nextgen-payment-switch/security-integration/wazuh-rules",
+      "/home/ubuntu/nextgen-payment-switch/monitoring/grafana",
+      "/home/ubuntu/nextgen-payment-switch/deployment/kubernetes/security/opencti.yaml"
+    ],
+    "hybrid": [
+      "/home/ubuntu/nextgen-payment-switch/fraud-detection/integration/hybrid_detector.py"
+    ]
+  },
+  "docker_services": [
+    "postgres",
+    "environment",
+    "ports",
+    "healthcheck",
+    "redis",
+    "ports",
+    "healthcheck",
+    "temporal",
+    "environment",
+    "ports",
+    "depends_on",
+    "postgres",
+    "temporal-ui",
+    "environment",
+    "ports",
+    "depends_on",
+    "payment-gateway",
+    "build",
+    "environment",
+    "ports"
+  ]
+}

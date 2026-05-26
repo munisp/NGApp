@@ -1,0 +1,69 @@
+apiVersion: 1
+
+notifiers:
+  # Email notification channel
+  - name: Email Alerts
+    type: email
+    uid: email-alerts
+    org_id: 1
+    is_default: true
+    send_reminder: true
+    frequency: 30m
+    settings:
+      addresses: "alerts@example.com;ops-team@example.com"
+      singleEmail: false
+      uploadImage: true
+    secure_settings:
+      # Configure in Grafana UI or via environment variables
+      # SMTP settings are configured in grafana.ini
+
+  # Slack notification channel
+  - name: Slack Alerts
+    type: slack
+    uid: slack-alerts
+    org_id: 1
+    is_default: false
+    send_reminder: true
+    frequency: 30m
+    settings:
+      recipient: "#payment-switch-alerts"
+      username: "Grafana Alert Bot"
+      icon_emoji: ":warning:"
+      uploadImage: true
+      mentionChannel: "here"
+    secure_settings:
+      url: "${SLACK_WEBHOOK_URL}"
+      # Set SLACK_WEBHOOK_URL environment variable
+
+  # PagerDuty for critical alerts
+  - name: PagerDuty Critical
+    type: pagerduty
+    uid: pagerduty-critical
+    org_id: 1
+    is_default: false
+    send_reminder: false
+    settings:
+      autoResolve: true
+      severity: "critical"
+    secure_settings:
+      integrationKey: "${PAGERDUTY_INTEGRATION_KEY}"
+
+  # Webhook for custom integrations
+  - name: Custom Webhook
+    type: webhook
+    uid: custom-webhook
+    org_id: 1
+    is_default: false
+    settings:
+      url: "https://your-webhook-endpoint.com/alerts"
+      httpMethod: "POST"
+      username: ""
+      uploadImage: false
+    secure_settings:
+      password: "${WEBHOOK_AUTH_TOKEN}"
+
+deleteNotifiers:
+  # List notification channels to delete by uid
+  - name: old-email-alerts
+    uid: old-email-alerts
+    org_id: 1

@@ -1,0 +1,946 @@
+# High Availability Configurations for Payment Switch Infrastructure
+# This file contains PodDisruptionBudgets, Anti-Affinity rules, and topology spread constraints
+# for all critical infrastructure services
+
+---
+# Kafka PodDisruptionBudget
+apiVersion: policy/v1
+kind: PodDisruptionBudget
+metadata:
+  name: kafka-pdb
+  namespace: payment-switch
+spec:
+  minAvailable: 2
+  selector:
+    matchLabels:
+      app: kafka
+---
+# Zookeeper PodDisruptionBudget
+apiVersion: policy/v1
+kind: PodDisruptionBudget
+metadata:
+  name: zookeeper-pdb
+  namespace: payment-switch
+spec:
+  minAvailable: 2
+  selector:
+    matchLabels:
+      app: zookeeper
+---
+# TigerBeetle PodDisruptionBudget
+apiVersion: policy/v1
+kind: PodDisruptionBudget
+metadata:
+  name: tigerbeetle-pdb
+  namespace: payment-switch
+spec:
+  minAvailable: 2
+  selector:
+    matchLabels:
+      app: tigerbeetle
+---
+# Temporal Frontend PodDisruptionBudget
+apiVersion: policy/v1
+kind: PodDisruptionBudget
+metadata:
+  name: temporal-frontend-pdb
+  namespace: payment-switch
+spec:
+  minAvailable: 2
+  selector:
+    matchLabels:
+      app: temporal
+      service: frontend
+---
+# Temporal History PodDisruptionBudget
+apiVersion: policy/v1
+kind: PodDisruptionBudget
+metadata:
+  name: temporal-history-pdb
+  namespace: payment-switch
+spec:
+  minAvailable: 2
+  selector:
+    matchLabels:
+      app: temporal
+      service: history
+---
+# Temporal Matching PodDisruptionBudget
+apiVersion: policy/v1
+kind: PodDisruptionBudget
+metadata:
+  name: temporal-matching-pdb
+  namespace: payment-switch
+spec:
+  minAvailable: 2
+  selector:
+    matchLabels:
+      app: temporal
+      service: matching
+---
+# Redis PodDisruptionBudget
+apiVersion: policy/v1
+kind: PodDisruptionBudget
+metadata:
+  name: redis-pdb
+  namespace: payment-switch
+spec:
+  minAvailable: 2
+  selector:
+    matchLabels:
+      app: redis
+---
+# Redis HA StatefulSet
+apiVersion: apps/v1
+kind: StatefulSet
+metadata:
+  name: redis
+  namespace: payment-switch
+spec:
+  serviceName: redis
+  replicas: 3
+  selector:
+    matchLabels:
+      app: redis
+  template:
+    metadata:
+      labels:
+        app: redis
+    spec:
+      affinity:
+        podAntiAffinity:
+          requiredDuringSchedulingIgnoredDuringExecution:
+          - labelSelector:
+              matchExpressions:
+              - key: app
+                operator: In
+                values:
+                - redis
+            topologyKey: kubernetes.io/hostname
+      topologySpreadConstraints:
+      - maxSkew: 1
+        topologyKey: topology.kubernetes.io/zone
+        whenUnsatisfiable: DoNotSchedule
+        labelSelector:
+          matchLabels:
+            app: redis
+      containers:
+      - name: redis
+        image: redis:7.2-alpine
+        ports:
+        - containerPort: 6379
+          name: redis
+        - containerPort: 16379
+          name: cluster
+        command:
+        - redis-server
+        args:
+        - --cluster-enabled
+        - "yes"
+        - --cluster-config-file
+        - /data/nodes.conf
+        - --cluster-node-timeout
+        - "5000"
+        - --appendonly
+        - "yes"
+        - --maxmemory
+        - "4gb"
+        - --maxmemory-policy
+        - "allkeys-lru"
+        resources:
+          requests:
+            memory: "4Gi"
+            cpu: "1000m"
+          limits:
+            memory: "8Gi"
+            cpu: "2000m"
+        livenessProbe:
+          tcpSocket:
+            port: 6379
+          initialDelaySeconds: 30
+          periodSeconds: 10
+        readinessProbe:
+          exec:
+            command:
+            - redis-cli
+            - ping
+          initialDelaySeconds: 5
+          periodSeconds: 5
+        volumeMounts:
+        - name: redis-data
+          mountPath: /data
+  volumeClaimTemplates:
+  - metadata:
+      name: redis-data
+    spec:
+      accessModes: ["ReadWriteOnce"]
+      storageClassName: fast-ssd
+      resources:
+        requests:
+          storage: 50Gi
+---
+# Redis Service
+apiVersion: v1
+kind: Service
+metadata:
+  name: redis
+  namespace: payment-switch
+spec:
+  ports:
+  - port: 6379
+    name: redis
+  - port: 16379
+    name: cluster
+  clusterIP: None
+  selector:
+    app: redis
+---
+# APISIX PodDisruptionBudget
+apiVersion: policy/v1
+kind: PodDisruptionBudget
+metadata:
+  name: apisix-pdb
+  namespace: payment-switch
+spec:
+  minAvailable: 2
+  selector:
+    matchLabels:
+      app: apisix
+---
+# APISIX HA Deployment
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: apisix
+  namespace: payment-switch
+spec:
+  replicas: 3
+  selector:
+    matchLabels:
+      app: apisix
+  template:
+    metadata:
+      labels:
+        app: apisix
+    spec:
+      affinity:
+        podAntiAffinity:
+          preferredDuringSchedulingIgnoredDuringExecution:
+          - weight: 100
+            podAffinityTerm:
+              labelSelector:
+                matchExpressions:
+                - key: app
+                  operator: In
+                  values:
+                  - apisix
+              topologyKey: kubernetes.io/hostname
+      topologySpreadConstraints:
+      - maxSkew: 1
+        topologyKey: topology.kubernetes.io/zone
+        whenUnsatisfiable: ScheduleAnyway
+        labelSelector:
+          matchLabels:
+            app: apisix
+      containers:
+      - name: apisix
+        image: apache/apisix:3.7.0-debian
+        ports:
+        - containerPort: 9080
+          name: http
+        - containerPort: 9443
+          name: https
+        - containerPort: 9180
+          name: admin
+        env:
+        - name: APISIX_STAND_ALONE
+          value: "false"
+        resources:
+          requests:
+            memory: "2Gi"
+            cpu: "1000m"
+          limits:
+            memory: "4Gi"
+            cpu: "2000m"
+        livenessProbe:
+          httpGet:
+            path: /apisix/status
+            port: 9080
+          initialDelaySeconds: 30
+          periodSeconds: 10
+        readinessProbe:
+          httpGet:
+            path: /apisix/status
+            port: 9080
+          initialDelaySeconds: 5
+          periodSeconds: 5
+        volumeMounts:
+        - name: apisix-config
+          mountPath: /usr/local/apisix/conf/config.yaml
+          subPath: config.yaml
+      volumes:
+      - name: apisix-config
+        configMap:
+          name: apisix-config
+---
+# APISIX Service
+apiVersion: v1
+kind: Service
+metadata:
+  name: apisix
+  namespace: payment-switch
+spec:
+  type: LoadBalancer
+  ports:
+  - port: 80
+    targetPort: 9080
+    name: http
+  - port: 443
+    targetPort: 9443
+    name: https
+  selector:
+    app: apisix
+---
+# Keycloak PodDisruptionBudget
+apiVersion: policy/v1
+kind: PodDisruptionBudget
+metadata:
+  name: keycloak-pdb
+  namespace: payment-switch
+spec:
+  minAvailable: 2
+  selector:
+    matchLabels:
+      app: keycloak
+---
+# Keycloak HA StatefulSet
+apiVersion: apps/v1
+kind: StatefulSet
+metadata:
+  name: keycloak
+  namespace: payment-switch
+spec:
+  serviceName: keycloak
+  replicas: 3
+  selector:
+    matchLabels:
+      app: keycloak
+  template:
+    metadata:
+      labels:
+        app: keycloak
+    spec:
+      affinity:
+        podAntiAffinity:
+          requiredDuringSchedulingIgnoredDuringExecution:
+          - labelSelector:
+              matchExpressions:
+              - key: app
+                operator: In
+                values:
+                - keycloak
+            topologyKey: kubernetes.io/hostname
+      topologySpreadConstraints:
+      - maxSkew: 1
+        topologyKey: topology.kubernetes.io/zone
+        whenUnsatisfiable: DoNotSchedule
+        labelSelector:
+          matchLabels:
+            app: keycloak
+      containers:
+      - name: keycloak
+        image: quay.io/keycloak/keycloak:23.0
+        args:
+        - start
+        - --cache=ispn
+        - --cache-stack=kubernetes
+        - --hostname-strict=false
+        - --http-enabled=true
+        ports:
+        - containerPort: 8080
+          name: http
+        - containerPort: 7800
+          name: jgroups
+        env:
+        - name: KEYCLOAK_ADMIN
+          valueFrom:
+            secretKeyRef:
+              name: keycloak-secrets
+              key: admin-user
+        - name: KEYCLOAK_ADMIN_PASSWORD
+          valueFrom:
+            secretKeyRef:
+              name: keycloak-secrets
+              key: admin-password
+        - name: KC_DB
+          value: postgres
+        - name: KC_DB_URL
+          value: jdbc:postgresql://postgresql:5432/keycloak
+        - name: KC_DB_USERNAME
+          valueFrom:
+            secretKeyRef:
+              name: keycloak-secrets
+              key: db-user
+        - name: KC_DB_PASSWORD
+          valueFrom:
+            secretKeyRef:
+              name: keycloak-secrets
+              key: db-password
+        - name: KC_CACHE_STACK
+          value: kubernetes
+        - name: JAVA_OPTS_APPEND
+          value: "-Djgroups.dns.query=keycloak-headless.payment-switch.svc.cluster.local"
+        resources:
+          requests:
+            memory: "2Gi"
+            cpu: "1000m"
+          limits:
+            memory: "4Gi"
+            cpu: "2000m"
+        livenessProbe:
+          httpGet:
+            path: /health/live
+            port: 8080
+          initialDelaySeconds: 60
+          periodSeconds: 10
+        readinessProbe:
+          httpGet:
+            path: /health/ready
+            port: 8080
+          initialDelaySeconds: 30
+          periodSeconds: 5
+---
+# Keycloak Headless Service for JGroups clustering
+apiVersion: v1
+kind: Service
+metadata:
+  name: keycloak-headless
+  namespace: payment-switch
+spec:
+  clusterIP: None
+  ports:
+  - port: 7800
+    name: jgroups
+  selector:
+    app: keycloak
+---
+# Keycloak Service
+apiVersion: v1
+kind: Service
+metadata:
+  name: keycloak
+  namespace: payment-switch
+spec:
+  ports:
+  - port: 8080
+    name: http
+  selector:
+    app: keycloak
+---
+# Permify PodDisruptionBudget
+apiVersion: policy/v1
+kind: PodDisruptionBudget
+metadata:
+  name: permify-pdb
+  namespace: payment-switch
+spec:
+  minAvailable: 2
+  selector:
+    matchLabels:
+      app: permify
+---
+# Permify HA Deployment
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: permify
+  namespace: payment-switch
+spec:
+  replicas: 3
+  selector:
+    matchLabels:
+      app: permify
+  template:
+    metadata:
+      labels:
+        app: permify
+    spec:
+      affinity:
+        podAntiAffinity:
+          preferredDuringSchedulingIgnoredDuringExecution:
+          - weight: 100
+            podAffinityTerm:
+              labelSelector:
+                matchExpressions:
+                - key: app
+                  operator: In
+                  values:
+                  - permify
+              topologyKey: kubernetes.io/hostname
+      topologySpreadConstraints:
+      - maxSkew: 1
+        topologyKey: topology.kubernetes.io/zone
+        whenUnsatisfiable: ScheduleAnyway
+        labelSelector:
+          matchLabels:
+            app: permify
+      containers:
+      - name: permify
+        image: ghcr.io/permify/permify:latest
+        ports:
+        - containerPort: 3476
+          name: grpc
+        - containerPort: 3478
+          name: http
+        env:
+        - name: PERMIFY_DATABASE_ENGINE
+          value: postgres
+        - name: PERMIFY_DATABASE_URI
+          valueFrom:
+            secretKeyRef:
+              name: permify-secrets
+              key: database-uri
+        - name: PERMIFY_LOG_LEVEL
+          value: info
+        resources:
+          requests:
+            memory: "1Gi"
+            cpu: "500m"
+          limits:
+            memory: "2Gi"
+            cpu: "1000m"
+        livenessProbe:
+          grpc:
+            port: 3476
+          initialDelaySeconds: 30
+          periodSeconds: 10
+        readinessProbe:
+          grpc:
+            port: 3476
+          initialDelaySeconds: 5
+          periodSeconds: 5
+---
+# Permify Service
+apiVersion: v1
+kind: Service
+metadata:
+  name: permify
+  namespace: payment-switch
+spec:
+  ports:
+  - port: 3476
+    name: grpc
+  - port: 3478
+    name: http
+  selector:
+    app: permify
+---
+# Dapr Sidecar Injector PodDisruptionBudget
+apiVersion: policy/v1
+kind: PodDisruptionBudget
+metadata:
+  name: dapr-sidecar-injector-pdb
+  namespace: dapr-system
+spec:
+  minAvailable: 1
+  selector:
+    matchLabels:
+      app: dapr-sidecar-injector
+---
+# Fluvio PodDisruptionBudget
+apiVersion: policy/v1
+kind: PodDisruptionBudget
+metadata:
+  name: fluvio-sc-pdb
+  namespace: payment-switch
+spec:
+  minAvailable: 1
+  selector:
+    matchLabels:
+      app: fluvio-sc
+---
+# Fluvio SPU PodDisruptionBudget
+apiVersion: policy/v1
+kind: PodDisruptionBudget
+metadata:
+  name: fluvio-spu-pdb
+  namespace: payment-switch
+spec:
+  minAvailable: 2
+  selector:
+    matchLabels:
+      app: fluvio-spu
+---
+# Fluvio SPU StatefulSet
+apiVersion: apps/v1
+kind: StatefulSet
+metadata:
+  name: fluvio-spu
+  namespace: payment-switch
+spec:
+  serviceName: fluvio-spu
+  replicas: 3
+  selector:
+    matchLabels:
+      app: fluvio-spu
+  template:
+    metadata:
+      labels:
+        app: fluvio-spu
+    spec:
+      affinity:
+        podAntiAffinity:
+          requiredDuringSchedulingIgnoredDuringExecution:
+          - labelSelector:
+              matchExpressions:
+              - key: app
+                operator: In
+                values:
+                - fluvio-spu
+            topologyKey: kubernetes.io/hostname
+      topologySpreadConstraints:
+      - maxSkew: 1
+        topologyKey: topology.kubernetes.io/zone
+        whenUnsatisfiable: DoNotSchedule
+        labelSelector:
+          matchLabels:
+            app: fluvio-spu
+      containers:
+      - name: fluvio-spu
+        image: infinyon/fluvio:latest
+        ports:
+        - containerPort: 9005
+          name: public
+        - containerPort: 9006
+          name: private
+        resources:
+          requests:
+            memory: "2Gi"
+            cpu: "1000m"
+          limits:
+            memory: "4Gi"
+            cpu: "2000m"
+        volumeMounts:
+        - name: fluvio-data
+          mountPath: /var/lib/fluvio
+        livenessProbe:
+          tcpSocket:
+            port: 9005
+          initialDelaySeconds: 30
+          periodSeconds: 10
+        readinessProbe:
+          tcpSocket:
+            port: 9005
+          initialDelaySeconds: 5
+          periodSeconds: 5
+  volumeClaimTemplates:
+  - metadata:
+      name: fluvio-data
+    spec:
+      accessModes: ["ReadWriteOnce"]
+      storageClassName: fast-ssd
+      resources:
+        requests:
+          storage: 50Gi
+---
+# Fluvio SPU Service
+apiVersion: v1
+kind: Service
+metadata:
+  name: fluvio-spu
+  namespace: payment-switch
+spec:
+  clusterIP: None
+  ports:
+  - port: 9005
+    name: public
+  - port: 9006
+    name: private
+  selector:
+    app: fluvio-spu
+---
+# Lakehouse MinIO PodDisruptionBudget
+apiVersion: policy/v1
+kind: PodDisruptionBudget
+metadata:
+  name: rustfs-pdb
+  namespace: payment-switch
+spec:
+  minAvailable: 2
+  selector:
+    matchLabels:
+      app: rustfs
+---
+# MinIO HA StatefulSet for Lakehouse
+apiVersion: apps/v1
+kind: StatefulSet
+metadata:
+  name: rustfs
+  namespace: payment-switch
+spec:
+  serviceName: rustfs
+  replicas: 4
+  selector:
+    matchLabels:
+      app: rustfs
+  template:
+    metadata:
+      labels:
+        app: rustfs
+    spec:
+      affinity:
+        podAntiAffinity:
+          requiredDuringSchedulingIgnoredDuringExecution:
+          - labelSelector:
+              matchExpressions:
+              - key: app
+                operator: In
+                values:
+                - rustfs
+            topologyKey: kubernetes.io/hostname
+      topologySpreadConstraints:
+      - maxSkew: 1
+        topologyKey: topology.kubernetes.io/zone
+        whenUnsatisfiable: DoNotSchedule
+        labelSelector:
+          matchLabels:
+            app: rustfs
+      containers:
+      - name: rustfs
+        image: rustfs/rustfs:RELEASE.2024-01-01T16-36-33Z
+        args:
+        - server
+        - http://rustfs-{0...3}.rustfs.payment-switch.svc.cluster.local/data
+        - --console-address
+        - ":9001"
+        ports:
+        - containerPort: 9000
+          name: api
+        - containerPort: 9001
+          name: console
+        env:
+        - name: MINIO_ROOT_USER
+          valueFrom:
+            secretKeyRef:
+              name: rustfs-secrets
+              key: root-user
+        - name: MINIO_ROOT_PASSWORD
+          valueFrom:
+            secretKeyRef:
+              name: rustfs-secrets
+              key: root-password
+        resources:
+          requests:
+            memory: "4Gi"
+            cpu: "2000m"
+          limits:
+            memory: "8Gi"
+            cpu: "4000m"
+        livenessProbe:
+          httpGet:
+            path: /rustfs/health/live
+            port: 9000
+          initialDelaySeconds: 30
+          periodSeconds: 10
+        readinessProbe:
+          httpGet:
+            path: /rustfs/health/ready
+            port: 9000
+          initialDelaySeconds: 5
+          periodSeconds: 5
+        volumeMounts:
+        - name: rustfs-data
+          mountPath: /data
+  volumeClaimTemplates:
+  - metadata:
+      name: rustfs-data
+    spec:
+      accessModes: ["ReadWriteOnce"]
+      storageClassName: fast-ssd
+      resources:
+        requests:
+          storage: 500Gi
+---
+# MinIO Service
+apiVersion: v1
+kind: Service
+metadata:
+  name: rustfs
+  namespace: payment-switch
+spec:
+  clusterIP: None
+  ports:
+  - port: 9000
+    name: api
+  - port: 9001
+    name: console
+  selector:
+    app: rustfs
+---
+# OpenAppSec PodDisruptionBudget
+apiVersion: policy/v1
+kind: PodDisruptionBudget
+metadata:
+  name: openappsec-pdb
+  namespace: payment-switch
+spec:
+  minAvailable: 2
+  selector:
+    matchLabels:
+      app: openappsec
+---
+# OpenAppSec HA DaemonSet
+apiVersion: apps/v1
+kind: DaemonSet
+metadata:
+  name: openappsec
+  namespace: payment-switch
+spec:
+  selector:
+    matchLabels:
+      app: openappsec
+  template:
+    metadata:
+      labels:
+        app: openappsec
+    spec:
+      containers:
+      - name: openappsec
+        image: ghcr.io/openappsec/open-appsec-agent:latest
+        ports:
+        - containerPort: 8080
+          name: http
+        env:
+        - name: OPEN_APPSEC_MODE
+          value: "prevent"
+        - name: OPEN_APPSEC_LOG_LEVEL
+          value: "info"
+        resources:
+          requests:
+            memory: "512Mi"
+            cpu: "250m"
+          limits:
+            memory: "1Gi"
+            cpu: "500m"
+        livenessProbe:
+          httpGet:
+            path: /health
+            port: 8080
+          initialDelaySeconds: 30
+          periodSeconds: 10
+        readinessProbe:
+          httpGet:
+            path: /health
+            port: 8080
+          initialDelaySeconds: 5
+          periodSeconds: 5
+        securityContext:
+          capabilities:
+            add:
+            - NET_ADMIN
+---
+# Horizontal Pod Autoscaler for APISIX
+apiVersion: autoscaling/v2
+kind: HorizontalPodAutoscaler
+metadata:
+  name: apisix-hpa
+  namespace: payment-switch
+spec:
+  scaleTargetRef:
+    apiVersion: apps/v1
+    kind: Deployment
+    name: apisix
+  minReplicas: 3
+  maxReplicas: 10
+  metrics:
+  - type: Resource
+    resource:
+      name: cpu
+      target:
+        type: Utilization
+        averageUtilization: 70
+  - type: Resource
+    resource:
+      name: memory
+      target:
+        type: Utilization
+        averageUtilization: 80
+---
+# Horizontal Pod Autoscaler for Permify
+apiVersion: autoscaling/v2
+kind: HorizontalPodAutoscaler
+metadata:
+  name: permify-hpa
+  namespace: payment-switch
+spec:
+  scaleTargetRef:
+    apiVersion: apps/v1
+    kind: Deployment
+    name: permify
+  minReplicas: 3
+  maxReplicas: 6
+  metrics:
+  - type: Resource
+    resource:
+      name: cpu
+      target:
+        type: Utilization
+        averageUtilization: 70
+---
+# Horizontal Pod Autoscaler for Temporal Frontend
+apiVersion: autoscaling/v2
+kind: HorizontalPodAutoscaler
+metadata:
+  name: temporal-frontend-hpa
+  namespace: payment-switch
+spec:
+  scaleTargetRef:
+    apiVersion: apps/v1
+    kind: Deployment
+    name: temporal-frontend
+  minReplicas: 3
+  maxReplicas: 10
+  metrics:
+  - type: Resource
+    resource:
+      name: cpu
+      target:
+        type: Utilization
+        averageUtilization: 70
+---
+# Network Policy for Infrastructure Services
+apiVersion: networking.k8s.io/v1
+kind: NetworkPolicy
+metadata:
+  name: infrastructure-network-policy
+  namespace: payment-switch
+spec:
+  podSelector:
+    matchLabels:
+      tier: infrastructure
+  policyTypes:
+  - Ingress
+  - Egress
+  ingress:
+  - from:
+    - namespaceSelector:
+        matchLabels:
+          name: payment-switch
+    - podSelector:
+        matchLabels:
+          tier: application
+  egress:
+  - to:
+    - namespaceSelector:
+        matchLabels:
+          name: payment-switch
+  - to:
+    - ipBlock:
+        cidr: 0.0.0.0/0
+        except:
+        - 10.0.0.0/8
+        - 172.16.0.0/12
+        - 192.168.0.0/16
+    ports:
+    - protocol: TCP
+      port: 443

@@ -1,0 +1,37 @@
+global:
+  scrape_interval: 15s
+  evaluation_interval: 15s
+
+scrape_configs:
+  - job_name: 'payment-gateway'
+    static_configs:
+      - targets: ['payment-gateway:8001']
+    metrics_path: '/api/v1/payments/metrics'
+
+  - job_name: 'fraud-detection-service'
+    static_configs:
+      - targets: ['fraud-detection-service:8002']
+    metrics_path: '/api/v1/fraud/metrics'
+
+  - job_name: 'settlement-service'
+    static_configs:
+      - targets: ['settlement-service:8003']
+    metrics_path: '/api/v1/settlement/metrics'
+
+  - job_name: 'offline-payments-service'
+    static_configs:
+      - targets: ['offline-payments-service:8004']
+    metrics_path: '/api/v1/offline/metrics'
+
+  - job_name: 'fraud-detection'
+    static_configs:
+      - targets: ['fraud-detection:8005']
+    metrics_path: '/api/v1/fraud/metrics'
+
+  - job_name: 'postgres'
+    static_configs:
+      - targets: ['postgres:5432']
+
+  - job_name: 'redis'
+    static_configs:
+      - targets: ['redis:6379']

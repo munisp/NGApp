@@ -1,0 +1,1 @@
+-- Migration 0006: Already applied

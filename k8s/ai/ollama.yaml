@@ -1,0 +1,255 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: ollama
+  namespace: banking-crm
+  labels:
+    app: ollama
+    app.kubernetes.io/name: ollama
+    app.kubernetes.io/part-of: banking-crm-integration
+    app.kubernetes.io/component: ai
+    app.kubernetes.io/version: "latest"
+spec:
+  replicas: 2
+  selector:
+    matchLabels:
+      app: ollama
+  strategy:
+    type: RollingUpdate
+    rollingUpdate:
+      maxSurge: 1
+      maxUnavailable: 0
+  template:
+    metadata:
+      labels:
+        app: ollama
+      annotations:
+        prometheus.io/scrape: "true"
+        prometheus.io/port: "9090"
+        prometheus.io/path: "/metrics"
+    spec:
+      terminationGracePeriodSeconds: 60
+      securityContext:
+        runAsUser: 1000
+        runAsGroup: 1000
+        fsGroup: 1000
+      containers:
+      - name: ollama
+        image: ollama/ollama:latest
+        imagePullPolicy: Always
+        ports:
+        - containerPort: 11434
+          name: http
+        env:
+        - name: OLLAMA_HOST
+          value: "0.0.0.0"
+        - name: OLLAMA_MODELS
+          value: "/models"
+        resources:
+          limits:
+            cpu: "4"
+            memory: "8Gi"
+            nvidia.com/gpu: "1"
+          requests:
+            cpu: "2"
+            memory: "4Gi"
+        livenessProbe:
+          httpGet:
+            path: /api/health
+            port: 11434
+          initialDelaySeconds: 60
+          periodSeconds: 20
+          timeoutSeconds: 10
+          failureThreshold: 3
+        readinessProbe:
+          httpGet:
+            path: /api/health
+            port: 11434
+          initialDelaySeconds: 30
+          periodSeconds: 10
+          timeoutSeconds: 5
+          failureThreshold: 3
+        volumeMounts:
+        - name: models
+          mountPath: /models
+      - name: ollama-exporter
+        image: quay.io/prometheuscommunity/json-exporter:latest
+        imagePullPolicy: IfNotPresent
+        args:
+        - --config.file=/etc/json-exporter/config.yml
+        ports:
+        - containerPort: 9090
+          name: metrics
+        resources:
+          limits:
+            cpu: "200m"
+            memory: "256Mi"
+          requests:
+            cpu: "100m"
+            memory: "128Mi"
+        volumeMounts:
+        - name: exporter-config
+          mountPath: /etc/json-exporter
+      initContainers:
+      - name: ollama-model-puller
+        image: ollama/ollama:latest
+        imagePullPolicy: Always
+        command:
+        - sh
+        - -c
+        - |
+          ollama pull llama3:8b
+          ollama pull llama3:70b-q4_0
+        volumeMounts:
+        - name: models
+          mountPath: /models
+        resources:
+          limits:
+            cpu: "2"
+            memory: "4Gi"
+            nvidia.com/gpu: "1"
+          requests:
+            cpu: "1"
+            memory: "2Gi"
+      volumes:
+      - name: models
+        persistentVolumeClaim:
+          claimName: ollama-models-pvc
+      - name: exporter-config
+        configMap:
+          name: ollama-exporter-config
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: ollama
+  namespace: banking-crm
+  labels:
+    app: ollama
+    app.kubernetes.io/name: ollama
+    app.kubernetes.io/part-of: banking-crm-integration
+  annotations:
+    prometheus.io/scrape: "true"
+    prometheus.io/port: "9090"
+    prometheus.io/path: "/metrics"
+spec:
+  type: ClusterIP
+  ports:
+  - port: 11434
+    targetPort: 11434
+    protocol: TCP
+    name: http
+  - port: 9090
+    targetPort: 9090
+    protocol: TCP
+    name: metrics
+  selector:
+    app: ollama
+---
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: ollama-models-pvc
+  namespace: banking-crm
+spec:
+  accessModes:
+    - ReadWriteOnce
+  resources:
+    requests:
+      storage: 50Gi
+  storageClassName: standard
+---
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: ollama-exporter-config
+  namespace: banking-crm
+data:
+  config.yml: |
+    metrics:
+    - name: ollama_model_info
+      help: Information about Ollama models
+      path: '{.models[*]}'
+      type: object
+      values:
+        name: '{.name}'
+        size: '{.size}'
+        modified_at: '{.modified_at}'
+        digest: '{.digest}'
+    - name: ollama_server_info
+      help: Information about Ollama server
+      type: object
+      values:
+        version: '{.version}'
+    - name: ollama_gpu_info
+      help: Information about GPU usage
+      type: object
+      values:
+        name: '{.gpu.name}'
+        memory_total: '{.gpu.memory_total}'
+        memory_free: '{.gpu.memory_free}'
+    scrape:
+      - url: http://localhost:11434/api/tags
+        metrics:
+        - ollama_model_info
+      - url: http://localhost:11434/api/version
+        metrics:
+        - ollama_server_info
+      - url: http://localhost:11434/api/gpu
+        metrics:
+        - ollama_gpu_info
+---
+apiVersion: policy/v1
+kind: PodDisruptionBudget
+metadata:
+  name: ollama-pdb
+  namespace: banking-crm
+spec:
+  minAvailable: 1
+  selector:
+    matchLabels:
+      app: ollama
+---
+apiVersion: autoscaling/v2
+kind: HorizontalPodAutoscaler
+metadata:
+  name: ollama-hpa
+  namespace: banking-crm
+spec:
+  scaleTargetRef:
+    apiVersion: apps/v1
+    kind: Deployment
+    name: ollama
+  minReplicas: 2
+  maxReplicas: 4
+  metrics:
+  - type: Resource
+    resource:
+      name: cpu
+      target:
+        type: Utilization
+        averageUtilization: 70
+  - type: Resource
+    resource:
+      name: memory
+      target:
+        type: Utilization
+        averageUtilization: 80
+  behavior:
+    scaleDown:
+      stabilizationWindowSeconds: 300
+      policies:
+      - type: Percent
+        value: 10
+        periodSeconds: 60
+    scaleUp:
+      stabilizationWindowSeconds: 60
+      policies:
+      - type: Percent
+        value: 20
+        periodSeconds: 60
+      - type: Pods
+        value: 1
+        periodSeconds: 60
+      selectPolicy: Max
+

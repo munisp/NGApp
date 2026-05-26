@@ -1,0 +1,284 @@
+apiVersion: v1
+kind: Namespace
+metadata:
+  name: lakehouse
+  labels:
+    app.kubernetes.io/name: lakehouse
+    app.kubernetes.io/part-of: payment-switch
+---
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: lakehouse-api-config
+  namespace: lakehouse
+data:
+  REDIS_URL: "redis://redis.redis:6379/0"
+  DELTA_BASE_PATH: "s3a://lakehouse/delta"
+  PROMETHEUS_URL: "http://prometheus.monitoring:9090"
+  CACHE_TTL: "30"
+  S3_ENDPOINT: "http://minio.lakehouse:9000"
+  KAFKA_BOOTSTRAP_SERVERS: "kafka.kafka:9092"
+  OTEL_EXPORTER_OTLP_ENDPOINT: "otel-collector.monitoring:4317"
+---
+apiVersion: external-secrets.io/v1beta1
+kind: ExternalSecret
+metadata:
+  name: lakehouse-api-secrets
+  namespace: lakehouse
+spec:
+  refreshInterval: 1h
+  secretStoreRef:
+    name: vault-backend
+    kind: ClusterSecretStore
+  target:
+    name: lakehouse-api-secrets
+    creationPolicy: Owner
+  data:
+    - secretKey: AWS_ACCESS_KEY_ID
+      remoteRef:
+        key: payment-switch/lakehouse
+        property: s3_access_key
+    - secretKey: AWS_SECRET_ACCESS_KEY
+      remoteRef:
+        key: payment-switch/lakehouse
+        property: s3_secret_key
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: lakehouse-api
+  namespace: lakehouse
+  labels:
+    app: lakehouse-api
+    app.kubernetes.io/name: lakehouse-api
+    app.kubernetes.io/component: api
+    app.kubernetes.io/part-of: payment-switch
+spec:
+  replicas: 3
+  selector:
+    matchLabels:
+      app: lakehouse-api
+  template:
+    metadata:
+      labels:
+        app: lakehouse-api
+      annotations:
+        prometheus.io/scrape: "true"
+        prometheus.io/port: "8080"
+        prometheus.io/path: "/metrics"
+    spec:
+      serviceAccountName: lakehouse-api
+      containers:
+        - name: lakehouse-api
+          image: payment-switch/lakehouse-api:latest
+          imagePullPolicy: Always
+          ports:
+            - name: http
+              containerPort: 8080
+              protocol: TCP
+          envFrom:
+            - configMapRef:
+                name: lakehouse-api-config
+            - secretRef:
+                name: lakehouse-api-secrets
+          resources:
+            requests:
+              cpu: "250m"
+              memory: "512Mi"
+            limits:
+              cpu: "1000m"
+              memory: "2Gi"
+          livenessProbe:
+            httpGet:
+              path: /health
+              port: 8080
+            initialDelaySeconds: 10
+            periodSeconds: 15
+            timeoutSeconds: 5
+            failureThreshold: 3
+          readinessProbe:
+            httpGet:
+              path: /health
+              port: 8080
+            initialDelaySeconds: 5
+            periodSeconds: 10
+            timeoutSeconds: 5
+            failureThreshold: 3
+          securityContext:
+            runAsNonRoot: true
+            runAsUser: 1000
+            readOnlyRootFilesystem: true
+            allowPrivilegeEscalation: false
+          volumeMounts:
+            - name: tmp
+              mountPath: /tmp
+      volumes:
+        - name: tmp
+          emptyDir: {}
+      affinity:
+        podAntiAffinity:
+          preferredDuringSchedulingIgnoredDuringExecution:
+            - weight: 100
+              podAffinityTerm:
+                labelSelector:
+                  matchLabels:
+                    app: lakehouse-api
+                topologyKey: kubernetes.io/hostname
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: lakehouse-api
+  namespace: lakehouse
+  labels:
+    app: lakehouse-api
+spec:
+  type: ClusterIP
+  ports:
+    - name: http
+      port: 8080
+      targetPort: 8080
+      protocol: TCP
+  selector:
+    app: lakehouse-api
+---
+apiVersion: v1
+kind: ServiceAccount
+metadata:
+  name: lakehouse-api
+  namespace: lakehouse
+---
+apiVersion: autoscaling/v2
+kind: HorizontalPodAutoscaler
+metadata:
+  name: lakehouse-api-hpa
+  namespace: lakehouse
+spec:
+  scaleTargetRef:
+    apiVersion: apps/v1
+    kind: Deployment
+    name: lakehouse-api
+  minReplicas: 3
+  maxReplicas: 10
+  metrics:
+    - type: Resource
+      resource:
+        name: cpu
+        target:
+          type: Utilization
+          averageUtilization: 70
+    - type: Resource
+      resource:
+        name: memory
+        target:
+          type: Utilization
+          averageUtilization: 80
+---
+apiVersion: policy/v1
+kind: PodDisruptionBudget
+metadata:
+  name: lakehouse-api-pdb
+  namespace: lakehouse
+spec:
+  minAvailable: 2
+  selector:
+    matchLabels:
+      app: lakehouse-api
+---
+apiVersion: networking.k8s.io/v1
+kind: NetworkPolicy
+metadata:
+  name: lakehouse-api-network-policy
+  namespace: lakehouse
+spec:
+  podSelector:
+    matchLabels:
+      app: lakehouse-api
+  policyTypes:
+    - Ingress
+    - Egress
+  ingress:
+    - from:
+        - namespaceSelector:
+            matchLabels:
+              name: ingress-nginx
+        - namespaceSelector:
+            matchLabels:
+              name: admin-dashboard
+        - namespaceSelector:
+            matchLabels:
+              name: monitoring
+      ports:
+        - protocol: TCP
+          port: 8080
+  egress:
+    - to:
+        - namespaceSelector:
+            matchLabels:
+              name: redis
+      ports:
+        - protocol: TCP
+          port: 6379
+    - to:
+        - namespaceSelector:
+            matchLabels:
+              name: lakehouse
+      ports:
+        - protocol: TCP
+          port: 9000
+    - to:
+        - namespaceSelector:
+            matchLabels:
+              name: kafka
+      ports:
+        - protocol: TCP
+          port: 9092
+    - to:
+        - namespaceSelector:
+            matchLabels:
+              name: monitoring
+      ports:
+        - protocol: TCP
+          port: 9090
+        - protocol: TCP
+          port: 4317
+---
+apiVersion: apisix.apache.org/v2
+kind: ApisixRoute
+metadata:
+  name: lakehouse-api-route
+  namespace: lakehouse
+spec:
+  http:
+    - name: lakehouse-api
+      match:
+        hosts:
+          - api.payment-switch.local
+        paths:
+          - /api/v1/noc/*
+          - /api/v1/fraud/*
+          - /api/v1/settlements/*
+          - /api/v1/participants/*
+          - /api/v1/reports/*
+          - /api/v1/developer/*
+          - /api/v1/analytics/*
+          - /api/v1/killswitch/*
+          - /ws/realtime
+      backends:
+        - serviceName: lakehouse-api
+          servicePort: 8080
+      plugins:
+        - name: jwt-auth
+          enable: true
+        - name: cors
+          enable: true
+          config:
+            allow_origins: "*"
+            allow_methods: "GET,POST,PUT,DELETE,OPTIONS"
+            allow_headers: "Authorization,Content-Type"
+        - name: limit-req
+          enable: true
+          config:
+            rate: 100
+            burst: 50
+            key: remote_addr

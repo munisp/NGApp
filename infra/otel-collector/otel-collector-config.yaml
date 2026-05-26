@@ -1,0 +1,133 @@
+# OpenTelemetry Collector Configuration
+# Receives traces/metrics from all services and exports to backends
+
+receivers:
+  otlp:
+    protocols:
+      grpc:
+        endpoint: 0.0.0.0:4317
+      http:
+        endpoint: 0.0.0.0:4318
+        cors:
+          allowed_origins: ["*"]
+
+  # Prometheus scraping for Go/Rust metrics
+  prometheus:
+    config:
+      scrape_configs:
+        - job_name: 'gateway-engine'
+          scrape_interval: 5s
+          static_configs:
+            - targets: ['gateway-engine:9090']
+        - job_name: 'pricing-engine'
+          scrape_interval: 5s
+          static_configs:
+            - targets: ['pricing-engine:9090']
+        - job_name: 'go-services'
+          scrape_interval: 5s
+          static_configs:
+            - targets: ['go-services:9090']
+        - job_name: 'api-server'
+          scrape_interval: 10s
+          static_configs:
+            - targets: ['api-server:5000']
+
+processors:
+  batch:
+    timeout: 1s
+    send_batch_size: 1024
+    send_batch_max_size: 2048
+
+  memory_limiter:
+    check_interval: 1s
+    limit_mib: 512
+    spike_limit_mib: 128
+
+  # Add resource attributes
+  resource:
+    attributes:
+      - key: deployment.environment
+        value: "production"
+        action: upsert
+      - key: service.namespace
+        value: "payment-switch"
+        action: upsert
+
+  # Tail-based sampling for high-throughput
+  tail_sampling:
+    decision_wait: 10s
+    num_traces: 100000
+    policies:
+      # Always sample errors
+      - name: errors
+        type: status_code
+        status_code:
+          status_codes: [ERROR]
+      # Always sample slow transactions (>50ms)
+      - name: slow-transactions
+        type: latency
+        latency:
+          threshold_ms: 50
+      # Sample 10% of normal traffic
+      - name: probabilistic
+        type: probabilistic
+        probabilistic:
+          sampling_percentage: 10
+      # Always sample payment operations
+      - name: payment-operations
+        type: string_attribute
+        string_attribute:
+          key: payment.operation
+          values: [initiate, settle, refund, dispute]
+
+  # Span enrichment for payment context
+  attributes:
+    actions:
+      - key: payment.switch.version
+        value: "2.0.0"
+        action: upsert
+
+exporters:
+  # Jaeger for trace visualization
+  otlp/jaeger:
+    endpoint: ${JAEGER_ENDPOINT:-jaeger:4317}
+    tls:
+      insecure: true
+
+  # Prometheus for metrics
+  prometheusremotewrite:
+    endpoint: ${PROMETHEUS_ENDPOINT:-http://prometheus:9090/api/v1/write}
+    tls:
+      insecure: true
+
+  # Logging for development
+  logging:
+    verbosity: normal
+    sampling_initial: 5
+    sampling_thereafter: 200
+
+  # File exporter for offline analysis
+  file:
+    path: /var/log/otel/traces.jsonl
+    rotation:
+      max_megabytes: 100
+      max_days: 7
+      max_backups: 5
+
+service:
+  telemetry:
+    logs:
+      level: info
+    metrics:
+      address: 0.0.0.0:8888
+
+  pipelines:
+    traces:
+      receivers: [otlp]
+      processors: [memory_limiter, tail_sampling, batch, resource, attributes]
+      exporters: [otlp/jaeger, logging]
+
+    metrics:
+      receivers: [otlp, prometheus]
+      processors: [memory_limiter, batch, resource]
+      exporters: [prometheusremotewrite, logging]

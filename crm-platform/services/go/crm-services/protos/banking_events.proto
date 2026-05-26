@@ -1,0 +1,363 @@
+syntax = "proto3";
+
+package banking.integration;
+
+option go_package = "github.com/banking-crm-integration/proto/banking";
+
+import "google/protobuf/timestamp.proto";
+import "google/protobuf/struct.proto";
+
+// Customer Events Service - Banking Platform to CRM
+service CustomerEventService {
+  // Stream customer events in real-time
+  rpc StreamCustomerEvents(CustomerEventRequest) returns (stream CustomerEvent);
+  
+  // Send batch of customer events
+  rpc BatchCustomerEvents(BatchCustomerEventRequest) returns (BatchCustomerEventResponse);
+  
+  // Acknowledge receipt of events
+  rpc AcknowledgeEvent(EventAcknowledgement) returns (AcknowledgementResponse);
+}
+
+// Transaction Events Service - Banking Platform to CRM
+service TransactionEventService {
+  // Stream transaction events in real-time
+  rpc StreamTransactionEvents(TransactionEventRequest) returns (stream TransactionEvent);
+  
+  // Send batch of transaction events
+  rpc BatchTransactionEvents(BatchTransactionEventRequest) returns (BatchTransactionEventResponse);
+  
+  // Acknowledge receipt of events
+  rpc AcknowledgeEvent(EventAcknowledgement) returns (AcknowledgementResponse);
+}
+
+// Account Events Service - Banking Platform to CRM
+service AccountEventService {
+  // Stream account events in real-time
+  rpc StreamAccountEvents(AccountEventRequest) returns (stream AccountEvent);
+  
+  // Send batch of account events
+  rpc BatchAccountEvents(BatchAccountEventRequest) returns (BatchAccountEventResponse);
+  
+  // Acknowledge receipt of events
+  rpc AcknowledgeEvent(EventAcknowledgement) returns (AcknowledgementResponse);
+}
+
+// Customer Event Request
+message CustomerEventRequest {
+  // Banking platform identifier
+  string platform_id = 1;
+  
+  // Event types to filter (empty means all)
+  repeated string event_types = 2;
+  
+  // Customer IDs to filter (empty means all)
+  repeated string customer_ids = 3;
+  
+  // Start timestamp for events
+  google.protobuf.Timestamp start_time = 4;
+  
+  // Authentication token
+  string auth_token = 5;
+}
+
+// Customer Event
+message CustomerEvent {
+  // Unique event ID
+  string event_id = 1;
+  
+  // Customer ID
+  string customer_id = 2;
+  
+  // Event type
+  string event_type = 3;
+  
+  // Event timestamp
+  google.protobuf.Timestamp timestamp = 4;
+  
+  // Event data
+  google.protobuf.Struct data = 5;
+  
+  // Source platform
+  string platform_id = 6;
+  
+  // Event version
+  string version = 7;
+  
+  // Correlation ID for tracing
+  string correlation_id = 8;
+}
+
+// Batch Customer Event Request
+message BatchCustomerEventRequest {
+  // Banking platform identifier
+  string platform_id = 1;
+  
+  // List of events
+  repeated CustomerEvent events = 2;
+  
+  // Authentication token
+  string auth_token = 3;
+  
+  // Request ID
+  string request_id = 4;
+}
+
+// Batch Customer Event Response
+message BatchCustomerEventResponse {
+  // Success status
+  bool success = 1;
+  
+  // Error message if any
+  string error_message = 2;
+  
+  // Number of events processed
+  int32 processed_count = 3;
+  
+  // Number of events failed
+  int32 failed_count = 4;
+  
+  // Failed event IDs with reasons
+  map<string, string> failed_events = 5;
+  
+  // Request ID (echoed back)
+  string request_id = 6;
+}
+
+// Transaction Event Request
+message TransactionEventRequest {
+  // Banking platform identifier
+  string platform_id = 1;
+  
+  // Event types to filter (empty means all)
+  repeated string event_types = 2;
+  
+  // Customer IDs to filter (empty means all)
+  repeated string customer_ids = 3;
+  
+  // Start timestamp for events
+  google.protobuf.Timestamp start_time = 4;
+  
+  // Authentication token
+  string auth_token = 5;
+}
+
+// Transaction Event
+message TransactionEvent {
+  // Unique event ID
+  string event_id = 1;
+  
+  // Transaction ID
+  string transaction_id = 2;
+  
+  // Customer ID
+  string customer_id = 3;
+  
+  // Event type
+  string event_type = 4;
+  
+  // Event timestamp
+  google.protobuf.Timestamp timestamp = 5;
+  
+  // Transaction amount
+  double amount = 6;
+  
+  // Transaction currency
+  string currency = 7;
+  
+  // Transaction status
+  string status = 8;
+  
+  // Transaction type
+  string transaction_type = 9;
+  
+  // Merchant information
+  MerchantInfo merchant = 10;
+  
+  // Additional transaction data
+  google.protobuf.Struct data = 11;
+  
+  // Source platform
+  string platform_id = 12;
+  
+  // Event version
+  string version = 13;
+  
+  // Correlation ID for tracing
+  string correlation_id = 14;
+}
+
+// Merchant Information
+message MerchantInfo {
+  // Merchant ID
+  string merchant_id = 1;
+  
+  // Merchant name
+  string name = 2;
+  
+  // Merchant category code
+  string category_code = 3;
+  
+  // Merchant location
+  string location = 4;
+}
+
+// Batch Transaction Event Request
+message BatchTransactionEventRequest {
+  // Banking platform identifier
+  string platform_id = 1;
+  
+  // List of events
+  repeated TransactionEvent events = 2;
+  
+  // Authentication token
+  string auth_token = 3;
+  
+  // Request ID
+  string request_id = 4;
+}
+
+// Batch Transaction Event Response
+message BatchTransactionEventResponse {
+  // Success status
+  bool success = 1;
+  
+  // Error message if any
+  string error_message = 2;
+  
+  // Number of events processed
+  int32 processed_count = 3;
+  
+  // Number of events failed
+  int32 failed_count = 4;
+  
+  // Failed event IDs with reasons
+  map<string, string> failed_events = 5;
+  
+  // Request ID (echoed back)
+  string request_id = 6;
+}
+
+// Account Event Request
+message AccountEventRequest {
+  // Banking platform identifier
+  string platform_id = 1;
+  
+  // Event types to filter (empty means all)
+  repeated string event_types = 2;
+  
+  // Customer IDs to filter (empty means all)
+  repeated string customer_ids = 3;
+  
+  // Start timestamp for events
+  google.protobuf.Timestamp start_time = 4;
+  
+  // Authentication token
+  string auth_token = 5;
+}
+
+// Account Event
+message AccountEvent {
+  // Unique event ID
+  string event_id = 1;
+  
+  // Account ID
+  string account_id = 2;
+  
+  // Customer ID
+  string customer_id = 3;
+  
+  // Event type
+  string event_type = 4;
+  
+  // Event timestamp
+  google.protobuf.Timestamp timestamp = 5;
+  
+  // Account type
+  string account_type = 6;
+  
+  // Account status
+  string status = 7;
+  
+  // Account balance
+  double balance = 8;
+  
+  // Account currency
+  string currency = 9;
+  
+  // Additional account data
+  google.protobuf.Struct data = 10;
+  
+  // Source platform
+  string platform_id = 11;
+  
+  // Event version
+  string version = 12;
+  
+  // Correlation ID for tracing
+  string correlation_id = 13;
+}
+
+// Batch Account Event Request
+message BatchAccountEventRequest {
+  // Banking platform identifier
+  string platform_id = 1;
+  
+  // List of events
+  repeated AccountEvent events = 2;
+  
+  // Authentication token
+  string auth_token = 3;
+  
+  // Request ID
+  string request_id = 4;
+}
+
+// Batch Account Event Response
+message BatchAccountEventResponse {
+  // Success status
+  bool success = 1;
+  
+  // Error message if any
+  string error_message = 2;
+  
+  // Number of events processed
+  int32 processed_count = 3;
+  
+  // Number of events failed
+  int32 failed_count = 4;
+  
+  // Failed event IDs with reasons
+  map<string, string> failed_events = 5;
+  
+  // Request ID (echoed back)
+  string request_id = 6;
+}
+
+// Event Acknowledgement
+message EventAcknowledgement {
+  // Event ID
+  string event_id = 1;
+  
+  // Status (success/failure)
+  bool success = 2;
+  
+  // Error message if any
+  string error_message = 3;
+  
+  // Processing timestamp
+  google.protobuf.Timestamp timestamp = 4;
+  
+  // Consumer ID
+  string consumer_id = 5;
+}
+
+// Acknowledgement Response
+message AcknowledgementResponse {
+  // Success status
+  bool success = 1;
+  
+  // Error message if any
+  string error_message = 2;
+}
+

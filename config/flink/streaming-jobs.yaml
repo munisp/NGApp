@@ -1,0 +1,961 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: flink-jobs-config
+  namespace: enterprise-crm
+data:
+  customer-analytics-job.py: |
+    from pyflink.datastream import StreamExecutionEnvironment
+    from pyflink.table import StreamTableEnvironment, EnvironmentSettings
+    from pyflink.datastream.connectors import FlinkKafkaConsumer, FlinkKafkaProducer
+    from pyflink.common.serialization import SimpleStringSchema
+    from pyflink.common.typeinfo import Types
+    import json
+    import logging
+    
+    def customer_analytics_job():
+        """
+        Real-time customer analytics processing job
+        Processes customer events and generates analytics insights
+        """
+        # Set up the execution environment
+        env = StreamExecutionEnvironment.get_execution_environment()
+        env.set_parallelism(4)
+        env.enable_checkpointing(60000)  # Checkpoint every minute
+        
+        # Set up table environment
+        settings = EnvironmentSettings.new_instance().in_streaming_mode().build()
+        table_env = StreamTableEnvironment.create(env, settings)
+        
+        # Add Kafka connector
+        table_env.execute_sql("""
+            CREATE TABLE customer_events (
+                customer_id STRING,
+                event_type STRING,
+                event_data ROW<
+                    interaction_type STRING,
+                    channel STRING,
+                    value DOUBLE,
+                    metadata MAP<STRING, STRING>
+                >,
+                event_timestamp TIMESTAMP(3),
+                WATERMARK FOR event_timestamp AS event_timestamp - INTERVAL '5' SECOND
+            ) WITH (
+                'connector' = 'kafka',
+                'topic' = 'customer.events',
+                'properties.bootstrap.servers' = 'kafka:9092',
+                'properties.group.id' = 'customer-analytics-group',
+                'format' = 'json',
+                'scan.startup.mode' = 'latest-offset'
+            )
+        """)
+        
+        # Create output table for analytics results
+        table_env.execute_sql("""
+            CREATE TABLE customer_analytics_output (
+                customer_id STRING,
+                analytics_type STRING,
+                metric_name STRING,
+                metric_value DOUBLE,
+                calculation_timestamp TIMESTAMP(3)
+            ) WITH (
+                'connector' = 'kafka',
+                'topic' = 'analytics.customer.metrics',
+                'properties.bootstrap.servers' = 'kafka:9092',
+                'format' = 'json'
+            )
+        """)
+        
+        # Customer interaction frequency analysis
+        table_env.execute_sql("""
+            INSERT INTO customer_analytics_output
+            SELECT 
+                customer_id,
+                'interaction_frequency' as analytics_type,
+                'interactions_per_hour' as metric_name,
+                COUNT(*) as metric_value,
+                TUMBLE_END(event_timestamp, INTERVAL '1' HOUR) as calculation_timestamp
+            FROM customer_events
+            WHERE event_type = 'interaction'
+            GROUP BY 
+                customer_id,
+                TUMBLE(event_timestamp, INTERVAL '1' HOUR)
+        """)
+        
+        # Customer value calculation
+        table_env.execute_sql("""
+            INSERT INTO customer_analytics_output
+            SELECT 
+                customer_id,
+                'customer_value' as analytics_type,
+                'hourly_value' as metric_name,
+                SUM(event_data.value) as metric_value,
+                TUMBLE_END(event_timestamp, INTERVAL '1' HOUR) as calculation_timestamp
+            FROM customer_events
+            WHERE event_type = 'transaction' AND event_data.value IS NOT NULL
+            GROUP BY 
+                customer_id,
+                TUMBLE(event_timestamp, INTERVAL '1' HOUR)
+        """)
+        
+        # Channel preference analysis
+        table_env.execute_sql("""
+            INSERT INTO customer_analytics_output
+            SELECT 
+                customer_id,
+                'channel_preference' as analytics_type,
+                event_data.channel as metric_name,
+                COUNT(*) as metric_value,
+                TUMBLE_END(event_timestamp, INTERVAL '6' HOUR) as calculation_timestamp
+            FROM customer_events
+            WHERE event_type = 'interaction' AND event_data.channel IS NOT NULL
+            GROUP BY 
+                customer_id,
+                event_data.channel,
+                TUMBLE(event_timestamp, INTERVAL '6' HOUR)
+        """)
+        
+        logging.info("Customer analytics job configured successfully")
+    
+    if __name__ == "__main__":
+        customer_analytics_job()
+
+  inventory-monitoring-job.py: |
+    from pyflink.datastream import StreamExecutionEnvironment
+    from pyflink.table import StreamTableEnvironment, EnvironmentSettings
+    import json
+    import logging
+    
+    def inventory_monitoring_job():
+        """
+        Real-time inventory monitoring and alerting job
+        Monitors stock levels and generates alerts for low stock
+        """
+        # Set up the execution environment
+        env = StreamExecutionEnvironment.get_execution_environment()
+        env.set_parallelism(6)
+        env.enable_checkpointing(30000)  # Checkpoint every 30 seconds
+        
+        # Set up table environment
+        settings = EnvironmentSettings.new_instance().in_streaming_mode().build()
+        table_env = StreamTableEnvironment.create(env, settings)
+        
+        # Create source table for inventory updates
+        table_env.execute_sql("""
+            CREATE TABLE inventory_updates (
+                product_id STRING,
+                warehouse_id STRING,
+                movement_type STRING,
+                quantity_change DOUBLE,
+                current_stock DOUBLE,
+                reorder_level DOUBLE,
+                max_stock DOUBLE,
+                cost_per_unit DOUBLE,
+                movement_timestamp TIMESTAMP(3),
+                WATERMARK FOR movement_timestamp AS movement_timestamp - INTERVAL '2' SECOND
+            ) WITH (
+                'connector' = 'kafka',
+                'topic' = 'inventory.stock.updates',
+                'properties.bootstrap.servers' = 'kafka:9092',
+                'properties.group.id' = 'inventory-monitoring-group',
+                'format' = 'json',
+                'scan.startup.mode' = 'latest-offset'
+            )
+        """)
+        
+        # Create output table for alerts
+        table_env.execute_sql("""
+            CREATE TABLE inventory_alerts (
+                alert_id STRING,
+                product_id STRING,
+                warehouse_id STRING,
+                alert_type STRING,
+                alert_severity STRING,
+                current_stock DOUBLE,
+                threshold_value DOUBLE,
+                alert_timestamp TIMESTAMP(3),
+                alert_message STRING
+            ) WITH (
+                'connector' = 'kafka',
+                'topic' = 'inventory.alerts',
+                'properties.bootstrap.servers' = 'kafka:9092',
+                'format' = 'json'
+            )
+        """)
+        
+        # Create output table for stock analytics
+        table_env.execute_sql("""
+            CREATE TABLE stock_analytics (
+                product_id STRING,
+                warehouse_id STRING,
+                metric_type STRING,
+                metric_value DOUBLE,
+                calculation_timestamp TIMESTAMP(3)
+            ) WITH (
+                'connector' = 'kafka',
+                'topic' = 'analytics.inventory.metrics',
+                'properties.bootstrap.servers' = 'kafka:9092',
+                'format' = 'json'
+            )
+        """)
+        
+        # Low stock alert generation
+        table_env.execute_sql("""
+            INSERT INTO inventory_alerts
+            SELECT 
+                CONCAT(product_id, '_', warehouse_id, '_', CAST(UNIX_TIMESTAMP() AS STRING)) as alert_id,
+                product_id,
+                warehouse_id,
+                'LOW_STOCK' as alert_type,
+                CASE 
+                    WHEN current_stock <= reorder_level * 0.5 THEN 'CRITICAL'
+                    WHEN current_stock <= reorder_level * 0.8 THEN 'HIGH'
+                    ELSE 'MEDIUM'
+                END as alert_severity,
+                current_stock,
+                reorder_level as threshold_value,
+                movement_timestamp as alert_timestamp,
+                CONCAT('Low stock alert for product ', product_id, ' in warehouse ', warehouse_id, 
+                       '. Current stock: ', CAST(current_stock AS STRING), 
+                       ', Reorder level: ', CAST(reorder_level AS STRING)) as alert_message
+            FROM inventory_updates
+            WHERE current_stock <= reorder_level
+        """)
+        
+        # Overstock alert generation
+        table_env.execute_sql("""
+            INSERT INTO inventory_alerts
+            SELECT 
+                CONCAT(product_id, '_', warehouse_id, '_OVERSTOCK_', CAST(UNIX_TIMESTAMP() AS STRING)) as alert_id,
+                product_id,
+                warehouse_id,
+                'OVERSTOCK' as alert_type,
+                'MEDIUM' as alert_severity,
+                current_stock,
+                max_stock as threshold_value,
+                movement_timestamp as alert_timestamp,
+                CONCAT('Overstock alert for product ', product_id, ' in warehouse ', warehouse_id, 
+                       '. Current stock: ', CAST(current_stock AS STRING), 
+                       ', Max stock: ', CAST(max_stock AS STRING)) as alert_message
+            FROM inventory_updates
+            WHERE current_stock > max_stock
+        """)
+        
+        # Stock velocity calculation (movements per hour)
+        table_env.execute_sql("""
+            INSERT INTO stock_analytics
+            SELECT 
+                product_id,
+                warehouse_id,
+                'stock_velocity' as metric_type,
+                COUNT(*) as metric_value,
+                TUMBLE_END(movement_timestamp, INTERVAL '1' HOUR) as calculation_timestamp
+            FROM inventory_updates
+            GROUP BY 
+                product_id,
+                warehouse_id,
+                TUMBLE(movement_timestamp, INTERVAL '1' HOUR)
+        """)
+        
+        # Inventory value calculation
+        table_env.execute_sql("""
+            INSERT INTO stock_analytics
+            SELECT 
+                product_id,
+                warehouse_id,
+                'inventory_value' as metric_type,
+                current_stock * cost_per_unit as metric_value,
+                movement_timestamp as calculation_timestamp
+            FROM inventory_updates
+            WHERE cost_per_unit IS NOT NULL
+        """)
+        
+        logging.info("Inventory monitoring job configured successfully")
+    
+    if __name__ == "__main__":
+        inventory_monitoring_job()
+
+  sales-pipeline-analytics-job.py: |
+    from pyflink.datastream import StreamExecutionEnvironment
+    from pyflink.table import StreamTableEnvironment, EnvironmentSettings
+    import json
+    import logging
+    
+    def sales_pipeline_analytics_job():
+        """
+        Real-time sales pipeline analytics job
+        Processes CRM events and generates sales insights
+        """
+        # Set up the execution environment
+        env = StreamExecutionEnvironment.get_execution_environment()
+        env.set_parallelism(4)
+        env.enable_checkpointing(60000)  # Checkpoint every minute
+        
+        # Set up table environment
+        settings = EnvironmentSettings.new_instance().in_streaming_mode().build()
+        table_env = StreamTableEnvironment.create(env, settings)
+        
+        # Create source table for opportunity events
+        table_env.execute_sql("""
+            CREATE TABLE opportunity_events (
+                opportunity_id STRING,
+                account_id STRING,
+                owner_id STRING,
+                stage STRING,
+                previous_stage STRING,
+                amount DOUBLE,
+                probability DOUBLE,
+                close_date DATE,
+                event_type STRING,
+                event_timestamp TIMESTAMP(3),
+                WATERMARK FOR event_timestamp AS event_timestamp - INTERVAL '5' SECOND
+            ) WITH (
+                'connector' = 'kafka',
+                'topic' = 'crm.opportunities.events',
+                'properties.bootstrap.servers' = 'kafka:9092',
+                'properties.group.id' = 'sales-analytics-group',
+                'format' = 'json',
+                'scan.startup.mode' = 'latest-offset'
+            )
+        """)
+        
+        # Create output table for sales analytics
+        table_env.execute_sql("""
+            CREATE TABLE sales_analytics (
+                metric_type STRING,
+                dimension_key STRING,
+                dimension_value STRING,
+                metric_value DOUBLE,
+                calculation_timestamp TIMESTAMP(3)
+            ) WITH (
+                'connector' = 'kafka',
+                'topic' = 'analytics.sales.metrics',
+                'properties.bootstrap.servers' = 'kafka:9092',
+                'format' = 'json'
+            )
+        """)
+        
+        # Pipeline velocity calculation (time between stages)
+        table_env.execute_sql("""
+            INSERT INTO sales_analytics
+            SELECT 
+                'pipeline_velocity' as metric_type,
+                stage as dimension_key,
+                owner_id as dimension_value,
+                COUNT(*) as metric_value,
+                TUMBLE_END(event_timestamp, INTERVAL '1' HOUR) as calculation_timestamp
+            FROM opportunity_events
+            WHERE event_type = 'stage_change'
+            GROUP BY 
+                stage,
+                owner_id,
+                TUMBLE(event_timestamp, INTERVAL '1' HOUR)
+        """)
+        
+        # Win rate calculation by owner
+        table_env.execute_sql("""
+            INSERT INTO sales_analytics
+            SELECT 
+                'win_rate' as metric_type,
+                'owner' as dimension_key,
+                owner_id as dimension_value,
+                SUM(CASE WHEN stage = 'won' THEN 1.0 ELSE 0.0 END) / COUNT(*) * 100 as metric_value,
+                TUMBLE_END(event_timestamp, INTERVAL '6' HOUR) as calculation_timestamp
+            FROM opportunity_events
+            WHERE event_type = 'stage_change' AND stage IN ('won', 'lost')
+            GROUP BY 
+                owner_id,
+                TUMBLE(event_timestamp, INTERVAL '6' HOUR)
+        """)
+        
+        # Revenue forecasting
+        table_env.execute_sql("""
+            INSERT INTO sales_analytics
+            SELECT 
+                'revenue_forecast' as metric_type,
+                'monthly' as dimension_key,
+                CAST(EXTRACT(MONTH FROM close_date) AS STRING) as dimension_value,
+                SUM(amount * probability / 100) as metric_value,
+                TUMBLE_END(event_timestamp, INTERVAL '1' HOUR) as calculation_timestamp
+            FROM opportunity_events
+            WHERE event_type IN ('created', 'updated') 
+                AND stage NOT IN ('won', 'lost')
+                AND amount IS NOT NULL 
+                AND probability IS NOT NULL
+            GROUP BY 
+                EXTRACT(MONTH FROM close_date),
+                TUMBLE(event_timestamp, INTERVAL '1' HOUR)
+        """)
+        
+        # Average deal size by stage
+        table_env.execute_sql("""
+            INSERT INTO sales_analytics
+            SELECT 
+                'avg_deal_size' as metric_type,
+                'stage' as dimension_key,
+                stage as dimension_value,
+                AVG(amount) as metric_value,
+                TUMBLE_END(event_timestamp, INTERVAL '2' HOUR) as calculation_timestamp
+            FROM opportunity_events
+            WHERE event_type IN ('created', 'updated') 
+                AND amount IS NOT NULL
+            GROUP BY 
+                stage,
+                TUMBLE(event_timestamp, INTERVAL '2' HOUR)
+        """)
+        
+        logging.info("Sales pipeline analytics job configured successfully")
+    
+    if __name__ == "__main__":
+        sales_pipeline_analytics_job()
+
+  fraud-detection-job.py: |
+    from pyflink.datastream import StreamExecutionEnvironment
+    from pyflink.table import StreamTableEnvironment, EnvironmentSettings
+    import json
+    import logging
+    
+    def fraud_detection_job():
+        """
+        Real-time fraud detection job
+        Analyzes transaction patterns and detects anomalies
+        """
+        # Set up the execution environment
+        env = StreamExecutionEnvironment.get_execution_environment()
+        env.set_parallelism(8)
+        env.enable_checkpointing(15000)  # Checkpoint every 15 seconds
+        
+        # Set up table environment
+        settings = EnvironmentSettings.new_instance().in_streaming_mode().build()
+        table_env = StreamTableEnvironment.create(env, settings)
+        
+        # Create source table for transaction events
+        table_env.execute_sql("""
+            CREATE TABLE transaction_events (
+                transaction_id STRING,
+                customer_id STRING,
+                amount DOUBLE,
+                currency STRING,
+                merchant_id STRING,
+                location ROW<
+                    country STRING,
+                    city STRING,
+                    latitude DOUBLE,
+                    longitude DOUBLE
+                >,
+                payment_method STRING,
+                transaction_timestamp TIMESTAMP(3),
+                WATERMARK FOR transaction_timestamp AS transaction_timestamp - INTERVAL '1' SECOND
+            ) WITH (
+                'connector' = 'kafka',
+                'topic' = 'iot.pos.transactions',
+                'properties.bootstrap.servers' = 'kafka:9092',
+                'properties.group.id' = 'fraud-detection-group',
+                'format' = 'json',
+                'scan.startup.mode' = 'latest-offset'
+            )
+        """)
+        
+        # Create output table for fraud alerts
+        table_env.execute_sql("""
+            CREATE TABLE fraud_alerts (
+                alert_id STRING,
+                transaction_id STRING,
+                customer_id STRING,
+                fraud_type STRING,
+                risk_score DOUBLE,
+                alert_timestamp TIMESTAMP(3),
+                alert_details STRING
+            ) WITH (
+                'connector' = 'kafka',
+                'topic' = 'security.fraud.alerts',
+                'properties.bootstrap.servers' = 'kafka:9092',
+                'format' = 'json'
+            )
+        """)
+        
+        # High-value transaction detection
+        table_env.execute_sql("""
+            INSERT INTO fraud_alerts
+            SELECT 
+                CONCAT('HIGH_VALUE_', transaction_id) as alert_id,
+                transaction_id,
+                customer_id,
+                'HIGH_VALUE_TRANSACTION' as fraud_type,
+                CASE 
+                    WHEN amount > 10000 THEN 90.0
+                    WHEN amount > 5000 THEN 70.0
+                    ELSE 50.0
+                END as risk_score,
+                transaction_timestamp as alert_timestamp,
+                CONCAT('High-value transaction detected: ', CAST(amount AS STRING), ' ', currency) as alert_details
+            FROM transaction_events
+            WHERE amount > 1000
+        """)
+        
+        # Velocity fraud detection (multiple transactions in short time)
+        table_env.execute_sql("""
+            INSERT INTO fraud_alerts
+            SELECT 
+                CONCAT('VELOCITY_', customer_id, '_', CAST(UNIX_TIMESTAMP() AS STRING)) as alert_id,
+                MAX(transaction_id) as transaction_id,
+                customer_id,
+                'VELOCITY_FRAUD' as fraud_type,
+                COUNT(*) * 10.0 as risk_score,
+                MAX(transaction_timestamp) as alert_timestamp,
+                CONCAT('Velocity fraud detected: ', CAST(COUNT(*) AS STRING), ' transactions in 5 minutes') as alert_details
+            FROM transaction_events
+            GROUP BY 
+                customer_id,
+                TUMBLE(transaction_timestamp, INTERVAL '5' MINUTE)
+            HAVING COUNT(*) > 5
+        """)
+        
+        # Geographic anomaly detection
+        table_env.execute_sql("""
+            INSERT INTO fraud_alerts
+            SELECT 
+                CONCAT('GEO_ANOMALY_', transaction_id) as alert_id,
+                transaction_id,
+                customer_id,
+                'GEOGRAPHIC_ANOMALY' as fraud_type,
+                80.0 as risk_score,
+                transaction_timestamp as alert_timestamp,
+                CONCAT('Geographic anomaly detected in ', location.country, ', ', location.city) as alert_details
+            FROM (
+                SELECT 
+                    transaction_id,
+                    customer_id,
+                    location,
+                    transaction_timestamp,
+                    COUNT(DISTINCT location.country) OVER (
+                        PARTITION BY customer_id 
+                        ORDER BY transaction_timestamp 
+                        RANGE BETWEEN INTERVAL '1' HOUR PRECEDING AND CURRENT ROW
+                    ) as country_count
+                FROM transaction_events
+            )
+            WHERE country_count > 2
+        """)
+        
+        logging.info("Fraud detection job configured successfully")
+    
+    if __name__ == "__main__":
+        fraud_detection_job()
+
+  data-quality-monitoring-job.py: |
+    from pyflink.datastream import StreamExecutionEnvironment
+    from pyflink.table import StreamTableEnvironment, EnvironmentSettings
+    import json
+    import logging
+    
+    def data_quality_monitoring_job():
+        """
+        Real-time data quality monitoring job
+        Monitors data quality across all streams and generates alerts
+        """
+        # Set up the execution environment
+        env = StreamExecutionEnvironment.get_execution_environment()
+        env.set_parallelism(4)
+        env.enable_checkpointing(30000)  # Checkpoint every 30 seconds
+        
+        # Set up table environment
+        settings = EnvironmentSettings.new_instance().in_streaming_mode().build()
+        table_env = StreamTableEnvironment.create(env, settings)
+        
+        # Create source table for raw events (all topics)
+        table_env.execute_sql("""
+            CREATE TABLE raw_events (
+                topic STRING,
+                partition_id INT,
+                offset_id BIGINT,
+                event_key STRING,
+                event_value STRING,
+                event_timestamp TIMESTAMP(3),
+                WATERMARK FOR event_timestamp AS event_timestamp - INTERVAL '5' SECOND
+            ) WITH (
+                'connector' = 'kafka',
+                'topic-pattern' = '.*\\.events|.*\\.updates',
+                'properties.bootstrap.servers' = 'kafka:9092',
+                'properties.group.id' = 'data-quality-group',
+                'format' = 'json',
+                'scan.startup.mode' = 'latest-offset'
+            )
+        """)
+        
+        # Create output table for data quality alerts
+        table_env.execute_sql("""
+            CREATE TABLE data_quality_alerts (
+                alert_id STRING,
+                topic STRING,
+                quality_issue STRING,
+                severity STRING,
+                issue_count BIGINT,
+                alert_timestamp TIMESTAMP(3),
+                alert_message STRING
+            ) WITH (
+                'connector' = 'kafka',
+                'topic' = 'datalake.quality.alerts',
+                'properties.bootstrap.servers' = 'kafka:9092',
+                'format' = 'json'
+            )
+        """)
+        
+        # Null value detection
+        table_env.execute_sql("""
+            INSERT INTO data_quality_alerts
+            SELECT 
+                CONCAT('NULL_VALUES_', topic, '_', CAST(UNIX_TIMESTAMP() AS STRING)) as alert_id,
+                topic,
+                'NULL_VALUES' as quality_issue,
+                CASE 
+                    WHEN null_count > 100 THEN 'HIGH'
+                    WHEN null_count > 50 THEN 'MEDIUM'
+                    ELSE 'LOW'
+                END as severity,
+                null_count as issue_count,
+                window_end as alert_timestamp,
+                CONCAT('High null value rate detected in topic ', topic, ': ', CAST(null_count AS STRING), ' null values') as alert_message
+            FROM (
+                SELECT 
+                    topic,
+                    COUNT(*) FILTER (WHERE event_value IS NULL OR event_value = '') as null_count,
+                    TUMBLE_END(event_timestamp, INTERVAL '5' MINUTE) as window_end
+                FROM raw_events
+                GROUP BY 
+                    topic,
+                    TUMBLE(event_timestamp, INTERVAL '5' MINUTE)
+            )
+            WHERE null_count > 10
+        """)
+        
+        # Schema validation (JSON format check)
+        table_env.execute_sql("""
+            INSERT INTO data_quality_alerts
+            SELECT 
+                CONCAT('SCHEMA_VIOLATION_', topic, '_', CAST(UNIX_TIMESTAMP() AS STRING)) as alert_id,
+                topic,
+                'SCHEMA_VIOLATION' as quality_issue,
+                'HIGH' as severity,
+                invalid_count as issue_count,
+                window_end as alert_timestamp,
+                CONCAT('Schema violations detected in topic ', topic, ': ', CAST(invalid_count AS STRING), ' invalid records') as alert_message
+            FROM (
+                SELECT 
+                    topic,
+                    COUNT(*) FILTER (WHERE 
+                        event_value NOT LIKE '{%}' AND 
+                        event_value NOT LIKE '[%]' AND 
+                        event_value IS NOT NULL
+                    ) as invalid_count,
+                    TUMBLE_END(event_timestamp, INTERVAL '5' MINUTE) as window_end
+                FROM raw_events
+                GROUP BY 
+                    topic,
+                    TUMBLE(event_timestamp, INTERVAL '5' MINUTE)
+            )
+            WHERE invalid_count > 5
+        """)
+        
+        # Data freshness monitoring
+        table_env.execute_sql("""
+            INSERT INTO data_quality_alerts
+            SELECT 
+                CONCAT('DATA_FRESHNESS_', topic, '_', CAST(UNIX_TIMESTAMP() AS STRING)) as alert_id,
+                topic,
+                'DATA_FRESHNESS' as quality_issue,
+                CASE 
+                    WHEN lag_minutes > 60 THEN 'HIGH'
+                    WHEN lag_minutes > 30 THEN 'MEDIUM'
+                    ELSE 'LOW'
+                END as severity,
+                CAST(lag_minutes AS BIGINT) as issue_count,
+                CURRENT_TIMESTAMP as alert_timestamp,
+                CONCAT('Data freshness issue in topic ', topic, ': ', CAST(lag_minutes AS STRING), ' minutes lag') as alert_message
+            FROM (
+                SELECT 
+                    topic,
+                    TIMESTAMPDIFF(MINUTE, MAX(event_timestamp), CURRENT_TIMESTAMP) as lag_minutes
+                FROM raw_events
+                GROUP BY topic
+            )
+            WHERE lag_minutes > 15
+        """)
+        
+        # Volume anomaly detection
+        table_env.execute_sql("""
+            INSERT INTO data_quality_alerts
+            SELECT 
+                CONCAT('VOLUME_ANOMALY_', topic, '_', CAST(UNIX_TIMESTAMP() AS STRING)) as alert_id,
+                topic,
+                'VOLUME_ANOMALY' as quality_issue,
+                CASE 
+                    WHEN event_count = 0 THEN 'HIGH'
+                    WHEN event_count < 10 THEN 'MEDIUM'
+                    ELSE 'LOW'
+                END as severity,
+                event_count as issue_count,
+                window_end as alert_timestamp,
+                CONCAT('Volume anomaly detected in topic ', topic, ': ', CAST(event_count AS STRING), ' events in 10 minutes') as alert_message
+            FROM (
+                SELECT 
+                    topic,
+                    COUNT(*) as event_count,
+                    TUMBLE_END(event_timestamp, INTERVAL '10' MINUTE) as window_end
+                FROM raw_events
+                GROUP BY 
+                    topic,
+                    TUMBLE(event_timestamp, INTERVAL '10' MINUTE)
+            )
+            WHERE event_count < 5
+        """)
+        
+        logging.info("Data quality monitoring job configured successfully")
+    
+    if __name__ == "__main__":
+        data_quality_monitoring_job()
+---
+apiVersion: batch/v1
+kind: CronJob
+metadata:
+  name: flink-job-customer-analytics
+  namespace: enterprise-crm
+  labels:
+    app: flink-job-customer-analytics
+spec:
+  schedule: "0 */6 * * *"  # Every 6 hours
+  jobTemplate:
+    spec:
+      template:
+        metadata:
+          labels:
+            app: flink-job-customer-analytics
+        spec:
+          restartPolicy: OnFailure
+          containers:
+          - name: flink-job
+            image: flink:1.18-scala_2.12-java11
+            command:
+            - /bin/bash
+            - -c
+            - |
+              # Install PyFlink
+              pip install apache-flink==1.18.0
+              
+              # Submit the job
+              python /jobs/customer-analytics-job.py
+            volumeMounts:
+            - name: jobs
+              mountPath: /jobs
+            env:
+            - name: FLINK_PROPERTIES
+              value: |
+                jobmanager.rpc.address: flink-jobmanager
+                taskmanager.numberOfTaskSlots: 4
+                parallelism.default: 4
+                state.backend: rocksdb
+                state.checkpoints.dir: file:///tmp/flink-checkpoints
+                state.savepoints.dir: file:///tmp/flink-savepoints
+            resources:
+              requests:
+                memory: "1Gi"
+                cpu: "500m"
+              limits:
+                memory: "2Gi"
+                cpu: "1000m"
+          volumes:
+          - name: jobs
+            configMap:
+              name: flink-jobs-config
+---
+apiVersion: batch/v1
+kind: CronJob
+metadata:
+  name: flink-job-inventory-monitoring
+  namespace: enterprise-crm
+  labels:
+    app: flink-job-inventory-monitoring
+spec:
+  schedule: "*/15 * * * *"  # Every 15 minutes
+  jobTemplate:
+    spec:
+      template:
+        metadata:
+          labels:
+            app: flink-job-inventory-monitoring
+        spec:
+          restartPolicy: OnFailure
+          containers:
+          - name: flink-job
+            image: flink:1.18-scala_2.12-java11
+            command:
+            - /bin/bash
+            - -c
+            - |
+              # Install PyFlink
+              pip install apache-flink==1.18.0
+              
+              # Submit the job
+              python /jobs/inventory-monitoring-job.py
+            volumeMounts:
+            - name: jobs
+              mountPath: /jobs
+            env:
+            - name: FLINK_PROPERTIES
+              value: |
+                jobmanager.rpc.address: flink-jobmanager
+                taskmanager.numberOfTaskSlots: 6
+                parallelism.default: 6
+                state.backend: rocksdb
+                state.checkpoints.dir: file:///tmp/flink-checkpoints
+                state.savepoints.dir: file:///tmp/flink-savepoints
+            resources:
+              requests:
+                memory: "1Gi"
+                cpu: "500m"
+              limits:
+                memory: "2Gi"
+                cpu: "1000m"
+          volumes:
+          - name: jobs
+            configMap:
+              name: flink-jobs-config
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: flink-job-fraud-detection
+  namespace: enterprise-crm
+  labels:
+    app: flink-job-fraud-detection
+spec:
+  replicas: 2
+  selector:
+    matchLabels:
+      app: flink-job-fraud-detection
+  template:
+    metadata:
+      labels:
+        app: flink-job-fraud-detection
+    spec:
+      containers:
+      - name: flink-job
+        image: flink:1.18-scala_2.12-java11
+        command:
+        - /bin/bash
+        - -c
+        - |
+          # Install PyFlink
+          pip install apache-flink==1.18.0
+          
+          # Run the fraud detection job continuously
+          python /jobs/fraud-detection-job.py
+        volumeMounts:
+        - name: jobs
+          mountPath: /jobs
+        env:
+        - name: FLINK_PROPERTIES
+          value: |
+            jobmanager.rpc.address: flink-jobmanager
+            taskmanager.numberOfTaskSlots: 8
+            parallelism.default: 8
+            state.backend: rocksdb
+            state.checkpoints.dir: file:///tmp/flink-checkpoints
+            state.savepoints.dir: file:///tmp/flink-savepoints
+        resources:
+          requests:
+            memory: "2Gi"
+            cpu: "1000m"
+          limits:
+            memory: "4Gi"
+            cpu: "2000m"
+        livenessProbe:
+          exec:
+            command:
+            - /bin/bash
+            - -c
+            - "ps aux | grep -v grep | grep python"
+          initialDelaySeconds: 60
+          periodSeconds: 30
+        readinessProbe:
+          exec:
+            command:
+            - /bin/bash
+            - -c
+            - "ps aux | grep -v grep | grep python"
+          initialDelaySeconds: 30
+          periodSeconds: 10
+      volumes:
+      - name: jobs
+        configMap:
+          name: flink-jobs-config
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: flink-job-data-quality
+  namespace: enterprise-crm
+  labels:
+    app: flink-job-data-quality
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: flink-job-data-quality
+  template:
+    metadata:
+      labels:
+        app: flink-job-data-quality
+    spec:
+      containers:
+      - name: flink-job
+        image: flink:1.18-scala_2.12-java11
+        command:
+        - /bin/bash
+        - -c
+        - |
+          # Install PyFlink
+          pip install apache-flink==1.18.0
+          
+          # Run the data quality monitoring job continuously
+          python /jobs/data-quality-monitoring-job.py
+        volumeMounts:
+        - name: jobs
+          mountPath: /jobs
+        env:
+        - name: FLINK_PROPERTIES
+          value: |
+            jobmanager.rpc.address: flink-jobmanager
+            taskmanager.numberOfTaskSlots: 4
+            parallelism.default: 4
+            state.backend: rocksdb
+            state.checkpoints.dir: file:///tmp/flink-checkpoints
+            state.savepoints.dir: file:///tmp/flink-savepoints
+        resources:
+          requests:
+            memory: "1Gi"
+            cpu: "500m"
+          limits:
+            memory: "2Gi"
+            cpu: "1000m"
+        livenessProbe:
+          exec:
+            command:
+            - /bin/bash
+            - -c
+            - "ps aux | grep -v grep | grep python"
+          initialDelaySeconds: 60
+          periodSeconds: 30
+        readinessProbe:
+          exec:
+            command:
+            - /bin/bash
+            - -c
+            - "ps aux | grep -v grep | grep python"
+          initialDelaySeconds: 30
+          periodSeconds: 10
+      volumes:
+      - name: jobs
+        configMap:
+          name: flink-jobs-config
+

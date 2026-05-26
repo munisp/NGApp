@@ -1,0 +1,393 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: novu-integration-service
+  namespace: enterprise-crm
+  labels:
+    app: novu-integration-service
+    component: notification
+    tier: backend
+    version: v1.0.0
+spec:
+  replicas: 3
+  strategy:
+    type: RollingUpdate
+    rollingUpdate:
+      maxUnavailable: 1
+      maxSurge: 1
+  selector:
+    matchLabels:
+      app: novu-integration-service
+  template:
+    metadata:
+      labels:
+        app: novu-integration-service
+        component: notification
+        tier: backend
+        version: v1.0.0
+      annotations:
+        prometheus.io/scrape: "true"
+        prometheus.io/port: "3001"
+        prometheus.io/path: "/metrics"
+    spec:
+      serviceAccountName: novu-integration-service
+      securityContext:
+        runAsNonRoot: true
+        runAsUser: 1001
+        runAsGroup: 1001
+        fsGroup: 1001
+      containers:
+      - name: novu-integration
+        image: enterprise-crm/novu-integration:latest
+        imagePullPolicy: Always
+        ports:
+        - name: http
+          containerPort: 3001
+          protocol: TCP
+        env:
+        - name: NODE_ENV
+          value: "production"
+        - name: PORT
+          value: "3001"
+        - name: NOVU_API_KEY
+          valueFrom:
+            secretKeyRef:
+              name: novu-integration-secrets
+              key: novu-api-key
+        - name: NOVU_APP_ID
+          valueFrom:
+            secretKeyRef:
+              name: novu-integration-secrets
+              key: novu-app-id
+        - name: NOVU_ENVIRONMENT
+          value: "production"
+        - name: NOVU_WEBHOOK_SECRET
+          valueFrom:
+            secretKeyRef:
+              name: novu-integration-secrets
+              key: novu-webhook-secret
+        - name: DATABASE_URL
+          valueFrom:
+            secretKeyRef:
+              name: novu-integration-secrets
+              key: database-url
+        - name: REDIS_URL
+          valueFrom:
+            secretKeyRef:
+              name: novu-integration-secrets
+              key: redis-url
+        - name: CRM_API_BASE_URL
+          value: "http://crm-core-service:8080"
+        - name: CRM_API_KEY
+          valueFrom:
+            secretKeyRef:
+              name: novu-integration-secrets
+              key: crm-api-key
+        - name: JWT_SECRET
+          valueFrom:
+            secretKeyRef:
+              name: novu-integration-secrets
+              key: jwt-secret
+        - name: JWT_EXPIRES_IN
+          value: "24h"
+        - name: RATE_LIMIT_WINDOW_MS
+          value: "900000"
+        - name: RATE_LIMIT_MAX_REQUESTS
+          value: "100"
+        - name: LOG_LEVEL
+          value: "info"
+        - name: LOG_FORMAT
+          value: "json"
+        - name: HEALTH_CHECK_INTERVAL
+          value: "30000"
+        - name: ENABLE_EMAIL_NOTIFICATIONS
+          value: "true"
+        - name: ENABLE_SMS_NOTIFICATIONS
+          value: "true"
+        - name: ENABLE_PUSH_NOTIFICATIONS
+          value: "true"
+        - name: ENABLE_IN_APP_NOTIFICATIONS
+          value: "true"
+        - name: ENABLE_WEBHOOK_NOTIFICATIONS
+          value: "true"
+        - name: MAX_CONCURRENT_NOTIFICATIONS
+          value: "100"
+        - name: NOTIFICATION_BATCH_SIZE
+          value: "50"
+        - name: RETRY_ATTEMPTS
+          value: "3"
+        - name: RETRY_DELAY_MS
+          value: "1000"
+        - name: ENABLE_METRICS
+          value: "true"
+        - name: METRICS_PORT
+          value: "9090"
+        resources:
+          requests:
+            memory: "256Mi"
+            cpu: "200m"
+          limits:
+            memory: "512Mi"
+            cpu: "500m"
+        livenessProbe:
+          httpGet:
+            path: /live
+            port: http
+          initialDelaySeconds: 30
+          periodSeconds: 10
+          timeoutSeconds: 5
+          failureThreshold: 3
+        readinessProbe:
+          httpGet:
+            path: /ready
+            port: http
+          initialDelaySeconds: 10
+          periodSeconds: 5
+          timeoutSeconds: 3
+          failureThreshold: 3
+        startupProbe:
+          httpGet:
+            path: /health
+            port: http
+          initialDelaySeconds: 10
+          periodSeconds: 10
+          timeoutSeconds: 5
+          failureThreshold: 30
+        volumeMounts:
+        - name: logs
+          mountPath: /app/logs
+        - name: tmp
+          mountPath: /tmp
+      volumes:
+      - name: logs
+        emptyDir: {}
+      - name: tmp
+        emptyDir: {}
+      nodeSelector:
+        kubernetes.io/os: linux
+      tolerations:
+      - key: "node.kubernetes.io/not-ready"
+        operator: "Exists"
+        effect: "NoExecute"
+        tolerationSeconds: 300
+      - key: "node.kubernetes.io/unreachable"
+        operator: "Exists"
+        effect: "NoExecute"
+        tolerationSeconds: 300
+      affinity:
+        podAntiAffinity:
+          preferredDuringSchedulingIgnoredDuringExecution:
+          - weight: 100
+            podAffinityTerm:
+              labelSelector:
+                matchExpressions:
+                - key: app
+                  operator: In
+                  values:
+                  - novu-integration-service
+              topologyKey: kubernetes.io/hostname
+
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: novu-integration-service
+  namespace: enterprise-crm
+  labels:
+    app: novu-integration-service
+    component: notification
+    tier: backend
+  annotations:
+    prometheus.io/scrape: "true"
+    prometheus.io/port: "3001"
+    prometheus.io/path: "/metrics"
+spec:
+  type: ClusterIP
+  ports:
+  - name: http
+    port: 80
+    targetPort: http
+    protocol: TCP
+  - name: metrics
+    port: 9090
+    targetPort: 9090
+    protocol: TCP
+  selector:
+    app: novu-integration-service
+
+---
+apiVersion: v1
+kind: ServiceAccount
+metadata:
+  name: novu-integration-service
+  namespace: enterprise-crm
+  labels:
+    app: novu-integration-service
+    component: notification
+
+---
+apiVersion: v1
+kind: Secret
+metadata:
+  name: novu-integration-secrets
+  namespace: enterprise-crm
+  labels:
+    app: novu-integration-service
+    component: notification
+type: Opaque
+stringData:
+  novu-api-key: "your-novu-api-key-here"
+  novu-app-id: "your-novu-app-id-here"
+  novu-webhook-secret: "your-novu-webhook-secret-here"
+  database-url: "postgresql://username:password@postgres-service:5432/enterprise_crm"
+  redis-url: "redis://redis-service:6379"
+  crm-api-key: "your-crm-api-key-here"
+  jwt-secret: "your-jwt-secret-here"
+
+---
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
+  name: novu-integration-ingress
+  namespace: enterprise-crm
+  labels:
+    app: novu-integration-service
+    component: notification
+  annotations:
+    kubernetes.io/ingress.class: "nginx"
+    nginx.ingress.kubernetes.io/ssl-redirect: "true"
+    nginx.ingress.kubernetes.io/force-ssl-redirect: "true"
+    nginx.ingress.kubernetes.io/backend-protocol: "HTTP"
+    nginx.ingress.kubernetes.io/rate-limit: "100"
+    nginx.ingress.kubernetes.io/rate-limit-window: "1m"
+    nginx.ingress.kubernetes.io/cors-allow-origin: "*"
+    nginx.ingress.kubernetes.io/cors-allow-methods: "GET, POST, PUT, DELETE, PATCH, OPTIONS"
+    nginx.ingress.kubernetes.io/cors-allow-headers: "Content-Type, Authorization, X-API-Key, X-Requested-With"
+    cert-manager.io/cluster-issuer: "letsencrypt-prod"
+spec:
+  tls:
+  - hosts:
+    - notifications.enterprise-crm.com
+    secretName: novu-integration-tls
+  rules:
+  - host: notifications.enterprise-crm.com
+    http:
+      paths:
+      - path: /
+        pathType: Prefix
+        backend:
+          service:
+            name: novu-integration-service
+            port:
+              number: 80
+
+---
+apiVersion: autoscaling/v2
+kind: HorizontalPodAutoscaler
+metadata:
+  name: novu-integration-hpa
+  namespace: enterprise-crm
+  labels:
+    app: novu-integration-service
+    component: notification
+spec:
+  scaleTargetRef:
+    apiVersion: apps/v1
+    kind: Deployment
+    name: novu-integration-service
+  minReplicas: 3
+  maxReplicas: 10
+  metrics:
+  - type: Resource
+    resource:
+      name: cpu
+      target:
+        type: Utilization
+        averageUtilization: 70
+  - type: Resource
+    resource:
+      name: memory
+      target:
+        type: Utilization
+        averageUtilization: 80
+  behavior:
+    scaleDown:
+      stabilizationWindowSeconds: 300
+      policies:
+      - type: Percent
+        value: 10
+        periodSeconds: 60
+    scaleUp:
+      stabilizationWindowSeconds: 60
+      policies:
+      - type: Percent
+        value: 50
+        periodSeconds: 60
+
+---
+apiVersion: policy/v1
+kind: PodDisruptionBudget
+metadata:
+  name: novu-integration-pdb
+  namespace: enterprise-crm
+  labels:
+    app: novu-integration-service
+    component: notification
+spec:
+  minAvailable: 2
+  selector:
+    matchLabels:
+      app: novu-integration-service
+
+---
+apiVersion: networking.k8s.io/v1
+kind: NetworkPolicy
+metadata:
+  name: novu-integration-network-policy
+  namespace: enterprise-crm
+  labels:
+    app: novu-integration-service
+    component: notification
+spec:
+  podSelector:
+    matchLabels:
+      app: novu-integration-service
+  policyTypes:
+  - Ingress
+  - Egress
+  ingress:
+  - from:
+    - namespaceSelector:
+        matchLabels:
+          name: enterprise-crm
+    - namespaceSelector:
+        matchLabels:
+          name: ingress-nginx
+    ports:
+    - protocol: TCP
+      port: 3001
+  egress:
+  - to: []
+    ports:
+    - protocol: TCP
+      port: 53
+    - protocol: UDP
+      port: 53
+  - to:
+    - namespaceSelector:
+        matchLabels:
+          name: enterprise-crm
+    ports:
+    - protocol: TCP
+      port: 5432  # PostgreSQL
+    - protocol: TCP
+      port: 6379  # Redis
+    - protocol: TCP
+      port: 8080  # CRM API
+  - to: []
+    ports:
+    - protocol: TCP
+      port: 443   # HTTPS (Novu API)
+    - protocol: TCP
+      port: 80    # HTTP
+

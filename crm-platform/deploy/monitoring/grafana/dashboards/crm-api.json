@@ -1,0 +1,41 @@
+{
+  "dashboard": {
+    "title": "CRM API Service",
+    "uid": "crm-api-dashboard",
+    "tags": ["crm", "api", "production"],
+    "timezone": "browser",
+    "refresh": "30s",
+    "panels": [
+      {
+        "title": "Request Rate",
+        "type": "timeseries",
+        "gridPos": {"h": 8, "w": 12, "x": 0, "y": 0},
+        "targets": [{"expr": "rate(http_requests_total{service=\"crm-api\"}[5m])", "legendFormat": "{{method}} {{path}}"}]
+      },
+      {
+        "title": "Error Rate",
+        "type": "timeseries",
+        "gridPos": {"h": 8, "w": 12, "x": 12, "y": 0},
+        "targets": [{"expr": "rate(http_requests_total{service=\"crm-api\",status=~\"5..\"}[5m]) / rate(http_requests_total{service=\"crm-api\"}[5m]) * 100", "legendFormat": "Error %"}]
+      },
+      {
+        "title": "Response Latency (p95)",
+        "type": "timeseries",
+        "gridPos": {"h": 8, "w": 12, "x": 0, "y": 8},
+        "targets": [{"expr": "histogram_quantile(0.95, rate(http_request_duration_seconds_bucket{service=\"crm-api\"}[5m]))", "legendFormat": "p95 {{path}}"}]
+      },
+      {
+        "title": "Active Connections",
+        "type": "stat",
+        "gridPos": {"h": 8, "w": 12, "x": 12, "y": 8},
+        "targets": [{"expr": "http_active_connections{service=\"crm-api\"}", "legendFormat": "connections"}]
+      },
+      {
+        "title": "Request Rate by Tenant",
+        "type": "timeseries",
+        "gridPos": {"h": 8, "w": 24, "x": 0, "y": 16},
+        "targets": [{"expr": "rate(http_requests_total{service=\"crm-api\"}[5m])", "legendFormat": "{{tenant_id}}"}]
+      }
+    ]
+  }
+}

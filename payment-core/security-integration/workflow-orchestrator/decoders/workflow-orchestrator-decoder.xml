@@ -1,0 +1,88 @@
+<!--
+  Wazuh Custom Decoder for Python Workflow Orchestrator
+  Parses structured JSON logs from the Temporal-based workflow orchestrator
+-->
+
+<decoder name="workflow-orchestrator-json">
+  <program_name>workflow-orchestrator</program_name>
+  <plugin_decoder>JSON_Decoder</plugin_decoder>
+</decoder>
+
+<decoder name="workflow-orchestrator-json">
+  <parent>workflow-orchestrator-json</parent>
+  <use_own_name>true</use_own_name>
+  <json_decoder>level</json_decoder>
+  <json_decoder>msg</json_decoder>
+  <json_decoder>time</json_decoder>
+  <json_decoder>service</json_decoder>
+  <json_decoder>workflow_id</json_decoder>
+  <json_decoder>workflow_type</json_decoder>
+  <json_decoder>run_id</json_decoder>
+  <json_decoder>user_id</json_decoder>
+  <json_decoder>source_ip</json_decoder>
+  <json_decoder>api_key</json_decoder>
+  <json_decoder>status</json_decoder>
+  <json_decoder>error</json_decoder>
+  <json_decoder>activity_name</json_decoder>
+  <json_decoder>transaction_id</json_decoder>
+  <json_decoder>account_id</json_decoder>
+  <json_decoder>amount</json_decoder>
+  <json_decoder>authorization_level</json_decoder>
+  <json_decoder>required_authorization_level</json_decoder>
+</decoder>
+
+<decoder name="workflow-orchestrator-execution">
+  <parent>workflow-orchestrator-json</parent>
+  <prematch>workflow execution</prematch>
+  <regex offset="after_parent">\"workflow_type\":\"(\w+)\".*\"workflow_id\":\"([^\"]+)\"</regex>
+  <order>workflow_type,workflow_id</order>
+</decoder>
+
+<decoder name="workflow-orchestrator-auth-failure">
+  <parent>workflow-orchestrator-json</parent>
+  <prematch>unauthorized|authentication failed|permission denied</prematch>
+  <regex offset="after_parent">\"source_ip\":\"(\d+\.\d+\.\d+\.\d+)\".*\"user_id\":\"([^\"]+)\"</regex>
+  <order>srcip,user</order>
+</decoder>
+
+<decoder name="workflow-orchestrator-invalid-api-key">
+  <parent>workflow-orchestrator-json</parent>
+  <prematch>invalid api key</prematch>
+  <regex offset="after_parent">\"api_key\":\"([^\"]+)\".*\"source_ip\":\"(\d+\.\d+\.\d+\.\d+)\"</regex>
+  <order>api_key,srcip</order>
+</decoder>
+
+<decoder name="workflow-orchestrator-privilege-escalation">
+  <parent>workflow-orchestrator-json</parent>
+  <prematch>privilege escalation</prematch>
+  <regex offset="after_parent">\"authorization_level\":(\d+).*\"required_authorization_level\":(\d+)</regex>
+  <order>auth_level,required_auth_level</order>
+</decoder>
+
+<decoder name="workflow-orchestrator-activity-failure">
+  <parent>workflow-orchestrator-json</parent>
+  <prematch>activity failed</prematch>
+  <regex offset="after_parent">\"activity_name\":\"([^\"]+)\".*\"error\":\"([^\"]+)\"</regex>
+  <order>activity_name,error_message</order>
+</decoder>
+
+<decoder name="workflow-orchestrator-suspicious-workflow">
+  <parent>workflow-orchestrator-json</parent>
+  <prematch>suspicious workflow</prematch>
+  <regex offset="after_parent">\"workflow_type\":\"([^\"]+)\".*\"reason\":\"([^\"]+)\"</regex>
+  <order>workflow_type,reason</order>
+</decoder>
+
+<decoder name="workflow-orchestrator-rate-limit">
+  <parent>workflow-orchestrator-json</parent>
+  <prematch>rate limit exceeded</prematch>
+  <regex offset="after_parent">\"source_ip\":\"(\d+\.\d+\.\d+\.\d+)\".*\"user_id\":\"([^\"]+)\"</regex>
+  <order>srcip,user</order>
+</decoder>
+
+<decoder name="workflow-orchestrator-temporal-error">
+  <parent>workflow-orchestrator-json</parent>
+  <prematch>temporal error</prematch>
+  <regex offset="after_parent">\"error\":\"([^\"]+)\"</regex>
+  <order>error_message</order>
+</decoder>

@@ -1,0 +1,441 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: kafka-topics-config
+  namespace: enterprise-crm
+data:
+  create-topics.sh: |
+    #!/bin/bash
+    set -e
+    
+    # Wait for Kafka to be ready
+    echo "Waiting for Kafka to be ready..."
+    until kafka-topics.sh --bootstrap-server kafka:9092 --list > /dev/null 2>&1; do
+      echo "Kafka not ready, waiting..."
+      sleep 5
+    done
+    echo "Kafka is ready!"
+    
+    # Function to create topic if it doesn't exist
+    create_topic() {
+      local topic_name=$1
+      local partitions=$2
+      local replication_factor=$3
+      local retention_ms=$4
+      local cleanup_policy=$5
+      
+      if ! kafka-topics.sh --bootstrap-server kafka:9092 --list | grep -q "^${topic_name}$"; then
+        echo "Creating topic: ${topic_name}"
+        kafka-topics.sh --bootstrap-server kafka:9092 \
+          --create \
+          --topic ${topic_name} \
+          --partitions ${partitions} \
+          --replication-factor ${replication_factor} \
+          --config retention.ms=${retention_ms} \
+          --config cleanup.policy=${cleanup_policy} \
+          --config compression.type=lz4 \
+          --config segment.ms=86400000
+      else
+        echo "Topic ${topic_name} already exists"
+      fi
+    }
+    
+    # Customer Management Topics
+    echo "Creating Customer Management topics..."
+    create_topic "customer.events" 12 3 604800000 "delete"  # 7 days retention
+    create_topic "customer.profile.updates" 6 3 2592000000 "delete"  # 30 days retention
+    create_topic "customer.interactions" 12 3 1209600000 "delete"  # 14 days retention
+    create_topic "customer.segments.updates" 3 3 86400000 "delete"  # 1 day retention
+    create_topic "customer.lifecycle.events" 6 3 7776000000 "delete"  # 90 days retention
+    create_topic "customer.preferences.updates" 3 3 2592000000 "delete"  # 30 days retention
+    create_topic "customer.address.updates" 6 3 2592000000 "delete"  # 30 days retention
+    create_topic "customer.kyc.events" 3 3 31536000000 "delete"  # 1 year retention
+    
+    # CRM Core Topics
+    echo "Creating CRM Core topics..."
+    create_topic "crm.leads.events" 12 3 2592000000 "delete"  # 30 days retention
+    create_topic "crm.opportunities.events" 12 3 7776000000 "delete"  # 90 days retention
+    create_topic "crm.accounts.events" 6 3 7776000000 "delete"  # 90 days retention
+    create_topic "crm.contacts.events" 6 3 7776000000 "delete"  # 90 days retention
+    create_topic "crm.activities.events" 12 3 2592000000 "delete"  # 30 days retention
+    create_topic "crm.pipeline.updates" 6 3 604800000 "delete"  # 7 days retention
+    create_topic "crm.stage.transitions" 6 3 7776000000 "delete"  # 90 days retention
+    create_topic "crm.forecasting.updates" 3 3 86400000 "delete"  # 1 day retention
+    create_topic "crm.sales.events" 12 3 31536000000 "delete"  # 1 year retention
+    create_topic "crm.marketing.campaigns" 6 3 7776000000 "delete"  # 90 days retention
+    
+    # Inventory Management Topics
+    echo "Creating Inventory Management topics..."
+    create_topic "inventory.stock.updates" 12 3 604800000 "delete"  # 7 days retention
+    create_topic "inventory.movements" 12 3 2592000000 "delete"  # 30 days retention
+    create_topic "inventory.products.events" 6 3 7776000000 "delete"  # 90 days retention
+    create_topic "inventory.suppliers.events" 3 3 7776000000 "delete"  # 90 days retention
+    create_topic "inventory.warehouses.events" 3 3 7776000000 "delete"  # 90 days retention
+    create_topic "inventory.adjustments" 6 3 31536000000 "delete"  # 1 year retention
+    create_topic "inventory.transfers" 6 3 2592000000 "delete"  # 30 days retention
+    create_topic "inventory.reservations" 6 3 604800000 "delete"  # 7 days retention
+    create_topic "inventory.low.stock.alerts" 3 3 86400000 "delete"  # 1 day retention
+    create_topic "inventory.valuation.updates" 3 3 86400000 "delete"  # 1 day retention
+    
+    # Analytics Topics
+    echo "Creating Analytics topics..."
+    create_topic "analytics.metrics.updates" 6 3 604800000 "delete"  # 7 days retention
+    create_topic "analytics.kpi.updates" 3 3 86400000 "delete"  # 1 day retention
+    create_topic "analytics.reports.generated" 3 3 604800000 "delete"  # 7 days retention
+    create_topic "analytics.dashboard.updates" 3 3 86400000 "delete"  # 1 day retention
+    create_topic "analytics.alerts.triggered" 6 3 604800000 "delete"  # 7 days retention
+    create_topic "analytics.cohort.updates" 3 3 86400000 "delete"  # 1 day retention
+    create_topic "analytics.segment.updates" 3 3 86400000 "delete"  # 1 day retention
+    
+    # Security Topics
+    echo "Creating Security topics..."
+    create_topic "security.authentication.events" 12 3 2592000000 "delete"  # 30 days retention
+    create_topic "security.authorization.events" 12 3 2592000000 "delete"  # 30 days retention
+    create_topic "security.audit.logs" 12 3 31536000000 "delete"  # 1 year retention
+    create_topic "security.threats.detected" 6 3 7776000000 "delete"  # 90 days retention
+    create_topic "security.incidents.created" 3 3 31536000000 "delete"  # 1 year retention
+    create_topic "security.compliance.events" 3 3 31536000000 "delete"  # 1 year retention
+    create_topic "security.kyb.verification" 3 3 31536000000 "delete"  # 1 year retention
+    
+    # IoT/POS Topics (Fluvio MQTT Integration)
+    echo "Creating IoT/POS topics..."
+    create_topic "iot.pos.transactions" 12 3 7776000000 "delete"  # 90 days retention
+    create_topic "iot.sensors.data" 24 3 604800000 "delete"  # 7 days retention
+    create_topic "iot.devices.status" 6 3 86400000 "delete"  # 1 day retention
+    create_topic "iot.alerts.generated" 6 3 604800000 "delete"  # 7 days retention
+    create_topic "pos.sales.events" 12 3 7776000000 "delete"  # 90 days retention
+    create_topic "pos.inventory.sync" 6 3 86400000 "delete"  # 1 day retention
+    create_topic "pos.customer.interactions" 6 3 2592000000 "delete"  # 30 days retention
+    
+    # Data Lake Topics
+    echo "Creating Data Lake topics..."
+    create_topic "datalake.raw.events" 24 3 604800000 "delete"  # 7 days retention
+    create_topic "datalake.processed.events" 12 3 2592000000 "delete"  # 30 days retention
+    create_topic "datalake.schema.updates" 3 3 86400000 "delete"  # 1 day retention
+    create_topic "datalake.quality.checks" 6 3 604800000 "delete"  # 7 days retention
+    create_topic "datalake.lineage.updates" 3 3 604800000 "delete"  # 7 days retention
+    
+    # Workflow Topics (Temporal Integration)
+    echo "Creating Workflow topics..."
+    create_topic "workflows.started" 6 3 2592000000 "delete"  # 30 days retention
+    create_topic "workflows.completed" 6 3 2592000000 "delete"  # 30 days retention
+    create_topic "workflows.failed" 6 3 7776000000 "delete"  # 90 days retention
+    create_topic "workflows.signals" 12 3 604800000 "delete"  # 7 days retention
+    create_topic "workflows.activities.completed" 12 3 604800000 "delete"  # 7 days retention
+    
+    # Integration Topics
+    echo "Creating Integration topics..."
+    create_topic "integrations.external.events" 6 3 604800000 "delete"  # 7 days retention
+    create_topic "integrations.sync.status" 3 3 86400000 "delete"  # 1 day retention
+    create_topic "integrations.errors" 6 3 604800000 "delete"  # 7 days retention
+    create_topic "integrations.webhooks.received" 12 3 604800000 "delete"  # 7 days retention
+    
+    # Dead Letter Topics
+    echo "Creating Dead Letter topics..."
+    create_topic "dlq.customer.events" 3 3 7776000000 "delete"  # 90 days retention
+    create_topic "dlq.crm.events" 3 3 7776000000 "delete"  # 90 days retention
+    create_topic "dlq.inventory.events" 3 3 7776000000 "delete"  # 90 days retention
+    create_topic "dlq.analytics.events" 3 3 7776000000 "delete"  # 90 days retention
+    create_topic "dlq.security.events" 3 3 7776000000 "delete"  # 90 days retention
+    create_topic "dlq.iot.events" 3 3 7776000000 "delete"  # 90 days retention
+    
+    # Compacted Topics for State Management
+    echo "Creating Compacted topics..."
+    create_topic "state.customer.snapshots" 6 3 -1 "compact"  # Infinite retention, compacted
+    create_topic "state.crm.snapshots" 6 3 -1 "compact"  # Infinite retention, compacted
+    create_topic "state.inventory.snapshots" 6 3 -1 "compact"  # Infinite retention, compacted
+    create_topic "state.analytics.snapshots" 3 3 -1 "compact"  # Infinite retention, compacted
+    
+    echo "All topics created successfully!"
+    
+    # List all topics
+    echo "Current topics:"
+    kafka-topics.sh --bootstrap-server kafka:9092 --list
+    
+    # Show topic details for verification
+    echo "Topic details:"
+    kafka-topics.sh --bootstrap-server kafka:9092 --describe --topics-with-overrides
+---
+apiVersion: batch/v1
+kind: Job
+metadata:
+  name: kafka-topics-setup
+  namespace: enterprise-crm
+  labels:
+    app: kafka-topics-setup
+spec:
+  template:
+    metadata:
+      labels:
+        app: kafka-topics-setup
+    spec:
+      restartPolicy: OnFailure
+      containers:
+      - name: kafka-topics-setup
+        image: confluentinc/cp-kafka:7.5.0
+        command:
+        - /bin/bash
+        - /scripts/create-topics.sh
+        volumeMounts:
+        - name: scripts
+          mountPath: /scripts
+        env:
+        - name: KAFKA_BOOTSTRAP_SERVERS
+          value: "kafka:9092"
+        resources:
+          requests:
+            memory: "256Mi"
+            cpu: "100m"
+          limits:
+            memory: "512Mi"
+            cpu: "200m"
+      volumes:
+      - name: scripts
+        configMap:
+          name: kafka-topics-config
+          defaultMode: 0755
+---
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: kafka-connect-config
+  namespace: enterprise-crm
+data:
+  connect-distributed.properties: |
+    # Kafka Connect distributed mode configuration
+    bootstrap.servers=kafka:9092
+    group.id=enterprise-crm-connect-cluster
+    
+    # Converter configurations
+    key.converter=org.apache.kafka.connect.json.JsonConverter
+    value.converter=org.apache.kafka.connect.json.JsonConverter
+    key.converter.schemas.enable=true
+    value.converter.schemas.enable=true
+    
+    # Internal topic configurations
+    config.storage.topic=connect-configs
+    config.storage.replication.factor=3
+    config.storage.partitions=1
+    
+    offset.storage.topic=connect-offsets
+    offset.storage.replication.factor=3
+    offset.storage.partitions=25
+    
+    status.storage.topic=connect-status
+    status.storage.replication.factor=3
+    status.storage.partitions=5
+    
+    # Flush and offset commit configurations
+    offset.flush.interval.ms=10000
+    offset.flush.timeout.ms=5000
+    
+    # REST API configuration
+    rest.host.name=0.0.0.0
+    rest.port=8083
+    rest.advertised.host.name=kafka-connect
+    rest.advertised.port=8083
+    
+    # Plugin path
+    plugin.path=/usr/share/java,/usr/share/confluent-hub-components
+    
+    # Security configurations
+    security.protocol=PLAINTEXT
+    
+    # Producer configurations
+    producer.bootstrap.servers=kafka:9092
+    producer.key.serializer=org.apache.kafka.common.serialization.StringSerializer
+    producer.value.serializer=org.apache.kafka.common.serialization.StringSerializer
+    producer.acks=all
+    producer.retries=2147483647
+    producer.max.in.flight.requests.per.connection=5
+    producer.enable.idempotence=true
+    producer.compression.type=lz4
+    producer.batch.size=16384
+    producer.linger.ms=5
+    
+    # Consumer configurations
+    consumer.bootstrap.servers=kafka:9092
+    consumer.key.deserializer=org.apache.kafka.common.serialization.StringDeserializer
+    consumer.value.deserializer=org.apache.kafka.common.serialization.StringDeserializer
+    consumer.auto.offset.reset=earliest
+    consumer.enable.auto.commit=false
+    consumer.isolation.level=read_committed
+    
+    # Task configurations
+    task.shutdown.graceful.timeout.ms=10000
+    
+    # Logging
+    log4j.rootLogger=INFO, stdout
+    log4j.appender.stdout=org.apache.log4j.ConsoleAppender
+    log4j.appender.stdout.layout=org.apache.log4j.PatternLayout
+    log4j.appender.stdout.layout.ConversionPattern=[%d] %p %m (%c)%n
+    
+  log4j.properties: |
+    log4j.rootLogger=INFO, stdout
+    
+    log4j.appender.stdout=org.apache.log4j.ConsoleAppender
+    log4j.appender.stdout.layout=org.apache.log4j.PatternLayout
+    log4j.appender.stdout.layout.ConversionPattern=[%d] %p %m (%c)%n
+    
+    # Reduce verbosity for some components
+    log4j.logger.org.apache.kafka.connect.runtime.WorkerSourceTask=WARN
+    log4j.logger.org.apache.kafka.connect.runtime.WorkerSinkTask=WARN
+    log4j.logger.org.apache.kafka.clients.consumer.internals.ConsumerCoordinator=WARN
+    log4j.logger.org.apache.kafka.clients.producer.internals.Sender=WARN
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: kafka-connect
+  namespace: enterprise-crm
+  labels:
+    app: kafka-connect
+spec:
+  replicas: 3
+  selector:
+    matchLabels:
+      app: kafka-connect
+  template:
+    metadata:
+      labels:
+        app: kafka-connect
+    spec:
+      initContainers:
+      - name: wait-for-kafka
+        image: confluentinc/cp-kafka:7.5.0
+        command:
+        - sh
+        - -c
+        - |
+          echo "Waiting for Kafka..."
+          until kafka-topics.sh --bootstrap-server kafka:9092 --list > /dev/null 2>&1; do
+            echo "Kafka not ready, waiting..."
+            sleep 5
+          done
+          echo "Kafka is ready!"
+      containers:
+      - name: kafka-connect
+        image: confluentinc/cp-kafka-connect:7.5.0
+        ports:
+        - containerPort: 8083
+        env:
+        - name: CONNECT_BOOTSTRAP_SERVERS
+          value: "kafka:9092"
+        - name: CONNECT_REST_ADVERTISED_HOST_NAME
+          valueFrom:
+            fieldRef:
+              fieldPath: status.podIP
+        - name: CONNECT_GROUP_ID
+          value: "enterprise-crm-connect-cluster"
+        - name: CONNECT_CONFIG_STORAGE_TOPIC
+          value: "connect-configs"
+        - name: CONNECT_OFFSET_STORAGE_TOPIC
+          value: "connect-offsets"
+        - name: CONNECT_STATUS_STORAGE_TOPIC
+          value: "connect-status"
+        - name: CONNECT_KEY_CONVERTER
+          value: "org.apache.kafka.connect.json.JsonConverter"
+        - name: CONNECT_VALUE_CONVERTER
+          value: "org.apache.kafka.connect.json.JsonConverter"
+        - name: CONNECT_KEY_CONVERTER_SCHEMAS_ENABLE
+          value: "true"
+        - name: CONNECT_VALUE_CONVERTER_SCHEMAS_ENABLE
+          value: "true"
+        - name: CONNECT_INTERNAL_KEY_CONVERTER
+          value: "org.apache.kafka.connect.json.JsonConverter"
+        - name: CONNECT_INTERNAL_VALUE_CONVERTER
+          value: "org.apache.kafka.connect.json.JsonConverter"
+        - name: CONNECT_REST_PORT
+          value: "8083"
+        - name: CONNECT_LOG4J_ROOT_LOGLEVEL
+          value: "INFO"
+        - name: CONNECT_LOG4J_LOGGERS
+          value: "org.apache.kafka.connect.runtime.rest=WARN,org.reflections=ERROR"
+        - name: CONNECT_PLUGIN_PATH
+          value: "/usr/share/java,/usr/share/confluent-hub-components"
+        - name: CONNECT_CONFIG_STORAGE_REPLICATION_FACTOR
+          value: "3"
+        - name: CONNECT_OFFSET_STORAGE_REPLICATION_FACTOR
+          value: "3"
+        - name: CONNECT_STATUS_STORAGE_REPLICATION_FACTOR
+          value: "3"
+        volumeMounts:
+        - name: config
+          mountPath: /etc/kafka-connect
+        resources:
+          requests:
+            memory: "1Gi"
+            cpu: "500m"
+          limits:
+            memory: "2Gi"
+            cpu: "1000m"
+        livenessProbe:
+          httpGet:
+            path: /
+            port: 8083
+          initialDelaySeconds: 60
+          periodSeconds: 30
+        readinessProbe:
+          httpGet:
+            path: /
+            port: 8083
+          initialDelaySeconds: 30
+          periodSeconds: 10
+      volumes:
+      - name: config
+        configMap:
+          name: kafka-connect-config
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: kafka-connect
+  namespace: enterprise-crm
+  labels:
+    app: kafka-connect
+spec:
+  ports:
+  - port: 8083
+    targetPort: 8083
+    name: rest-api
+  selector:
+    app: kafka-connect
+  type: ClusterIP
+---
+apiVersion: policy/v1
+kind: PodDisruptionBudget
+metadata:
+  name: kafka-connect-pdb
+  namespace: enterprise-crm
+spec:
+  minAvailable: 2
+  selector:
+    matchLabels:
+      app: kafka-connect
+---
+apiVersion: autoscaling/v2
+kind: HorizontalPodAutoscaler
+metadata:
+  name: kafka-connect-hpa
+  namespace: enterprise-crm
+spec:
+  scaleTargetRef:
+    apiVersion: apps/v1
+    kind: Deployment
+    name: kafka-connect
+  minReplicas: 3
+  maxReplicas: 10
+  metrics:
+  - type: Resource
+    resource:
+      name: cpu
+      target:
+        type: Utilization
+        averageUtilization: 70
+  - type: Resource
+    resource:
+      name: memory
+      target:
+        type: Utilization
+        averageUtilization: 80
+

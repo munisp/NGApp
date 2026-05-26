@@ -1,0 +1,1 @@
+ALTER TABLE `saved_comparisons` ADD `tags` text;

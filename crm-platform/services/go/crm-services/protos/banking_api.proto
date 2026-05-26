@@ -1,0 +1,683 @@
+syntax = "proto3";
+
+package banking.api.v1;
+
+option go_package = "github.com/banking-crm-integration/banking-api/proto";
+
+import "google/protobuf/timestamp.proto";
+import "google/protobuf/empty.proto";
+
+// Banking API Service for secure data exchange with CRM
+service BankingAPI {
+  // Customer Data Services
+  rpc GetCustomerProfile(GetCustomerProfileRequest) returns (CustomerProfile);
+  rpc ListCustomers(ListCustomersRequest) returns (ListCustomersResponse);
+  rpc UpdateCustomerCRMData(UpdateCustomerCRMDataRequest) returns (CustomerProfile);
+  rpc SyncCustomerData(SyncCustomerDataRequest) returns (SyncCustomerDataResponse);
+  
+  // Account Services
+  rpc GetCustomerAccounts(GetCustomerAccountsRequest) returns (CustomerAccountsResponse);
+  rpc GetAccountDetails(GetAccountDetailsRequest) returns (AccountDetails);
+  rpc GetAccountTransactions(GetAccountTransactionsRequest) returns (AccountTransactionsResponse);
+  
+  // Transaction Services
+  rpc GetTransactionDetails(GetTransactionDetailsRequest) returns (TransactionDetails);
+  rpc ListTransactions(ListTransactionsRequest) returns (ListTransactionsResponse);
+  rpc FlagTransactionForReview(FlagTransactionForReviewRequest) returns (FlagTransactionForReviewResponse);
+  
+  // Product Services
+  rpc ListBankingProducts(ListBankingProductsRequest) returns (ListBankingProductsResponse);
+  rpc GetProductDetails(GetProductDetailsRequest) returns (ProductDetails);
+  rpc CheckProductEligibility(CheckProductEligibilityRequest) returns (ProductEligibilityResponse);
+  
+  // Agent Banking Services
+  rpc ListAgents(ListAgentsRequest) returns (ListAgentsResponse);
+  rpc GetAgentDetails(GetAgentDetailsRequest) returns (AgentDetails);
+  rpc GetAgentTransactions(GetAgentTransactionsRequest) returns (AgentTransactionsResponse);
+  
+  // NeoBank Services
+  rpc GetDigitalOnboardingStatus(GetDigitalOnboardingStatusRequest) returns (DigitalOnboardingStatus);
+  rpc GetAppUsageMetrics(GetAppUsageMetricsRequest) returns (AppUsageMetrics);
+  rpc GetDigitalEngagementScore(GetDigitalEngagementScoreRequest) returns (DigitalEngagementScore);
+  
+  // Core Banking Services
+  rpc GetCustomerSegment(GetCustomerSegmentRequest) returns (CustomerSegment);
+  rpc GetRiskProfile(GetRiskProfileRequest) returns (RiskProfile);
+  rpc GetCreditScore(GetCreditScoreRequest) returns (CreditScore);
+  
+  // Payment Processing Services
+  rpc GetPaymentMethods(GetPaymentMethodsRequest) returns (PaymentMethodsResponse);
+  rpc GetPaymentHistory(GetPaymentHistoryRequest) returns (PaymentHistoryResponse);
+  rpc GetRecurringPayments(GetRecurringPaymentsRequest) returns (RecurringPaymentsResponse);
+  
+  // Event Subscription Services
+  rpc SubscribeToCustomerEvents(SubscribeToCustomerEventsRequest) returns (stream CustomerEvent);
+  rpc SubscribeToTransactionEvents(SubscribeToTransactionEventsRequest) returns (stream TransactionEvent);
+  rpc SubscribeToAccountEvents(SubscribeToAccountEventsRequest) returns (stream AccountEvent);
+}
+
+// Customer Profile Data
+message CustomerProfile {
+  string customer_id = 1;
+  string first_name = 2;
+  string last_name = 3;
+  string middle_name = 4;
+  string email = 5;
+  string phone_number = 6;
+  string bvn = 7;  // Bank Verification Number
+  string nin = 8;  // National Identification Number
+  google.protobuf.Timestamp date_of_birth = 9;
+  string gender = 10;
+  Address address = 11;
+  string nationality = 12;
+  string occupation = 13;
+  string employer = 14;
+  string marital_status = 15;
+  string education_level = 16;
+  string income_bracket = 17;
+  google.protobuf.Timestamp customer_since = 18;
+  string kyc_level = 19;
+  string kyc_status = 20;
+  string customer_type = 21;  // Individual, Corporate, SME
+  string customer_status = 22;  // Active, Inactive, Dormant, Closed
+  string preferred_language = 23;
+  repeated string preferred_channels = 24;  // Mobile, Web, Branch, Agent, ATM
+  map<string, string> custom_attributes = 25;
+  CRMData crm_data = 26;
+}
+
+message CRMData {
+  string crm_customer_id = 1;
+  string segment = 2;
+  float lifetime_value = 3;
+  float churn_risk_score = 4;
+  string next_best_offer = 5;
+  repeated string tags = 6;
+  google.protobuf.Timestamp last_interaction = 7;
+  string lead_source = 8;
+  string acquisition_channel = 9;
+  map<string, string> custom_attributes = 10;
+}
+
+message Address {
+  string street = 1;
+  string city = 2;
+  string state = 3;
+  string postal_code = 4;
+  string country = 5;
+  string address_type = 6;  // Residential, Business, Mailing
+  bool is_verified = 7;
+  google.protobuf.Timestamp verification_date = 8;
+  float latitude = 9;
+  float longitude = 10;
+}
+
+// Account Data
+message AccountDetails {
+  string account_id = 1;
+  string account_number = 2;
+  string customer_id = 3;
+  string account_name = 4;
+  string account_type = 5;  // Savings, Current, Fixed Deposit, Loan
+  string currency = 6;
+  double current_balance = 7;
+  double available_balance = 8;
+  string status = 9;  // Active, Inactive, Dormant, Closed
+  google.protobuf.Timestamp opened_date = 10;
+  google.protobuf.Timestamp last_transaction_date = 11;
+  string branch_code = 12;
+  bool overdraft_enabled = 13;
+  double overdraft_limit = 14;
+  double interest_rate = 15;
+  string tier = 16;
+  repeated string linked_cards = 17;
+  map<string, string> custom_attributes = 18;
+}
+
+// Transaction Data
+message TransactionDetails {
+  string transaction_id = 1;
+  string reference_number = 2;
+  string customer_id = 3;
+  string account_id = 4;
+  string transaction_type = 5;  // Deposit, Withdrawal, Transfer, Bill Payment
+  string channel = 6;  // Mobile, Web, Branch, Agent, ATM, POS
+  double amount = 7;
+  string currency = 8;
+  double fee = 9;
+  string status = 10;  // Successful, Failed, Pending, Reversed
+  string description = 11;
+  google.protobuf.Timestamp transaction_date = 12;
+  string category = 13;  // Food, Transport, Utilities, etc.
+  string merchant_name = 14;
+  string merchant_category = 15;
+  string location = 16;
+  bool is_international = 17;
+  string device_id = 18;
+  string ip_address = 19;
+  bool is_suspicious = 20;
+  string fraud_score = 21;
+  map<string, string> custom_attributes = 22;
+}
+
+// Product Data
+message ProductDetails {
+  string product_id = 1;
+  string product_name = 2;
+  string product_type = 3;  // Account, Loan, Card, Investment
+  string product_category = 4;
+  string description = 5;
+  double interest_rate = 6;
+  double minimum_balance = 7;
+  double maximum_balance = 8;
+  double maintenance_fee = 9;
+  string fee_frequency = 10;  // Monthly, Quarterly, Annually
+  repeated string features = 11;
+  repeated string benefits = 12;
+  repeated string requirements = 13;
+  repeated string target_segments = 14;
+  bool is_active = 15;
+  google.protobuf.Timestamp launch_date = 16;
+  google.protobuf.Timestamp expiry_date = 17;
+  map<string, string> custom_attributes = 18;
+}
+
+// Agent Banking Data
+message AgentDetails {
+  string agent_id = 1;
+  string agent_name = 2;
+  string business_name = 3;
+  string agent_type = 4;  // Individual, Business
+  string status = 5;  // Active, Inactive, Suspended
+  Address location = 6;
+  string phone_number = 7;
+  string email = 8;
+  google.protobuf.Timestamp onboarding_date = 9;
+  repeated string services_offered = 10;  // Account Opening, Deposits, Withdrawals, etc.
+  string territory = 11;
+  string supervisor_id = 12;
+  double float_balance = 13;
+  double commission_rate = 14;
+  int32 transaction_count = 15;
+  double transaction_volume = 16;
+  int32 customer_count = 17;
+  double performance_score = 18;
+  map<string, string> custom_attributes = 19;
+}
+
+// NeoBank Data
+message DigitalOnboardingStatus {
+  string customer_id = 1;
+  string status = 2;  // Completed, In Progress, Abandoned
+  google.protobuf.Timestamp start_date = 3;
+  google.protobuf.Timestamp completion_date = 4;
+  repeated OnboardingStep steps = 5;
+  string device_type = 6;
+  string device_id = 7;
+  string ip_address = 8;
+  string referral_code = 9;
+  string utm_source = 10;
+  string utm_medium = 11;
+  string utm_campaign = 12;
+  int32 time_taken_seconds = 13;
+  map<string, string> custom_attributes = 14;
+}
+
+message OnboardingStep {
+  string step_name = 1;
+  string status = 2;  // Completed, In Progress, Not Started, Failed
+  google.protobuf.Timestamp start_time = 3;
+  google.protobuf.Timestamp completion_time = 4;
+  int32 attempts = 5;
+  string failure_reason = 6;
+}
+
+message AppUsageMetrics {
+  string customer_id = 1;
+  int32 login_count = 2;
+  google.protobuf.Timestamp last_login = 3;
+  int32 session_count = 4;
+  double average_session_duration = 5;
+  repeated FeatureUsage feature_usage = 6;
+  int32 transaction_count = 7;
+  double transaction_volume = 8;
+  string most_used_feature = 9;
+  string least_used_feature = 10;
+  string device_type = 11;
+  string app_version = 12;
+  string os_version = 13;
+  map<string, string> custom_attributes = 14;
+}
+
+message FeatureUsage {
+  string feature_name = 1;
+  int32 usage_count = 2;
+  google.protobuf.Timestamp last_used = 3;
+  double average_time_spent = 4;
+}
+
+message DigitalEngagementScore {
+  string customer_id = 1;
+  double overall_score = 2;
+  double login_frequency_score = 3;
+  double feature_usage_score = 4;
+  double transaction_activity_score = 5;
+  double product_adoption_score = 6;
+  string engagement_level = 7;  // High, Medium, Low
+  repeated EngagementInsight insights = 8;
+  map<string, string> custom_attributes = 9;
+}
+
+message EngagementInsight {
+  string insight_type = 1;
+  string description = 2;
+  double impact_score = 3;
+  string recommendation = 4;
+}
+
+// Core Banking Data
+message CustomerSegment {
+  string customer_id = 1;
+  string segment_name = 2;
+  string segment_description = 3;
+  google.protobuf.Timestamp assignment_date = 4;
+  repeated string segment_criteria = 5;
+  double segment_score = 6;
+  string previous_segment = 7;
+  google.protobuf.Timestamp next_review_date = 8;
+  repeated string recommended_products = 9;
+  repeated string special_offers = 10;
+  map<string, string> custom_attributes = 11;
+}
+
+message RiskProfile {
+  string customer_id = 1;
+  string risk_level = 2;  // Low, Medium, High
+  double risk_score = 3;
+  google.protobuf.Timestamp assessment_date = 4;
+  repeated RiskFactor risk_factors = 5;
+  string aml_status = 6;  // Anti-Money Laundering status
+  bool pep_status = 7;  // Politically Exposed Person status
+  bool sanction_list_status = 8;
+  string kyc_verification_level = 9;
+  google.protobuf.Timestamp next_review_date = 10;
+  map<string, string> custom_attributes = 11;
+}
+
+message RiskFactor {
+  string factor_name = 1;
+  string category = 2;
+  double score = 3;
+  string description = 4;
+  string mitigation = 5;
+}
+
+message CreditScore {
+  string customer_id = 1;
+  int32 score = 2;
+  string rating = 3;  // Excellent, Good, Fair, Poor
+  google.protobuf.Timestamp assessment_date = 4;
+  repeated CreditFactor factors = 5;
+  double debt_to_income_ratio = 6;
+  int32 payment_history_score = 7;
+  int32 credit_utilization_score = 8;
+  int32 credit_history_length_score = 9;
+  int32 recent_inquiries_score = 10;
+  google.protobuf.Timestamp next_update_date = 11;
+  map<string, string> custom_attributes = 12;
+}
+
+message CreditFactor {
+  string factor_name = 1;
+  string impact = 2;  // Positive, Negative, Neutral
+  int32 score_impact = 3;
+  string description = 4;
+  string recommendation = 5;
+}
+
+// Payment Processing Data
+message PaymentMethod {
+  string payment_method_id = 1;
+  string customer_id = 2;
+  string type = 3;  // Card, Bank Account, Mobile Money, USSD
+  string status = 4;  // Active, Inactive, Expired
+  string name = 5;
+  string masked_number = 6;
+  google.protobuf.Timestamp expiry_date = 7;
+  bool is_default = 8;
+  google.protobuf.Timestamp added_date = 9;
+  string provider = 10;
+  string card_type = 11;  // Visa, Mastercard, etc.
+  map<string, string> custom_attributes = 12;
+}
+
+message PaymentTransaction {
+  string payment_id = 1;
+  string customer_id = 2;
+  string payment_method_id = 3;
+  string transaction_id = 4;
+  double amount = 5;
+  string currency = 6;
+  string status = 7;  // Successful, Failed, Pending
+  string payment_type = 8;  // Purchase, Bill Payment, P2P Transfer
+  string merchant_name = 9;
+  string merchant_category = 10;
+  google.protobuf.Timestamp transaction_date = 11;
+  string reference_number = 12;
+  string description = 13;
+  double fee = 14;
+  string channel = 15;
+  string location = 16;
+  bool is_international = 17;
+  string device_id = 18;
+  string ip_address = 19;
+  map<string, string> custom_attributes = 20;
+}
+
+message RecurringPayment {
+  string recurring_payment_id = 1;
+  string customer_id = 2;
+  string payment_method_id = 3;
+  string name = 4;
+  double amount = 5;
+  string currency = 6;
+  string frequency = 7;  // Daily, Weekly, Monthly, Quarterly, Annually
+  google.protobuf.Timestamp next_payment_date = 8;
+  google.protobuf.Timestamp start_date = 9;
+  google.protobuf.Timestamp end_date = 10;
+  string status = 11;  // Active, Paused, Cancelled
+  string category = 12;  // Subscription, Loan Repayment, Savings
+  string beneficiary_name = 13;
+  string beneficiary_account = 14;
+  int32 payments_completed = 15;
+  int32 payments_failed = 16;
+  map<string, string> custom_attributes = 17;
+}
+
+// Event Data
+message CustomerEvent {
+  string event_id = 1;
+  string customer_id = 2;
+  string event_type = 3;  // Created, Updated, StatusChanged, SegmentChanged
+  google.protobuf.Timestamp event_time = 4;
+  CustomerProfile customer_data = 5;
+  map<string, string> metadata = 6;
+}
+
+message TransactionEvent {
+  string event_id = 1;
+  string transaction_id = 2;
+  string customer_id = 3;
+  string account_id = 4;
+  string event_type = 5;  // Created, StatusChanged, FraudFlagged
+  google.protobuf.Timestamp event_time = 6;
+  TransactionDetails transaction_data = 7;
+  map<string, string> metadata = 8;
+}
+
+message AccountEvent {
+  string event_id = 1;
+  string account_id = 2;
+  string customer_id = 3;
+  string event_type = 4;  // Created, Updated, StatusChanged, BalanceChanged
+  google.protobuf.Timestamp event_time = 5;
+  AccountDetails account_data = 6;
+  map<string, string> metadata = 7;
+}
+
+// Request/Response Messages
+message GetCustomerProfileRequest {
+  string customer_id = 1;
+  bool include_crm_data = 2;
+}
+
+message ListCustomersRequest {
+  int32 page_size = 1;
+  string page_token = 2;
+  string filter = 3;
+  string sort_by = 4;
+}
+
+message ListCustomersResponse {
+  repeated CustomerProfile customers = 1;
+  string next_page_token = 2;
+  int32 total_size = 3;
+}
+
+message UpdateCustomerCRMDataRequest {
+  string customer_id = 1;
+  CRMData crm_data = 2;
+}
+
+message SyncCustomerDataRequest {
+  repeated string customer_ids = 1;
+  google.protobuf.Timestamp since = 2;
+  bool full_sync = 3;
+}
+
+message SyncCustomerDataResponse {
+  repeated CustomerProfile customers = 1;
+  int32 sync_count = 2;
+  google.protobuf.Timestamp sync_time = 3;
+}
+
+message GetCustomerAccountsRequest {
+  string customer_id = 1;
+  string account_type = 2;
+  string status = 3;
+}
+
+message CustomerAccountsResponse {
+  repeated AccountDetails accounts = 1;
+  int32 total_accounts = 2;
+}
+
+message GetAccountDetailsRequest {
+  string account_id = 1;
+}
+
+message GetAccountTransactionsRequest {
+  string account_id = 1;
+  google.protobuf.Timestamp start_date = 2;
+  google.protobuf.Timestamp end_date = 3;
+  int32 page_size = 4;
+  string page_token = 5;
+  string transaction_type = 6;
+}
+
+message AccountTransactionsResponse {
+  string account_id = 1;
+  repeated TransactionDetails transactions = 2;
+  string next_page_token = 3;
+  int32 total_size = 4;
+}
+
+message GetTransactionDetailsRequest {
+  string transaction_id = 1;
+}
+
+message ListTransactionsRequest {
+  string customer_id = 1;
+  google.protobuf.Timestamp start_date = 2;
+  google.protobuf.Timestamp end_date = 3;
+  string transaction_type = 4;
+  string status = 5;
+  double min_amount = 6;
+  double max_amount = 7;
+  int32 page_size = 8;
+  string page_token = 9;
+}
+
+message ListTransactionsResponse {
+  repeated TransactionDetails transactions = 1;
+  string next_page_token = 2;
+  int32 total_size = 3;
+}
+
+message FlagTransactionForReviewRequest {
+  string transaction_id = 1;
+  string reason = 2;
+  string flagged_by = 3;
+  string severity = 4;
+  string notes = 5;
+}
+
+message FlagTransactionForReviewResponse {
+  string transaction_id = 1;
+  string review_id = 2;
+  string status = 3;
+  google.protobuf.Timestamp flagged_time = 4;
+}
+
+message ListBankingProductsRequest {
+  string product_type = 1;
+  string product_category = 2;
+  bool active_only = 3;
+  int32 page_size = 4;
+  string page_token = 5;
+}
+
+message ListBankingProductsResponse {
+  repeated ProductDetails products = 1;
+  string next_page_token = 2;
+  int32 total_size = 3;
+}
+
+message GetProductDetailsRequest {
+  string product_id = 1;
+}
+
+message CheckProductEligibilityRequest {
+  string customer_id = 1;
+  string product_id = 2;
+}
+
+message ProductEligibilityResponse {
+  string customer_id = 1;
+  string product_id = 2;
+  bool is_eligible = 3;
+  repeated string eligibility_factors = 4;
+  repeated string missing_requirements = 5;
+  double recommended_limit = 6;
+  double recommended_rate = 7;
+  string recommendation_reason = 8;
+}
+
+message ListAgentsRequest {
+  string territory = 1;
+  string status = 2;
+  string agent_type = 3;
+  int32 page_size = 4;
+  string page_token = 5;
+}
+
+message ListAgentsResponse {
+  repeated AgentDetails agents = 1;
+  string next_page_token = 2;
+  int32 total_size = 3;
+}
+
+message GetAgentDetailsRequest {
+  string agent_id = 1;
+}
+
+message GetAgentTransactionsRequest {
+  string agent_id = 1;
+  google.protobuf.Timestamp start_date = 2;
+  google.protobuf.Timestamp end_date = 3;
+  string transaction_type = 4;
+  int32 page_size = 5;
+  string page_token = 6;
+}
+
+message AgentTransactionsResponse {
+  string agent_id = 1;
+  repeated TransactionDetails transactions = 2;
+  string next_page_token = 3;
+  int32 total_size = 4;
+}
+
+message GetDigitalOnboardingStatusRequest {
+  string customer_id = 1;
+}
+
+message GetAppUsageMetricsRequest {
+  string customer_id = 1;
+  google.protobuf.Timestamp start_date = 2;
+  google.protobuf.Timestamp end_date = 3;
+}
+
+message GetDigitalEngagementScoreRequest {
+  string customer_id = 1;
+}
+
+message GetCustomerSegmentRequest {
+  string customer_id = 1;
+}
+
+message GetRiskProfileRequest {
+  string customer_id = 1;
+}
+
+message GetCreditScoreRequest {
+  string customer_id = 1;
+}
+
+message GetPaymentMethodsRequest {
+  string customer_id = 1;
+  string type = 2;
+  string status = 3;
+}
+
+message PaymentMethodsResponse {
+  repeated PaymentMethod payment_methods = 1;
+  int32 total_methods = 2;
+}
+
+message GetPaymentHistoryRequest {
+  string customer_id = 1;
+  google.protobuf.Timestamp start_date = 2;
+  google.protobuf.Timestamp end_date = 3;
+  string payment_type = 4;
+  string status = 5;
+  int32 page_size = 6;
+  string page_token = 7;
+}
+
+message PaymentHistoryResponse {
+  repeated PaymentTransaction payments = 1;
+  string next_page_token = 2;
+  int32 total_size = 3;
+}
+
+message GetRecurringPaymentsRequest {
+  string customer_id = 1;
+  string status = 2;
+  string category = 3;
+}
+
+message RecurringPaymentsResponse {
+  repeated RecurringPayment recurring_payments = 1;
+  int32 total_payments = 2;
+}
+
+message SubscribeToCustomerEventsRequest {
+  repeated string customer_ids = 1;
+  repeated string event_types = 2;
+  google.protobuf.Timestamp since = 3;
+}
+
+message SubscribeToTransactionEventsRequest {
+  repeated string customer_ids = 1;
+  repeated string account_ids = 2;
+  repeated string event_types = 3;
+  google.protobuf.Timestamp since = 4;
+}
+
+message SubscribeToAccountEventsRequest {
+  repeated string customer_ids = 1;
+  repeated string account_ids = 2;
+  repeated string event_types = 3;
+  google.protobuf.Timestamp since = 4;
+}
+

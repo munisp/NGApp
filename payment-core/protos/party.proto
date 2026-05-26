@@ -1,0 +1,124 @@
+syntax = "proto3";
+
+package party;
+
+option go_package = "github.com/payment-switch/go-services/pkg/grpc/party";
+
+import "google/protobuf/timestamp.proto";
+
+// Party Service - High-performance gRPC service for party registry operations
+service PartyService {
+  // RegisterParty registers a new party in the registry
+  rpc RegisterParty(RegisterPartyRequest) returns (RegisterPartyResponse);
+  
+  // LookupParty looks up a party by type and identifier
+  rpc LookupParty(LookupPartyRequest) returns (LookupPartyResponse);
+  
+  // LookupParties looks up multiple parties in a batch
+  rpc LookupParties(LookupPartiesRequest) returns (LookupPartiesResponse);
+  
+  // UpdateParty updates party information
+  rpc UpdateParty(UpdatePartyRequest) returns (UpdatePartyResponse);
+  
+  // DeactivateParty deactivates a party
+  rpc DeactivateParty(DeactivatePartyRequest) returns (DeactivatePartyResponse);
+}
+
+// Party represents a party in the registry
+message Party {
+  string party_type = 1;        // MSISDN, EMAIL, ACCOUNT, MERCHANT, IBAN
+  string party_identifier = 2;  // The actual identifier value
+  string participant_id = 3;    // Financial institution ID
+  string account_id = 4;        // Account ID at the participant
+  string display_name = 5;      // Display name for the party
+  string first_name = 6;
+  string middle_name = 7;
+  string last_name = 8;
+  google.protobuf.Timestamp date_of_birth = 9;
+  bool is_active = 10;
+  google.protobuf.Timestamp created_at = 11;
+  google.protobuf.Timestamp updated_at = 12;
+}
+
+// PartyInfo contains essential party information for transactions
+message PartyInfo {
+  string participant_id = 1;
+  string account_id = 2;
+  string tigerbeetle_account_id = 3;
+  string display_name = 4;
+  string currency = 5;
+}
+
+// RegisterPartyRequest
+message RegisterPartyRequest {
+  string party_type = 1;
+  string party_identifier = 2;
+  string participant_id = 3;
+  string account_id = 4;
+  string display_name = 5;
+}
+
+// RegisterPartyResponse
+message RegisterPartyResponse {
+  bool success = 1;
+  string message = 2;
+  Party party = 3;
+}
+
+// LookupPartyRequest
+message LookupPartyRequest {
+  string party_type = 1;
+  string party_identifier = 2;
+}
+
+// LookupPartyResponse
+message LookupPartyResponse {
+  bool success = 1;
+  string message = 2;
+  PartyInfo party_info = 3;
+}
+
+// LookupPartiesRequest
+message LookupPartiesRequest {
+  repeated PartyLookup lookups = 1;
+}
+
+message PartyLookup {
+  string party_type = 1;
+  string party_identifier = 2;
+}
+
+// LookupPartiesResponse
+message LookupPartiesResponse {
+  bool success = 1;
+  string message = 2;
+  repeated PartyInfo party_infos = 3;
+}
+
+// UpdatePartyRequest
+message UpdatePartyRequest {
+  string party_type = 1;
+  string party_identifier = 2;
+  string display_name = 3;
+  string first_name = 4;
+  string middle_name = 5;
+  string last_name = 6;
+}
+
+// UpdatePartyResponse
+message UpdatePartyResponse {
+  bool success = 1;
+  string message = 2;
+}
+
+// DeactivatePartyRequest
+message DeactivatePartyRequest {
+  string party_type = 1;
+  string party_identifier = 2;
+}
+
+// DeactivatePartyResponse
+message DeactivatePartyResponse {
+  bool success = 1;
+  string message = 2;
+}

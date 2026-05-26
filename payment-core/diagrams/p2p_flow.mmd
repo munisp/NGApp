@@ -1,0 +1,26 @@
+sequenceDiagram
+    participant User as User (Sender)
+    participant Mobile as Mobile App
+    participant Gateway as Payment Gateway
+    participant Fraud as Fraud Detection
+    participant Workflow as Workflow Orchestrator
+    participant TigerBeetle as TigerBeetle Ledger
+    participant Settlement as Settlement Service
+    participant Notify as Notification Service
+    participant Recipient as User (Recipient)
+    
+    User->>Mobile: Initiate P2P Transfer
+    Mobile->>Gateway: POST /api/v1/payments/initiate
+    Gateway->>Fraud: Check Fraud Score
+    Fraud-->>Gateway: Score: 0.15 (LOW RISK)
+    Gateway->>Workflow: Start Payment Workflow
+    Workflow->>TigerBeetle: Create Transfer
+    TigerBeetle-->>Workflow: Transfer Created
+    Workflow->>Settlement: Record for Settlement
+    Settlement-->>Workflow: Recorded
+    Workflow-->>Gateway: Payment Completed
+    Gateway->>Notify: Send Notifications
+    Notify->>User: SMS: Payment Sent
+    Notify->>Recipient: SMS: Payment Received
+    Gateway-->>Mobile: Success Response
+    Mobile-->>User: Show Confirmation

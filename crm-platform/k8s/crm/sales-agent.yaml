@@ -1,0 +1,81 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: sales-agent
+  namespace: crm
+  labels:
+    app: sales-agent
+    tier: crm
+spec:
+  replicas: 2
+  selector:
+    matchLabels:
+      app: sales-agent
+  template:
+    metadata:
+      labels:
+        app: sales-agent
+    spec:
+      containers:
+        - name: sales-agent
+          image: crm/sales-agent:latest
+          ports:
+            - containerPort: 8091
+          env:
+            - name: DATABASE_URL
+              valueFrom:
+                secretKeyRef:
+                  name: crm-db-credentials
+                  key: url
+          resources:
+            requests:
+              cpu: 100m
+              memory: 128Mi
+            limits:
+              cpu: 500m
+              memory: 512Mi
+          livenessProbe:
+            httpGet:
+              path: /health
+              port: 8091
+            initialDelaySeconds: 10
+            periodSeconds: 30
+          readinessProbe:
+            httpGet:
+              path: /health
+              port: 8091
+            initialDelaySeconds: 5
+            periodSeconds: 10
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: sales-agent
+  namespace: crm
+spec:
+  selector:
+    app: sales-agent
+  ports:
+    - port: 8091
+      targetPort: 8091
+  type: ClusterIP
+---
+apiVersion: autoscaling/v2
+kind: HorizontalPodAutoscaler
+metadata:
+  name: sales-agent
+  namespace: crm
+spec:
+  scaleTargetRef:
+    apiVersion: apps/v1
+    kind: Deployment
+    name: sales-agent
+  minReplicas: 2
+  maxReplicas: 10
+  metrics:
+    - type: Resource
+      resource:
+        name: cpu
+        target:
+          type: Utilization
+          averageUtilization: 70

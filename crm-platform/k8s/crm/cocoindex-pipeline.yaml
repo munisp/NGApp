@@ -1,0 +1,100 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: cocoindex-pipeline
+  namespace: crm
+  labels:
+    app: cocoindex-pipeline
+    platform: crm
+spec:
+  replicas: 2
+  selector:
+    matchLabels:
+      app: cocoindex-pipeline
+  template:
+    metadata:
+      labels:
+        app: cocoindex-pipeline
+        platform: crm
+      annotations:
+        prometheus.io/scrape: "true"
+        prometheus.io/port: "8093"
+    spec:
+      containers:
+        - name: cocoindex-pipeline
+          image: crm-platform/cocoindex-pipeline:latest
+          ports:
+            - containerPort: 8093
+          env:
+            - name: PORT
+              value: "8093"
+            - name: DATABASE_URL
+              valueFrom:
+                secretKeyRef:
+                  name: crm-secrets
+                  key: database-url
+            - name: REDIS_URL
+              valueFrom:
+                secretKeyRef:
+                  name: crm-secrets
+                  key: redis-url
+            - name: KAFKA_BROKERS
+              value: kafka.crm.svc:9092
+          resources:
+            requests:
+              cpu: 200m
+              memory: 512Mi
+            limits:
+              cpu: 400m
+              memory: 1Gi
+          livenessProbe:
+            httpGet:
+              path: /health
+              port: 8093
+            initialDelaySeconds: 15
+            periodSeconds: 10
+          readinessProbe:
+            httpGet:
+              path: /ready
+              port: 8093
+            initialDelaySeconds: 5
+            periodSeconds: 5
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: cocoindex-pipeline-service
+  namespace: crm
+spec:
+  selector:
+    app: cocoindex-pipeline
+  ports:
+    - port: 8093
+      targetPort: 8093
+  type: ClusterIP
+---
+apiVersion: autoscaling/v2
+kind: HorizontalPodAutoscaler
+metadata:
+  name: cocoindex-pipeline-hpa
+  namespace: crm
+spec:
+  scaleTargetRef:
+    apiVersion: apps/v1
+    kind: Deployment
+    name: cocoindex-pipeline
+  minReplicas: 2
+  maxReplicas: 6
+  metrics:
+    - type: Resource
+      resource:
+        name: cpu
+        target:
+          type: Utilization
+          averageUtilization: 70
+    - type: Resource
+      resource:
+        name: memory
+        target:
+          type: Utilization
+          averageUtilization: 80

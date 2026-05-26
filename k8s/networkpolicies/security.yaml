@@ -1,0 +1,307 @@
+# Security Namespace Network Policies
+# Implements Zero Trust micro-segmentation for security services
+
+apiVersion: networking.k8s.io/v1
+kind: NetworkPolicy
+metadata:
+  name: keycloak-ingress
+  namespace: security
+  labels:
+    app.kubernetes.io/part-of: paygate
+    security.paygate.io/policy: zero-trust
+spec:
+  podSelector:
+    matchLabels:
+      app: keycloak
+  policyTypes:
+    - Ingress
+  ingress:
+    # Allow from API Gateway (for user authentication)
+    - from:
+        - namespaceSelector:
+            matchLabels:
+              name: ingress
+          podSelector:
+            matchLabels:
+              app: apisix
+      ports:
+        - protocol: TCP
+          port: 8080
+        - protocol: TCP
+          port: 8443
+    # Allow from payment-core (for token validation)
+    - from:
+        - namespaceSelector:
+            matchLabels:
+              name: payment-core
+      ports:
+        - protocol: TCP
+          port: 8080
+        - protocol: TCP
+          port: 8443
+    # Allow from mojaloop (for token validation)
+    - from:
+        - namespaceSelector:
+            matchLabels:
+              name: mojaloop
+      ports:
+        - protocol: TCP
+          port: 8080
+        - protocol: TCP
+          port: 8443
+    # Allow from admin namespace
+    - from:
+        - namespaceSelector:
+            matchLabels:
+              name: admin
+      ports:
+        - protocol: TCP
+          port: 8080
+        - protocol: TCP
+          port: 8443
+
+---
+apiVersion: networking.k8s.io/v1
+kind: NetworkPolicy
+metadata:
+  name: keycloak-egress
+  namespace: security
+  labels:
+    app.kubernetes.io/part-of: paygate
+    security.paygate.io/policy: zero-trust
+spec:
+  podSelector:
+    matchLabels:
+      app: keycloak
+  policyTypes:
+    - Egress
+  egress:
+    # Allow to PostgreSQL for user storage
+    - to:
+        - namespaceSelector:
+            matchLabels:
+              name: data
+          podSelector:
+            matchLabels:
+              app: postgres
+      ports:
+        - protocol: TCP
+          port: 5432
+    # Allow DNS
+    - to:
+        - namespaceSelector:
+            matchLabels:
+              kubernetes.io/metadata.name: kube-system
+          podSelector:
+            matchLabels:
+              k8s-app: kube-dns
+      ports:
+        - protocol: UDP
+          port: 53
+        - protocol: TCP
+          port: 53
+
+---
+apiVersion: networking.k8s.io/v1
+kind: NetworkPolicy
+metadata:
+  name: permify-ingress
+  namespace: security
+  labels:
+    app.kubernetes.io/part-of: paygate
+    security.paygate.io/policy: zero-trust
+spec:
+  podSelector:
+    matchLabels:
+      app: permify
+  policyTypes:
+    - Ingress
+  ingress:
+    # Allow from payment-core (for authorization checks)
+    - from:
+        - namespaceSelector:
+            matchLabels:
+              name: payment-core
+      ports:
+        - protocol: TCP
+          port: 3476
+        - protocol: TCP
+          port: 3478
+    # Allow from mojaloop
+    - from:
+        - namespaceSelector:
+            matchLabels:
+              name: mojaloop
+      ports:
+        - protocol: TCP
+          port: 3476
+        - protocol: TCP
+          port: 3478
+    # Allow from admin namespace
+    - from:
+        - namespaceSelector:
+            matchLabels:
+              name: admin
+      ports:
+        - protocol: TCP
+          port: 3476
+        - protocol: TCP
+          port: 3478
+
+---
+apiVersion: networking.k8s.io/v1
+kind: NetworkPolicy
+metadata:
+  name: permify-egress
+  namespace: security
+  labels:
+    app.kubernetes.io/part-of: paygate
+    security.paygate.io/policy: zero-trust
+spec:
+  podSelector:
+    matchLabels:
+      app: permify
+  policyTypes:
+    - Egress
+  egress:
+    # Allow to PostgreSQL for policy storage
+    - to:
+        - namespaceSelector:
+            matchLabels:
+              name: data
+          podSelector:
+            matchLabels:
+              app: postgres
+      ports:
+        - protocol: TCP
+          port: 5432
+    # Allow DNS
+    - to:
+        - namespaceSelector:
+            matchLabels:
+              kubernetes.io/metadata.name: kube-system
+          podSelector:
+            matchLabels:
+              k8s-app: kube-dns
+      ports:
+        - protocol: UDP
+          port: 53
+        - protocol: TCP
+          port: 53
+
+---
+apiVersion: networking.k8s.io/v1
+kind: NetworkPolicy
+metadata:
+  name: vault-ingress
+  namespace: security
+  labels:
+    app.kubernetes.io/part-of: paygate
+    security.paygate.io/policy: zero-trust
+spec:
+  podSelector:
+    matchLabels:
+      app: vault
+  policyTypes:
+    - Ingress
+  ingress:
+    # Allow from payment-core (for secrets)
+    - from:
+        - namespaceSelector:
+            matchLabels:
+              name: payment-core
+      ports:
+        - protocol: TCP
+          port: 8200
+    # Allow from security namespace (internal)
+    - from:
+        - namespaceSelector:
+            matchLabels:
+              name: security
+      ports:
+        - protocol: TCP
+          port: 8200
+        - protocol: TCP
+          port: 8201  # Cluster port
+
+---
+apiVersion: networking.k8s.io/v1
+kind: NetworkPolicy
+metadata:
+  name: openappsec-ingress
+  namespace: security
+  labels:
+    app.kubernetes.io/part-of: paygate
+    security.paygate.io/policy: zero-trust
+spec:
+  podSelector:
+    matchLabels:
+      app: openappsec
+  policyTypes:
+    - Ingress
+  ingress:
+    # Allow from API Gateway
+    - from:
+        - namespaceSelector:
+            matchLabels:
+              name: ingress
+          podSelector:
+            matchLabels:
+              app: apisix
+      ports:
+        - protocol: TCP
+          port: 8080
+
+---
+apiVersion: networking.k8s.io/v1
+kind: NetworkPolicy
+metadata:
+  name: allow-dns
+  namespace: security
+  labels:
+    app.kubernetes.io/part-of: paygate
+    security.paygate.io/policy: zero-trust
+spec:
+  podSelector: {}
+  policyTypes:
+    - Egress
+  egress:
+    # Allow DNS resolution
+    - to:
+        - namespaceSelector:
+            matchLabels:
+              kubernetes.io/metadata.name: kube-system
+          podSelector:
+            matchLabels:
+              k8s-app: kube-dns
+      ports:
+        - protocol: UDP
+          port: 53
+        - protocol: TCP
+          port: 53
+
+---
+apiVersion: networking.k8s.io/v1
+kind: NetworkPolicy
+metadata:
+  name: allow-prometheus-scrape
+  namespace: security
+  labels:
+    app.kubernetes.io/part-of: paygate
+    security.paygate.io/policy: zero-trust
+spec:
+  podSelector: {}
+  policyTypes:
+    - Ingress
+  ingress:
+    # Allow Prometheus to scrape metrics
+    - from:
+        - namespaceSelector:
+            matchLabels:
+              name: monitoring
+          podSelector:
+            matchLabels:
+              app: prometheus
+      ports:
+        - protocol: TCP
+          port: 9090

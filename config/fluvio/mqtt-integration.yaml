@@ -1,0 +1,897 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: fluvio-mqtt-config
+  namespace: enterprise-crm
+data:
+  fluvio-config.yaml: |
+    # Fluvio MQTT Integration Configuration
+    cluster:
+      name: enterprise-crm-fluvio
+      replicas: 3
+      storage:
+        size: 100Gi
+        class: fast-ssd
+      
+    mqtt:
+      brokers:
+        - name: iot-broker
+          host: 0.0.0.0
+          port: 1883
+          ssl_port: 8883
+          websocket_port: 8080
+          max_connections: 10000
+          max_message_size: 1048576  # 1MB
+          keepalive: 60
+          
+        - name: pos-broker
+          host: 0.0.0.0
+          port: 1884
+          ssl_port: 8884
+          websocket_port: 8081
+          max_connections: 5000
+          max_message_size: 2097152  # 2MB
+          keepalive: 30
+      
+      topics:
+        # IoT Device Topics
+        - name: iot/sensors/temperature
+          partitions: 12
+          replication: 3
+          retention: 7d
+          compression: lz4
+          
+        - name: iot/sensors/humidity
+          partitions: 12
+          replication: 3
+          retention: 7d
+          compression: lz4
+          
+        - name: iot/sensors/motion
+          partitions: 6
+          replication: 3
+          retention: 3d
+          compression: lz4
+          
+        - name: iot/sensors/door
+          partitions: 6
+          replication: 3
+          retention: 30d
+          compression: lz4
+          
+        - name: iot/sensors/security
+          partitions: 6
+          replication: 3
+          retention: 90d
+          compression: lz4
+          
+        - name: iot/devices/status
+          partitions: 6
+          replication: 3
+          retention: 1d
+          compression: lz4
+          
+        - name: iot/devices/heartbeat
+          partitions: 3
+          replication: 3
+          retention: 1h
+          compression: lz4
+          
+        # POS System Topics
+        - name: pos/transactions
+          partitions: 24
+          replication: 3
+          retention: 90d
+          compression: lz4
+          
+        - name: pos/inventory/updates
+          partitions: 12
+          replication: 3
+          retention: 30d
+          compression: lz4
+          
+        - name: pos/customer/interactions
+          partitions: 12
+          replication: 3
+          retention: 30d
+          compression: lz4
+          
+        - name: pos/payments
+          partitions: 12
+          replication: 3
+          retention: 90d
+          compression: lz4
+          
+        - name: pos/receipts
+          partitions: 12
+          replication: 3
+          retention: 90d
+          compression: lz4
+          
+        - name: pos/loyalty/events
+          partitions: 6
+          replication: 3
+          retention: 90d
+          compression: lz4
+          
+        - name: pos/promotions/applied
+          partitions: 6
+          replication: 3
+          retention: 30d
+          compression: lz4
+          
+        # Alert Topics
+        - name: alerts/iot/critical
+          partitions: 3
+          replication: 3
+          retention: 30d
+          compression: lz4
+          
+        - name: alerts/pos/fraud
+          partitions: 6
+          replication: 3
+          retention: 90d
+          compression: lz4
+          
+        - name: alerts/system/health
+          partitions: 3
+          replication: 3
+          retention: 7d
+          compression: lz4
+      
+      security:
+        tls:
+          enabled: true
+          cert_file: /certs/server.crt
+          key_file: /certs/server.key
+          ca_file: /certs/ca.crt
+          
+        authentication:
+          enabled: true
+          method: username_password
+          users:
+            - username: iot_client
+              password: iot_secure_password
+              permissions:
+                - topic: "iot/+"
+                  access: publish
+                - topic: "alerts/iot/+"
+                  access: subscribe
+                  
+            - username: pos_client
+              password: pos_secure_password
+              permissions:
+                - topic: "pos/+"
+                  access: publish
+                - topic: "alerts/pos/+"
+                  access: subscribe
+                  
+            - username: analytics_client
+              password: analytics_secure_password
+              permissions:
+                - topic: "#"
+                  access: subscribe
+      
+      connectors:
+        kafka:
+          enabled: true
+          bootstrap_servers: kafka:9092
+          topic_mapping:
+            # IoT to Kafka mappings
+            "iot/sensors/+": "iot.sensors.data"
+            "iot/devices/+": "iot.devices.status"
+            "alerts/iot/+": "iot.alerts.generated"
+            
+            # POS to Kafka mappings
+            "pos/transactions": "iot.pos.transactions"
+            "pos/inventory/+": "pos.inventory.sync"
+            "pos/customer/+": "pos.customer.interactions"
+            "pos/payments": "pos.payments.processed"
+            "alerts/pos/+": "pos.alerts.generated"
+          
+          serialization:
+            key_format: string
+            value_format: json
+            schema_registry: http://schema-registry:8081
+            
+        webhook:
+          enabled: true
+          endpoints:
+            - url: http://customer-service:8080/api/v1/events/iot
+              topics: ["iot/+"]
+              method: POST
+              headers:
+                Content-Type: application/json
+                Authorization: Bearer ${IOT_WEBHOOK_TOKEN}
+                
+            - url: http://inventory-service:8080/api/v1/events/pos
+              topics: ["pos/inventory/+"]
+              method: POST
+              headers:
+                Content-Type: application/json
+                Authorization: Bearer ${POS_WEBHOOK_TOKEN}
+    
+    monitoring:
+      metrics:
+        enabled: true
+        port: 9090
+        path: /metrics
+        
+      logging:
+        level: info
+        format: json
+        output: stdout
+        
+      health_check:
+        enabled: true
+        port: 8080
+        path: /health
+
+  mqtt-bridge.py: |
+    #!/usr/bin/env python3
+    """
+    Fluvio MQTT Bridge for IoT/POS Integration
+    Bridges MQTT messages to Kafka topics for enterprise CRM
+    """
+    
+    import asyncio
+    import json
+    import logging
+    import os
+    import ssl
+    from datetime import datetime
+    from typing import Dict, Any
+    
+    import paho.mqtt.client as mqtt
+    from kafka import KafkaProducer
+    from kafka.errors import KafkaError
+    
+    # Configure logging
+    logging.basicConfig(
+        level=logging.INFO,
+        format='%(asctime)s - %(name)s - %(levelname)s - %(message)s'
+    )
+    logger = logging.getLogger(__name__)
+    
+    class FluvioMQTTBridge:
+        def __init__(self):
+            self.kafka_producer = None
+            self.mqtt_clients = {}
+            self.topic_mappings = {
+                # IoT sensor mappings
+                'iot/sensors/temperature': 'iot.sensors.data',
+                'iot/sensors/humidity': 'iot.sensors.data',
+                'iot/sensors/motion': 'iot.sensors.data',
+                'iot/sensors/door': 'iot.sensors.data',
+                'iot/sensors/security': 'iot.sensors.data',
+                'iot/devices/status': 'iot.devices.status',
+                'iot/devices/heartbeat': 'iot.devices.status',
+                
+                # POS system mappings
+                'pos/transactions': 'iot.pos.transactions',
+                'pos/inventory/updates': 'pos.inventory.sync',
+                'pos/customer/interactions': 'pos.customer.interactions',
+                'pos/payments': 'pos.payments.processed',
+                'pos/receipts': 'pos.receipts.generated',
+                'pos/loyalty/events': 'pos.loyalty.events',
+                'pos/promotions/applied': 'pos.promotions.applied',
+                
+                # Alert mappings
+                'alerts/iot/critical': 'iot.alerts.generated',
+                'alerts/pos/fraud': 'pos.alerts.generated',
+                'alerts/system/health': 'iot.alerts.generated'
+            }
+            
+        async def initialize(self):
+            """Initialize Kafka producer and MQTT clients"""
+            try:
+                # Initialize Kafka producer
+                self.kafka_producer = KafkaProducer(
+                    bootstrap_servers=os.getenv('KAFKA_BOOTSTRAP_SERVERS', 'kafka:9092'),
+                    value_serializer=lambda v: json.dumps(v).encode('utf-8'),
+                    key_serializer=lambda k: k.encode('utf-8') if k else None,
+                    acks='all',
+                    retries=3,
+                    compression_type='lz4',
+                    batch_size=16384,
+                    linger_ms=10
+                )
+                
+                # Initialize MQTT clients
+                await self._setup_mqtt_clients()
+                
+                logger.info("Fluvio MQTT Bridge initialized successfully")
+                
+            except Exception as e:
+                logger.error(f"Failed to initialize bridge: {e}")
+                raise
+                
+        async def _setup_mqtt_clients(self):
+            """Setup MQTT clients for IoT and POS brokers"""
+            
+            # IoT MQTT Client
+            iot_client = mqtt.Client(client_id="fluvio_iot_bridge")
+            iot_client.username_pw_set(
+                os.getenv('IOT_MQTT_USERNAME', 'iot_client'),
+                os.getenv('IOT_MQTT_PASSWORD', 'iot_secure_password')
+            )
+            
+            # Setup SSL for IoT client
+            context = ssl.create_default_context(ssl.Purpose.SERVER_AUTH)
+            context.check_hostname = False
+            context.verify_mode = ssl.CERT_NONE
+            iot_client.tls_set_context(context)
+            
+            iot_client.on_connect = self._on_iot_connect
+            iot_client.on_message = self._on_iot_message
+            iot_client.on_disconnect = self._on_disconnect
+            
+            # POS MQTT Client
+            pos_client = mqtt.Client(client_id="fluvio_pos_bridge")
+            pos_client.username_pw_set(
+                os.getenv('POS_MQTT_USERNAME', 'pos_client'),
+                os.getenv('POS_MQTT_PASSWORD', 'pos_secure_password')
+            )
+            
+            pos_client.tls_set_context(context)
+            pos_client.on_connect = self._on_pos_connect
+            pos_client.on_message = self._on_pos_message
+            pos_client.on_disconnect = self._on_disconnect
+            
+            self.mqtt_clients['iot'] = iot_client
+            self.mqtt_clients['pos'] = pos_client
+            
+            # Connect to brokers
+            iot_client.connect(
+                os.getenv('IOT_MQTT_HOST', 'fluvio-mqtt-iot'),
+                int(os.getenv('IOT_MQTT_PORT', '8883')),
+                60
+            )
+            
+            pos_client.connect(
+                os.getenv('POS_MQTT_HOST', 'fluvio-mqtt-pos'),
+                int(os.getenv('POS_MQTT_PORT', '8884')),
+                60
+            )
+            
+        def _on_iot_connect(self, client, userdata, flags, rc):
+            """IoT MQTT connection callback"""
+            if rc == 0:
+                logger.info("Connected to IoT MQTT broker")
+                # Subscribe to IoT topics
+                iot_topics = [
+                    'iot/sensors/+',
+                    'iot/devices/+',
+                    'alerts/iot/+'
+                ]
+                for topic in iot_topics:
+                    client.subscribe(topic, qos=1)
+                    logger.info(f"Subscribed to IoT topic: {topic}")
+            else:
+                logger.error(f"Failed to connect to IoT MQTT broker: {rc}")
+                
+        def _on_pos_connect(self, client, userdata, flags, rc):
+            """POS MQTT connection callback"""
+            if rc == 0:
+                logger.info("Connected to POS MQTT broker")
+                # Subscribe to POS topics
+                pos_topics = [
+                    'pos/+',
+                    'alerts/pos/+'
+                ]
+                for topic in pos_topics:
+                    client.subscribe(topic, qos=1)
+                    logger.info(f"Subscribed to POS topic: {topic}")
+            else:
+                logger.error(f"Failed to connect to POS MQTT broker: {rc}")
+                
+        def _on_disconnect(self, client, userdata, rc):
+            """MQTT disconnection callback"""
+            logger.warning(f"MQTT client disconnected: {rc}")
+            
+        def _on_iot_message(self, client, userdata, msg):
+            """IoT MQTT message callback"""
+            self._process_message('iot', msg)
+            
+        def _on_pos_message(self, client, userdata, msg):
+            """POS MQTT message callback"""
+            self._process_message('pos', msg)
+            
+        def _process_message(self, source: str, msg):
+            """Process MQTT message and forward to Kafka"""
+            try:
+                topic = msg.topic
+                payload = msg.payload.decode('utf-8')
+                
+                # Parse JSON payload
+                try:
+                    data = json.loads(payload)
+                except json.JSONDecodeError:
+                    logger.warning(f"Invalid JSON payload from {topic}: {payload}")
+                    return
+                
+                # Enrich message with metadata
+                enriched_data = {
+                    'source': source,
+                    'mqtt_topic': topic,
+                    'timestamp': datetime.utcnow().isoformat(),
+                    'data': data
+                }
+                
+                # Determine Kafka topic
+                kafka_topic = self._get_kafka_topic(topic)
+                if not kafka_topic:
+                    logger.warning(f"No Kafka topic mapping for MQTT topic: {topic}")
+                    return
+                
+                # Generate message key
+                message_key = self._generate_message_key(source, topic, data)
+                
+                # Send to Kafka
+                future = self.kafka_producer.send(
+                    kafka_topic,
+                    value=enriched_data,
+                    key=message_key
+                )
+                
+                # Add callback for success/error handling
+                future.add_callback(
+                    lambda metadata: logger.debug(
+                        f"Message sent to Kafka topic {metadata.topic} "
+                        f"partition {metadata.partition} offset {metadata.offset}"
+                    )
+                )
+                future.add_errback(
+                    lambda error: logger.error(f"Failed to send message to Kafka: {error}")
+                )
+                
+                logger.info(f"Forwarded message from {topic} to {kafka_topic}")
+                
+            except Exception as e:
+                logger.error(f"Error processing message from {msg.topic}: {e}")
+                
+        def _get_kafka_topic(self, mqtt_topic: str) -> str:
+            """Map MQTT topic to Kafka topic"""
+            # Direct mapping
+            if mqtt_topic in self.topic_mappings:
+                return self.topic_mappings[mqtt_topic]
+            
+            # Pattern matching for wildcard topics
+            for pattern, kafka_topic in self.topic_mappings.items():
+                if '+' in pattern:
+                    pattern_parts = pattern.split('/')
+                    topic_parts = mqtt_topic.split('/')
+                    
+                    if len(pattern_parts) == len(topic_parts):
+                        match = True
+                        for i, part in enumerate(pattern_parts):
+                            if part != '+' and part != topic_parts[i]:
+                                match = False
+                                break
+                        if match:
+                            return kafka_topic
+            
+            return None
+            
+        def _generate_message_key(self, source: str, topic: str, data: Dict[str, Any]) -> str:
+            """Generate message key for Kafka partitioning"""
+            if source == 'iot':
+                # Use device_id for IoT messages
+                return data.get('device_id', f"{source}_{topic}")
+            elif source == 'pos':
+                # Use store_id or terminal_id for POS messages
+                return data.get('store_id') or data.get('terminal_id') or f"{source}_{topic}"
+            else:
+                return f"{source}_{topic}"
+                
+        async def run(self):
+            """Run the MQTT bridge"""
+            try:
+                # Start MQTT clients
+                for client in self.mqtt_clients.values():
+                    client.loop_start()
+                
+                logger.info("Fluvio MQTT Bridge is running...")
+                
+                # Keep the bridge running
+                while True:
+                    await asyncio.sleep(1)
+                    
+            except KeyboardInterrupt:
+                logger.info("Shutting down Fluvio MQTT Bridge...")
+            except Exception as e:
+                logger.error(f"Error in MQTT bridge: {e}")
+            finally:
+                await self.cleanup()
+                
+        async def cleanup(self):
+            """Cleanup resources"""
+            try:
+                # Stop MQTT clients
+                for client in self.mqtt_clients.values():
+                    client.loop_stop()
+                    client.disconnect()
+                
+                # Close Kafka producer
+                if self.kafka_producer:
+                    self.kafka_producer.close()
+                
+                logger.info("Cleanup completed")
+                
+            except Exception as e:
+                logger.error(f"Error during cleanup: {e}")
+    
+    async def main():
+        """Main function"""
+        bridge = FluvioMQTTBridge()
+        await bridge.initialize()
+        await bridge.run()
+    
+    if __name__ == "__main__":
+        asyncio.run(main())
+
+  requirements.txt: |
+    paho-mqtt==1.6.1
+    kafka-python==2.0.2
+    asyncio==3.4.3
+    python-json-logger==2.0.7
+---
+apiVersion: v1
+kind: Secret
+metadata:
+  name: fluvio-mqtt-secrets
+  namespace: enterprise-crm
+type: Opaque
+data:
+  # Base64 encoded values - replace with actual values
+  iot-mqtt-username: aW90X2NsaWVudA==  # iot_client
+  iot-mqtt-password: aW90X3NlY3VyZV9wYXNzd29yZA==  # iot_secure_password
+  pos-mqtt-username: cG9zX2NsaWVudA==  # pos_client
+  pos-mqtt-password: cG9zX3NlY3VyZV9wYXNzd29yZA==  # pos_secure_password
+  analytics-mqtt-username: YW5hbHl0aWNzX2NsaWVudA==  # analytics_client
+  analytics-mqtt-password: YW5hbHl0aWNzX3NlY3VyZV9wYXNzd29yZA==  # analytics_secure_password
+  iot-webhook-token: aW90X3dlYmhvb2tfdG9rZW5fMTIz  # iot_webhook_token_123
+  pos-webhook-token: cG9zX3dlYmhvb2tfdG9rZW5fMTIz  # pos_webhook_token_123
+  server-cert: LS0tLS1CRUdJTiBDRVJUSUZJQ0FURS0tLS0t  # SSL certificate
+  server-key: LS0tLS1CRUdJTiBQUklWQVRFIEtFWS0tLS0t  # SSL private key
+  ca-cert: LS0tLS1CRUdJTiBDRVJUSUZJQ0FURS0tLS0t  # CA certificate
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: fluvio-mqtt-iot
+  namespace: enterprise-crm
+  labels:
+    app: fluvio-mqtt-iot
+spec:
+  replicas: 2
+  selector:
+    matchLabels:
+      app: fluvio-mqtt-iot
+  template:
+    metadata:
+      labels:
+        app: fluvio-mqtt-iot
+    spec:
+      containers:
+      - name: mosquitto
+        image: eclipse-mosquitto:2.0
+        ports:
+        - containerPort: 1883
+          name: mqtt
+        - containerPort: 8883
+          name: mqtt-ssl
+        - containerPort: 8080
+          name: websocket
+        volumeMounts:
+        - name: config
+          mountPath: /mosquitto/config
+        - name: certs
+          mountPath: /mosquitto/certs
+          readOnly: true
+        - name: data
+          mountPath: /mosquitto/data
+        - name: logs
+          mountPath: /mosquitto/log
+        resources:
+          requests:
+            memory: "256Mi"
+            cpu: "100m"
+          limits:
+            memory: "512Mi"
+            cpu: "200m"
+        livenessProbe:
+          tcpSocket:
+            port: 1883
+          initialDelaySeconds: 30
+          periodSeconds: 10
+        readinessProbe:
+          tcpSocket:
+            port: 1883
+          initialDelaySeconds: 5
+          periodSeconds: 5
+      volumes:
+      - name: config
+        configMap:
+          name: fluvio-mqtt-config
+      - name: certs
+        secret:
+          secretName: fluvio-mqtt-secrets
+          items:
+          - key: server-cert
+            path: server.crt
+          - key: server-key
+            path: server.key
+          - key: ca-cert
+            path: ca.crt
+      - name: data
+        emptyDir: {}
+      - name: logs
+        emptyDir: {}
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: fluvio-mqtt-pos
+  namespace: enterprise-crm
+  labels:
+    app: fluvio-mqtt-pos
+spec:
+  replicas: 2
+  selector:
+    matchLabels:
+      app: fluvio-mqtt-pos
+  template:
+    metadata:
+      labels:
+        app: fluvio-mqtt-pos
+    spec:
+      containers:
+      - name: mosquitto
+        image: eclipse-mosquitto:2.0
+        ports:
+        - containerPort: 1884
+          name: mqtt
+        - containerPort: 8884
+          name: mqtt-ssl
+        - containerPort: 8081
+          name: websocket
+        volumeMounts:
+        - name: config
+          mountPath: /mosquitto/config
+        - name: certs
+          mountPath: /mosquitto/certs
+          readOnly: true
+        - name: data
+          mountPath: /mosquitto/data
+        - name: logs
+          mountPath: /mosquitto/log
+        resources:
+          requests:
+            memory: "256Mi"
+            cpu: "100m"
+          limits:
+            memory: "512Mi"
+            cpu: "200m"
+        livenessProbe:
+          tcpSocket:
+            port: 1884
+          initialDelaySeconds: 30
+          periodSeconds: 10
+        readinessProbe:
+          tcpSocket:
+            port: 1884
+          initialDelaySeconds: 5
+          periodSeconds: 5
+      volumes:
+      - name: config
+        configMap:
+          name: fluvio-mqtt-config
+      - name: certs
+        secret:
+          secretName: fluvio-mqtt-secrets
+          items:
+          - key: server-cert
+            path: server.crt
+          - key: server-key
+            path: server.key
+          - key: ca-cert
+            path: ca.crt
+      - name: data
+        emptyDir: {}
+      - name: logs
+        emptyDir: {}
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: fluvio-mqtt-bridge
+  namespace: enterprise-crm
+  labels:
+    app: fluvio-mqtt-bridge
+spec:
+  replicas: 3
+  selector:
+    matchLabels:
+      app: fluvio-mqtt-bridge
+  template:
+    metadata:
+      labels:
+        app: fluvio-mqtt-bridge
+    spec:
+      initContainers:
+      - name: wait-for-kafka
+        image: confluentinc/cp-kafka:7.5.0
+        command:
+        - sh
+        - -c
+        - |
+          echo "Waiting for Kafka..."
+          until kafka-topics.sh --bootstrap-server kafka:9092 --list > /dev/null 2>&1; do
+            echo "Kafka not ready, waiting..."
+            sleep 5
+          done
+          echo "Kafka is ready!"
+      containers:
+      - name: mqtt-bridge
+        image: python:3.11-slim
+        command:
+        - /bin/bash
+        - -c
+        - |
+          pip install -r /app/requirements.txt
+          python /app/mqtt-bridge.py
+        env:
+        - name: KAFKA_BOOTSTRAP_SERVERS
+          value: "kafka:9092"
+        - name: IOT_MQTT_HOST
+          value: "fluvio-mqtt-iot"
+        - name: IOT_MQTT_PORT
+          value: "8883"
+        - name: POS_MQTT_HOST
+          value: "fluvio-mqtt-pos"
+        - name: POS_MQTT_PORT
+          value: "8884"
+        - name: IOT_MQTT_USERNAME
+          valueFrom:
+            secretKeyRef:
+              name: fluvio-mqtt-secrets
+              key: iot-mqtt-username
+        - name: IOT_MQTT_PASSWORD
+          valueFrom:
+            secretKeyRef:
+              name: fluvio-mqtt-secrets
+              key: iot-mqtt-password
+        - name: POS_MQTT_USERNAME
+          valueFrom:
+            secretKeyRef:
+              name: fluvio-mqtt-secrets
+              key: pos-mqtt-username
+        - name: POS_MQTT_PASSWORD
+          valueFrom:
+            secretKeyRef:
+              name: fluvio-mqtt-secrets
+              key: pos-mqtt-password
+        volumeMounts:
+        - name: app
+          mountPath: /app
+        resources:
+          requests:
+            memory: "512Mi"
+            cpu: "250m"
+          limits:
+            memory: "1Gi"
+            cpu: "500m"
+        livenessProbe:
+          exec:
+            command:
+            - python
+            - -c
+            - "import sys; sys.exit(0)"
+          initialDelaySeconds: 60
+          periodSeconds: 30
+        readinessProbe:
+          exec:
+            command:
+            - python
+            - -c
+            - "import sys; sys.exit(0)"
+          initialDelaySeconds: 30
+          periodSeconds: 10
+      volumes:
+      - name: app
+        configMap:
+          name: fluvio-mqtt-config
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: fluvio-mqtt-iot
+  namespace: enterprise-crm
+  labels:
+    app: fluvio-mqtt-iot
+spec:
+  ports:
+  - port: 1883
+    targetPort: 1883
+    name: mqtt
+  - port: 8883
+    targetPort: 8883
+    name: mqtt-ssl
+  - port: 8080
+    targetPort: 8080
+    name: websocket
+  selector:
+    app: fluvio-mqtt-iot
+  type: ClusterIP
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: fluvio-mqtt-pos
+  namespace: enterprise-crm
+  labels:
+    app: fluvio-mqtt-pos
+spec:
+  ports:
+  - port: 1884
+    targetPort: 1884
+    name: mqtt
+  - port: 8884
+    targetPort: 8884
+    name: mqtt-ssl
+  - port: 8081
+    targetPort: 8081
+    name: websocket
+  selector:
+    app: fluvio-mqtt-pos
+  type: ClusterIP
+---
+apiVersion: policy/v1
+kind: PodDisruptionBudget
+metadata:
+  name: fluvio-mqtt-pdb
+  namespace: enterprise-crm
+spec:
+  minAvailable: 1
+  selector:
+    matchLabels:
+      app: fluvio-mqtt-iot
+---
+apiVersion: policy/v1
+kind: PodDisruptionBudget
+metadata:
+  name: fluvio-mqtt-pos-pdb
+  namespace: enterprise-crm
+spec:
+  minAvailable: 1
+  selector:
+    matchLabels:
+      app: fluvio-mqtt-pos
+---
+apiVersion: autoscaling/v2
+kind: HorizontalPodAutoscaler
+metadata:
+  name: fluvio-mqtt-bridge-hpa
+  namespace: enterprise-crm
+spec:
+  scaleTargetRef:
+    apiVersion: apps/v1
+    kind: Deployment
+    name: fluvio-mqtt-bridge
+  minReplicas: 3
+  maxReplicas: 10
+  metrics:
+  - type: Resource
+    resource:
+      name: cpu
+      target:
+        type: Utilization
+        averageUtilization: 70
+  - type: Resource
+    resource:
+      name: memory
+      target:
+        type: Utilization
+        averageUtilization: 80
+

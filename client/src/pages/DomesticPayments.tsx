@@ -1,0 +1,2425 @@
+import { useState } from 'react';
+import { trpc } from '@/lib/trpc';
+import { Banknote, QrCode, FileText, Repeat, Users, ArrowRightLeft, CheckCircle, XCircle, Clock, BarChart3, TrendingUp, Activity, PieChart, LayoutDashboard, Globe, Ship, CreditCard, Landmark, Code, ArrowDownLeft, Package, RefreshCw, AlertTriangle, ShieldCheck, Search, Layers, Building2, BookOpen, UserCheck, Hash, RotateCcw, Scale, Store, Receipt, FileCode, ScanLine, FileCheck, Fingerprint, Shield, UserPlus, Gauge, FileSpreadsheet, Timer, HeartPulse, FileWarning, Eye, DollarSign, Map, Brain, Zap, Cpu, Database, MessageSquare, Network, Bot, ShieldAlert, GitGraph, Dice1 } from 'lucide-react';
+
+type Tab = 'dashboard' | 'payments' | 'bills' | 'standing_orders' | 'bulk'
+  | 'neft' | 'cheques' | 'mandates' | 'reversals' | 'disputes'
+  | 'merchants' | 'paydirect' | 'identity' | 'iso20022'
+  | 'nqr' | 'emandate' | 'fraud' | 'onboarding'
+  | 'nip_monitor' | 'reconciliation' | 'sla' | 'health' | 'compliance' | 'monitoring' | 'revenue' | 'corridors' | 'forecast' | 'circuit_breaker'
+  | 'prophet' | 'cocoindex' | 'kgqa' | 'falkordb' | 'ollama' | 'art' | 'gnn_neo4j' | 'mcmc'
+  | 'saga' | 'hotpath' | 'cqrs' | 'sanctions' | 'cbn_reporting' | 'multiregion' | 'smart_routing' | 'hsm' | 'incidents' | 'capacity' | 'whitelabel' | 'api_versions';
+
+const moduleLinks = [
+  { label: 'Outbound Remittance', href: '/', icon: Globe, color: '#3b82f6' },
+  { label: 'Inbound Remittance', href: '/inbound-remittance', icon: ArrowDownLeft, color: '#059669' },
+  { label: 'Trade Payments', href: '/trade-payments', icon: Ship, color: '#7c3aed' },
+  { label: 'Card Processing', href: '/card-processing', icon: CreditCard, color: '#dc2626' },
+  { label: 'Government Payments', href: '/government-payments', icon: Landmark, color: '#0369a1' },
+  { label: 'Open Banking', href: '/open-banking', icon: Code, color: '#0ea5e9' },
+];
+
+export default function DomesticPayments() {
+  const [activeTab, setActiveTab] = useState<Tab>('dashboard');
+  const [typeFilter, setTypeFilter] = useState('');
+
+  const paymentsQuery = trpc.domesticPayments.listPayments.useQuery({ type: typeFilter || undefined }, { retry: false });
+  const billsQuery = trpc.domesticPayments.listBillProviders.useQuery(undefined, { retry: false });
+  const ordersQuery = trpc.domesticPayments.listStandingOrders.useQuery(undefined, { retry: false });
+  const bulkQuery = trpc.domesticPayments.listBulkDisbursements.useQuery(undefined, { retry: false });
+
+  // NIBSS Gap Queries
+  const neftQuery = trpc.domesticPayments.listNeftBatches.useQuery(undefined, { retry: false });
+  const chequesQuery = trpc.domesticPayments.listCheques.useQuery(undefined, { retry: false });
+  const mandatesQuery = trpc.domesticPayments.listMandates.useQuery(undefined, { retry: false });
+  const reversalsQuery = trpc.domesticPayments.listReversals.useQuery(undefined, { retry: false });
+  const disputesQuery = trpc.domesticPayments.listDisputes.useQuery(undefined, { retry: false });
+  const merchantsQuery = trpc.domesticPayments.listMerchants.useQuery(undefined, { retry: false });
+  const paydirectQuery = trpc.domesticPayments.listPayDirectCollections.useQuery(undefined, { retry: false });
+  const iso20022Query = trpc.domesticPayments.listIso20022Messages.useQuery(undefined, { retry: false });
+
+  // Remaining 5% + Onboarding Queries
+  const nqrQuery = trpc.domesticPayments.listNqrCodes.useQuery(undefined, { retry: false });
+  const emandateQuery = trpc.domesticPayments.listEmandates.useQuery(undefined, { retry: false });
+  const fraudQuery = trpc.domesticPayments.listFraudAlerts.useQuery(undefined, { retry: false });
+  const banksQuery = trpc.domesticPayments.listOnboardedBanks.useQuery(undefined, { retry: false });
+  const billersQuery = trpc.domesticPayments.listOnboardedBillers.useQuery(undefined, { retry: false });
+  const dfspsQuery = trpc.domesticPayments.listOnboardedDfsps.useQuery(undefined, { retry: false });
+
+  // 20 Improvements Queries
+  const nipMonitorQuery = trpc.domesticPayments.getNipMonitoring.useQuery(undefined, { retry: false });
+  const reconQuery = trpc.domesticPayments.getReconciliationReport.useQuery(undefined, { retry: false });
+  const slaQuery = trpc.domesticPayments.getSlaStatus.useQuery(undefined, { retry: false });
+  const healthQuery = trpc.domesticPayments.getParticipantHealth.useQuery(undefined, { retry: false });
+  const complianceQuery = trpc.domesticPayments.getRegulatoryReports.useQuery(undefined, { retry: false });
+  const monitoringQuery = trpc.domesticPayments.getMonitoringRules.useQuery(undefined, { retry: false });
+  const revenueQuery = trpc.domesticPayments.getRevenueAnalytics.useQuery(undefined, { retry: false });
+  const corridorQuery = trpc.domesticPayments.getCorridorAnalytics.useQuery(undefined, { retry: false });
+  const forecastQuery = trpc.domesticPayments.getVolumeForecast.useQuery(undefined, { retry: false });
+  const circuitQuery = trpc.domesticPayments.getCircuitBreakerStatus.useQuery(undefined, { retry: false });
+
+  // AI/ML Queries
+  const prophetQuery = trpc.domesticPayments.getProphetPipeline.useQuery(undefined, { retry: false });
+  const cocoQuery = trpc.domesticPayments.getCocoIndexStatus.useQuery(undefined, { retry: false });
+  const kgqaQuery = trpc.domesticPayments.getKGQAStatus.useQuery(undefined, { retry: false });
+  const falkorQuery = trpc.domesticPayments.getFalkorDBMetrics.useQuery(undefined, { retry: false });
+  const ollamaQuery = trpc.domesticPayments.getOllamaStatus.useQuery(undefined, { retry: false });
+  const artQuery = trpc.domesticPayments.getARTResults.useQuery(undefined, { retry: false });
+  const gnnQuery = trpc.domesticPayments.getGNNFraudNetworks.useQuery(undefined, { retry: false });
+  const mcmcQuery = trpc.domesticPayments.getMCMCFraudScoring.useQuery(undefined, { retry: false });
+
+  // Core Enhancement Queries
+  const sagaQuery = trpc.domesticPayments.getSagaStatus.useQuery(undefined, { retry: false });
+  const hotpathQuery = trpc.domesticPayments.getHotPathMetrics.useQuery(undefined, { retry: false });
+  const cqrsQuery = trpc.domesticPayments.getCQRSMetrics.useQuery(undefined, { retry: false });
+  const sanctionsQuery = trpc.domesticPayments.getSanctionsScreening.useQuery(undefined, { retry: false });
+  const cbnQuery = trpc.domesticPayments.getCBNReporting.useQuery(undefined, { retry: false });
+  const multiregionQuery = trpc.domesticPayments.getMultiRegionStatus.useQuery(undefined, { retry: false });
+  const routingQuery = trpc.domesticPayments.getSmartRoutingStatus.useQuery(undefined, { retry: false });
+  const hsmQuery = trpc.domesticPayments.getHSMStatus.useQuery(undefined, { retry: false });
+  const incidentQuery = trpc.domesticPayments.getIncidentDashboard.useQuery(undefined, { retry: false });
+  const capacityQuery = trpc.domesticPayments.getCapacityPlanning.useQuery(undefined, { retry: false });
+  const whitelabelQuery = trpc.domesticPayments.getWhiteLabelTenants.useQuery(undefined, { retry: false });
+  const apiVersionQuery = trpc.domesticPayments.getAPIVersions.useQuery(undefined, { retry: false });
+
+  // Ollama interactive query
+  const [ollamaInput, setOllamaInput] = useState('');
+  const [ollamaHistory, setOllamaHistory] = useState<Array<{ question: string; answer: string; latencyMs: number; tokens: number }>>([]);
+  const ollamaMutation = trpc.domesticPayments.queryOllama.useMutation({
+    onSuccess: (data) => {
+      setOllamaHistory(prev => [{ question: ollamaInput, answer: data.answer, latencyMs: data.latencyMs, tokens: data.tokensGenerated }, ...prev]);
+      setOllamaInput('');
+    },
+  });
+
+  const payments = paymentsQuery.data?.payments ?? [];
+  const summary = paymentsQuery.data?.summary;
+  const providers = billsQuery.data?.providers ?? [];
+  const orders = ordersQuery.data?.orders ?? [];
+  const bulks = bulkQuery.data?.disbursements ?? [];
+
+  const neftBatches = neftQuery.data?.batches ?? [];
+  const neftSummary = neftQuery.data?.summary;
+  const cheques = chequesQuery.data?.cheques ?? [];
+  const chequeSummary = chequesQuery.data?.summary;
+  const mandates = mandatesQuery.data?.mandates ?? [];
+  const mandateSummary = mandatesQuery.data?.summary;
+  const reversals = reversalsQuery.data?.reversals ?? [];
+  const reversalSummary = reversalsQuery.data?.summary;
+  const disputes = disputesQuery.data?.disputes ?? [];
+  const disputeSummary = disputesQuery.data?.summary;
+  const merchants = merchantsQuery.data?.merchants ?? [];
+  const merchantSummary = merchantsQuery.data?.summary;
+  const pdCollections = paydirectQuery.data?.collections ?? [];
+  const pdSummary = paydirectQuery.data?.summary;
+  const isoMessages = iso20022Query.data?.messages ?? [];
+  const isoSummary = iso20022Query.data?.summary;
+
+  const nqrCodes = nqrQuery.data?.codes ?? [];
+  const nqrSummary = nqrQuery.data?.summary;
+  const emandates = emandateQuery.data?.emandates ?? [];
+  const emandateSummary = emandateQuery.data?.summary;
+  const fraudAlerts = fraudQuery.data?.alerts ?? [];
+  const fraudSummary = fraudQuery.data?.summary;
+  const onboardedBanks = banksQuery.data?.banks ?? [];
+  const banksSummary = banksQuery.data?.summary;
+  const onboardedBillers = billersQuery.data?.billers ?? [];
+  const billersSummary = billersQuery.data?.summary;
+  const onboardedDfsps = dfspsQuery.data?.dfsps ?? [];
+  const dfspsSummary = dfspsQuery.data?.summary;
+
+  const fmt = (n: number) => n >= 1e9 ? `₦${(n / 1e9).toFixed(1)}B` : n >= 1e6 ? `₦${(n / 1e6).toFixed(1)}M` : `₦${n.toLocaleString()}`;
+
+  const typeBadge = (t: string) => {
+    const colors: Record<string, { bg: string; fg: string }> = {
+      P2P: { bg: '#dbeafe', fg: '#1d4ed8' }, P2B: { bg: '#dcfce7', fg: '#166534' },
+      QR_PAY: { bg: '#fef3c7', fg: '#92400e' }, BILL_PAYMENT: { bg: '#e0e7ff', fg: '#3730a3' },
+      REQUEST_TO_PAY: { bg: '#fce7f3', fg: '#9d174d' }, USSD: { bg: '#f3e8ff', fg: '#6b21a8' },
+    };
+    const c = colors[t] || { bg: '#f3f4f6', fg: '#374151' };
+    return { background: c.bg, color: c.fg, padding: '2px 8px', borderRadius: 9999, fontSize: 11, fontWeight: 600 as const };
+  };
+
+  const statusBadge = (s: string) => {
+    const m: Record<string, { bg: string; fg: string }> = {
+      SETTLED: { bg: '#dcfce7', fg: '#166534' }, CLEARED: { bg: '#dcfce7', fg: '#166534' },
+      COMPLETED: { bg: '#dcfce7', fg: '#166534' }, ACTIVE: { bg: '#dcfce7', fg: '#166534' },
+      ACCEPTED: { bg: '#dcfce7', fg: '#166534' }, RESOLVED: { bg: '#dcfce7', fg: '#166534' },
+      REVERSED: { bg: '#dbeafe', fg: '#1d4ed8' },
+      PENDING_SETTLEMENT: { bg: '#fef3c7', fg: '#92400e' }, PENDING_CLEARING: { bg: '#fef3c7', fg: '#92400e' },
+      PENDING: { bg: '#fef3c7', fg: '#92400e' }, PROCESSING: { bg: '#fef3c7', fg: '#92400e' },
+      UNDER_REVIEW: { bg: '#fef3c7', fg: '#92400e' }, OPEN: { bg: '#fef3c7', fg: '#92400e' },
+      RETURNED: { bg: '#fef2f2', fg: '#991b1b' }, FAILED: { bg: '#fef2f2', fg: '#991b1b' },
+      DECLINED: { bg: '#fef2f2', fg: '#991b1b' }, REJECTED: { bg: '#fef2f2', fg: '#991b1b' },
+      SUSPENDED: { bg: '#fff7ed', fg: '#9a3412' }, EXPIRED: { bg: '#f3f4f6', fg: '#6b7280' },
+      ESCALATED_TO_CBN: { bg: '#fce7f3', fg: '#9d174d' }, DRAFT: { bg: '#f3f4f6', fg: '#6b7280' },
+    };
+    const c = m[s] || { bg: '#f3f4f6', fg: '#374151' };
+    return <span style={{ padding: '2px 8px', borderRadius: 9999, fontSize: 11, fontWeight: 600, background: c.bg, color: c.fg }}>{s.replace(/_/g, ' ')}</span>;
+  };
+
+  const navItems: { id: Tab; label: string; icon: typeof LayoutDashboard; section?: string }[] = [
+    { id: 'dashboard', label: 'Dashboard', icon: LayoutDashboard },
+    { id: 'payments', label: 'Instant Payments', icon: ArrowRightLeft },
+    { id: 'bills', label: 'Bill Providers', icon: FileText },
+    { id: 'standing_orders', label: 'Standing Orders', icon: Repeat },
+    { id: 'bulk', label: 'Bulk Disbursements', icon: Package },
+    // NIBSS Gap Features
+    { id: 'neft', label: 'Batch Transfers', icon: Layers, section: 'NIBSS' },
+    { id: 'cheques', label: 'Cheque Clearing', icon: BookOpen, section: 'NIBSS' },
+    { id: 'mandates', label: 'Direct Debit', icon: Receipt, section: 'NIBSS' },
+    { id: 'reversals', label: 'Reversals', icon: RotateCcw, section: 'NIBSS' },
+    { id: 'disputes', label: 'Inter-Bank Disputes', icon: Scale, section: 'NIBSS' },
+    { id: 'merchants', label: 'Merchant Registry', icon: Store, section: 'NIBSS' },
+    { id: 'paydirect', label: 'Corporate Collections', icon: Building2, section: 'NIBSS' },
+    { id: 'identity', label: 'Identity Verification', icon: UserCheck, section: 'NIBSS' },
+    { id: 'iso20022', label: 'Message Standards', icon: FileCode, section: 'NIBSS' },
+    { id: 'nqr', label: 'QR Payments', icon: ScanLine, section: 'NIBSS' },
+    { id: 'emandate', label: 'Mandate Approvals', icon: FileCheck, section: 'NIBSS' },
+    { id: 'fraud', label: 'Fraud Detection', icon: Shield, section: 'ADVANCED' },
+    { id: 'onboarding', label: 'Stakeholder Onboarding', icon: UserPlus, section: 'ADVANCED' },
+    { id: 'nip_monitor', label: 'Real-Time Monitor', icon: Gauge, section: 'OPS' },
+    { id: 'reconciliation', label: 'Reconciliation', icon: FileSpreadsheet, section: 'OPS' },
+    { id: 'sla', label: 'Service Levels', icon: Timer, section: 'OPS' },
+    { id: 'health', label: 'Participant Health', icon: HeartPulse, section: 'OPS' },
+    { id: 'circuit_breaker', label: 'Service Health', icon: Zap, section: 'OPS' },
+    { id: 'compliance', label: 'Regulatory Reports', icon: FileWarning, section: 'COMPLIANCE' },
+    { id: 'monitoring', label: 'Transaction Monitoring', icon: Eye, section: 'COMPLIANCE' },
+    { id: 'revenue', label: 'Revenue Analytics', icon: DollarSign, section: 'ANALYTICS' },
+    { id: 'corridors', label: 'Corridor Analytics', icon: Map, section: 'ANALYTICS' },
+    { id: 'forecast', label: 'Volume Forecast', icon: Brain, section: 'ANALYTICS' },
+    // AI/ML Section
+    { id: 'prophet', label: 'Volume Forecasting', icon: TrendingUp, section: 'AI_ML' },
+    { id: 'cocoindex', label: 'Data Pipeline', icon: Database, section: 'AI_ML' },
+    { id: 'kgqa', label: 'Knowledge Search', icon: MessageSquare, section: 'AI_ML' },
+    { id: 'falkordb', label: 'Graph Analytics', icon: Network, section: 'AI_ML' },
+    { id: 'ollama', label: 'AI Assistant', icon: Bot, section: 'AI_ML' },
+    { id: 'art', label: 'Model Security', icon: ShieldAlert, section: 'AI_ML' },
+    { id: 'gnn_neo4j', label: 'Fraud Networks', icon: GitGraph, section: 'AI_ML' },
+    { id: 'mcmc', label: 'Risk Scoring', icon: Dice1, section: 'AI_ML' },
+    // Core Switch Enhancements
+    { id: 'saga', label: 'Transaction Sagas', icon: RefreshCw, section: 'INFRA' },
+    { id: 'hotpath', label: 'Hot Path Optimization', icon: Zap, section: 'INFRA' },
+    { id: 'cqrs', label: 'Read/Write Separation', icon: Layers, section: 'INFRA' },
+    { id: 'sanctions', label: 'Sanctions Screening', icon: ShieldCheck, section: 'COMPLIANCE' },
+    { id: 'cbn_reporting', label: 'CBN Reporting', icon: FileSpreadsheet, section: 'COMPLIANCE' },
+    { id: 'incidents', label: 'Incident Response', icon: AlertTriangle, section: 'OPS' },
+    { id: 'capacity', label: 'Capacity Planning', icon: Activity, section: 'OPS' },
+    { id: 'multiregion', label: 'Multi-Region', icon: Globe, section: 'INFRA' },
+    { id: 'smart_routing', label: 'Smart Routing', icon: ArrowRightLeft, section: 'INFRA' },
+    { id: 'hsm', label: 'Key Management', icon: ShieldCheck, section: 'SECURITY' },
+    { id: 'whitelabel', label: 'White-Label Tenants', icon: Building2, section: 'PLATFORM' },
+    { id: 'api_versions', label: 'API Versions', icon: Code, section: 'PLATFORM' },
+  ];
+
+  const coreItems = navItems.filter(n => !n.section);
+  const nibssItems = navItems.filter(n => n.section === 'NIBSS');
+  const advancedItems = navItems.filter(n => n.section === 'ADVANCED');
+  const opsItems = navItems.filter(n => n.section === 'OPS');
+  const complianceItems = navItems.filter(n => n.section === 'COMPLIANCE');
+  const analyticsItems = navItems.filter(n => n.section === 'ANALYTICS');
+  const aimlItems = navItems.filter(n => n.section === 'AI_ML');
+  const infraItems = navItems.filter(n => n.section === 'INFRA');
+  const securityItems = navItems.filter(n => n.section === 'SECURITY');
+  const platformItems = navItems.filter(n => n.section === 'PLATFORM');
+
+  return (
+    <div style={{ display: 'flex', minHeight: '100vh', fontFamily: 'system-ui, -apple-system, sans-serif' }}>
+      <aside style={{ width: 250, borderRight: '1px solid #e5e7eb', background: '#fafafa', display: 'flex', flexDirection: 'column', flexShrink: 0, overflowY: 'auto' }}>
+        <div style={{ padding: '16px 16px 12px', borderBottom: '1px solid #e5e7eb' }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
+            <Banknote size={22} color="#2563eb" />
+            <div>
+              <div style={{ fontWeight: 700, fontSize: 14 }}>Domestic Payments</div>
+              <div style={{ fontSize: 11, color: '#6b7280' }}>Payment Switch Module</div>
+            </div>
+          </div>
+        </div>
+        <nav style={{ flex: 1, padding: 8, display: 'flex', flexDirection: 'column', gap: 2 }}>
+          {coreItems.map(item => (
+            <button key={item.id} onClick={() => setActiveTab(item.id)}
+              style={{ display: 'flex', alignItems: 'center', gap: 10, padding: '10px 14px', borderRadius: 8, border: 'none', cursor: 'pointer', fontSize: 13, fontWeight: 600, width: '100%', textAlign: 'left',
+                background: activeTab === item.id ? '#2563eb' : 'transparent', color: activeTab === item.id ? 'white' : '#374151' }}>
+              <item.icon size={16} />
+              {item.label}
+            </button>
+          ))}
+          <div style={{ fontSize: 10, fontWeight: 700, color: '#9ca3af', textTransform: 'uppercase', letterSpacing: 1, padding: '12px 14px 4px' }}>Clearing & Settlement</div>
+          {nibssItems.map(item => (
+            <button key={item.id} onClick={() => setActiveTab(item.id)}
+              style={{ display: 'flex', alignItems: 'center', gap: 10, padding: '8px 14px', borderRadius: 8, border: 'none', cursor: 'pointer', fontSize: 12, fontWeight: 600, width: '100%', textAlign: 'left',
+                background: activeTab === item.id ? '#2563eb' : 'transparent', color: activeTab === item.id ? 'white' : '#374151' }}>
+              <item.icon size={14} />
+              {item.label}
+            </button>
+          ))}
+          <div style={{ fontSize: 10, fontWeight: 700, color: '#9ca3af', textTransform: 'uppercase', letterSpacing: 1, padding: '12px 14px 4px' }}>Risk & Onboarding</div>
+          {advancedItems.map(item => (
+            <button key={item.id} onClick={() => setActiveTab(item.id)}
+              style={{ display: 'flex', alignItems: 'center', gap: 10, padding: '8px 14px', borderRadius: 8, border: 'none', cursor: 'pointer', fontSize: 12, fontWeight: 600, width: '100%', textAlign: 'left',
+                background: activeTab === item.id ? '#2563eb' : 'transparent', color: activeTab === item.id ? 'white' : '#374151' }}>
+              <item.icon size={14} />
+              {item.label}
+            </button>
+          ))}
+          <div style={{ fontSize: 10, fontWeight: 700, color: '#9ca3af', textTransform: 'uppercase', letterSpacing: 1, padding: '12px 14px 4px' }}>Operations</div>
+          {opsItems.map(item => (
+            <button key={item.id} onClick={() => setActiveTab(item.id)}
+              style={{ display: 'flex', alignItems: 'center', gap: 10, padding: '8px 14px', borderRadius: 8, border: 'none', cursor: 'pointer', fontSize: 12, fontWeight: 600, width: '100%', textAlign: 'left',
+                background: activeTab === item.id ? '#2563eb' : 'transparent', color: activeTab === item.id ? 'white' : '#374151' }}>
+              <item.icon size={14} />
+              {item.label}
+            </button>
+          ))}
+          <div style={{ fontSize: 10, fontWeight: 700, color: '#9ca3af', textTransform: 'uppercase', letterSpacing: 1, padding: '12px 14px 4px' }}>Compliance</div>
+          {complianceItems.map(item => (
+            <button key={item.id} onClick={() => setActiveTab(item.id)}
+              style={{ display: 'flex', alignItems: 'center', gap: 10, padding: '8px 14px', borderRadius: 8, border: 'none', cursor: 'pointer', fontSize: 12, fontWeight: 600, width: '100%', textAlign: 'left',
+                background: activeTab === item.id ? '#2563eb' : 'transparent', color: activeTab === item.id ? 'white' : '#374151' }}>
+              <item.icon size={14} />
+              {item.label}
+            </button>
+          ))}
+          <div style={{ fontSize: 10, fontWeight: 700, color: '#9ca3af', textTransform: 'uppercase', letterSpacing: 1, padding: '12px 14px 4px' }}>Analytics</div>
+          {analyticsItems.map(item => (
+            <button key={item.id} onClick={() => setActiveTab(item.id)}
+              style={{ display: 'flex', alignItems: 'center', gap: 10, padding: '8px 14px', borderRadius: 8, border: 'none', cursor: 'pointer', fontSize: 12, fontWeight: 600, width: '100%', textAlign: 'left',
+                background: activeTab === item.id ? '#2563eb' : 'transparent', color: activeTab === item.id ? 'white' : '#374151' }}>
+              <item.icon size={14} />
+              {item.label}
+            </button>
+          ))}
+          <div style={{ fontSize: 10, fontWeight: 700, color: '#9ca3af', textTransform: 'uppercase', letterSpacing: 1, padding: '12px 14px 4px' }}>Infrastructure</div>
+          {infraItems.map(item => (
+            <button key={item.id} onClick={() => setActiveTab(item.id)}
+              style={{ display: 'flex', alignItems: 'center', gap: 10, padding: '8px 14px', borderRadius: 8, border: 'none', cursor: 'pointer', fontSize: 12, fontWeight: 600, width: '100%', textAlign: 'left',
+                background: activeTab === item.id ? '#0d9488' : 'transparent', color: activeTab === item.id ? 'white' : '#374151' }}>
+              <item.icon size={14} />
+              {item.label}
+            </button>
+          ))}
+          <div style={{ fontSize: 10, fontWeight: 700, color: '#9ca3af', textTransform: 'uppercase', letterSpacing: 1, padding: '12px 14px 4px' }}>Security</div>
+          {securityItems.map(item => (
+            <button key={item.id} onClick={() => setActiveTab(item.id)}
+              style={{ display: 'flex', alignItems: 'center', gap: 10, padding: '8px 14px', borderRadius: 8, border: 'none', cursor: 'pointer', fontSize: 12, fontWeight: 600, width: '100%', textAlign: 'left',
+                background: activeTab === item.id ? '#dc2626' : 'transparent', color: activeTab === item.id ? 'white' : '#374151' }}>
+              <item.icon size={14} />
+              {item.label}
+            </button>
+          ))}
+          <div style={{ fontSize: 10, fontWeight: 700, color: '#9ca3af', textTransform: 'uppercase', letterSpacing: 1, padding: '12px 14px 4px' }}>Platform</div>
+          {platformItems.map(item => (
+            <button key={item.id} onClick={() => setActiveTab(item.id)}
+              style={{ display: 'flex', alignItems: 'center', gap: 10, padding: '8px 14px', borderRadius: 8, border: 'none', cursor: 'pointer', fontSize: 12, fontWeight: 600, width: '100%', textAlign: 'left',
+                background: activeTab === item.id ? '#7c3aed' : 'transparent', color: activeTab === item.id ? 'white' : '#374151' }}>
+              <item.icon size={14} />
+              {item.label}
+            </button>
+          ))}
+          <div style={{ fontSize: 10, fontWeight: 700, color: '#9ca3af', textTransform: 'uppercase', letterSpacing: 1, padding: '12px 14px 4px' }}>Intelligence</div>
+          {aimlItems.map(item => (
+            <button key={item.id} onClick={() => setActiveTab(item.id)}
+              style={{ display: 'flex', alignItems: 'center', gap: 10, padding: '8px 14px', borderRadius: 8, border: 'none', cursor: 'pointer', fontSize: 12, fontWeight: 600, width: '100%', textAlign: 'left',
+                background: activeTab === item.id ? '#7c3aed' : 'transparent', color: activeTab === item.id ? 'white' : '#374151' }}>
+              <item.icon size={14} />
+              {item.label}
+            </button>
+          ))}
+        </nav>
+        <div style={{ borderTop: '1px solid #e5e7eb', padding: '8px 8px 12px' }}>
+          <div style={{ fontSize: 10, fontWeight: 700, color: '#9ca3af', textTransform: 'uppercase', letterSpacing: 1, padding: '4px 14px 6px' }}>Other Modules</div>
+          {moduleLinks.map(m => (
+            <a key={m.href} href={m.href} style={{ display: 'flex', alignItems: 'center', gap: 8, padding: '6px 14px', borderRadius: 6, fontSize: 12, color: m.color, textDecoration: 'none' }}>
+              <m.icon size={14} />
+              {m.label}
+            </a>
+          ))}
+        </div>
+      </aside>
+
+      <main style={{ flex: 1, padding: 24, overflowY: 'auto', maxWidth: 1200 }}>
+        <div style={{ display: 'flex', alignItems: 'center', gap: 12, marginBottom: 24 }}>
+          <h1 style={{ fontSize: 24, fontWeight: 700, margin: 0 }}>{navItems.find(n => n.id === activeTab)?.label ?? 'Dashboard'}</h1>
+        </div>
+
+        {/* ============== Summary Cards (shown on dashboard) ============== */}
+        {activeTab === 'dashboard' && summary && (
+          <div>
+            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(140px, 1fr))', gap: 14, marginBottom: 24 }}>
+              {[
+                { label: 'NIP Payments', value: summary.totalPayments, icon: ArrowRightLeft, color: '#3b82f6' },
+                { label: 'Completed', value: summary.completed, icon: CheckCircle, color: '#10b981' },
+                { label: 'Failed', value: summary.failed, icon: XCircle, color: '#ef4444' },
+                { label: 'Volume', value: fmt(summary.totalVolumeNGN), icon: Banknote, color: '#2563eb' },
+                { label: 'NEFT Batches', value: neftBatches.length, icon: Layers, color: '#7c3aed' },
+                { label: 'Cheques', value: cheques.length, icon: BookOpen, color: '#0369a1' },
+                { label: 'Mandates', value: mandates.length, icon: Receipt, color: '#059669' },
+                { label: 'Disputes', value: disputes.length, icon: Scale, color: '#dc2626' },
+              ].map((c, i) => (
+                <div key={i} style={{ background: 'white', border: '1px solid #e5e7eb', borderRadius: 12, padding: 14 }}>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: 6, marginBottom: 6 }}>
+                    <c.icon size={16} color={c.color} />
+                    <span style={{ fontSize: 11, color: '#6b7280' }}>{c.label}</span>
+                  </div>
+                  <div style={{ fontSize: 22, fontWeight: 700, color: c.color }}>{c.value}</div>
+                </div>
+              ))}
+            </div>
+
+            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: 20, marginBottom: 24 }}>
+              <div style={{ background: 'linear-gradient(135deg, #2563eb, #3b82f6)', borderRadius: 16, padding: 24, color: 'white' }}>
+                <div style={{ fontSize: 13, opacity: 0.9, marginBottom: 8 }}>Total NIP Volume</div>
+                <div style={{ fontSize: 32, fontWeight: 800 }}>{fmt(summary.totalVolumeNGN)}</div>
+                <div style={{ fontSize: 12, opacity: 0.8, marginTop: 4 }}><TrendingUp size={14} style={{ display: 'inline', verticalAlign: 'middle' }} /> {summary.totalPayments} transactions</div>
+              </div>
+              <div style={{ background: 'linear-gradient(135deg, #7c3aed, #8b5cf6)', borderRadius: 16, padding: 24, color: 'white' }}>
+                <div style={{ fontSize: 13, opacity: 0.9, marginBottom: 8 }}>NEFT Settlement</div>
+                <div style={{ fontSize: 32, fontWeight: 800 }}>{neftSummary ? fmt(neftSummary.totalVolume) : '₦0'}</div>
+                <div style={{ fontSize: 12, opacity: 0.8, marginTop: 4 }}>{neftSummary?.totalBatches ?? 0} batches, {neftSummary?.totalItems ?? 0} items</div>
+              </div>
+              <div style={{ background: 'linear-gradient(135deg, #059669, #10b981)', borderRadius: 16, padding: 24, color: 'white' }}>
+                <div style={{ fontSize: 13, opacity: 0.9, marginBottom: 8 }}>Active Mandates</div>
+                <div style={{ fontSize: 32, fontWeight: 800 }}>{mandateSummary?.active ?? 0}</div>
+                <div style={{ fontSize: 12, opacity: 0.8, marginTop: 4 }}>Total debited: {mandateSummary ? fmt(mandateSummary.totalDebited) : '₦0'}</div>
+              </div>
+            </div>
+
+            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 20 }}>
+              <div style={{ background: 'white', border: '1px solid #e5e7eb', borderRadius: 12, padding: 20 }}>
+                <h3 style={{ fontSize: 15, fontWeight: 700, marginBottom: 16, display: 'flex', alignItems: 'center', gap: 8 }}><PieChart size={18} color="#2563eb" /> Payment Type Distribution</h3>
+                {['P2P', 'P2B', 'QR_PAY', 'BILL_PAYMENT', 'REQUEST_TO_PAY', 'USSD'].map((type, i) => {
+                  const count = payments.filter(p => p.type === type).length;
+                  const vol = payments.filter(p => p.type === type).reduce((s: number, p: any) => s + p.amount, 0);
+                  return (
+                    <div key={i} style={{ display: 'flex', alignItems: 'center', gap: 12, marginBottom: 10, padding: '8px 12px', background: '#f9fafb', borderRadius: 8 }}>
+                      <span style={{ ...typeBadge(type), minWidth: 90, textAlign: 'center' as const }}>{type.replace(/_/g, ' ')}</span>
+                      <span style={{ fontSize: 13, flex: 1 }}>{count} payments</span>
+                      <span style={{ fontSize: 13, fontWeight: 600, fontFamily: 'monospace' }}>{fmt(vol)}</span>
+                    </div>
+                  );
+                })}
+              </div>
+
+              <div style={{ background: 'white', border: '1px solid #e5e7eb', borderRadius: 12, padding: 20 }}>
+                <h3 style={{ fontSize: 15, fontWeight: 700, marginBottom: 16, display: 'flex', alignItems: 'center', gap: 8 }}><Activity size={18} color="#059669" /> NIBSS Module Status</h3>
+                {[
+                  { label: 'NEFT Settled', val: neftSummary?.settled ?? 0, total: neftSummary?.totalBatches ?? 0, color: '#10b981' },
+                  { label: 'Cheques Cleared', val: chequeSummary?.cleared ?? 0, total: chequeSummary?.totalCheques ?? 0, color: '#0369a1' },
+                  { label: 'Disputes Resolved', val: disputeSummary?.resolved ?? 0, total: disputeSummary?.total ?? 0, color: '#7c3aed' },
+                  { label: 'Reversals Complete', val: reversalSummary?.successful ?? 0, total: reversalSummary?.total ?? 0, color: '#dc2626' },
+                ].map((item, i) => (
+                  <div key={i} style={{ marginBottom: 16 }}>
+                    <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: 13, marginBottom: 4 }}>
+                      <span>{item.label}</span>
+                      <span style={{ fontWeight: 600 }}>{item.val}/{item.total}</span>
+                    </div>
+                    <div style={{ height: 10, background: '#f3f4f6', borderRadius: 5, overflow: 'hidden' }}>
+                      <div style={{ height: '100%', width: `${item.total > 0 ? (item.val / item.total) * 100 : 0}%`, background: item.color, borderRadius: 5 }} />
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </div>
+          </div>
+        )}
+
+        {/* ============== NIP Payments Tab ============== */}
+        {activeTab === 'payments' && (
+          <div>
+            <div style={{ display: 'flex', gap: 12, marginBottom: 16 }}>
+              <select value={typeFilter} onChange={e => setTypeFilter(e.target.value)}
+                style={{ padding: '6px 12px', borderRadius: 8, border: '1px solid #d1d5db', fontSize: 13 }}>
+                <option value="">All Types</option>
+                {['P2P', 'P2B', 'QR_PAY', 'BILL_PAYMENT', 'REQUEST_TO_PAY', 'USSD'].map(t => <option key={t} value={t}>{t}</option>)}
+              </select>
+            </div>
+            <div style={{ overflowX: 'auto' }}>
+              <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: 13 }}>
+                <thead>
+                  <tr style={{ background: '#f9fafb' }}>
+                    {['ID', 'Type', 'Channel', 'Sender', 'Receiver', 'Amount', 'Fee', 'Status', 'Narration', 'Time'].map(h => (
+                      <th key={h} style={{ padding: '10px 12px', textAlign: 'left', fontWeight: 600, borderBottom: '2px solid #e5e7eb', whiteSpace: 'nowrap' }}>{h}</th>
+                    ))}
+                  </tr>
+                </thead>
+                <tbody>
+                  {payments.map((p: any) => (
+                    <tr key={p.id} style={{ borderBottom: '1px solid #f3f4f6' }}>
+                      <td style={{ padding: '10px 12px', fontFamily: 'monospace', fontSize: 12 }}>{p.id}</td>
+                      <td style={{ padding: '10px 12px' }}><span style={typeBadge(p.type)}>{p.type}</span></td>
+                      <td style={{ padding: '10px 12px', fontSize: 12 }}>{p.channel}</td>
+                      <td style={{ padding: '10px 12px' }}>{p.senderName}<br/><span style={{ fontSize: 11, color: '#9ca3af' }}>{p.senderBank}</span></td>
+                      <td style={{ padding: '10px 12px' }}>{p.receiverName}<br/><span style={{ fontSize: 11, color: '#9ca3af' }}>{p.receiverBank}</span></td>
+                      <td style={{ padding: '10px 12px', fontFamily: 'monospace', fontWeight: 600 }}>{fmt(p.amount)}</td>
+                      <td style={{ padding: '10px 12px', fontFamily: 'monospace', fontSize: 12, color: '#6b7280' }}>₦{p.fee?.toLocaleString()}</td>
+                      <td style={{ padding: '10px 12px' }}>{statusBadge(p.status)}</td>
+                      <td style={{ padding: '10px 12px', fontSize: 12, color: '#6b7280', maxWidth: 200, overflow: 'hidden', textOverflow: 'ellipsis' }}>{p.narration}</td>
+                      <td style={{ padding: '10px 12px', fontSize: 11, color: '#6b7280', whiteSpace: 'nowrap' }}>{new Date(p.initiatedAt).toLocaleString()}</td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          </div>
+        )}
+
+        {/* ============== Bill Providers Tab ============== */}
+        {activeTab === 'bills' && (
+          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(280px, 1fr))', gap: 16 }}>
+            {providers.map((p: any) => (
+              <div key={p.id} style={{ background: 'white', border: '1px solid #e5e7eb', borderRadius: 12, padding: 16 }}>
+                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 8 }}>
+                  <span style={{ fontSize: 15, fontWeight: 700 }}>{p.name}</span>
+                  <span style={{ padding: '2px 8px', borderRadius: 9999, fontSize: 11, fontWeight: 600, background: p.isActive ? '#dcfce7' : '#fef2f2', color: p.isActive ? '#166534' : '#991b1b' }}>
+                    {p.isActive ? 'Active' : 'Inactive'}
+                  </span>
+                </div>
+                <div style={{ fontSize: 12, color: '#6b7280', marginBottom: 8 }}>Category: <strong>{p.category?.replace(/_/g, ' ')}</strong></div>
+                <div style={{ fontSize: 12, color: '#6b7280', marginBottom: 8 }}>Avg Response: <strong>{p.avgProcessMs}ms</strong></div>
+                <div style={{ display: 'flex', gap: 4, flexWrap: 'wrap' }}>
+                  {(p.services || []).map((s: string) => (
+                    <span key={s} style={{ padding: '1px 6px', borderRadius: 4, fontSize: 10, background: '#f3f4f6', color: '#374151' }}>{s}</span>
+                  ))}
+                </div>
+              </div>
+            ))}
+          </div>
+        )}
+
+        {/* ============== Standing Orders Tab ============== */}
+        {activeTab === 'standing_orders' && (
+          <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: 13 }}>
+            <thead>
+              <tr style={{ background: '#f9fafb' }}>
+                {['ID', 'Payer', 'Payee', 'Amount', 'Frequency', 'Next Execution', 'Executions', 'Status'].map(h => (
+                  <th key={h} style={{ padding: '10px 12px', textAlign: 'left', fontWeight: 600, borderBottom: '2px solid #e5e7eb' }}>{h}</th>
+                ))}
+              </tr>
+            </thead>
+            <tbody>
+              {orders.map((o: any) => (
+                <tr key={o.id} style={{ borderBottom: '1px solid #f3f4f6' }}>
+                  <td style={{ padding: '10px 12px', fontFamily: 'monospace' }}>{o.id}</td>
+                  <td style={{ padding: '10px 12px' }}>{o.payerBank}<br/><span style={{ fontSize: 11, color: '#9ca3af' }}>{o.payerAcct}</span></td>
+                  <td style={{ padding: '10px 12px' }}>{o.payeeName}<br/><span style={{ fontSize: 11, color: '#9ca3af' }}>{o.payeeBank}</span></td>
+                  <td style={{ padding: '10px 12px', fontFamily: 'monospace', fontWeight: 600 }}>{fmt(o.amount)}</td>
+                  <td style={{ padding: '10px 12px' }}>{o.frequency}</td>
+                  <td style={{ padding: '10px 12px', fontSize: 12 }}>{new Date(o.nextExecDate).toLocaleDateString()}</td>
+                  <td style={{ padding: '10px 12px', fontWeight: 600 }}>{o.executions}</td>
+                  <td style={{ padding: '10px 12px' }}>{statusBadge(o.status?.toUpperCase())}</td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        )}
+
+        {/* ============== Bulk Disbursements Tab ============== */}
+        {activeTab === 'bulk' && (
+          <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: 13 }}>
+            <thead>
+              <tr style={{ background: '#f9fafb' }}>
+                {['ID', 'Initiator', 'Total Items', 'Processed', 'Success', 'Failed', 'Total Amount', 'Status', 'Submitted'].map(h => (
+                  <th key={h} style={{ padding: '10px 12px', textAlign: 'left', fontWeight: 600, borderBottom: '2px solid #e5e7eb' }}>{h}</th>
+                ))}
+              </tr>
+            </thead>
+            <tbody>
+              {bulks.map((b: any) => (
+                <tr key={b.id} style={{ borderBottom: '1px solid #f3f4f6' }}>
+                  <td style={{ padding: '10px 12px', fontFamily: 'monospace' }}>{b.id}</td>
+                  <td style={{ padding: '10px 12px' }}>{b.initiatorName}</td>
+                  <td style={{ padding: '10px 12px', fontWeight: 600 }}>{b.totalItems?.toLocaleString()}</td>
+                  <td style={{ padding: '10px 12px' }}>{b.processedItems?.toLocaleString()}</td>
+                  <td style={{ padding: '10px 12px', color: '#10b981', fontWeight: 600 }}>{b.successCount?.toLocaleString()}</td>
+                  <td style={{ padding: '10px 12px', color: '#ef4444', fontWeight: 600 }}>{b.failedCount?.toLocaleString()}</td>
+                  <td style={{ padding: '10px 12px', fontFamily: 'monospace', fontWeight: 600 }}>{fmt(b.totalAmount)}</td>
+                  <td style={{ padding: '10px 12px' }}>{statusBadge(b.status?.toUpperCase())}</td>
+                  <td style={{ padding: '10px 12px', fontSize: 11, color: '#6b7280' }}>{new Date(b.submittedAt).toLocaleString()}</td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        )}
+
+        {/* ============== NEFT Batches Tab ============== */}
+        {activeTab === 'neft' && (
+          <div>
+            {neftSummary && (
+              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(140px, 1fr))', gap: 14, marginBottom: 24 }}>
+                {[
+                  { label: 'Total Batches', value: neftSummary.totalBatches, color: '#3b82f6' },
+                  { label: 'Total Items', value: neftSummary.totalItems?.toLocaleString(), color: '#7c3aed' },
+                  { label: 'Volume', value: fmt(neftSummary.totalVolume), color: '#2563eb' },
+                  { label: 'Settled', value: neftSummary.settled, color: '#10b981' },
+                  { label: 'Pending', value: neftSummary.pendingSettlement, color: '#f59e0b' },
+                ].map((c, i) => (
+                  <div key={i} style={{ background: 'white', border: '1px solid #e5e7eb', borderRadius: 12, padding: 14 }}>
+                    <span style={{ fontSize: 11, color: '#6b7280' }}>{c.label}</span>
+                    <div style={{ fontSize: 22, fontWeight: 700, color: c.color, marginTop: 4 }}>{c.value}</div>
+                  </div>
+                ))}
+              </div>
+            )}
+            <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: 13 }}>
+              <thead><tr style={{ background: '#f9fafb' }}>
+                {['Batch Ref', 'Sender Bank', 'Items', 'Total Amount', 'Settled', 'Session', 'Status', 'Submitted'].map(h => (
+                  <th key={h} style={{ padding: '10px 12px', textAlign: 'left', fontWeight: 600, borderBottom: '2px solid #e5e7eb' }}>{h}</th>
+                ))}
+              </tr></thead>
+              <tbody>
+                {neftBatches.map((b: any) => (
+                  <tr key={b.id} style={{ borderBottom: '1px solid #f3f4f6' }}>
+                    <td style={{ padding: '10px 12px', fontFamily: 'monospace', fontSize: 12 }}>{b.batchRef}</td>
+                    <td style={{ padding: '10px 12px' }}>{b.senderBank}<br/><span style={{ fontSize: 11, color: '#9ca3af' }}>Code: {b.senderBankCode}</span></td>
+                    <td style={{ padding: '10px 12px', fontWeight: 600 }}>{b.totalItems}</td>
+                    <td style={{ padding: '10px 12px', fontFamily: 'monospace', fontWeight: 600 }}>{fmt(b.totalAmount)}</td>
+                    <td style={{ padding: '10px 12px', fontFamily: 'monospace' }}>{fmt(b.settledAmount)}</td>
+                    <td style={{ padding: '10px 12px' }}><span style={{ padding: '2px 8px', borderRadius: 6, fontSize: 11, background: '#f3f4f6' }}>{b.clearingSession}</span></td>
+                    <td style={{ padding: '10px 12px' }}>{statusBadge(b.status)}</td>
+                    <td style={{ padding: '10px 12px', fontSize: 11, color: '#6b7280' }}>{new Date(b.submittedAt).toLocaleString()}</td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        )}
+
+        {/* ============== NACS Cheques Tab ============== */}
+        {activeTab === 'cheques' && (
+          <div>
+            {chequeSummary && (
+              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(140px, 1fr))', gap: 14, marginBottom: 24 }}>
+                {[
+                  { label: 'Total Cheques', value: chequeSummary.totalCheques, color: '#0369a1' },
+                  { label: 'Cleared', value: chequeSummary.cleared, color: '#10b981' },
+                  { label: 'Returned', value: chequeSummary.returned, color: '#ef4444' },
+                  { label: 'Pending', value: chequeSummary.pendingClearing, color: '#f59e0b' },
+                  { label: 'Total Value', value: fmt(chequeSummary.totalValue), color: '#2563eb' },
+                ].map((c, i) => (
+                  <div key={i} style={{ background: 'white', border: '1px solid #e5e7eb', borderRadius: 12, padding: 14 }}>
+                    <span style={{ fontSize: 11, color: '#6b7280' }}>{c.label}</span>
+                    <div style={{ fontSize: 22, fontWeight: 700, color: c.color, marginTop: 4 }}>{c.value}</div>
+                  </div>
+                ))}
+              </div>
+            )}
+            <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: 13 }}>
+              <thead><tr style={{ background: '#f9fafb' }}>
+                {['Cheque #', 'Drawer', 'Payee', 'Amount', 'Status', 'Return Reason', 'Presented'].map(h => (
+                  <th key={h} style={{ padding: '10px 12px', textAlign: 'left', fontWeight: 600, borderBottom: '2px solid #e5e7eb' }}>{h}</th>
+                ))}
+              </tr></thead>
+              <tbody>
+                {cheques.map((c: any) => (
+                  <tr key={c.id} style={{ borderBottom: '1px solid #f3f4f6' }}>
+                    <td style={{ padding: '10px 12px', fontFamily: 'monospace', fontSize: 12 }}>{c.chequeNumber}<br/><span style={{ fontSize: 10, color: '#9ca3af' }}>MICR: {c.micrLine?.substring(0, 20)}...</span></td>
+                    <td style={{ padding: '10px 12px' }}>{c.drawerName}<br/><span style={{ fontSize: 11, color: '#9ca3af' }}>{c.drawerBank}</span></td>
+                    <td style={{ padding: '10px 12px' }}>{c.payeeName}<br/><span style={{ fontSize: 11, color: '#9ca3af' }}>{c.payeeBank}</span></td>
+                    <td style={{ padding: '10px 12px', fontFamily: 'monospace', fontWeight: 600 }}>{fmt(c.amount)}</td>
+                    <td style={{ padding: '10px 12px' }}>{statusBadge(c.status)}</td>
+                    <td style={{ padding: '10px 12px', fontSize: 12, color: '#ef4444' }}>{c.returnReason || '-'}</td>
+                    <td style={{ padding: '10px 12px', fontSize: 11, color: '#6b7280' }}>{new Date(c.presentedAt).toLocaleString()}</td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        )}
+
+        {/* ============== Direct Debit Mandates Tab ============== */}
+        {activeTab === 'mandates' && (
+          <div>
+            {mandateSummary && (
+              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(120px, 1fr))', gap: 14, marginBottom: 24 }}>
+                {[
+                  { label: 'Total', value: mandateSummary.total, color: '#3b82f6' },
+                  { label: 'Active', value: mandateSummary.active, color: '#10b981' },
+                  { label: 'Suspended', value: mandateSummary.suspended, color: '#f59e0b' },
+                  { label: 'Expired', value: mandateSummary.expired, color: '#6b7280' },
+                  { label: 'FIXED', value: mandateSummary.fixedCount, color: '#0369a1' },
+                  { label: 'VARIABLE', value: mandateSummary.variableCount, color: '#7c3aed' },
+                  { label: 'GSI', value: mandateSummary.gsiCount, color: '#dc2626' },
+                  { label: 'Debited', value: fmt(mandateSummary.totalDebited), color: '#059669' },
+                ].map((c, i) => (
+                  <div key={i} style={{ background: 'white', border: '1px solid #e5e7eb', borderRadius: 12, padding: 14 }}>
+                    <span style={{ fontSize: 11, color: '#6b7280' }}>{c.label}</span>
+                    <div style={{ fontSize: 20, fontWeight: 700, color: c.color, marginTop: 4 }}>{c.value}</div>
+                  </div>
+                ))}
+              </div>
+            )}
+            <div style={{ overflowX: 'auto' }}>
+              <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: 13 }}>
+                <thead><tr style={{ background: '#f9fafb' }}>
+                  {['Mandate Ref', 'Type', 'Subscriber', 'Biller', 'Amount', 'Frequency', 'Executions', 'Total Debited', 'Next Debit', 'Status'].map(h => (
+                    <th key={h} style={{ padding: '10px 12px', textAlign: 'left', fontWeight: 600, borderBottom: '2px solid #e5e7eb', whiteSpace: 'nowrap' }}>{h}</th>
+                  ))}
+                </tr></thead>
+                <tbody>
+                  {mandates.map((m: any) => (
+                    <tr key={m.id} style={{ borderBottom: '1px solid #f3f4f6' }}>
+                      <td style={{ padding: '10px 12px', fontFamily: 'monospace', fontSize: 11 }}>{m.mandateRef}</td>
+                      <td style={{ padding: '10px 12px' }}><span style={{ padding: '2px 8px', borderRadius: 6, fontSize: 11, fontWeight: 600, background: m.mandateType === 'GSI' ? '#fef2f2' : m.mandateType === 'FIXED' ? '#dbeafe' : '#f3e8ff', color: m.mandateType === 'GSI' ? '#991b1b' : m.mandateType === 'FIXED' ? '#1d4ed8' : '#6b21a8' }}>{m.mandateType}</span></td>
+                      <td style={{ padding: '10px 12px' }}>{m.subscriberName}<br/><span style={{ fontSize: 11, color: '#9ca3af' }}>{m.subscriberBank}</span></td>
+                      <td style={{ padding: '10px 12px' }}>{m.billerName}</td>
+                      <td style={{ padding: '10px 12px', fontFamily: 'monospace', fontWeight: 600 }}>{fmt(m.amount)}</td>
+                      <td style={{ padding: '10px 12px', fontSize: 12 }}>{m.frequency}</td>
+                      <td style={{ padding: '10px 12px', fontWeight: 600 }}>{m.executionCount}</td>
+                      <td style={{ padding: '10px 12px', fontFamily: 'monospace' }}>{fmt(m.totalDebited)}</td>
+                      <td style={{ padding: '10px 12px', fontSize: 12 }}>{new Date(m.nextDebitDate).toLocaleDateString()}</td>
+                      <td style={{ padding: '10px 12px' }}>{statusBadge(m.status)}</td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          </div>
+        )}
+
+        {/* ============== Reversals Tab ============== */}
+        {activeTab === 'reversals' && (
+          <div>
+            {reversalSummary && (
+              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(140px, 1fr))', gap: 14, marginBottom: 24 }}>
+                {[
+                  { label: 'Total', value: reversalSummary.total, color: '#3b82f6' },
+                  { label: 'Reversed', value: reversalSummary.successful, color: '#10b981' },
+                  { label: 'Pending', value: reversalSummary.pending, color: '#f59e0b' },
+                  { label: 'Declined', value: reversalSummary.declined, color: '#ef4444' },
+                  { label: 'Reversed Amount', value: fmt(reversalSummary.totalReversed), color: '#2563eb' },
+                ].map((c, i) => (
+                  <div key={i} style={{ background: 'white', border: '1px solid #e5e7eb', borderRadius: 12, padding: 14 }}>
+                    <span style={{ fontSize: 11, color: '#6b7280' }}>{c.label}</span>
+                    <div style={{ fontSize: 22, fontWeight: 700, color: c.color, marginTop: 4 }}>{c.value}</div>
+                  </div>
+                ))}
+              </div>
+            )}
+            <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: 13 }}>
+              <thead><tr style={{ background: '#f9fafb' }}>
+                {['ID', 'Original NIP Ref', 'Amount', 'Reason', 'Status', 'Requested By', 'Requested', 'Resolved'].map(h => (
+                  <th key={h} style={{ padding: '10px 12px', textAlign: 'left', fontWeight: 600, borderBottom: '2px solid #e5e7eb' }}>{h}</th>
+                ))}
+              </tr></thead>
+              <tbody>
+                {reversals.map((r: any) => (
+                  <tr key={r.id} style={{ borderBottom: '1px solid #f3f4f6' }}>
+                    <td style={{ padding: '10px 12px', fontFamily: 'monospace', fontSize: 12 }}>{r.id}</td>
+                    <td style={{ padding: '10px 12px', fontFamily: 'monospace', fontSize: 12 }}>{r.originalNipRef}</td>
+                    <td style={{ padding: '10px 12px', fontFamily: 'monospace', fontWeight: 600 }}>{fmt(r.amount)}</td>
+                    <td style={{ padding: '10px 12px', fontSize: 12 }}>{r.reason?.replace(/_/g, ' ')}</td>
+                    <td style={{ padding: '10px 12px' }}>{statusBadge(r.status)}</td>
+                    <td style={{ padding: '10px 12px', fontSize: 12 }}>{r.requestedBy}</td>
+                    <td style={{ padding: '10px 12px', fontSize: 11, color: '#6b7280' }}>{new Date(r.requestedAt).toLocaleString()}</td>
+                    <td style={{ padding: '10px 12px', fontSize: 11, color: '#6b7280' }}>{r.resolvedAt ? new Date(r.resolvedAt).toLocaleString() : '-'}</td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        )}
+
+        {/* ============== Disputes Tab ============== */}
+        {activeTab === 'disputes' && (
+          <div>
+            {disputeSummary && (
+              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(140px, 1fr))', gap: 14, marginBottom: 24 }}>
+                {[
+                  { label: 'Total', value: disputeSummary.total, color: '#3b82f6' },
+                  { label: 'Open', value: disputeSummary.open, color: '#f59e0b' },
+                  { label: 'Under Review', value: disputeSummary.underReview, color: '#7c3aed' },
+                  { label: 'Resolved', value: disputeSummary.resolved, color: '#10b981' },
+                  { label: 'Escalated to CBN', value: disputeSummary.escalated, color: '#dc2626' },
+                  { label: 'Disputed Amount', value: fmt(disputeSummary.totalDisputedAmount), color: '#0369a1' },
+                ].map((c, i) => (
+                  <div key={i} style={{ background: 'white', border: '1px solid #e5e7eb', borderRadius: 12, padding: 14 }}>
+                    <span style={{ fontSize: 11, color: '#6b7280' }}>{c.label}</span>
+                    <div style={{ fontSize: 22, fontWeight: 700, color: c.color, marginTop: 4 }}>{c.value}</div>
+                  </div>
+                ))}
+              </div>
+            )}
+            <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: 13 }}>
+              <thead><tr style={{ background: '#f9fafb' }}>
+                {['NIP Ref', 'Type', 'Initiating Bank', 'Responding Bank', 'Amount', 'Status', 'SLA Deadline', 'Created'].map(h => (
+                  <th key={h} style={{ padding: '10px 12px', textAlign: 'left', fontWeight: 600, borderBottom: '2px solid #e5e7eb' }}>{h}</th>
+                ))}
+              </tr></thead>
+              <tbody>
+                {disputes.map((d: any) => (
+                  <tr key={d.id} style={{ borderBottom: '1px solid #f3f4f6' }}>
+                    <td style={{ padding: '10px 12px', fontFamily: 'monospace', fontSize: 12 }}>{d.nipRef}</td>
+                    <td style={{ padding: '10px 12px', fontSize: 12 }}>{d.disputeType?.replace(/_/g, ' ')}</td>
+                    <td style={{ padding: '10px 12px' }}>{d.initiatingBank}</td>
+                    <td style={{ padding: '10px 12px' }}>{d.respondingBank}</td>
+                    <td style={{ padding: '10px 12px', fontFamily: 'monospace', fontWeight: 600 }}>{fmt(d.amount)}</td>
+                    <td style={{ padding: '10px 12px' }}>{statusBadge(d.status)}</td>
+                    <td style={{ padding: '10px 12px', fontSize: 12, color: new Date(d.slaDeadline) < new Date() ? '#ef4444' : '#6b7280', fontWeight: new Date(d.slaDeadline) < new Date() ? 700 : 400 }}>{new Date(d.slaDeadline).toLocaleDateString()}</td>
+                    <td style={{ padding: '10px 12px', fontSize: 11, color: '#6b7280' }}>{new Date(d.createdAt).toLocaleString()}</td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        )}
+
+        {/* ============== mCash+ Merchants Tab ============== */}
+        {activeTab === 'merchants' && (
+          <div>
+            {merchantSummary && (
+              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(140px, 1fr))', gap: 14, marginBottom: 24 }}>
+                {[
+                  { label: 'Total Merchants', value: merchantSummary.total, color: '#3b82f6' },
+                  { label: 'Active', value: merchantSummary.active, color: '#10b981' },
+                  { label: 'Transactions', value: merchantSummary.totalTransactions?.toLocaleString(), color: '#7c3aed' },
+                  { label: 'Volume', value: fmt(merchantSummary.totalVolume), color: '#2563eb' },
+                ].map((c, i) => (
+                  <div key={i} style={{ background: 'white', border: '1px solid #e5e7eb', borderRadius: 12, padding: 14 }}>
+                    <span style={{ fontSize: 11, color: '#6b7280' }}>{c.label}</span>
+                    <div style={{ fontSize: 22, fontWeight: 700, color: c.color, marginTop: 4 }}>{c.value}</div>
+                  </div>
+                ))}
+              </div>
+            )}
+            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(300px, 1fr))', gap: 16 }}>
+              {merchants.map((m: any) => (
+                <div key={m.id} style={{ background: 'white', border: '1px solid #e5e7eb', borderRadius: 12, padding: 16 }}>
+                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 8 }}>
+                    <span style={{ fontSize: 15, fontWeight: 700 }}>{m.merchantName}</span>
+                    {statusBadge(m.status)}
+                  </div>
+                  <div style={{ fontSize: 12, color: '#6b7280', marginBottom: 4 }}>Code: <strong>{m.merchantCode}</strong></div>
+                  <div style={{ fontSize: 12, color: '#6b7280', marginBottom: 4 }}>USSD: <strong>{m.ussdShortCode}</strong></div>
+                  <div style={{ fontSize: 12, color: '#6b7280', marginBottom: 4 }}>Category: <strong>{m.category?.replace(/_/g, ' ')}</strong></div>
+                  <div style={{ fontSize: 12, color: '#6b7280', marginBottom: 8 }}>Location: {m.location}</div>
+                  <div style={{ display: 'flex', gap: 16 }}>
+                    <div><span style={{ fontSize: 11, color: '#9ca3af' }}>Transactions</span><div style={{ fontWeight: 700 }}>{m.transactionCount?.toLocaleString()}</div></div>
+                    <div><span style={{ fontSize: 11, color: '#9ca3af' }}>Volume</span><div style={{ fontWeight: 700 }}>{fmt(m.totalVolume)}</div></div>
+                  </div>
+                </div>
+              ))}
+            </div>
+          </div>
+        )}
+
+        {/* ============== PayDirect Tab ============== */}
+        {activeTab === 'paydirect' && (
+          <div>
+            {pdSummary && (
+              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(140px, 1fr))', gap: 14, marginBottom: 24 }}>
+                {[
+                  { label: 'Collectors', value: pdSummary.totalCollections, color: '#3b82f6' },
+                  { label: 'Active', value: pdSummary.active, color: '#10b981' },
+                  { label: 'Total Collected', value: fmt(pdSummary.totalCollected), color: '#2563eb' },
+                  { label: 'Transactions', value: pdSummary.totalTransactions?.toLocaleString(), color: '#7c3aed' },
+                ].map((c, i) => (
+                  <div key={i} style={{ background: 'white', border: '1px solid #e5e7eb', borderRadius: 12, padding: 14 }}>
+                    <span style={{ fontSize: 11, color: '#6b7280' }}>{c.label}</span>
+                    <div style={{ fontSize: 22, fontWeight: 700, color: c.color, marginTop: 4 }}>{c.value}</div>
+                  </div>
+                ))}
+              </div>
+            )}
+            <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: 13 }}>
+              <thead><tr style={{ background: '#f9fafb' }}>
+                {['Collector', 'Code', 'Category', 'Product', 'Total Collected', 'Transactions', 'Bank Coverage', 'Channels', 'Status'].map(h => (
+                  <th key={h} style={{ padding: '10px 12px', textAlign: 'left', fontWeight: 600, borderBottom: '2px solid #e5e7eb' }}>{h}</th>
+                ))}
+              </tr></thead>
+              <tbody>
+                {pdCollections.map((c: any) => (
+                  <tr key={c.id} style={{ borderBottom: '1px solid #f3f4f6' }}>
+                    <td style={{ padding: '10px 12px', fontWeight: 600 }}>{c.collectorName}</td>
+                    <td style={{ padding: '10px 12px', fontFamily: 'monospace', fontSize: 12 }}>{c.collectorCode}</td>
+                    <td style={{ padding: '10px 12px' }}><span style={{ padding: '2px 8px', borderRadius: 6, fontSize: 11, background: '#f3f4f6' }}>{c.category}</span></td>
+                    <td style={{ padding: '10px 12px', fontSize: 12 }}>{c.productName}</td>
+                    <td style={{ padding: '10px 12px', fontFamily: 'monospace', fontWeight: 600 }}>{fmt(c.totalCollected)}</td>
+                    <td style={{ padding: '10px 12px', fontWeight: 600 }}>{c.transactionCount?.toLocaleString()}</td>
+                    <td style={{ padding: '10px 12px' }}>{c.bankCoverage} banks</td>
+                    <td style={{ padding: '10px 12px' }}>
+                      <div style={{ display: 'flex', gap: 4, flexWrap: 'wrap' }}>
+                        {(c.channels || []).map((ch: string) => (
+                          <span key={ch} style={{ padding: '1px 6px', borderRadius: 4, fontSize: 10, background: '#f3f4f6', color: '#374151' }}>{ch}</span>
+                        ))}
+                      </div>
+                    </td>
+                    <td style={{ padding: '10px 12px' }}>{statusBadge(c.status)}</td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        )}
+
+        {/* ============== Identity (BVN/NIN) Tab ============== */}
+        {activeTab === 'identity' && (
+          <div>
+            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 20, marginBottom: 24 }}>
+              <div style={{ background: 'linear-gradient(135deg, #059669, #10b981)', borderRadius: 16, padding: 24, color: 'white' }}>
+                <div style={{ fontSize: 13, opacity: 0.9, marginBottom: 8 }}>BVN Verification</div>
+                <div style={{ fontSize: 28, fontWeight: 800 }}>Bank Verification Number</div>
+                <div style={{ fontSize: 12, opacity: 0.8, marginTop: 8 }}>11-digit unique identifier linked to biometrics</div>
+                <div style={{ fontSize: 12, opacity: 0.8, marginTop: 4 }}>Fee: ₦50 per lookup | Cache TTL: 72h (Redis)</div>
+              </div>
+              <div style={{ background: 'linear-gradient(135deg, #2563eb, #3b82f6)', borderRadius: 16, padding: 24, color: 'white' }}>
+                <div style={{ fontSize: 13, opacity: 0.9, marginBottom: 8 }}>NIN Verification</div>
+                <div style={{ fontSize: 28, fontWeight: 800 }}>National Identity Number</div>
+                <div style={{ fontSize: 12, opacity: 0.8, marginTop: 8 }}>11-digit national ID from NIMC database</div>
+                <div style={{ fontSize: 12, opacity: 0.8, marginTop: 4 }}>Fee: ₦30 per lookup | Cache TTL: 72h (Redis)</div>
+              </div>
+            </div>
+            <div style={{ background: 'white', border: '1px solid #e5e7eb', borderRadius: 12, padding: 20, marginBottom: 20 }}>
+              <h3 style={{ fontSize: 15, fontWeight: 700, marginBottom: 16 }}>Middleware Integration</h3>
+              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(200px, 1fr))', gap: 12 }}>
+                {[
+                  { label: 'Rust Service', desc: 'DashMap + atomic counters', color: '#dc2626' },
+                  { label: 'TigerBeetle', desc: 'Fee collection postings (Code 701/702)', color: '#f59e0b' },
+                  { label: 'Redis Cache', desc: 'nibss:bvn:{bvn} TTL 72h', color: '#ef4444' },
+                  { label: 'Fluvio Stream', desc: 'nibss-identity-verifications', color: '#7c3aed' },
+                  { label: 'OpenSearch Index', desc: 'nibss-identity-verifications', color: '#0369a1' },
+                  { label: 'Keycloak', desc: 'identity:bvn:verify permission', color: '#059669' },
+                  { label: 'APISIX', desc: '500 req/s rate limit, JWT auth', color: '#2563eb' },
+                  { label: 'OpenAppSec', desc: 'BVN/NIN format validation WAF', color: '#9333ea' },
+                ].map((item, i) => (
+                  <div key={i} style={{ padding: 12, background: '#f9fafb', borderRadius: 8, borderLeft: `4px solid ${item.color}` }}>
+                    <div style={{ fontWeight: 700, fontSize: 13 }}>{item.label}</div>
+                    <div style={{ fontSize: 11, color: '#6b7280', marginTop: 2 }}>{item.desc}</div>
+                  </div>
+                ))}
+              </div>
+            </div>
+            <div style={{ background: 'white', border: '1px solid #e5e7eb', borderRadius: 12, padding: 20 }}>
+              <h3 style={{ fontSize: 15, fontWeight: 700, marginBottom: 16 }}>Account Name Enquiry & TSQ</h3>
+              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 20 }}>
+                <div style={{ padding: 16, background: '#f0fdf4', borderRadius: 8, border: '1px solid #bbf7d0' }}>
+                  <div style={{ fontWeight: 700, fontSize: 14, marginBottom: 8 }}>Name Enquiry</div>
+                  <div style={{ fontSize: 12, color: '#166534' }}>Real-time beneficiary name lookup via NIP before transfer. Fee: ₦10. Cache: 24h in Redis.</div>
+                </div>
+                <div style={{ padding: 16, background: '#eff6ff', borderRadius: 8, border: '1px solid #bfdbfe' }}>
+                  <div style={{ fontWeight: 700, fontSize: 14, marginBottom: 8 }}>Transaction Status Query (TSQ)</div>
+                  <div style={{ fontSize: 12, color: '#1d4ed8' }}>Query pending/indeterminate NIP transactions. NIP response codes per CBN spec. Cache: 5 min in Redis.</div>
+                </div>
+              </div>
+            </div>
+          </div>
+        )}
+
+        {/* ============== ISO 20022 Tab ============== */}
+        {activeTab === 'iso20022' && (
+          <div>
+            {isoSummary && (
+              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(120px, 1fr))', gap: 14, marginBottom: 24 }}>
+                {[
+                  { label: 'Total Messages', value: isoSummary.total, color: '#3b82f6' },
+                  { label: 'pain.001', value: isoSummary.pain001, color: '#7c3aed' },
+                  { label: 'pacs.008', value: isoSummary.pacs008, color: '#059669' },
+                  { label: 'pacs.002', value: isoSummary.pacs002, color: '#0369a1' },
+                  { label: 'camt.053', value: isoSummary.camt053, color: '#dc2626' },
+                ].map((c, i) => (
+                  <div key={i} style={{ background: 'white', border: '1px solid #e5e7eb', borderRadius: 12, padding: 14 }}>
+                    <span style={{ fontSize: 11, color: '#6b7280' }}>{c.label}</span>
+                    <div style={{ fontSize: 22, fontWeight: 700, color: c.color, marginTop: 4 }}>{c.value}</div>
+                  </div>
+                ))}
+              </div>
+            )}
+            <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: 13 }}>
+              <thead><tr style={{ background: '#f9fafb' }}>
+                {['Message ID', 'Type', 'Sender BIC', 'Receiver BIC', 'Txn Count', 'Amount', 'Currency', 'Settlement', 'Status', 'Size'].map(h => (
+                  <th key={h} style={{ padding: '10px 12px', textAlign: 'left', fontWeight: 600, borderBottom: '2px solid #e5e7eb', whiteSpace: 'nowrap' }}>{h}</th>
+                ))}
+              </tr></thead>
+              <tbody>
+                {isoMessages.map((m: any) => (
+                  <tr key={m.id} style={{ borderBottom: '1px solid #f3f4f6' }}>
+                    <td style={{ padding: '10px 12px', fontFamily: 'monospace', fontSize: 11 }}>{m.messageId}</td>
+                    <td style={{ padding: '10px 12px' }}><span style={{ padding: '2px 8px', borderRadius: 6, fontSize: 11, fontWeight: 600, background: '#f3e8ff', color: '#6b21a8' }}>{m.messageType}</span></td>
+                    <td style={{ padding: '10px 12px', fontFamily: 'monospace', fontSize: 12 }}>{m.senderBic}</td>
+                    <td style={{ padding: '10px 12px', fontFamily: 'monospace', fontSize: 12 }}>{m.receiverBic}</td>
+                    <td style={{ padding: '10px 12px', fontWeight: 600 }}>{m.transactionCount}</td>
+                    <td style={{ padding: '10px 12px', fontFamily: 'monospace', fontWeight: 600 }}>{fmt(m.totalAmount)}</td>
+                    <td style={{ padding: '10px 12px' }}>{m.currency}</td>
+                    <td style={{ padding: '10px 12px', fontSize: 12 }}>{m.settlementMethod}</td>
+                    <td style={{ padding: '10px 12px' }}>{statusBadge(m.status)}</td>
+                    <td style={{ padding: '10px 12px', fontSize: 12, color: '#6b7280' }}>{(m.rawXmlSizeBytes / 1024).toFixed(1)} KB</td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        )}
+
+        {/* ============== NQR Codes Tab ============== */}
+        {activeTab === 'nqr' && (
+          <div>
+            {nqrSummary && (
+              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(140px, 1fr))', gap: 14, marginBottom: 24 }}>
+                {[
+                  { label: 'Total QR Codes', value: nqrSummary.total, color: '#3b82f6' },
+                  { label: 'Active', value: nqrSummary.active, color: '#10b981' },
+                  { label: 'Dynamic', value: nqrSummary.dynamic, color: '#7c3aed' },
+                  { label: 'Static', value: nqrSummary.static, color: '#0369a1' },
+                  { label: 'Total Scans', value: nqrSummary.totalScans?.toLocaleString(), color: '#f59e0b' },
+                  { label: 'Collected', value: fmt(nqrSummary.totalCollected), color: '#2563eb' },
+                ].map((c, i) => (
+                  <div key={i} style={{ background: 'white', border: '1px solid #e5e7eb', borderRadius: 12, padding: 14 }}>
+                    <span style={{ fontSize: 11, color: '#6b7280' }}>{c.label}</span>
+                    <div style={{ fontSize: 22, fontWeight: 700, color: c.color, marginTop: 4 }}>{c.value}</div>
+                  </div>
+                ))}
+              </div>
+            )}
+            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(340px, 1fr))', gap: 16 }}>
+              {nqrCodes.map((q: any) => (
+                <div key={q.id} style={{ background: 'white', border: '1px solid #e5e7eb', borderRadius: 12, padding: 20 }}>
+                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 12 }}>
+                    <span style={{ fontSize: 16, fontWeight: 700 }}>{q.merchantName}</span>
+                    {statusBadge(q.status)}
+                  </div>
+                  <div style={{ display: 'flex', gap: 8, marginBottom: 12 }}>
+                    <span style={{ padding: '2px 8px', borderRadius: 6, fontSize: 11, fontWeight: 600, background: q.isDynamic ? '#f3e8ff' : '#dbeafe', color: q.isDynamic ? '#6b21a8' : '#1d4ed8' }}>{q.isDynamic ? 'DYNAMIC' : 'STATIC'}</span>
+                    <span style={{ padding: '2px 8px', borderRadius: 6, fontSize: 11, background: '#f3f4f6' }}>{q.merchantCategory}</span>
+                  </div>
+                  {q.amount && <div style={{ fontSize: 28, fontWeight: 800, color: '#2563eb', marginBottom: 8 }}>{fmt(q.amount)}</div>}
+                  {q.narration && <div style={{ fontSize: 12, color: '#6b7280', marginBottom: 8 }}>{q.narration}</div>}
+                  <div style={{ background: '#f9fafb', borderRadius: 8, padding: 12, marginBottom: 12, fontFamily: 'monospace', fontSize: 10, wordBreak: 'break-all', color: '#6b7280' }}>{q.emvPayload}</div>
+                  <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: 8 }}>
+                    <div><span style={{ fontSize: 10, color: '#9ca3af' }}>Scans</span><div style={{ fontWeight: 700 }}>{q.scansCount?.toLocaleString()}</div></div>
+                    <div><span style={{ fontSize: 10, color: '#9ca3af' }}>Payments</span><div style={{ fontWeight: 700 }}>{q.paymentsCount?.toLocaleString()}</div></div>
+                    <div><span style={{ fontSize: 10, color: '#9ca3af' }}>Collected</span><div style={{ fontWeight: 700 }}>{fmt(q.totalCollected)}</div></div>
+                  </div>
+                  <div style={{ fontSize: 11, color: '#9ca3af', marginTop: 8 }}>Expires: {new Date(q.expiresAt).toLocaleString()}</div>
+                </div>
+              ))}
+            </div>
+          </div>
+        )}
+
+        {/* ============== e-Mandate Portal Tab ============== */}
+        {activeTab === 'emandate' && (
+          <div>
+            {emandateSummary && (
+              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(140px, 1fr))', gap: 14, marginBottom: 24 }}>
+                {[
+                  { label: 'Total', value: emandateSummary.total, color: '#3b82f6' },
+                  { label: 'Approved', value: emandateSummary.approved, color: '#10b981' },
+                  { label: 'Pending Approval', value: emandateSummary.pendingApproval, color: '#f59e0b' },
+                  { label: 'Rejected', value: emandateSummary.rejected, color: '#ef4444' },
+                  { label: 'Expired', value: emandateSummary.expired, color: '#6b7280' },
+                ].map((c, i) => (
+                  <div key={i} style={{ background: 'white', border: '1px solid #e5e7eb', borderRadius: 12, padding: 14 }}>
+                    <span style={{ fontSize: 11, color: '#6b7280' }}>{c.label}</span>
+                    <div style={{ fontSize: 22, fontWeight: 700, color: c.color, marginTop: 4 }}>{c.value}</div>
+                  </div>
+                ))}
+              </div>
+            )}
+            <div style={{ background: 'white', border: '1px solid #e5e7eb', borderRadius: 12, padding: 20, marginBottom: 20 }}>
+              <h3 style={{ fontSize: 15, fontWeight: 700, marginBottom: 12 }}>How e-Mandate Works</h3>
+              <div style={{ display: 'flex', gap: 16, flexWrap: 'wrap' }}>
+                {['1. Biller initiates mandate request', '2. Customer redirected to bank portal', '3. Bank sends OTP to customer', '4. Customer approves via OTP', '5. Mandate activated for auto-debit'].map((step, i) => (
+                  <div key={i} style={{ padding: '8px 16px', background: '#eff6ff', borderRadius: 8, fontSize: 12, color: '#1d4ed8', fontWeight: 600 }}>{step}</div>
+                ))}
+              </div>
+            </div>
+            <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: 13 }}>
+              <thead><tr style={{ background: '#f9fafb' }}>
+                {['Mandate Ref', 'Bank', 'Biller', 'Amount', 'Frequency', 'Status', 'OTP', 'Bank Portal', 'Initiated', 'Expires'].map(h => (
+                  <th key={h} style={{ padding: '10px 12px', textAlign: 'left', fontWeight: 600, borderBottom: '2px solid #e5e7eb', whiteSpace: 'nowrap' }}>{h}</th>
+                ))}
+              </tr></thead>
+              <tbody>
+                {emandates.map((e: any) => (
+                  <tr key={e.id} style={{ borderBottom: '1px solid #f3f4f6' }}>
+                    <td style={{ padding: '10px 12px', fontFamily: 'monospace', fontSize: 12 }}>{e.mandateRef}</td>
+                    <td style={{ padding: '10px 12px' }}>{e.subscriberBank}</td>
+                    <td style={{ padding: '10px 12px' }}>{e.billerName}</td>
+                    <td style={{ padding: '10px 12px', fontFamily: 'monospace', fontWeight: 600 }}>{fmt(e.amount)}</td>
+                    <td style={{ padding: '10px 12px', fontSize: 12 }}>{e.frequency}</td>
+                    <td style={{ padding: '10px 12px' }}>{statusBadge(e.approvalStatus)}</td>
+                    <td style={{ padding: '10px 12px' }}><span style={{ padding: '2px 6px', borderRadius: 4, fontSize: 10, background: e.otpSent ? '#dcfce7' : '#fef2f2', color: e.otpSent ? '#166534' : '#991b1b' }}>{e.otpChannel}</span></td>
+                    <td style={{ padding: '10px 12px', fontSize: 11, color: '#2563eb' }}><a href={e.bankRedirectUrl} target="_blank" rel="noopener noreferrer" style={{ color: '#2563eb' }}>Open</a></td>
+                    <td style={{ padding: '10px 12px', fontSize: 11, color: '#6b7280' }}>{new Date(e.initiatedAt).toLocaleString()}</td>
+                    <td style={{ padding: '10px 12px', fontSize: 11, color: new Date(e.expiresAt) < new Date() ? '#ef4444' : '#6b7280' }}>{new Date(e.expiresAt).toLocaleString()}</td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        )}
+
+        {/* ============== Fraud Detection Tab ============== */}
+        {activeTab === 'fraud' && (
+          <div>
+            {fraudSummary && (
+              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(140px, 1fr))', gap: 14, marginBottom: 24 }}>
+                {[
+                  { label: 'Total Alerts', value: fraudSummary.total, color: '#3b82f6' },
+                  { label: 'Critical', value: fraudSummary.critical, color: '#dc2626' },
+                  { label: 'High', value: fraudSummary.high, color: '#f59e0b' },
+                  { label: 'Medium', value: fraudSummary.medium, color: '#7c3aed' },
+                  { label: 'Blocked', value: fraudSummary.blocked, color: '#ef4444' },
+                  { label: 'Flagged', value: fraudSummary.flagged, color: '#f59e0b' },
+                  { label: 'Amount Blocked', value: fmt(fraudSummary.totalAmountBlocked), color: '#dc2626' },
+                ].map((c, i) => (
+                  <div key={i} style={{ background: 'white', border: '1px solid #e5e7eb', borderRadius: 12, padding: 14 }}>
+                    <span style={{ fontSize: 11, color: '#6b7280' }}>{c.label}</span>
+                    <div style={{ fontSize: 22, fontWeight: 700, color: c.color, marginTop: 4 }}>{c.value}</div>
+                  </div>
+                ))}
+              </div>
+            )}
+            <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: 13 }}>
+              <thead><tr style={{ background: '#f9fafb' }}>
+                {['NIP Ref', 'Amount', 'Sender Bank', 'Receiver Bank', 'Channel', 'Risk Score', 'Severity', 'Action', 'Rule Triggered', 'Detected', 'Reviewed By'].map(h => (
+                  <th key={h} style={{ padding: '10px 12px', textAlign: 'left', fontWeight: 600, borderBottom: '2px solid #e5e7eb', whiteSpace: 'nowrap' }}>{h}</th>
+                ))}
+              </tr></thead>
+              <tbody>
+                {fraudAlerts.map((a: any) => (
+                  <tr key={a.id} style={{ borderBottom: '1px solid #f3f4f6', background: a.severity === 'CRITICAL' ? '#fef2f2' : 'transparent' }}>
+                    <td style={{ padding: '10px 12px', fontFamily: 'monospace', fontSize: 12 }}>{a.nipRef}</td>
+                    <td style={{ padding: '10px 12px', fontFamily: 'monospace', fontWeight: 600 }}>{fmt(a.amount)}</td>
+                    <td style={{ padding: '10px 12px', fontSize: 12 }}>{a.senderBank}</td>
+                    <td style={{ padding: '10px 12px', fontSize: 12 }}>{a.receiverBank}</td>
+                    <td style={{ padding: '10px 12px', fontSize: 12 }}>{a.channel}</td>
+                    <td style={{ padding: '10px 12px' }}>
+                      <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+                        <div style={{ width: 40, height: 6, background: '#f3f4f6', borderRadius: 3, overflow: 'hidden' }}>
+                          <div style={{ width: `${a.riskScore}%`, height: '100%', background: a.riskScore >= 70 ? '#ef4444' : a.riskScore >= 50 ? '#f59e0b' : '#10b981', borderRadius: 3 }} />
+                        </div>
+                        <span style={{ fontWeight: 700, fontSize: 12, color: a.riskScore >= 70 ? '#ef4444' : a.riskScore >= 50 ? '#f59e0b' : '#10b981' }}>{a.riskScore}</span>
+                      </div>
+                    </td>
+                    <td style={{ padding: '10px 12px' }}><span style={{ padding: '2px 8px', borderRadius: 6, fontSize: 11, fontWeight: 600, background: a.severity === 'CRITICAL' ? '#fef2f2' : a.severity === 'HIGH' ? '#fff7ed' : a.severity === 'MEDIUM' ? '#fef3c7' : '#f0fdf4', color: a.severity === 'CRITICAL' ? '#991b1b' : a.severity === 'HIGH' ? '#9a3412' : a.severity === 'MEDIUM' ? '#92400e' : '#166534' }}>{a.severity}</span></td>
+                    <td style={{ padding: '10px 12px' }}>{statusBadge(a.action)}</td>
+                    <td style={{ padding: '10px 12px', fontSize: 11 }}>{a.ruleTriggered?.replace(/_/g, ' ')}</td>
+                    <td style={{ padding: '10px 12px', fontSize: 11, color: '#6b7280' }}>{new Date(a.detectedAt).toLocaleString()}</td>
+                    <td style={{ padding: '10px 12px', fontSize: 12 }}>{a.reviewedBy || <span style={{ color: '#f59e0b' }}>Pending</span>}</td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+            <div style={{ marginTop: 16 }}>
+              {fraudAlerts.filter((a: any) => a.severity === 'CRITICAL' || a.severity === 'HIGH').map((a: any) => (
+                <div key={a.id} style={{ background: a.severity === 'CRITICAL' ? '#fef2f2' : '#fff7ed', border: `1px solid ${a.severity === 'CRITICAL' ? '#fecaca' : '#fed7aa'}`, borderRadius: 8, padding: 12, marginBottom: 8 }}>
+                  <div style={{ fontWeight: 700, fontSize: 13, color: a.severity === 'CRITICAL' ? '#991b1b' : '#9a3412' }}>{a.ruleTriggered?.replace(/_/g, ' ')} — {fmt(a.amount)}</div>
+                  <div style={{ fontSize: 12, color: '#6b7280', marginTop: 4 }}>{a.description}</div>
+                </div>
+              ))}
+            </div>
+          </div>
+        )}
+
+        {/* ============== Stakeholder Onboarding Tab ============== */}
+        {activeTab === 'onboarding' && (
+          <div>
+            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: 20, marginBottom: 24 }}>
+              <div style={{ background: 'linear-gradient(135deg, #2563eb, #3b82f6)', borderRadius: 16, padding: 24, color: 'white' }}>
+                <div style={{ fontSize: 13, opacity: 0.9, marginBottom: 8 }}>Banks / NIP Participants</div>
+                <div style={{ fontSize: 32, fontWeight: 800 }}>{banksSummary?.total ?? 0}</div>
+                <div style={{ fontSize: 12, opacity: 0.8, marginTop: 4 }}>{banksSummary?.active ?? 0} active, {banksSummary?.pendingApproval ?? 0} pending</div>
+                <div style={{ fontSize: 12, opacity: 0.8 }}>Prefund: {banksSummary ? fmt(banksSummary.totalPrefund) : '₦0'}</div>
+              </div>
+              <div style={{ background: 'linear-gradient(135deg, #059669, #10b981)', borderRadius: 16, padding: 24, color: 'white' }}>
+                <div style={{ fontSize: 13, opacity: 0.9, marginBottom: 8 }}>Billers (e-BillsPay/PayDirect)</div>
+                <div style={{ fontSize: 32, fontWeight: 800 }}>{billersSummary?.total ?? 0}</div>
+                <div style={{ fontSize: 12, opacity: 0.8, marginTop: 4 }}>{billersSummary?.active ?? 0} active, {billersSummary?.pending ?? 0} pending</div>
+                <div style={{ fontSize: 12, opacity: 0.8 }}>{billersSummary?.totalProducts ?? 0} products registered</div>
+              </div>
+              <div style={{ background: 'linear-gradient(135deg, #7c3aed, #8b5cf6)', borderRadius: 16, padding: 24, color: 'white' }}>
+                <div style={{ fontSize: 13, opacity: 0.9, marginBottom: 8 }}>DFSPs / IMTOs</div>
+                <div style={{ fontSize: 32, fontWeight: 800 }}>{dfspsSummary?.total ?? 0}</div>
+                <div style={{ fontSize: 12, opacity: 0.8, marginTop: 4 }}>{dfspsSummary?.active ?? 0} active, {dfspsSummary?.mojaConnected ?? 0} Mojaloop-connected</div>
+                <div style={{ fontSize: 12, opacity: 0.8 }}>{dfspsSummary?.totalCorridors ?? 0} corridors</div>
+              </div>
+            </div>
+
+            {/* Banks */}
+            <h3 style={{ fontSize: 16, fontWeight: 700, marginBottom: 12 }}>Bank / NIP Participant Onboarding</h3>
+            <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: 13, marginBottom: 24 }}>
+              <thead><tr style={{ background: '#f9fafb' }}>
+                {['Bank', 'Code', 'CBN License', 'NIP Code', 'Prefund', 'Services', 'API Key', 'NIP', 'Status', 'Go-Live'].map(h => (
+                  <th key={h} style={{ padding: '10px 12px', textAlign: 'left', fontWeight: 600, borderBottom: '2px solid #e5e7eb', whiteSpace: 'nowrap' }}>{h}</th>
+                ))}
+              </tr></thead>
+              <tbody>
+                {onboardedBanks.map((b: any) => (
+                  <tr key={b.id} style={{ borderBottom: '1px solid #f3f4f6' }}>
+                    <td style={{ padding: '10px 12px', fontWeight: 600 }}>{b.bankName}</td>
+                    <td style={{ padding: '10px 12px', fontFamily: 'monospace' }}>{b.bankCode}</td>
+                    <td style={{ padding: '10px 12px', fontSize: 11 }}>{b.cbnLicenseNo}</td>
+                    <td style={{ padding: '10px 12px', fontFamily: 'monospace', fontSize: 11 }}>{b.nipParticipantCode}</td>
+                    <td style={{ padding: '10px 12px', fontFamily: 'monospace', fontWeight: 600 }}>{fmt(b.prefundBalance)}</td>
+                    <td style={{ padding: '10px 12px' }}><div style={{ display: 'flex', gap: 4, flexWrap: 'wrap' }}>{b.services.map((s: string) => <span key={s} style={{ padding: '1px 6px', borderRadius: 4, fontSize: 10, background: '#f3f4f6' }}>{s}</span>)}</div></td>
+                    <td style={{ padding: '10px 12px' }}><span style={{ padding: '2px 6px', borderRadius: 4, fontSize: 10, background: b.apiKeyProvisioned ? '#dcfce7' : '#fef2f2', color: b.apiKeyProvisioned ? '#166534' : '#991b1b' }}>{b.apiKeyProvisioned ? 'Provisioned' : 'Pending'}</span></td>
+                    <td style={{ padding: '10px 12px' }}><span style={{ padding: '2px 6px', borderRadius: 4, fontSize: 10, background: b.nipConnected ? '#dcfce7' : '#fef2f2', color: b.nipConnected ? '#166534' : '#991b1b' }}>{b.nipConnected ? 'Connected' : 'Pending'}</span></td>
+                    <td style={{ padding: '10px 12px' }}>{statusBadge(b.status)}</td>
+                    <td style={{ padding: '10px 12px', fontSize: 11, color: '#6b7280' }}>{b.goLiveDate ? new Date(b.goLiveDate).toLocaleDateString() : '-'}</td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+
+            {/* Billers */}
+            <h3 style={{ fontSize: 16, fontWeight: 700, marginBottom: 12 }}>Biller Onboarding</h3>
+            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(300px, 1fr))', gap: 16, marginBottom: 24 }}>
+              {onboardedBillers.map((b: any) => (
+                <div key={b.id} style={{ background: 'white', border: '1px solid #e5e7eb', borderRadius: 12, padding: 16 }}>
+                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 8 }}>
+                    <span style={{ fontSize: 15, fontWeight: 700 }}>{b.billerName}</span>
+                    {statusBadge(b.status)}
+                  </div>
+                  <div style={{ fontSize: 12, color: '#6b7280', marginBottom: 4 }}>Code: <strong>{b.billerCode}</strong> | RC: {b.rcNumber}</div>
+                  <div style={{ fontSize: 12, color: '#6b7280', marginBottom: 4 }}>Category: <strong>{b.category}</strong></div>
+                  <div style={{ fontSize: 12, color: '#6b7280', marginBottom: 8 }}>{b.productCount} products | {b.transactionCount?.toLocaleString()} txns | {fmt(b.totalCollected)} collected</div>
+                  <div style={{ display: 'flex', gap: 8, marginBottom: 8 }}>
+                    <span style={{ padding: '2px 6px', borderRadius: 4, fontSize: 10, background: b.ebillspayIntegrated ? '#dcfce7' : '#f3f4f6', color: b.ebillspayIntegrated ? '#166534' : '#9ca3af' }}>e-BillsPay</span>
+                    <span style={{ padding: '2px 6px', borderRadius: 4, fontSize: 10, background: b.paydirectIntegrated ? '#dcfce7' : '#f3f4f6', color: b.paydirectIntegrated ? '#166534' : '#9ca3af' }}>PayDirect</span>
+                  </div>
+                  <div style={{ display: 'flex', gap: 4, flexWrap: 'wrap' }}>
+                    {b.channels.map((ch: string) => <span key={ch} style={{ padding: '1px 6px', borderRadius: 4, fontSize: 10, background: '#f3f4f6' }}>{ch}</span>)}
+                  </div>
+                </div>
+              ))}
+            </div>
+
+            {/* DFSPs */}
+            <h3 style={{ fontSize: 16, fontWeight: 700, marginBottom: 12 }}>DFSP / IMTO Onboarding</h3>
+            {onboardedDfsps.map((d: any) => (
+              <div key={d.id} style={{ background: 'white', border: '1px solid #e5e7eb', borderRadius: 12, padding: 16, marginBottom: 16 }}>
+                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 12 }}>
+                  <div>
+                    <span style={{ fontSize: 16, fontWeight: 700 }}>{d.dfspName}</span>
+                    <span style={{ padding: '2px 8px', borderRadius: 6, fontSize: 11, background: '#f3e8ff', color: '#6b21a8', marginLeft: 8 }}>{d.type}</span>
+                  </div>
+                  {statusBadge(d.status)}
+                </div>
+                <div style={{ fontSize: 12, color: '#6b7280', marginBottom: 8 }}>
+                  Code: <strong>{d.dfspCode}</strong> | CBN: {d.cbnLicenseNo} | Mojaloop: {d.mojaFspId || 'Not connected'}
+                </div>
+                <div style={{ display: 'flex', gap: 4, marginBottom: 12, flexWrap: 'wrap' }}>
+                  {d.corridors.map((c: string) => <span key={c} style={{ padding: '2px 8px', borderRadius: 6, fontSize: 11, background: '#dbeafe', color: '#1d4ed8' }}>{c}</span>)}
+                  {d.services.map((s: string) => <span key={s} style={{ padding: '2px 8px', borderRadius: 6, fontSize: 11, background: '#dcfce7', color: '#166534' }}>{s}</span>)}
+                </div>
+                <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}>
+                  {d.onboardingSteps.map((step: any, i: number) => (
+                    <div key={i} style={{ padding: '6px 12px', borderRadius: 8, fontSize: 11, fontWeight: 600, background: step.status === 'COMPLETED' ? '#dcfce7' : step.status === 'IN_PROGRESS' ? '#fef3c7' : '#f3f4f6', color: step.status === 'COMPLETED' ? '#166534' : step.status === 'IN_PROGRESS' ? '#92400e' : '#6b7280' }}>
+                      {step.step.replace(/_/g, ' ')}
+                    </div>
+                  ))}
+                </div>
+              </div>
+            ))}
+          </div>
+        )}
+
+        {/* ============ NIP MONITOR ============ */}
+        {activeTab === 'nip_monitor' && nipMonitorQuery.data && (
+          <div>
+            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: 16, marginBottom: 24 }}>
+              {[
+                { label: 'Global TPS', value: nipMonitorQuery.data.globalTps.toLocaleString(), color: '#2563eb' },
+                { label: 'Success Rate', value: `${nipMonitorQuery.data.globalSuccessRate}%`, color: '#059669' },
+                { label: 'Avg Latency', value: `${nipMonitorQuery.data.globalAvgLatencyMs}ms`, color: '#d97706' },
+                { label: 'Today Volume', value: `₦${(nipMonitorQuery.data.totalVolumeToday / 1e9).toFixed(0)}B`, color: '#7c3aed' },
+              ].map(c => (
+                <div key={c.label} style={{ background: 'white', border: '1px solid #e5e7eb', borderRadius: 12, padding: 16, borderTop: `3px solid ${c.color}` }}>
+                  <div style={{ fontSize: 11, color: '#6b7280', marginBottom: 4 }}>{c.label}</div>
+                  <div style={{ fontSize: 24, fontWeight: 700, color: c.color }}>{c.value}</div>
+                </div>
+              ))}
+            </div>
+            <h3 style={{ fontSize: 16, fontWeight: 700, marginBottom: 12 }}>Bank Metrics</h3>
+            <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: 13 }}>
+              <thead><tr style={{ borderBottom: '2px solid #e5e7eb' }}>
+                {['Bank', 'TPS', 'Success Rate', 'Avg Latency', 'Total Txns', 'Volume'].map(h => <th key={h} style={{ padding: '10px 12px', textAlign: 'left', fontWeight: 700 }}>{h}</th>)}
+              </tr></thead>
+              <tbody>{nipMonitorQuery.data.bankMetrics.map((b: any) => (
+                <tr key={b.bankCode} style={{ borderBottom: '1px solid #f3f4f6' }}>
+                  <td style={{ padding: '10px 12px', fontWeight: 600 }}>{b.bankName}</td>
+                  <td style={{ padding: '10px 12px' }}>{b.tps.toLocaleString()}</td>
+                  <td style={{ padding: '10px 12px', color: b.successRate >= 99.8 ? '#059669' : '#d97706' }}>{b.successRate}%</td>
+                  <td style={{ padding: '10px 12px' }}>{b.avgLatencyMs}ms</td>
+                  <td style={{ padding: '10px 12px' }}>{b.totalTxns.toLocaleString()}</td>
+                  <td style={{ padding: '10px 12px' }}>₦{(b.volume / 1e9).toFixed(0)}B</td>
+                </tr>
+              ))}</tbody>
+            </table>
+            <h3 style={{ fontSize: 16, fontWeight: 700, margin: '24px 0 12px' }}>Top Error Codes</h3>
+            <div style={{ display: 'flex', gap: 12 }}>
+              {nipMonitorQuery.data.topErrorCodes.map((e: any) => (
+                <div key={e.code} style={{ background: 'white', border: '1px solid #e5e7eb', borderRadius: 8, padding: 12, flex: 1, textAlign: 'center' }}>
+                  <div style={{ fontSize: 18, fontWeight: 700, color: e.code === '00' ? '#059669' : '#dc2626' }}>{e.code}</div>
+                  <div style={{ fontSize: 11, color: '#6b7280' }}>{e.description}</div>
+                  <div style={{ fontSize: 12, fontWeight: 600 }}>{e.count.toLocaleString()} ({e.pct}%)</div>
+                </div>
+              ))}
+            </div>
+          </div>
+        )}
+
+        {/* ============ RECONCILIATION ============ */}
+        {activeTab === 'reconciliation' && reconQuery.data && (
+          <div>
+            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: 16, marginBottom: 24 }}>
+              {[
+                { label: 'Matched', value: reconQuery.data.summary.matched, color: '#059669' },
+                { label: 'Mismatched', value: reconQuery.data.summary.mismatched, color: '#dc2626' },
+                { label: 'Auto-Resolved', value: reconQuery.data.summary.autoResolved, color: '#d97706' },
+                { label: 'Total Discrepancy', value: `₦${(reconQuery.data.summary.totalDiscrepancy / 100).toLocaleString()}`, color: '#7c3aed' },
+              ].map(c => (
+                <div key={c.label} style={{ background: 'white', border: '1px solid #e5e7eb', borderRadius: 12, padding: 16, borderTop: `3px solid ${c.color}` }}>
+                  <div style={{ fontSize: 11, color: '#6b7280', marginBottom: 4 }}>{c.label}</div>
+                  <div style={{ fontSize: 24, fontWeight: 700, color: c.color }}>{c.value}</div>
+                </div>
+              ))}
+            </div>
+            <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: 13 }}>
+              <thead><tr style={{ borderBottom: '2px solid #e5e7eb' }}>
+                {['Bank', 'Ledger', 'Settlement', 'Bank Confirm', 'Status', 'Discrepancy'].map(h => <th key={h} style={{ padding: '10px 12px', textAlign: 'left', fontWeight: 700 }}>{h}</th>)}
+              </tr></thead>
+              <tbody>{reconQuery.data.records.map((r: any) => (
+                <tr key={r.id} style={{ borderBottom: '1px solid #f3f4f6', background: r.status === 'MISMATCHED' && !r.autoResolved ? '#fef2f2' : 'transparent' }}>
+                  <td style={{ padding: '10px 12px', fontWeight: 600 }}>{r.bank}</td>
+                  <td style={{ padding: '10px 12px' }}>₦{(r.ledgerAmount / 1e9).toFixed(1)}B</td>
+                  <td style={{ padding: '10px 12px' }}>₦{(r.settlementAmount / 1e9).toFixed(1)}B</td>
+                  <td style={{ padding: '10px 12px' }}>₦{(r.bankConfirmAmount / 1e9).toFixed(1)}B</td>
+                  <td style={{ padding: '10px 12px' }}>
+                    <span style={{ padding: '2px 8px', borderRadius: 6, fontSize: 11, fontWeight: 600, background: r.status === 'MATCHED' ? '#dcfce7' : r.autoResolved ? '#fef3c7' : '#fee2e2', color: r.status === 'MATCHED' ? '#166534' : r.autoResolved ? '#92400e' : '#991b1b' }}>
+                      {r.autoResolved ? 'AUTO-RESOLVED' : r.status}
+                    </span>
+                  </td>
+                  <td style={{ padding: '10px 12px', color: r.discrepancy > 0 ? '#dc2626' : '#059669' }}>₦{r.discrepancy.toLocaleString()}</td>
+                </tr>
+              ))}</tbody>
+            </table>
+          </div>
+        )}
+
+        {/* ============ SLA MONITORING ============ */}
+        {activeTab === 'sla' && slaQuery.data && (
+          <div>
+            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: 16, marginBottom: 24 }}>
+              {[
+                { label: 'Healthy', value: slaQuery.data.summary.healthy, color: '#059669' },
+                { label: 'Warning', value: slaQuery.data.summary.warning, color: '#d97706' },
+                { label: 'Open Breaches', value: slaQuery.data.summary.openBreaches, color: '#dc2626' },
+              ].map(c => (
+                <div key={c.label} style={{ background: 'white', border: '1px solid #e5e7eb', borderRadius: 12, padding: 16, borderTop: `3px solid ${c.color}` }}>
+                  <div style={{ fontSize: 11, color: '#6b7280', marginBottom: 4 }}>{c.label}</div>
+                  <div style={{ fontSize: 24, fontWeight: 700, color: c.color }}>{c.value}</div>
+                </div>
+              ))}
+            </div>
+            <h3 style={{ fontSize: 16, fontWeight: 700, marginBottom: 12 }}>SLA Rules</h3>
+            <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: 13 }}>
+              <thead><tr style={{ borderBottom: '2px solid #e5e7eb' }}>
+                {['Product', 'Metric', 'Threshold', 'Current', 'Status', 'Headroom'].map(h => <th key={h} style={{ padding: '10px 12px', textAlign: 'left', fontWeight: 700 }}>{h}</th>)}
+              </tr></thead>
+              <tbody>{slaQuery.data.rules.map((r: any) => (
+                <tr key={r.id} style={{ borderBottom: '1px solid #f3f4f6' }}>
+                  <td style={{ padding: '10px 12px', fontWeight: 600 }}>{r.product}</td>
+                  <td style={{ padding: '10px 12px' }}>{r.metric}</td>
+                  <td style={{ padding: '10px 12px' }}>{r.threshold}</td>
+                  <td style={{ padding: '10px 12px' }}>{r.current}</td>
+                  <td style={{ padding: '10px 12px' }}>
+                    <span style={{ padding: '2px 8px', borderRadius: 6, fontSize: 11, fontWeight: 600, background: r.status === 'HEALTHY' ? '#dcfce7' : '#fef3c7', color: r.status === 'HEALTHY' ? '#166534' : '#92400e' }}>{r.status}</span>
+                  </td>
+                  <td style={{ padding: '10px 12px' }}>{r.headroom}</td>
+                </tr>
+              ))}</tbody>
+            </table>
+            {slaQuery.data.breaches.length > 0 && <>
+              <h3 style={{ fontSize: 16, fontWeight: 700, margin: '24px 0 12px', color: '#dc2626' }}>Active Breaches</h3>
+              {slaQuery.data.breaches.map((b: any) => (
+                <div key={b.id} style={{ background: '#fef2f2', border: '1px solid #fecaca', borderRadius: 12, padding: 16, marginBottom: 12 }}>
+                  <div style={{ display: 'flex', justifyContent: 'space-between' }}>
+                    <span style={{ fontWeight: 700 }}>{b.bank} — {b.metric}</span>
+                    <span style={{ padding: '2px 8px', borderRadius: 6, fontSize: 11, fontWeight: 600, background: b.severity === 'CRITICAL' ? '#fee2e2' : '#fef3c7', color: b.severity === 'CRITICAL' ? '#991b1b' : '#92400e' }}>{b.severity}</span>
+                  </div>
+                  <div style={{ fontSize: 13, color: '#6b7280', marginTop: 4 }}>Threshold: {b.threshold} | Actual: {b.actual} | Status: {b.status}</div>
+                </div>
+              ))}
+            </>}
+          </div>
+        )}
+
+        {/* ============ PARTICIPANT HEALTH ============ */}
+        {activeTab === 'health' && healthQuery.data && (
+          <div>
+            <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: 13 }}>
+              <thead><tr style={{ borderBottom: '2px solid #e5e7eb' }}>
+                {['Bank', 'Availability', 'Success Rate', 'Avg Resp', 'P99 Resp', 'Dispute Rate', 'Score', 'Tier', 'Trend'].map(h => <th key={h} style={{ padding: '10px 12px', textAlign: 'left', fontWeight: 700 }}>{h}</th>)}
+              </tr></thead>
+              <tbody>{healthQuery.data.participants.map((p: any) => (
+                <tr key={p.bankCode} style={{ borderBottom: '1px solid #f3f4f6' }}>
+                  <td style={{ padding: '10px 12px', fontWeight: 600 }}>{p.bankName}</td>
+                  <td style={{ padding: '10px 12px' }}>{p.availability}%</td>
+                  <td style={{ padding: '10px 12px' }}>{p.successRate}%</td>
+                  <td style={{ padding: '10px 12px' }}>{p.avgResponseMs}ms</td>
+                  <td style={{ padding: '10px 12px' }}>{p.p99ResponseMs}ms</td>
+                  <td style={{ padding: '10px 12px' }}>{(p.disputeRate * 100).toFixed(2)}%</td>
+                  <td style={{ padding: '10px 12px' }}>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+                      <div style={{ width: 60, height: 6, borderRadius: 3, background: '#e5e7eb' }}>
+                        <div style={{ width: `${p.overallScore}%`, height: '100%', borderRadius: 3, background: p.overallScore >= 95 ? '#059669' : p.overallScore >= 85 ? '#2563eb' : p.overallScore >= 70 ? '#d97706' : '#dc2626' }} />
+                      </div>
+                      <span style={{ fontWeight: 700, fontSize: 12 }}>{p.overallScore}</span>
+                    </div>
+                  </td>
+                  <td style={{ padding: '10px 12px' }}>
+                    <span style={{ padding: '2px 8px', borderRadius: 6, fontSize: 11, fontWeight: 600, background: p.tier === 'EXCELLENT' ? '#dcfce7' : p.tier === 'GOOD' ? '#dbeafe' : p.tier === 'FAIR' ? '#fef3c7' : '#fee2e2', color: p.tier === 'EXCELLENT' ? '#166534' : p.tier === 'GOOD' ? '#1d4ed8' : p.tier === 'FAIR' ? '#92400e' : '#991b1b' }}>{p.tier}</span>
+                  </td>
+                  <td style={{ padding: '10px 12px', fontSize: 16 }}>{p.trend === 'UP' ? '↑' : p.trend === 'DOWN' ? '↓' : '→'}</td>
+                </tr>
+              ))}</tbody>
+            </table>
+          </div>
+        )}
+
+        {/* ============ REGULATORY REPORTS ============ */}
+        {activeTab === 'compliance' && complianceQuery.data && (
+          <div>
+            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: 16, marginBottom: 24 }}>
+              {[
+                { label: 'Total Reports', value: complianceQuery.data.summary.total, color: '#2563eb' },
+                { label: 'Submitted', value: complianceQuery.data.summary.submitted, color: '#059669' },
+                { label: 'Accepted', value: complianceQuery.data.summary.accepted, color: '#7c3aed' },
+                { label: 'Generating', value: complianceQuery.data.summary.generating, color: '#d97706' },
+              ].map(c => (
+                <div key={c.label} style={{ background: 'white', border: '1px solid #e5e7eb', borderRadius: 12, padding: 16, borderTop: `3px solid ${c.color}` }}>
+                  <div style={{ fontSize: 11, color: '#6b7280', marginBottom: 4 }}>{c.label}</div>
+                  <div style={{ fontSize: 24, fontWeight: 700, color: c.color }}>{c.value}</div>
+                </div>
+              ))}
+            </div>
+            <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: 13 }}>
+              <thead><tr style={{ borderBottom: '2px solid #e5e7eb' }}>
+                {['Report ID', 'Type', 'Period', 'Records', 'Amount', 'Format', 'Status', 'CBN Ref'].map(h => <th key={h} style={{ padding: '10px 12px', textAlign: 'left', fontWeight: 700 }}>{h}</th>)}
+              </tr></thead>
+              <tbody>{complianceQuery.data.reports.map((r: any) => (
+                <tr key={r.id} style={{ borderBottom: '1px solid #f3f4f6' }}>
+                  <td style={{ padding: '10px 12px', fontFamily: 'monospace', fontSize: 11 }}>{r.id}</td>
+                  <td style={{ padding: '10px 12px' }}><span style={{ padding: '2px 8px', borderRadius: 6, fontSize: 10, fontWeight: 600, background: '#f3f4f6' }}>{r.type.replace(/_/g, ' ')}</span></td>
+                  <td style={{ padding: '10px 12px', fontSize: 12 }}>{r.periodStart}</td>
+                  <td style={{ padding: '10px 12px' }}>{r.recordCount.toLocaleString()}</td>
+                  <td style={{ padding: '10px 12px' }}>{r.totalAmount > 0 ? `₦${(r.totalAmount / 1e9).toFixed(1)}B` : '—'}</td>
+                  <td style={{ padding: '10px 12px' }}>{r.format}</td>
+                  <td style={{ padding: '10px 12px' }}>
+                    <span style={{ padding: '2px 8px', borderRadius: 6, fontSize: 11, fontWeight: 600, background: r.status === 'ACCEPTED' ? '#dcfce7' : r.status === 'SUBMITTED' ? '#dbeafe' : '#fef3c7', color: r.status === 'ACCEPTED' ? '#166534' : r.status === 'SUBMITTED' ? '#1d4ed8' : '#92400e' }}>{r.status}</span>
+                  </td>
+                  <td style={{ padding: '10px 12px', fontFamily: 'monospace', fontSize: 11 }}>{r.cbnRef ?? '—'}</td>
+                </tr>
+              ))}</tbody>
+            </table>
+          </div>
+        )}
+
+        {/* ============ TX MONITORING ============ */}
+        {activeTab === 'monitoring' && monitoringQuery.data && (
+          <div>
+            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: 16, marginBottom: 24 }}>
+              {[
+                { label: 'Active Rules', value: monitoringQuery.data.summary.activeRules, color: '#2563eb' },
+                { label: 'Total Alerts', value: monitoringQuery.data.summary.totalAlerts, color: '#d97706' },
+                { label: 'Unreviewed', value: monitoringQuery.data.summary.unreviewedAlerts, color: '#dc2626' },
+                { label: 'True Positives', value: monitoringQuery.data.summary.truePositives, color: '#059669' },
+              ].map(c => (
+                <div key={c.label} style={{ background: 'white', border: '1px solid #e5e7eb', borderRadius: 12, padding: 16, borderTop: `3px solid ${c.color}` }}>
+                  <div style={{ fontSize: 11, color: '#6b7280', marginBottom: 4 }}>{c.label}</div>
+                  <div style={{ fontSize: 24, fontWeight: 700, color: c.color }}>{c.value}</div>
+                </div>
+              ))}
+            </div>
+            <h3 style={{ fontSize: 16, fontWeight: 700, marginBottom: 12 }}>Monitoring Rules</h3>
+            <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: 13 }}>
+              <thead><tr style={{ borderBottom: '2px solid #e5e7eb' }}>
+                {['Rule', 'Category', 'Severity', 'Action', 'Hits', 'FP Rate', 'Active'].map(h => <th key={h} style={{ padding: '10px 12px', textAlign: 'left', fontWeight: 700 }}>{h}</th>)}
+              </tr></thead>
+              <tbody>{monitoringQuery.data.rules.map((r: any) => (
+                <tr key={r.id} style={{ borderBottom: '1px solid #f3f4f6' }}>
+                  <td style={{ padding: '10px 12px', fontWeight: 600 }}>{r.name}</td>
+                  <td style={{ padding: '10px 12px' }}><span style={{ padding: '2px 6px', borderRadius: 4, fontSize: 10, background: '#f3f4f6' }}>{r.category}</span></td>
+                  <td style={{ padding: '10px 12px' }}>
+                    <span style={{ padding: '2px 8px', borderRadius: 6, fontSize: 11, fontWeight: 600, background: r.severity === 'CRITICAL' ? '#fee2e2' : r.severity === 'HIGH' ? '#fef3c7' : '#f3f4f6', color: r.severity === 'CRITICAL' ? '#991b1b' : r.severity === 'HIGH' ? '#92400e' : '#374151' }}>{r.severity}</span>
+                  </td>
+                  <td style={{ padding: '10px 12px' }}>{r.action}</td>
+                  <td style={{ padding: '10px 12px' }}>{r.hitCount.toLocaleString()}</td>
+                  <td style={{ padding: '10px 12px', color: r.falsePositiveRate > 30 ? '#dc2626' : '#059669' }}>{r.falsePositiveRate}%</td>
+                  <td style={{ padding: '10px 12px' }}>{r.isActive ? '●' : '○'}</td>
+                </tr>
+              ))}</tbody>
+            </table>
+            {monitoringQuery.data.alerts.length > 0 && <>
+              <h3 style={{ fontSize: 16, fontWeight: 700, margin: '24px 0 12px' }}>Recent Alerts</h3>
+              {monitoringQuery.data.alerts.map((a: any) => (
+                <div key={a.id} style={{ background: a.severity === 'CRITICAL' ? '#fef2f2' : '#fffbeb', border: `1px solid ${a.severity === 'CRITICAL' ? '#fecaca' : '#fde68a'}`, borderRadius: 12, padding: 16, marginBottom: 12 }}>
+                  <div style={{ display: 'flex', justifyContent: 'space-between' }}>
+                    <span style={{ fontWeight: 700 }}>{a.ruleName}</span>
+                    <div style={{ display: 'flex', gap: 8 }}>
+                      <span style={{ padding: '2px 8px', borderRadius: 6, fontSize: 11, fontWeight: 600, background: a.severity === 'CRITICAL' ? '#fee2e2' : '#fef3c7', color: a.severity === 'CRITICAL' ? '#991b1b' : '#92400e' }}>{a.severity}</span>
+                      {a.reviewed && <span style={{ padding: '2px 8px', borderRadius: 6, fontSize: 11, fontWeight: 600, background: '#dcfce7', color: '#166534' }}>{a.disposition}</span>}
+                    </div>
+                  </div>
+                  <div style={{ fontSize: 12, color: '#6b7280', marginTop: 4 }}>Tx: {a.transactionId} | Action: {a.action} | {a.reviewed ? 'Reviewed' : 'Pending Review'}</div>
+                </div>
+              ))}
+            </>}
+          </div>
+        )}
+
+        {/* ============ CIRCUIT BREAKERS ============ */}
+        {activeTab === 'circuit_breaker' && circuitQuery.data && (
+          <div>
+            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: 16, marginBottom: 24 }}>
+              {[
+                { label: 'Closed (Healthy)', value: circuitQuery.data.summary.closed, color: '#059669' },
+                { label: 'Half-Open (Recovering)', value: circuitQuery.data.summary.halfOpen, color: '#d97706' },
+                { label: 'Open (Blocked)', value: circuitQuery.data.summary.open, color: '#dc2626' },
+              ].map(c => (
+                <div key={c.label} style={{ background: 'white', border: '1px solid #e5e7eb', borderRadius: 12, padding: 16, borderTop: `3px solid ${c.color}` }}>
+                  <div style={{ fontSize: 11, color: '#6b7280', marginBottom: 4 }}>{c.label}</div>
+                  <div style={{ fontSize: 24, fontWeight: 700, color: c.color }}>{c.value}</div>
+                </div>
+              ))}
+            </div>
+            <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: 13 }}>
+              <thead><tr style={{ borderBottom: '2px solid #e5e7eb' }}>
+                {['Bank', 'State', 'Failure Rate', 'Threshold', 'Total Requests', 'Last Failure'].map(h => <th key={h} style={{ padding: '10px 12px', textAlign: 'left', fontWeight: 700 }}>{h}</th>)}
+              </tr></thead>
+              <tbody>{circuitQuery.data.breakers.map((b: any) => (
+                <tr key={b.bankCode} style={{ borderBottom: '1px solid #f3f4f6', background: b.state === 'OPEN' ? '#fef2f2' : b.state === 'HALF_OPEN' ? '#fffbeb' : 'transparent' }}>
+                  <td style={{ padding: '10px 12px', fontWeight: 600 }}>{b.bankName}</td>
+                  <td style={{ padding: '10px 12px' }}>
+                    <span style={{ padding: '2px 8px', borderRadius: 6, fontSize: 11, fontWeight: 600, background: b.state === 'CLOSED' ? '#dcfce7' : b.state === 'HALF_OPEN' ? '#fef3c7' : '#fee2e2', color: b.state === 'CLOSED' ? '#166534' : b.state === 'HALF_OPEN' ? '#92400e' : '#991b1b' }}>{b.state}</span>
+                  </td>
+                  <td style={{ padding: '10px 12px', color: b.failureRate > b.threshold ? '#dc2626' : '#059669' }}>{b.failureRate}%</td>
+                  <td style={{ padding: '10px 12px' }}>{b.threshold}%</td>
+                  <td style={{ padding: '10px 12px' }}>{b.totalRequests.toLocaleString()}</td>
+                  <td style={{ padding: '10px 12px', fontSize: 12 }}>{b.lastFailure ? new Date(b.lastFailure).toLocaleString() : '—'}</td>
+                </tr>
+              ))}</tbody>
+            </table>
+          </div>
+        )}
+
+        {/* ============ REVENUE ANALYTICS ============ */}
+        {activeTab === 'revenue' && revenueQuery.data && (
+          <div>
+            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(2, 1fr)', gap: 16, marginBottom: 24 }}>
+              <div style={{ background: 'white', border: '1px solid #e5e7eb', borderRadius: 12, padding: 16, borderTop: '3px solid #059669' }}>
+                <div style={{ fontSize: 11, color: '#6b7280', marginBottom: 4 }}>Total Monthly Revenue</div>
+                <div style={{ fontSize: 24, fontWeight: 700, color: '#059669' }}>₦{(revenueQuery.data.totalMonthlyRevenue / 1e6).toFixed(0)}M</div>
+              </div>
+              <div style={{ background: 'white', border: '1px solid #e5e7eb', borderRadius: 12, padding: 16, borderTop: '3px solid #2563eb' }}>
+                <div style={{ fontSize: 11, color: '#6b7280', marginBottom: 4 }}>Monthly Growth</div>
+                <div style={{ fontSize: 24, fontWeight: 700, color: '#2563eb' }}>+{revenueQuery.data.totalMonthlyGrowth}%</div>
+              </div>
+            </div>
+            <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: 13 }}>
+              <thead><tr style={{ borderBottom: '2px solid #e5e7eb' }}>
+                {['Product', 'Revenue', 'Transactions', 'Avg Fee', 'Growth', 'Top Bank'].map(h => <th key={h} style={{ padding: '10px 12px', textAlign: 'left', fontWeight: 700 }}>{h}</th>)}
+              </tr></thead>
+              <tbody>{revenueQuery.data.breakdown.map((r: any) => (
+                <tr key={r.product} style={{ borderBottom: '1px solid #f3f4f6' }}>
+                  <td style={{ padding: '10px 12px', fontWeight: 600 }}>{r.product}</td>
+                  <td style={{ padding: '10px 12px' }}>₦{(r.totalRevenue / 1e6).toFixed(1)}M</td>
+                  <td style={{ padding: '10px 12px' }}>{r.txnCount.toLocaleString()}</td>
+                  <td style={{ padding: '10px 12px' }}>₦{r.avgFeePerTx}</td>
+                  <td style={{ padding: '10px 12px', color: r.growthPct >= 0 ? '#059669' : '#dc2626' }}>{r.growthPct > 0 ? '+' : ''}{r.growthPct}%</td>
+                  <td style={{ padding: '10px 12px', fontSize: 12 }}>{r.topBank} ({r.topBankPct}%)</td>
+                </tr>
+              ))}</tbody>
+            </table>
+          </div>
+        )}
+
+        {/* ============ CORRIDOR ANALYTICS ============ */}
+        {activeTab === 'corridors' && corridorQuery.data && (
+          <div>
+            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: 16 }}>
+              {corridorQuery.data.corridors.map((c: any) => (
+                <div key={c.corridor} style={{ background: 'white', border: '1px solid #e5e7eb', borderRadius: 12, padding: 16 }}>
+                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 12 }}>
+                    <span style={{ fontSize: 16, fontWeight: 700 }}>{c.corridor}</span>
+                    <span style={{ padding: '2px 8px', borderRadius: 6, fontSize: 11, fontWeight: 600, background: c.growthPct >= 0 ? '#dcfce7' : '#fee2e2', color: c.growthPct >= 0 ? '#166534' : '#991b1b' }}>
+                      {c.growthPct > 0 ? '+' : ''}{c.growthPct}%
+                    </span>
+                  </div>
+                  <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 8, fontSize: 12 }}>
+                    <div><span style={{ color: '#6b7280' }}>Transactions:</span> <strong>{(c.totalTxns / 1e6).toFixed(1)}M</strong></div>
+                    <div><span style={{ color: '#6b7280' }}>Volume:</span> <strong>₦{(c.totalVolume / 1e9).toFixed(0)}B</strong></div>
+                    <div><span style={{ color: '#6b7280' }}>Success:</span> <strong style={{ color: c.successRate >= 99.7 ? '#059669' : '#d97706' }}>{c.successRate}%</strong></div>
+                    <div><span style={{ color: '#6b7280' }}>Avg Latency:</span> <strong>{c.avgLatencyMs}ms</strong></div>
+                    <div><span style={{ color: '#6b7280' }}>Peak TPS:</span> <strong>{c.peakTps.toLocaleString()}</strong></div>
+                    <div><span style={{ color: '#6b7280' }}>Peak Hour:</span> <strong>{c.peakHour}:00</strong></div>
+                    <div><span style={{ color: '#6b7280' }}>Failure:</span> <strong style={{ color: '#dc2626' }}>{c.failureRate}%</strong></div>
+                    <div><span style={{ color: '#6b7280' }}>Top Error:</span> <strong>{c.topError}</strong></div>
+                  </div>
+                </div>
+              ))}
+            </div>
+          </div>
+        )}
+
+        {/* ============ VOLUME FORECAST ============ */}
+        {activeTab === 'forecast' && forecastQuery.data && (
+          <div>
+            <div style={{ background: '#f0f9ff', border: '1px solid #bae6fd', borderRadius: 12, padding: 16, marginBottom: 24, display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+              <div>
+                <div style={{ fontSize: 13, fontWeight: 600, color: '#0369a1' }}>Model: {forecastQuery.data.modelVersion}</div>
+                <div style={{ fontSize: 12, color: '#6b7280' }}>Last trained: {new Date(forecastQuery.data.lastTrainedAt).toLocaleDateString()}</div>
+              </div>
+              <Brain size={24} color="#0369a1" />
+            </div>
+            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(2, 1fr)', gap: 16 }}>
+              {forecastQuery.data.forecasts.map((f: any) => (
+                <div key={`${f.product}-${f.date}`} style={{ background: 'white', border: '1px solid #e5e7eb', borderRadius: 12, padding: 16 }}>
+                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 12 }}>
+                    <div>
+                      <span style={{ fontSize: 16, fontWeight: 700 }}>{f.product}</span>
+                      <span style={{ fontSize: 12, color: '#6b7280', marginLeft: 8 }}>{f.date}</span>
+                    </div>
+                    {f.isSalaryDay && <span style={{ padding: '2px 8px', borderRadius: 6, fontSize: 10, fontWeight: 600, background: '#fef3c7', color: '#92400e' }}>SALARY DAY</span>}
+                  </div>
+                  <div style={{ fontSize: 24, fontWeight: 700, color: '#2563eb', marginBottom: 8 }}>{(f.predicted / 1e6).toFixed(1)}M txns</div>
+                  <div style={{ fontSize: 12, color: '#6b7280', marginBottom: 4 }}>Range: {(f.low / 1e6).toFixed(1)}M — {(f.high / 1e6).toFixed(1)}M ({f.confidence}% confidence)</div>
+                  <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 8, fontSize: 12, marginTop: 8 }}>
+                    <div><span style={{ color: '#6b7280' }}>Peak TPS:</span> <strong>{f.peakTps.toLocaleString()}</strong></div>
+                    <div><span style={{ color: '#6b7280' }}>Peak Hour:</span> <strong>{f.peakHour}:00</strong></div>
+                    <div style={{ gridColumn: 'span 2' }}><span style={{ color: '#6b7280' }}>Recommended Prefund:</span> <strong style={{ color: '#059669' }}>₦{(f.recommendedPrefund / 1e9).toFixed(0)}B</strong></div>
+                  </div>
+                </div>
+              ))}
+            </div>
+          </div>
+        )}
+
+        {/* ===== AI/ML TABS ===== */}
+
+        {/* 21. Prophet Pipeline */}
+        {activeTab === 'prophet' && prophetQuery.data && (
+          <div>
+            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: 16, marginBottom: 24 }}>
+              {[
+                { label: 'Confidence Score', value: `${prophetQuery.data.metrics.confidenceScore}%`, color: '#059669' },
+                { label: 'MAPE', value: `${prophetQuery.data.metrics.mape}%`, color: '#2563eb' },
+                { label: 'R-Squared', value: prophetQuery.data.metrics.rSquared.toFixed(4), color: '#7c3aed' },
+                { label: 'Training Samples', value: `${prophetQuery.data.metrics.trainingSamples} days`, color: '#0369a1' },
+              ].map(m => (
+                <div key={m.label} style={{ background: 'white', border: '1px solid #e5e7eb', borderRadius: 12, padding: 16 }}>
+                  <div style={{ fontSize: 11, color: '#6b7280', marginBottom: 4 }}>{m.label}</div>
+                  <div style={{ fontSize: 24, fontWeight: 700, color: m.color }}>{m.value}</div>
+                </div>
+              ))}
+            </div>
+            <div style={{ background: '#f0fdf4', border: '1px solid #bbf7d0', borderRadius: 12, padding: 16, marginBottom: 24 }}>
+              <div style={{ fontSize: 14, fontWeight: 700, color: '#166534', marginBottom: 8 }}>Model: {prophetQuery.data.model.id} — {prophetQuery.data.model.framework}</div>
+              <div style={{ fontSize: 12, color: '#166534' }}>Retraining: {prophetQuery.data.model.retainingSchedule} | Next: {prophetQuery.data.metrics.nextRetrain} | MCMC: {prophetQuery.data.model.mcmcSamples} samples</div>
+            </div>
+            <div style={{ marginBottom: 24 }}>
+              <div style={{ fontSize: 14, fontWeight: 700, marginBottom: 12 }}>Cross-Validation (5-Fold)</div>
+              <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: 13 }}>
+                <thead><tr style={{ borderBottom: '2px solid #e5e7eb' }}>{['Fold', 'MAPE %', 'RMSE', 'R-Squared'].map(h => <th key={h} style={{ padding: '8px 12px', textAlign: 'left', fontWeight: 600 }}>{h}</th>)}</tr></thead>
+                <tbody>{prophetQuery.data.crossValidation.map((cv: any) => (
+                  <tr key={cv.fold} style={{ borderBottom: '1px solid #f3f4f6' }}>
+                    <td style={{ padding: '8px 12px' }}>Fold {cv.fold}</td>
+                    <td style={{ padding: '8px 12px', fontWeight: 600, color: cv.mape < 2.34 ? '#059669' : '#dc2626' }}>{cv.mape}%</td>
+                    <td style={{ padding: '8px 12px' }}>{cv.rmse.toLocaleString()}</td>
+                    <td style={{ padding: '8px 12px', fontWeight: 600 }}>{cv.rSquared.toFixed(4)}</td>
+                  </tr>
+                ))}</tbody>
+              </table>
+            </div>
+            <div style={{ marginBottom: 24 }}>
+              <div style={{ fontSize: 14, fontWeight: 700, marginBottom: 12 }}>Nigerian Regressors</div>
+              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(2, 1fr)', gap: 12 }}>
+                {prophetQuery.data.regressors.map((r: any) => (
+                  <div key={r.name} style={{ background: 'white', border: '1px solid #e5e7eb', borderRadius: 8, padding: 12, display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                    <div>
+                      <div style={{ fontSize: 13, fontWeight: 600 }}>{r.name}</div>
+                      <div style={{ fontSize: 11, color: '#6b7280' }}>{r.description}</div>
+                    </div>
+                    <span style={{ fontSize: 14, fontWeight: 700, color: r.weight > 1 ? '#059669' : '#dc2626' }}>{r.weight}x</span>
+                  </div>
+                ))}
+              </div>
+            </div>
+            <div>
+              <div style={{ fontSize: 14, fontWeight: 700, marginBottom: 12 }}>Forecasts (97.66% Confidence)</div>
+              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(2, 1fr)', gap: 16 }}>
+                {prophetQuery.data.forecasts.map((f: any) => (
+                  <div key={`${f.product}-${f.date}`} style={{ background: 'white', border: '1px solid #e5e7eb', borderRadius: 12, padding: 16 }}>
+                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 8 }}>
+                      <div><span style={{ fontSize: 16, fontWeight: 700 }}>{f.product}</span> <span style={{ fontSize: 12, color: '#6b7280' }}>{f.date}</span></div>
+                      <div style={{ display: 'flex', gap: 4 }}>
+                        {f.isSalaryDay && <span style={{ padding: '2px 6px', borderRadius: 6, fontSize: 10, fontWeight: 600, background: '#fef3c7', color: '#92400e' }}>SALARY DAY</span>}
+                        {f.isHoliday && <span style={{ padding: '2px 6px', borderRadius: 6, fontSize: 10, fontWeight: 600, background: '#fce7f3', color: '#9d174d' }}>HOLIDAY</span>}
+                      </div>
+                    </div>
+                    <div style={{ fontSize: 24, fontWeight: 700, color: '#7c3aed' }}>{(f.predicted / 1e6).toFixed(1)}M txns</div>
+                    <div style={{ fontSize: 12, color: '#6b7280', marginTop: 4 }}>CI: {(f.lower / 1e6).toFixed(1)}M — {(f.upper / 1e6).toFixed(1)}M ({f.confidence}%)</div>
+                    <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: 8, fontSize: 12, marginTop: 8 }}>
+                      <div><span style={{ color: '#6b7280' }}>Peak TPS:</span> <strong>{f.peakTps.toLocaleString()}</strong></div>
+                      <div><span style={{ color: '#6b7280' }}>Peak:</span> <strong>{f.peakHour}</strong></div>
+                      <div><span style={{ color: '#6b7280' }}>Prefund:</span> <strong style={{ color: '#059669' }}>₦{f.recommendedPrefundBn.toFixed(0)}B</strong></div>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </div>
+          </div>
+        )}
+
+        {/* 22. CocoIndex */}
+        {activeTab === 'cocoindex' && cocoQuery.data && (
+          <div>
+            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: 16, marginBottom: 24 }}>
+              {[
+                { label: 'Status', value: cocoQuery.data.pipeline.status, color: '#059669' },
+                { label: 'Lag', value: `${cocoQuery.data.health.lagSeconds}s`, color: '#2563eb' },
+                { label: 'Throughput', value: `${cocoQuery.data.health.throughputAvg.toLocaleString()} docs/s`, color: '#7c3aed' },
+                { label: 'Error Rate', value: `${cocoQuery.data.health.errorRate}%`, color: '#059669' },
+              ].map(m => (
+                <div key={m.label} style={{ background: 'white', border: '1px solid #e5e7eb', borderRadius: 12, padding: 16 }}>
+                  <div style={{ fontSize: 11, color: '#6b7280', marginBottom: 4 }}>{m.label}</div>
+                  <div style={{ fontSize: 24, fontWeight: 700, color: m.color }}>{m.value}</div>
+                </div>
+              ))}
+            </div>
+            <div style={{ background: '#eff6ff', border: '1px solid #bfdbfe', borderRadius: 12, padding: 16, marginBottom: 24 }}>
+              <div style={{ fontSize: 14, fontWeight: 700, color: '#1d4ed8', marginBottom: 4 }}>Pipeline: {cocoQuery.data.pipeline.id} — {cocoQuery.data.pipeline.framework}</div>
+              <div style={{ fontSize: 12, color: '#1d4ed8' }}>Source: {cocoQuery.data.source.type} ({cocoQuery.data.source.tables.length} tables) | Batch: {cocoQuery.data.pipeline.batchSize.toLocaleString()} | Parallelism: {cocoQuery.data.pipeline.parallelism}</div>
+            </div>
+            <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: 13 }}>
+              <thead><tr style={{ borderBottom: '2px solid #e5e7eb' }}>{['Index', 'Total Docs', 'Indexed', 'Updated', 'Deleted', 'Errors', 'Duration', 'Throughput'].map(h => <th key={h} style={{ padding: '8px 12px', textAlign: 'left', fontWeight: 600 }}>{h}</th>)}</tr></thead>
+              <tbody>{cocoQuery.data.indexes.map((idx: any) => (
+                <tr key={idx.name} style={{ borderBottom: '1px solid #f3f4f6' }}>
+                  <td style={{ padding: '8px 12px', fontWeight: 600 }}>{idx.name}</td>
+                  <td style={{ padding: '8px 12px' }}>{idx.totalDocs.toLocaleString()}</td>
+                  <td style={{ padding: '8px 12px', color: '#059669', fontWeight: 600 }}>{idx.docsIndexed.toLocaleString()}</td>
+                  <td style={{ padding: '8px 12px', color: '#2563eb' }}>{idx.docsUpdated.toLocaleString()}</td>
+                  <td style={{ padding: '8px 12px', color: '#dc2626' }}>{idx.docsDeleted}</td>
+                  <td style={{ padding: '8px 12px' }}>{idx.errors}</td>
+                  <td style={{ padding: '8px 12px' }}>{idx.durationMs}ms</td>
+                  <td style={{ padding: '8px 12px', fontWeight: 600 }}>{idx.throughputDps.toLocaleString()} docs/s</td>
+                </tr>
+              ))}</tbody>
+            </table>
+          </div>
+        )}
+
+        {/* 23. EPR-KGQA */}
+        {activeTab === 'kgqa' && kgqaQuery.data && (
+          <div>
+            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: 16, marginBottom: 24 }}>
+              {[
+                { label: 'Graph Nodes', value: kgqaQuery.data.graph.totalNodes.toLocaleString(), color: '#7c3aed' },
+                { label: 'Graph Edges', value: kgqaQuery.data.graph.totalEdges.toLocaleString(), color: '#2563eb' },
+                { label: 'Node Types', value: kgqaQuery.data.graph.nodeTypes.toString(), color: '#059669' },
+                { label: 'Relation Types', value: kgqaQuery.data.graph.relationTypes.toString(), color: '#dc2626' },
+              ].map(m => (
+                <div key={m.label} style={{ background: 'white', border: '1px solid #e5e7eb', borderRadius: 12, padding: 16 }}>
+                  <div style={{ fontSize: 11, color: '#6b7280', marginBottom: 4 }}>{m.label}</div>
+                  <div style={{ fontSize: 24, fontWeight: 700, color: m.color }}>{m.value}</div>
+                </div>
+              ))}
+            </div>
+            <div style={{ background: '#faf5ff', border: '1px solid #e9d5ff', borderRadius: 12, padding: 16, marginBottom: 24 }}>
+              <div style={{ fontSize: 14, fontWeight: 700, color: '#7c3aed', marginBottom: 4 }}>{kgqaQuery.data.engine.name} — {kgqaQuery.data.engine.paper}</div>
+              <div style={{ fontSize: 12, color: '#7c3aed' }}>Graph: {kgqaQuery.data.engine.graphBackend} | LLM: {kgqaQuery.data.engine.llmBackend}</div>
+            </div>
+            <div style={{ fontSize: 14, fontWeight: 700, marginBottom: 12 }}>Sample Queries & Answers</div>
+            <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
+              {kgqaQuery.data.sampleQueries.map((q: any, i: number) => (
+                <div key={i} style={{ background: 'white', border: '1px solid #e5e7eb', borderRadius: 12, padding: 16 }}>
+                  <div style={{ fontSize: 13, fontWeight: 700, color: '#374151', marginBottom: 8 }}>{q.question}</div>
+                  <div style={{ fontSize: 13, color: '#4b5563', marginBottom: 8, padding: '8px 12px', background: '#f9fafb', borderRadius: 8 }}>{q.answer}</div>
+                  <div style={{ display: 'flex', gap: 16, fontSize: 11, color: '#6b7280' }}>
+                    <span>Confidence: <strong style={{ color: q.confidence > 0.9 ? '#059669' : '#f59e0b' }}>{(q.confidence * 100).toFixed(0)}%</strong></span>
+                    <span>Time: <strong>{q.timeMs}ms</strong></span>
+                  </div>
+                </div>
+              ))}
+            </div>
+          </div>
+        )}
+
+        {/* 24. FalkorDB */}
+        {activeTab === 'falkordb' && falkorQuery.data && (
+          <div>
+            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: 16, marginBottom: 24 }}>
+              {[
+                { label: 'Avg Query Time', value: `${falkorQuery.data.metrics.avgQueryTimeMs}ms`, color: '#059669' },
+                { label: 'P99 Latency', value: `${falkorQuery.data.metrics.p99QueryTimeMs}ms`, color: '#f59e0b' },
+                { label: 'Queries/sec', value: falkorQuery.data.metrics.queriesPerSecond.toLocaleString(), color: '#2563eb' },
+                { label: 'Cache Hit Rate', value: `${(falkorQuery.data.metrics.cacheHitRate * 100).toFixed(0)}%`, color: '#7c3aed' },
+              ].map(m => (
+                <div key={m.label} style={{ background: 'white', border: '1px solid #e5e7eb', borderRadius: 12, padding: 16 }}>
+                  <div style={{ fontSize: 11, color: '#6b7280', marginBottom: 4 }}>{m.label}</div>
+                  <div style={{ fontSize: 24, fontWeight: 700, color: m.color }}>{m.value}</div>
+                </div>
+              ))}
+            </div>
+            <div style={{ background: '#fef2f2', border: '1px solid #fecaca', borderRadius: 12, padding: 16, marginBottom: 24 }}>
+              <div style={{ fontSize: 14, fontWeight: 700, color: '#991b1b', marginBottom: 4 }}>FalkorDB — {falkorQuery.data.connection.graphName}</div>
+              <div style={{ fontSize: 12, color: '#991b1b' }}>{falkorQuery.data.connection.host}:{falkorQuery.data.connection.port} | {falkorQuery.data.metrics.totalNodes.toLocaleString()} nodes | {falkorQuery.data.metrics.totalEdges.toLocaleString()} edges | {falkorQuery.data.metrics.memoryUsageMb}MB</div>
+            </div>
+            <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: 13 }}>
+              <thead><tr style={{ borderBottom: '2px solid #e5e7eb' }}>{['Query', 'Results', 'Time', 'Type'].map(h => <th key={h} style={{ padding: '8px 12px', textAlign: 'left', fontWeight: 600 }}>{h}</th>)}</tr></thead>
+              <tbody>{falkorQuery.data.recentQueries.map((q: any, i: number) => (
+                <tr key={i} style={{ borderBottom: '1px solid #f3f4f6' }}>
+                  <td style={{ padding: '8px 12px', fontWeight: 600 }}>{q.query}</td>
+                  <td style={{ padding: '8px 12px' }}>{q.resultCount}</td>
+                  <td style={{ padding: '8px 12px', color: q.timeMs < 1 ? '#059669' : '#f59e0b', fontWeight: 600 }}>{q.timeMs}ms</td>
+                  <td style={{ padding: '8px 12px' }}><span style={{ padding: '2px 8px', borderRadius: 6, fontSize: 11, fontWeight: 600, background: '#f3e8ff', color: '#7c3aed' }}>{q.type}</span></td>
+                </tr>
+              ))}</tbody>
+            </table>
+          </div>
+        )}
+
+        {/* 25. Ollama LLM */}
+        {activeTab === 'ollama' && ollamaQuery.data && (
+          <div>
+            {/* Source indicator */}
+            <div style={{ background: (ollamaQuery.data as any)._source?.includes('LIVE') ? '#dcfce7' : '#fef3c7', border: `1px solid ${(ollamaQuery.data as any)._source?.includes('LIVE') ? '#86efac' : '#fcd34d'}`, borderRadius: 8, padding: '8px 16px', marginBottom: 16, fontSize: 12, fontWeight: 600, color: (ollamaQuery.data as any)._source?.includes('LIVE') ? '#166534' : '#92400e' }}>
+              {(ollamaQuery.data as any)._source || 'Data source unknown'}
+            </div>
+
+            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: 16, marginBottom: 24 }}>
+              {[
+                { label: 'Total Queries', value: ollamaQuery.data.stats.totalQueries.toLocaleString(), color: '#2563eb' },
+                { label: 'Avg Latency', value: `${(ollamaQuery.data.stats.avgLatencyMs / 1000).toFixed(1)}s`, color: '#f59e0b' },
+                { label: 'Model Size', value: `${ollamaQuery.data.stats.modelSizeGb}GB`, color: '#7c3aed' },
+                { label: 'Uptime', value: `${ollamaQuery.data.stats.uptimeHours}h`, color: '#059669' },
+              ].map(m => (
+                <div key={m.label} style={{ background: 'white', border: '1px solid #e5e7eb', borderRadius: 12, padding: 16 }}>
+                  <div style={{ fontSize: 11, color: '#6b7280', marginBottom: 4 }}>{m.label}</div>
+                  <div style={{ fontSize: 24, fontWeight: 700, color: m.color }}>{m.value}</div>
+                </div>
+              ))}
+            </div>
+            <div style={{ background: '#eff6ff', border: '1px solid #bfdbfe', borderRadius: 12, padding: 16, marginBottom: 24 }}>
+              <div style={{ fontSize: 14, fontWeight: 700, color: '#1d4ed8', marginBottom: 4 }}>Ollama — {ollamaQuery.data.config.model}</div>
+              <div style={{ fontSize: 12, color: '#1d4ed8' }}>{ollamaQuery.data.config.framework} | Temp: {ollamaQuery.data.config.temperature} | Sources: {ollamaQuery.data.contextSources.join(', ')}</div>
+            </div>
+
+            {/* Interactive Query Form */}
+            <div style={{ background: 'white', border: '2px solid #3b82f6', borderRadius: 12, padding: 20, marginBottom: 24 }}>
+              <div style={{ fontSize: 14, fontWeight: 700, marginBottom: 12, color: '#1d4ed8' }}>Ask Ollama (Live LLM Query)</div>
+              <form onSubmit={(e) => { e.preventDefault(); if (ollamaInput.trim()) ollamaMutation.mutate({ question: ollamaInput }); }} style={{ display: 'flex', gap: 8 }}>
+                <input
+                  type="text"
+                  value={ollamaInput}
+                  onChange={(e) => setOllamaInput(e.target.value)}
+                  placeholder="Ask about NIP volumes, fraud trends, compliance status..."
+                  style={{ flex: 1, padding: '10px 16px', borderRadius: 8, border: '1px solid #d1d5db', fontSize: 14, outline: 'none' }}
+                  disabled={ollamaMutation.isPending}
+                />
+                <button
+                  type="submit"
+                  disabled={ollamaMutation.isPending || !ollamaInput.trim()}
+                  style={{ padding: '10px 24px', borderRadius: 8, border: 'none', background: ollamaMutation.isPending ? '#93c5fd' : '#2563eb', color: 'white', fontWeight: 700, fontSize: 14, cursor: ollamaMutation.isPending ? 'wait' : 'pointer' }}
+                >
+                  {ollamaMutation.isPending ? 'Thinking...' : 'Ask'}
+                </button>
+              </form>
+              {ollamaMutation.error && (
+                <div style={{ marginTop: 8, padding: '8px 12px', background: '#fef2f2', border: '1px solid #fecaca', borderRadius: 8, fontSize: 12, color: '#dc2626' }}>
+                  {ollamaMutation.error.message}
+                </div>
+              )}
+            </div>
+
+            {/* Interactive query history */}
+            {ollamaHistory.length > 0 && (
+              <>
+                <div style={{ fontSize: 14, fontWeight: 700, marginBottom: 12, color: '#059669' }}>Live LLM Responses</div>
+                <div style={{ display: 'flex', flexDirection: 'column', gap: 12, marginBottom: 24 }}>
+                  {ollamaHistory.map((q, i) => (
+                    <div key={i} style={{ background: '#f0fdf4', border: '1px solid #86efac', borderRadius: 12, padding: 16 }}>
+                      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 8 }}>
+                        <div style={{ fontSize: 13, fontWeight: 700 }}>{q.question}</div>
+                        <span style={{ padding: '2px 8px', borderRadius: 6, fontSize: 10, fontWeight: 600, background: '#dcfce7', color: '#166534' }}>LIVE</span>
+                      </div>
+                      <div style={{ fontSize: 13, color: '#4b5563', padding: '8px 12px', background: 'white', borderRadius: 8, marginBottom: 8, whiteSpace: 'pre-wrap' }}>{q.answer}</div>
+                      <div style={{ display: 'flex', gap: 16, fontSize: 11, color: '#6b7280' }}>
+                        <span>Latency: <strong>{(q.latencyMs / 1000).toFixed(1)}s</strong></span>
+                        <span>Tokens: <strong>{q.tokens}</strong></span>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              </>
+            )}
+
+            <div style={{ fontSize: 14, fontWeight: 700, marginBottom: 12 }}>Recent Queries</div>
+            <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
+              {ollamaQuery.data.recentQueries.map((q: any, i: number) => (
+                <div key={i} style={{ background: 'white', border: '1px solid #e5e7eb', borderRadius: 12, padding: 16 }}>
+                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 8 }}>
+                    <div style={{ fontSize: 13, fontWeight: 700 }}>{q.question}</div>
+                    <span style={{ padding: '2px 8px', borderRadius: 6, fontSize: 10, fontWeight: 600, background: '#dbeafe', color: '#1d4ed8' }}>{q.category}</span>
+                  </div>
+                  <div style={{ fontSize: 13, color: '#4b5563', padding: '8px 12px', background: '#f9fafb', borderRadius: 8, marginBottom: 8, whiteSpace: 'pre-wrap' }}>{q.answer}</div>
+                  <div style={{ display: 'flex', gap: 16, fontSize: 11, color: '#6b7280' }}>
+                    <span>Latency: <strong>{(q.latencyMs / 1000).toFixed(1)}s</strong></span>
+                    <span>Tokens: <strong>{q.tokens}</strong></span>
+                  </div>
+                </div>
+              ))}
+            </div>
+          </div>
+        )}
+
+        {/* 26. ART Robustness */}
+        {activeTab === 'art' && artQuery.data && (
+          <div>
+            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: 16, marginBottom: 24 }}>
+              {[
+                { label: 'Overall Robustness', value: `${artQuery.data.overallRobustness}%`, color: '#059669' },
+                { label: 'Tests Run', value: artQuery.data.testResults.length.toString(), color: '#2563eb' },
+                { label: 'Framework', value: 'ART v1.17', color: '#7c3aed' },
+              ].map(m => (
+                <div key={m.label} style={{ background: 'white', border: '1px solid #e5e7eb', borderRadius: 12, padding: 16 }}>
+                  <div style={{ fontSize: 11, color: '#6b7280', marginBottom: 4 }}>{m.label}</div>
+                  <div style={{ fontSize: 24, fontWeight: 700, color: m.color }}>{m.value}</div>
+                </div>
+              ))}
+            </div>
+            <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: 12, marginBottom: 24 }}>
+              <thead><tr style={{ borderBottom: '2px solid #e5e7eb' }}>{['Test ID', 'Attack Type', 'Attack', 'Original', 'Adversarial', 'Robustness', 'Defense'].map(h => <th key={h} style={{ padding: '8px 10px', textAlign: 'left', fontWeight: 600 }}>{h}</th>)}</tr></thead>
+              <tbody>{artQuery.data.testResults.map((t: any) => (
+                <tr key={t.testId} style={{ borderBottom: '1px solid #f3f4f6' }}>
+                  <td style={{ padding: '8px 10px', fontWeight: 600 }}>{t.testId}</td>
+                  <td style={{ padding: '8px 10px' }}><span style={{ padding: '2px 6px', borderRadius: 6, fontSize: 10, fontWeight: 600, background: t.attackType === 'EVASION' ? '#fef3c7' : t.attackType === 'POISONING' ? '#fce7f3' : '#e0e7ff', color: t.attackType === 'EVASION' ? '#92400e' : t.attackType === 'POISONING' ? '#9d174d' : '#3730a3' }}>{t.attackType}</span></td>
+                  <td style={{ padding: '8px 10px', fontSize: 11 }}>{t.attackName}</td>
+                  <td style={{ padding: '8px 10px', color: '#059669', fontWeight: 600 }}>{t.originalAccuracy}%</td>
+                  <td style={{ padding: '8px 10px', color: '#dc2626', fontWeight: 600 }}>{t.adversarialAccuracy}%</td>
+                  <td style={{ padding: '8px 10px', fontWeight: 700, color: t.robustness > 90 ? '#059669' : '#f59e0b' }}>{t.robustness}%</td>
+                  <td style={{ padding: '8px 10px', fontSize: 11 }}>{t.defense}</td>
+                </tr>
+              ))}</tbody>
+            </table>
+            <div style={{ background: '#fffbeb', border: '1px solid #fde68a', borderRadius: 12, padding: 16 }}>
+              <div style={{ fontSize: 14, fontWeight: 700, color: '#92400e', marginBottom: 8 }}>Recommendations</div>
+              <ul style={{ margin: 0, paddingLeft: 20, fontSize: 13, color: '#92400e' }}>
+                {artQuery.data.recommendations.map((r: string, i: number) => <li key={i} style={{ marginBottom: 4 }}>{r}</li>)}
+              </ul>
+            </div>
+          </div>
+        )}
+
+        {/* 27. GNN + Neo4j */}
+        {activeTab === 'gnn_neo4j' && gnnQuery.data && (
+          <div>
+            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: 16, marginBottom: 24 }}>
+              {[
+                { label: 'Accuracy', value: `${gnnQuery.data.metrics.accuracy}%`, color: '#059669' },
+                { label: 'AUC-ROC', value: gnnQuery.data.metrics.aucRoc.toFixed(3), color: '#2563eb' },
+                { label: 'F1 Score', value: `${gnnQuery.data.metrics.f1Score}%`, color: '#7c3aed' },
+                { label: 'Networks Found', value: gnnQuery.data.detectedNetworks.length.toString(), color: '#dc2626' },
+              ].map(m => (
+                <div key={m.label} style={{ background: 'white', border: '1px solid #e5e7eb', borderRadius: 12, padding: 16 }}>
+                  <div style={{ fontSize: 11, color: '#6b7280', marginBottom: 4 }}>{m.label}</div>
+                  <div style={{ fontSize: 24, fontWeight: 700, color: m.color }}>{m.value}</div>
+                </div>
+              ))}
+            </div>
+            <div style={{ background: '#faf5ff', border: '1px solid #e9d5ff', borderRadius: 12, padding: 16, marginBottom: 24 }}>
+              <div style={{ fontSize: 14, fontWeight: 700, color: '#7c3aed', marginBottom: 4 }}>{gnnQuery.data.model.type} — {gnnQuery.data.model.framework}</div>
+              <div style={{ fontSize: 12, color: '#7c3aed' }}>{gnnQuery.data.model.layers} layers | {gnnQuery.data.model.hiddenChannels} hidden | {gnnQuery.data.model.attentionHeads} heads | {gnnQuery.data.model.parameters.toLocaleString()} params | Neo4j: {gnnQuery.data.neo4j.database}</div>
+            </div>
+            <div style={{ fontSize: 14, fontWeight: 700, marginBottom: 12 }}>Detected Fraud Networks</div>
+            <div style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
+              {gnnQuery.data.detectedNetworks.map((net: any) => (
+                <div key={net.networkId} style={{ background: 'white', border: `2px solid ${net.status === 'CONFIRMED' ? '#dc2626' : net.status === 'INVESTIGATING' ? '#f59e0b' : '#2563eb'}`, borderRadius: 12, padding: 16 }}>
+                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 12 }}>
+                    <div>
+                      <span style={{ fontSize: 16, fontWeight: 700 }}>{net.networkId}</span>
+                      <span style={{ marginLeft: 8, padding: '2px 8px', borderRadius: 6, fontSize: 11, fontWeight: 600, background: net.type === 'MONEY_MULE_RING' ? '#fef2f2' : net.type === 'FAN_OUT' ? '#eff6ff' : '#faf5ff', color: net.type === 'MONEY_MULE_RING' ? '#991b1b' : net.type === 'FAN_OUT' ? '#1d4ed8' : '#7c3aed' }}>{net.type.replace(/_/g, ' ')}</span>
+                    </div>
+                    <div style={{ display: 'flex', gap: 8, alignItems: 'center' }}>
+                      <span style={{ fontSize: 12, color: '#6b7280' }}>Risk: <strong style={{ color: net.riskScore > 0.9 ? '#dc2626' : '#f59e0b' }}>{(net.riskScore * 100).toFixed(0)}%</strong></span>
+                      <span style={{ padding: '2px 8px', borderRadius: 6, fontSize: 11, fontWeight: 600, background: net.status === 'CONFIRMED' ? '#fef2f2' : net.status === 'INVESTIGATING' ? '#fef3c7' : '#dbeafe', color: net.status === 'CONFIRMED' ? '#991b1b' : net.status === 'INVESTIGATING' ? '#92400e' : '#1d4ed8' }}>{net.status}</span>
+                    </div>
+                  </div>
+                  <div style={{ fontSize: 12, color: '#6b7280', marginBottom: 8 }}>Value: <strong>₦{(net.totalValue / 1e6).toFixed(1)}M</strong> | Edges: {net.edges} | Detected: {new Date(net.detectedAt).toLocaleString()}</div>
+                  <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: 12 }}>
+                    <thead><tr style={{ borderBottom: '1px solid #e5e7eb' }}>{['Account', 'Bank', 'Role', 'Risk', 'Connections', 'Amount', 'Age'].map(h => <th key={h} style={{ padding: '6px 8px', textAlign: 'left', fontWeight: 600 }}>{h}</th>)}</tr></thead>
+                    <tbody>{net.nodes.map((n: any) => (
+                      <tr key={n.accountId} style={{ borderBottom: '1px solid #f3f4f6' }}>
+                        <td style={{ padding: '6px 8px', fontFamily: 'monospace', fontSize: 11 }}>{n.accountId}</td>
+                        <td style={{ padding: '6px 8px' }}>{n.bank}</td>
+                        <td style={{ padding: '6px 8px' }}><span style={{ padding: '1px 6px', borderRadius: 4, fontSize: 10, fontWeight: 600, background: n.role === 'ORCHESTRATOR' ? '#fef2f2' : n.role === 'MULE' ? '#fef3c7' : '#dcfce7', color: n.role === 'ORCHESTRATOR' ? '#991b1b' : n.role === 'MULE' ? '#92400e' : '#166534' }}>{n.role}</span></td>
+                        <td style={{ padding: '6px 8px', fontWeight: 600, color: n.riskScore > 0.9 ? '#dc2626' : '#f59e0b' }}>{(n.riskScore * 100).toFixed(0)}%</td>
+                        <td style={{ padding: '6px 8px' }}>{n.connections}</td>
+                        <td style={{ padding: '6px 8px' }}>₦{(n.totalAmount / 1e6).toFixed(1)}M</td>
+                        <td style={{ padding: '6px 8px' }}>{n.ageDays}d</td>
+                      </tr>
+                    ))}</tbody>
+                  </table>
+                </div>
+              ))}
+            </div>
+          </div>
+        )}
+
+        {/* 28. MCMC Fraud Scoring */}
+        {activeTab === 'mcmc' && mcmcQuery.data && (
+          <div>
+            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: 16, marginBottom: 24 }}>
+              {[
+                { label: 'Total Scored', value: mcmcQuery.data.performance.totalScored.toLocaleString(), color: '#2563eb' },
+                { label: 'Scoring Rate', value: `${mcmcQuery.data.performance.scoringRatePerSec.toLocaleString()}/s`, color: '#059669' },
+                { label: 'Avg Time', value: `${mcmcQuery.data.performance.avgScoringTimeMs}ms`, color: '#7c3aed' },
+                { label: 'Blocked', value: mcmcQuery.data.actionDistribution.BLOCK.toLocaleString(), color: '#dc2626' },
+              ].map(m => (
+                <div key={m.label} style={{ background: 'white', border: '1px solid #e5e7eb', borderRadius: 12, padding: 16 }}>
+                  <div style={{ fontSize: 11, color: '#6b7280', marginBottom: 4 }}>{m.label}</div>
+                  <div style={{ fontSize: 24, fontWeight: 700, color: m.color }}>{m.value}</div>
+                </div>
+              ))}
+            </div>
+            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 16, marginBottom: 24 }}>
+              <div style={{ background: '#f0f9ff', border: '1px solid #bae6fd', borderRadius: 12, padding: 16 }}>
+                <div style={{ fontSize: 14, fontWeight: 700, color: '#0369a1', marginBottom: 8 }}>MCMC Configuration</div>
+                <div style={{ fontSize: 12, color: '#0369a1', display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 4 }}>
+                  <div>Chains: <strong>{mcmcQuery.data.config.numChains}</strong></div>
+                  <div>Samples: <strong>{mcmcQuery.data.config.numSamples}</strong></div>
+                  <div>Burn-in: <strong>{mcmcQuery.data.config.burnIn}</strong></div>
+                  <div>Prior: <strong>{mcmcQuery.data.config.priorDistribution}</strong></div>
+                  <div>Framework: <strong>{mcmcQuery.data.config.framework}</strong></div>
+                  <div>Engine: <strong>{mcmcQuery.data.config.rustEngine}</strong></div>
+                </div>
+              </div>
+              <div style={{ background: '#fef2f2', border: '1px solid #fecaca', borderRadius: 12, padding: 16 }}>
+                <div style={{ fontSize: 14, fontWeight: 700, color: '#991b1b', marginBottom: 8 }}>Action Distribution</div>
+                <div style={{ fontSize: 12, display: 'flex', flexDirection: 'column', gap: 4 }}>
+                  {Object.entries(mcmcQuery.data.actionDistribution).map(([action, count]) => (
+                    <div key={action} style={{ display: 'flex', justifyContent: 'space-between' }}>
+                      <span style={{ fontWeight: 600, color: action === 'BLOCK' ? '#dc2626' : action === 'REVIEW' ? '#f59e0b' : action === 'FLAG' ? '#2563eb' : '#059669' }}>{action}</span>
+                      <strong>{(count as number).toLocaleString()}</strong>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            </div>
+            <div style={{ marginBottom: 24 }}>
+              <div style={{ fontSize: 14, fontWeight: 700, marginBottom: 12 }}>Chain Diagnostics</div>
+              <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: 13 }}>
+                <thead><tr style={{ borderBottom: '2px solid #e5e7eb' }}>{['Chain', 'R-hat', 'ESS', 'Accept Rate', 'Mean P(fraud)'].map(h => <th key={h} style={{ padding: '8px 12px', textAlign: 'left', fontWeight: 600 }}>{h}</th>)}</tr></thead>
+                <tbody>{mcmcQuery.data.chainDiagnostics.map((c: any) => (
+                  <tr key={c.chain} style={{ borderBottom: '1px solid #f3f4f6' }}>
+                    <td style={{ padding: '8px 12px', fontWeight: 600 }}>Chain {c.chain}</td>
+                    <td style={{ padding: '8px 12px', color: c.rHat < 1.01 ? '#059669' : '#dc2626', fontWeight: 600 }}>{c.rHat.toFixed(4)}</td>
+                    <td style={{ padding: '8px 12px' }}>{c.effectiveSampleSize.toLocaleString()}</td>
+                    <td style={{ padding: '8px 12px' }}>{(c.acceptanceRate * 100).toFixed(1)}%</td>
+                    <td style={{ padding: '8px 12px' }}>{c.meanFraudProb.toFixed(4)}</td>
+                  </tr>
+                ))}</tbody>
+              </table>
+            </div>
+            <div style={{ marginBottom: 24 }}>
+              <div style={{ fontSize: 14, fontWeight: 700, marginBottom: 12 }}>Recent Scored Transactions</div>
+              <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: 12 }}>
+                <thead><tr style={{ borderBottom: '2px solid #e5e7eb' }}>{['Reference', 'Bank', 'Amount', 'P(fraud)', 'Action', 'Risk Factors'].map(h => <th key={h} style={{ padding: '8px 10px', textAlign: 'left', fontWeight: 600 }}>{h}</th>)}</tr></thead>
+                <tbody>{mcmcQuery.data.recentScores.map((s: any) => (
+                  <tr key={s.ref} style={{ borderBottom: '1px solid #f3f4f6' }}>
+                    <td style={{ padding: '8px 10px', fontFamily: 'monospace', fontSize: 11 }}>{s.ref}</td>
+                    <td style={{ padding: '8px 10px' }}>{s.bank}</td>
+                    <td style={{ padding: '8px 10px' }}>₦{(s.amount / 1e6).toFixed(1)}M</td>
+                    <td style={{ padding: '8px 10px', fontWeight: 700, color: s.probability > 0.85 ? '#dc2626' : s.probability > 0.5 ? '#f59e0b' : s.probability > 0.2 ? '#2563eb' : '#059669' }}>{(s.probability * 100).toFixed(1)}%</td>
+                    <td style={{ padding: '8px 10px' }}><span style={{ padding: '2px 6px', borderRadius: 4, fontSize: 10, fontWeight: 600, background: s.action === 'BLOCK' ? '#fef2f2' : s.action === 'REVIEW' ? '#fef3c7' : s.action === 'FLAG' ? '#dbeafe' : '#dcfce7', color: s.action === 'BLOCK' ? '#991b1b' : s.action === 'REVIEW' ? '#92400e' : s.action === 'FLAG' ? '#1d4ed8' : '#166534' }}>{s.action}</span></td>
+                    <td style={{ padding: '8px 10px' }}>{s.factors.length > 0 ? s.factors.map((f: string) => <span key={f} style={{ padding: '1px 4px', borderRadius: 4, fontSize: 9, fontWeight: 600, background: '#f3f4f6', color: '#374151', marginRight: 4 }}>{f}</span>) : <span style={{ fontSize: 11, color: '#9ca3af' }}>none</span>}</td>
+                  </tr>
+                ))}</tbody>
+              </table>
+            </div>
+            <div>
+              <div style={{ fontSize: 14, fontWeight: 700, marginBottom: 12 }}>Risk Factors</div>
+              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(2, 1fr)', gap: 12 }}>
+                {mcmcQuery.data.riskFactors.map((f: any) => (
+                  <div key={f.factor} style={{ background: 'white', border: '1px solid #e5e7eb', borderRadius: 8, padding: 12, display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                    <div>
+                      <div style={{ fontSize: 13, fontWeight: 600 }}>{f.factor}</div>
+                      <div style={{ fontSize: 11, color: '#6b7280' }}>{f.description}</div>
+                    </div>
+                    <div style={{ textAlign: 'right' }}>
+                      <div style={{ fontSize: 14, fontWeight: 700, color: '#7c3aed' }}>{f.weight}x</div>
+                      <div style={{ fontSize: 10, color: '#6b7280' }}>{f.triggerCount.toLocaleString()} triggers</div>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </div>
+          </div>
+        )}
+
+        {/* ============== Saga Orchestration ============== */}
+        {activeTab === 'saga' && sagaQuery.data && (
+          <div>
+            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: 14, marginBottom: 24 }}>
+              {[
+                { label: 'Compensations', value: sagaQuery.data.compensations.total.toLocaleString(), color: '#f59e0b' },
+                { label: 'Last Hour', value: sagaQuery.data.compensations.lastHour.toString(), color: '#ef4444' },
+                { label: 'Compensation Rate', value: `${sagaQuery.data.compensations.successRate}%`, color: '#10b981' },
+              ].map(c => (
+                <div key={c.label} style={{ background: 'white', borderRadius: 12, padding: 16, border: '1px solid #e5e7eb' }}>
+                  <div style={{ fontSize: 12, color: '#6b7280' }}>{c.label}</div>
+                  <div style={{ fontSize: 22, fontWeight: 700, color: c.color }}>{c.value}</div>
+                </div>
+              ))}
+            </div>
+            <h3 style={{ fontSize: 16, fontWeight: 600, marginBottom: 12 }}>Saga Types</h3>
+            <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: 13 }}>
+              <thead><tr style={{ background: '#f9fafb', textAlign: 'left' }}><th style={{ padding: 10 }}>Type</th><th style={{ padding: 10 }}>Steps</th><th style={{ padding: 10 }}>Avg Duration</th><th style={{ padding: 10 }}>Success Rate</th><th style={{ padding: 10 }}>Active</th></tr></thead>
+              <tbody>{sagaQuery.data.sagaTypes.map((s: any) => (
+                <tr key={s.type} style={{ borderBottom: '1px solid #e5e7eb' }}>
+                  <td style={{ padding: 10, fontWeight: 600 }}>{s.name}</td>
+                  <td style={{ padding: 10 }}>{s.steps}</td>
+                  <td style={{ padding: 10 }}>{s.avgDurationMs < 1000 ? `${s.avgDurationMs}ms` : s.avgDurationMs < 60000 ? `${(s.avgDurationMs/1000).toFixed(1)}s` : `${(s.avgDurationMs/3600000).toFixed(1)}h`}</td>
+                  <td style={{ padding: 10 }}><span style={{ color: s.successRate >= 99 ? '#10b981' : '#f59e0b' }}>{s.successRate}%</span></td>
+                  <td style={{ padding: 10 }}>{s.activeSagas}</td>
+                </tr>
+              ))}</tbody>
+            </table>
+            <h3 style={{ fontSize: 16, fontWeight: 600, marginTop: 24, marginBottom: 12 }}>Recent Sagas</h3>
+            <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: 13 }}>
+              <thead><tr style={{ background: '#f9fafb', textAlign: 'left' }}><th style={{ padding: 10 }}>ID</th><th style={{ padding: 10 }}>Type</th><th style={{ padding: 10 }}>Status</th><th style={{ padding: 10 }}>Duration</th><th style={{ padding: 10 }}>Steps</th></tr></thead>
+              <tbody>{sagaQuery.data.recentSagas.map((s: any) => (
+                <tr key={s.id} style={{ borderBottom: '1px solid #e5e7eb' }}>
+                  <td style={{ padding: 10, fontFamily: 'monospace', fontSize: 11 }}>{s.id}</td>
+                  <td style={{ padding: 10 }}>{s.type}</td>
+                  <td style={{ padding: 10 }}>{statusBadge(s.status)}</td>
+                  <td style={{ padding: 10 }}>{s.duration}</td>
+                  <td style={{ padding: 10 }}>{s.steps}</td>
+                </tr>
+              ))}</tbody>
+            </table>
+          </div>
+        )}
+
+        {/* ============== Hot Path Optimization ============== */}
+        {activeTab === 'hotpath' && hotpathQuery.data && (
+          <div>
+            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: 14, marginBottom: 24 }}>
+              {[
+                { label: 'Total Requests', value: hotpathQuery.data.metrics.totalRequests.toLocaleString(), color: '#3b82f6' },
+                { label: 'Async Deferred', value: hotpathQuery.data.metrics.asyncDeferred.toLocaleString(), color: '#8b5cf6' },
+                { label: 'Avg Latency', value: `${(hotpathQuery.data.metrics.avgLatencyNs / 1_000_000).toFixed(0)}ms`, color: '#10b981' },
+              ].map(c => (
+                <div key={c.label} style={{ background: 'white', borderRadius: 12, padding: 16, border: '1px solid #e5e7eb' }}>
+                  <div style={{ fontSize: 12, color: '#6b7280' }}>{c.label}</div>
+                  <div style={{ fontSize: 22, fontWeight: 700, color: c.color }}>{c.value}</div>
+                </div>
+              ))}
+            </div>
+            <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: 13 }}>
+              <thead><tr style={{ background: '#f9fafb', textAlign: 'left' }}><th style={{ padding: 10 }}>Payment Type</th><th style={{ padding: 10 }}>Fraud</th><th style={{ padding: 10 }}>Sanctions</th><th style={{ padding: 10 }}>Audit</th><th style={{ padding: 10 }}>Kafka</th><th style={{ padding: 10 }}>Target</th></tr></thead>
+              <tbody>{hotpathQuery.data.configs.map((c: any) => (
+                <tr key={c.paymentType} style={{ borderBottom: '1px solid #e5e7eb' }}>
+                  <td style={{ padding: 10, fontWeight: 600 }}>{c.paymentType}</td>
+                  <td style={{ padding: 10 }}><span style={{ color: c.fraudScoring === 'SYNC' ? '#ef4444' : '#10b981', fontWeight: 600 }}>{c.fraudScoring}</span></td>
+                  <td style={{ padding: 10 }}><span style={{ color: c.sanctions === 'SYNC' ? '#ef4444' : '#10b981', fontWeight: 600 }}>{c.sanctions}</span></td>
+                  <td style={{ padding: 10 }}><span style={{ color: c.auditLog === 'SYNC' ? '#ef4444' : '#10b981', fontWeight: 600 }}>{c.auditLog}</span></td>
+                  <td style={{ padding: 10 }}><span style={{ fontWeight: 600 }}>{c.kafka}</span></td>
+                  <td style={{ padding: 10, fontFamily: 'monospace', fontSize: 11 }}>{c.targetLatency}</td>
+                </tr>
+              ))}</tbody>
+            </table>
+          </div>
+        )}
+
+        {/* ============== CQRS Metrics ============== */}
+        {activeTab === 'cqrs' && cqrsQuery.data && (
+          <div>
+            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(2, 1fr)', gap: 14, marginBottom: 24 }}>
+              <div style={{ background: 'white', borderRadius: 12, padding: 16, border: '1px solid #e5e7eb' }}>
+                <div style={{ fontSize: 14, fontWeight: 600, marginBottom: 8 }}>Write Store ({cqrsQuery.data.writeStore.engine})</div>
+                <div style={{ fontSize: 11, color: '#6b7280' }}>Commands: {cqrsQuery.data.writeStore.commandsProcessed.toLocaleString()}</div>
+                <div style={{ fontSize: 11, color: '#6b7280' }}>Avg Write Latency: {cqrsQuery.data.writeStore.avgWriteLatencyMs}ms</div>
+              </div>
+              <div style={{ background: 'white', borderRadius: 12, padding: 16, border: '1px solid #e5e7eb' }}>
+                <div style={{ fontSize: 14, fontWeight: 600, marginBottom: 8 }}>Read Store ({cqrsQuery.data.readStore.engine})</div>
+                <div style={{ fontSize: 11, color: '#6b7280' }}>Queries: {cqrsQuery.data.readStore.queriesProcessed.toLocaleString()}</div>
+                <div style={{ fontSize: 11, color: '#6b7280' }}>Cache Hit Rate: {cqrsQuery.data.readStore.hitRate}%</div>
+              </div>
+            </div>
+            <h3 style={{ fontSize: 16, fontWeight: 600, marginBottom: 12 }}>Materialized Views</h3>
+            <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: 13 }}>
+              <thead><tr style={{ background: '#f9fafb', textAlign: 'left' }}><th style={{ padding: 10 }}>View</th><th style={{ padding: 10 }}>Source</th><th style={{ padding: 10 }}>Refresh</th><th style={{ padding: 10 }}>Rows</th></tr></thead>
+              <tbody>{cqrsQuery.data.materializedViews.map((v: any) => (
+                <tr key={v.name} style={{ borderBottom: '1px solid #e5e7eb' }}>
+                  <td style={{ padding: 10, fontFamily: 'monospace', fontSize: 11 }}>{v.name}</td>
+                  <td style={{ padding: 10 }}>{v.source}</td>
+                  <td style={{ padding: 10 }}>{v.interval}</td>
+                  <td style={{ padding: 10 }}>{v.rowCount.toLocaleString()}</td>
+                </tr>
+              ))}</tbody>
+            </table>
+          </div>
+        )}
+
+        {/* ============== Sanctions Screening ============== */}
+        {activeTab === 'sanctions' && sanctionsQuery.data && (
+          <div>
+            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: 14, marginBottom: 24 }}>
+              {[
+                { label: 'Total Screenings', value: sanctionsQuery.data.stats.totalScreenings.toLocaleString(), color: '#3b82f6' },
+                { label: 'Hits', value: sanctionsQuery.data.stats.hits.toString(), color: '#ef4444' },
+                { label: 'Potential Matches', value: sanctionsQuery.data.stats.potentialMatches.toString(), color: '#f59e0b' },
+                { label: 'Avg Screening', value: `${sanctionsQuery.data.stats.avgScreeningUs}μs`, color: '#10b981' },
+              ].map(c => (
+                <div key={c.label} style={{ background: 'white', borderRadius: 12, padding: 16, border: '1px solid #e5e7eb' }}>
+                  <div style={{ fontSize: 12, color: '#6b7280' }}>{c.label}</div>
+                  <div style={{ fontSize: 22, fontWeight: 700, color: c.color }}>{c.value}</div>
+                </div>
+              ))}
+            </div>
+            <h3 style={{ fontSize: 16, fontWeight: 600, marginBottom: 12 }}>Sanctions Lists</h3>
+            <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: 13 }}>
+              <thead><tr style={{ background: '#f9fafb', textAlign: 'left' }}><th style={{ padding: 10 }}>List</th><th style={{ padding: 10 }}>Entities</th><th style={{ padding: 10 }}>Last Updated</th><th style={{ padding: 10 }}>Status</th></tr></thead>
+              <tbody>{sanctionsQuery.data.lists.map((l: any) => (
+                <tr key={l.name} style={{ borderBottom: '1px solid #e5e7eb' }}>
+                  <td style={{ padding: 10, fontWeight: 600 }}>{l.name}</td>
+                  <td style={{ padding: 10 }}>{l.entities.toLocaleString()}</td>
+                  <td style={{ padding: 10 }}>{l.lastUpdated}</td>
+                  <td style={{ padding: 10 }}>{statusBadge(l.status)}</td>
+                </tr>
+              ))}</tbody>
+            </table>
+          </div>
+        )}
+
+        {/* ============== CBN Reporting ============== */}
+        {activeTab === 'cbn_reporting' && cbnQuery.data && (
+          <div>
+            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: 14, marginBottom: 24 }}>
+              {[
+                { label: 'Compliance Score', value: `${cbnQuery.data.compliance.score}%`, color: '#10b981' },
+                { label: 'Overdue Reports', value: cbnQuery.data.compliance.overdueReports.toString(), color: '#ef4444' },
+                { label: 'STR Filed', value: cbnQuery.data.strFilings.totalFiled.toString(), color: '#f59e0b' },
+              ].map(c => (
+                <div key={c.label} style={{ background: 'white', borderRadius: 12, padding: 16, border: '1px solid #e5e7eb' }}>
+                  <div style={{ fontSize: 12, color: '#6b7280' }}>{c.label}</div>
+                  <div style={{ fontSize: 22, fontWeight: 700, color: c.color }}>{c.value}</div>
+                </div>
+              ))}
+            </div>
+            <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: 13 }}>
+              <thead><tr style={{ background: '#f9fafb', textAlign: 'left' }}><th style={{ padding: 10 }}>Report</th><th style={{ padding: 10 }}>Regulator</th><th style={{ padding: 10 }}>Frequency</th><th style={{ padding: 10 }}>Next Due</th><th style={{ padding: 10 }}>Status</th></tr></thead>
+              <tbody>{cbnQuery.data.reportSchedule.map((r: any) => (
+                <tr key={r.type} style={{ borderBottom: '1px solid #e5e7eb' }}>
+                  <td style={{ padding: 10, fontWeight: 600 }}>{r.name}</td>
+                  <td style={{ padding: 10 }}>{r.regulator}</td>
+                  <td style={{ padding: 10 }}>{r.frequency}</td>
+                  <td style={{ padding: 10 }}>{r.nextDue}</td>
+                  <td style={{ padding: 10 }}><span style={{ padding: '2px 8px', borderRadius: 9999, fontSize: 11, fontWeight: 600, background: '#dcfce7', color: '#166534' }}>{r.status}</span></td>
+                </tr>
+              ))}</tbody>
+            </table>
+          </div>
+        )}
+
+        {/* ============== Multi-Region ============== */}
+        {activeTab === 'multiregion' && multiregionQuery.data && (
+          <div>
+            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: 14, marginBottom: 24 }}>
+              {multiregionQuery.data.regions.map((r: any) => (
+                <div key={r.id} style={{ background: 'white', borderRadius: 12, padding: 16, border: `2px solid ${r.status === 'ACTIVE' ? '#10b981' : '#e5e7eb'}` }}>
+                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 8 }}>
+                    <div style={{ fontWeight: 700 }}>{r.name}</div>
+                    {statusBadge(r.status)}
+                  </div>
+                  <div style={{ fontSize: 12, color: '#6b7280' }}>{r.location}</div>
+                  <div style={{ fontSize: 12, color: '#6b7280' }}>Health: {r.healthScore}% | Latency: {r.latencyMs}ms</div>
+                  <div style={{ fontSize: 12, color: '#6b7280' }}>Services: {r.healthyServices}/{r.services}</div>
+                </div>
+              ))}
+            </div>
+            <h3 style={{ fontSize: 16, fontWeight: 600, marginBottom: 12 }}>Data Residency</h3>
+            {multiregionQuery.data.dataResidency.map((d: any) => (
+              <div key={d.region} style={{ padding: 12, marginBottom: 8, background: '#f9fafb', borderRadius: 8, fontSize: 13 }}>
+                <span style={{ fontWeight: 600 }}>{d.region}</span> — {d.regulation} | Data: {d.dataTypes.join(', ')} | Regions: {d.allowedRegions.join(', ')}
+              </div>
+            ))}
+          </div>
+        )}
+
+        {/* ============== Smart Routing ============== */}
+        {activeTab === 'smart_routing' && routingQuery.data && (
+          <div>
+            <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: 13, marginBottom: 24 }}>
+              <thead><tr style={{ background: '#f9fafb', textAlign: 'left' }}><th style={{ padding: 10 }}>Rail</th><th style={{ padding: 10 }}>TPS</th><th style={{ padding: 10 }}>Max TPS</th><th style={{ padding: 10 }}>Latency</th><th style={{ padding: 10 }}>Success</th><th style={{ padding: 10 }}>Cost</th></tr></thead>
+              <tbody>{routingQuery.data.rails.map((r: any) => (
+                <tr key={r.rail} style={{ borderBottom: '1px solid #e5e7eb' }}>
+                  <td style={{ padding: 10, fontWeight: 600 }}>{r.rail}</td>
+                  <td style={{ padding: 10 }}>{r.currentTPS.toLocaleString()}</td>
+                  <td style={{ padding: 10 }}>{r.maxTPS.toLocaleString()}</td>
+                  <td style={{ padding: 10 }}>{r.avgLatencyMs < 1000 ? `${r.avgLatencyMs}ms` : r.avgLatencyMs < 60000 ? `${(r.avgLatencyMs/1000).toFixed(0)}s` : `${(r.avgLatencyMs/3600000).toFixed(1)}h`}</td>
+                  <td style={{ padding: 10, color: r.successRate >= 99 ? '#10b981' : '#f59e0b' }}>{r.successRate}%</td>
+                  <td style={{ padding: 10 }}>{r.costPerTxn}</td>
+                </tr>
+              ))}</tbody>
+            </table>
+            <h3 style={{ fontSize: 16, fontWeight: 600, marginBottom: 12 }}>Recent Routing Decisions</h3>
+            {routingQuery.data.recentDecisions.map((d: any, i: number) => (
+              <div key={i} style={{ padding: 12, marginBottom: 8, background: '#f9fafb', borderRadius: 8, fontSize: 13 }}>
+                <span style={{ fontWeight: 600 }}>{d.amount}</span> ({d.urgency}) → <span style={{ color: '#2563eb', fontWeight: 600 }}>{d.selectedRail}</span> (score: {d.score}) — {d.reason}
+              </div>
+            ))}
+          </div>
+        )}
+
+        {/* ============== HSM / Key Management ============== */}
+        {activeTab === 'hsm' && hsmQuery.data && (
+          <div>
+            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: 14, marginBottom: 24 }}>
+              {[
+                { label: 'Total Keys', value: hsmQuery.data.totalKeys, color: '#3b82f6' },
+                { label: 'Encryptions', value: `${(hsmQuery.data.stats.encryptions / 1e6).toFixed(0)}M`, color: '#10b981' },
+                { label: 'Signatures', value: `${(hsmQuery.data.stats.signatures / 1e6).toFixed(1)}M`, color: '#8b5cf6' },
+                { label: 'Rotations', value: hsmQuery.data.stats.rotations, color: '#f59e0b' },
+              ].map(c => (
+                <div key={c.label} style={{ background: 'white', borderRadius: 12, padding: 16, border: '1px solid #e5e7eb' }}>
+                  <div style={{ fontSize: 12, color: '#6b7280' }}>{c.label}</div>
+                  <div style={{ fontSize: 22, fontWeight: 700, color: c.color }}>{c.value}</div>
+                </div>
+              ))}
+            </div>
+            <h3 style={{ fontSize: 16, fontWeight: 600, marginBottom: 12 }}>Encryption at Rest</h3>
+            <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: 13, marginBottom: 24 }}>
+              <thead><tr style={{ background: '#f9fafb', textAlign: 'left' }}><th style={{ padding: 10 }}>Component</th><th style={{ padding: 10 }}>Algorithm</th><th style={{ padding: 10 }}>Key Source</th><th style={{ padding: 10 }}>Rotation</th><th style={{ padding: 10 }}>Status</th></tr></thead>
+              <tbody>{hsmQuery.data.encryptionAtRest.map((e: any) => (
+                <tr key={e.component} style={{ borderBottom: '1px solid #e5e7eb' }}>
+                  <td style={{ padding: 10, fontWeight: 600 }}>{e.component}</td>
+                  <td style={{ padding: 10, fontFamily: 'monospace', fontSize: 11 }}>{e.algorithm}</td>
+                  <td style={{ padding: 10 }}>{e.keySource}</td>
+                  <td style={{ padding: 10 }}>{e.rotationDays}d</td>
+                  <td style={{ padding: 10 }}><span style={{ padding: '2px 8px', borderRadius: 9999, fontSize: 11, fontWeight: 600, background: '#dcfce7', color: '#166534' }}>{e.status}</span></td>
+                </tr>
+              ))}</tbody>
+            </table>
+          </div>
+        )}
+
+        {/* ============== Incident Response ============== */}
+        {activeTab === 'incidents' && incidentQuery.data && (
+          <div>
+            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: 14, marginBottom: 24 }}>
+              {[
+                { label: 'Active Incidents', value: incidentQuery.data.activeIncidents, color: incidentQuery.data.activeIncidents > 0 ? '#ef4444' : '#10b981' },
+                { label: 'P1 Active', value: incidentQuery.data.p1Active, color: incidentQuery.data.p1Active > 0 ? '#ef4444' : '#10b981' },
+                { label: 'Resolved (24h)', value: incidentQuery.data.resolved24h, color: '#3b82f6' },
+                { label: 'Avg MTTR', value: `${incidentQuery.data.avgMttrMinutes}min`, color: '#8b5cf6' },
+              ].map(c => (
+                <div key={c.label} style={{ background: 'white', borderRadius: 12, padding: 16, border: '1px solid #e5e7eb' }}>
+                  <div style={{ fontSize: 12, color: '#6b7280' }}>{c.label}</div>
+                  <div style={{ fontSize: 22, fontWeight: 700, color: c.color }}>{c.value}</div>
+                </div>
+              ))}
+            </div>
+            <h3 style={{ fontSize: 16, fontWeight: 600, marginBottom: 12 }}>Alert Rules ({incidentQuery.data.alertRules.length})</h3>
+            <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: 13 }}>
+              <thead><tr style={{ background: '#f9fafb', textAlign: 'left' }}><th style={{ padding: 10 }}>Rule</th><th style={{ padding: 10 }}>Metric</th><th style={{ padding: 10 }}>Threshold</th><th style={{ padding: 10 }}>Severity</th><th style={{ padding: 10 }}>Playbook</th></tr></thead>
+              <tbody>{incidentQuery.data.alertRules.map((r: any) => (
+                <tr key={r.name} style={{ borderBottom: '1px solid #e5e7eb' }}>
+                  <td style={{ padding: 10, fontWeight: 600 }}>{r.name}</td>
+                  <td style={{ padding: 10, fontFamily: 'monospace', fontSize: 11 }}>{r.metric}</td>
+                  <td style={{ padding: 10 }}>{r.threshold}</td>
+                  <td style={{ padding: 10 }}><span style={{ padding: '2px 8px', borderRadius: 9999, fontSize: 11, fontWeight: 600, background: r.severity === 'P1' ? '#fef2f2' : r.severity === 'P2' ? '#fef3c7' : '#f3f4f6', color: r.severity === 'P1' ? '#991b1b' : r.severity === 'P2' ? '#92400e' : '#374151' }}>{r.severity}</span></td>
+                  <td style={{ padding: 10, fontFamily: 'monospace', fontSize: 11 }}>{r.playbook}</td>
+                </tr>
+              ))}</tbody>
+            </table>
+          </div>
+        )}
+
+        {/* ============== Capacity Planning ============== */}
+        {activeTab === 'capacity' && capacityQuery.data && (
+          <div>
+            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: 14, marginBottom: 24 }}>
+              {capacityQuery.data.profiles.map((p: any) => (
+                <div key={p.name} style={{ background: 'white', borderRadius: 12, padding: 16, border: `2px solid ${p.name === capacityQuery.data.currentProfile.name ? '#2563eb' : '#e5e7eb'}` }}>
+                  <div style={{ fontWeight: 700, fontSize: 14 }}>{p.name}</div>
+                  <div style={{ fontSize: 12, color: '#6b7280' }}>{p.description}</div>
+                  <div style={{ fontSize: 18, fontWeight: 700, color: '#3b82f6', marginTop: 8 }}>{p.maxTPS.toLocaleString()} TPS</div>
+                  <div style={{ fontSize: 11, color: '#6b7280' }}>{p.totalPods} pods</div>
+                </div>
+              ))}
+            </div>
+            <h3 style={{ fontSize: 16, fontWeight: 600, marginBottom: 12 }}>7-Day Forecast</h3>
+            <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: 13 }}>
+              <thead><tr style={{ background: '#f9fafb', textAlign: 'left' }}><th style={{ padding: 10 }}>Date</th><th style={{ padding: 10 }}>Predicted TPS</th><th style={{ padding: 10 }}>Volume</th><th style={{ padding: 10 }}>Confidence</th><th style={{ padding: 10 }}>Event</th><th style={{ padding: 10 }}>Actions</th></tr></thead>
+              <tbody>{capacityQuery.data.forecast.map((f: any) => (
+                <tr key={f.date} style={{ borderBottom: '1px solid #e5e7eb', background: f.event === 'Salary Day' ? '#fef3c7' : 'transparent' }}>
+                  <td style={{ padding: 10 }}>{f.date}</td>
+                  <td style={{ padding: 10, fontWeight: 600 }}>{f.predictedTPS.toLocaleString()}</td>
+                  <td style={{ padding: 10 }}>{(f.volume / 1e6).toFixed(0)}M</td>
+                  <td style={{ padding: 10 }}>{f.confidence}%</td>
+                  <td style={{ padding: 10 }}>{f.event ? <span style={{ padding: '2px 8px', borderRadius: 9999, fontSize: 11, fontWeight: 600, background: '#fef3c7', color: '#92400e' }}>{f.event}</span> : '—'}</td>
+                  <td style={{ padding: 10 }}>{f.actions.join(', ') || '—'}</td>
+                </tr>
+              ))}</tbody>
+            </table>
+          </div>
+        )}
+
+        {/* ============== White-Label Tenants ============== */}
+        {activeTab === 'whitelabel' && whitelabelQuery.data && (
+          <div>
+            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: 14, marginBottom: 24 }}>
+              {whitelabelQuery.data.tenants.map((t: any) => (
+                <div key={t.id} style={{ background: 'white', borderRadius: 12, padding: 16, border: '1px solid #e5e7eb' }}>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 8 }}>
+                    <div style={{ width: 16, height: 16, borderRadius: 4, background: t.primaryColor }} />
+                    <div style={{ fontWeight: 700 }}>{t.name}</div>
+                  </div>
+                  <div style={{ fontSize: 12, color: '#6b7280' }}>Domain: {t.domain}</div>
+                  <div style={{ fontSize: 12, color: '#6b7280' }}>Tier: {t.tier} | Modules: {t.modules}</div>
+                  <div style={{ marginTop: 8 }}>{t.active ? statusBadge('ACTIVE') : statusBadge('SUSPENDED')}</div>
+                </div>
+              ))}
+            </div>
+          </div>
+        )}
+
+        {/* ============== API Versions ============== */}
+        {activeTab === 'api_versions' && apiVersionQuery.data && (
+          <div>
+            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: 14, marginBottom: 24 }}>
+              {[
+                { label: 'API Versions', value: apiVersionQuery.data.versions.length, color: '#3b82f6' },
+                { label: 'Total Routes', value: apiVersionQuery.data.totalRoutes, color: '#10b981' },
+                { label: 'Auth Methods', value: apiVersionQuery.data.authMethods.length, color: '#8b5cf6' },
+              ].map(c => (
+                <div key={c.label} style={{ background: 'white', borderRadius: 12, padding: 16, border: '1px solid #e5e7eb' }}>
+                  <div style={{ fontSize: 12, color: '#6b7280' }}>{c.label}</div>
+                  <div style={{ fontSize: 22, fontWeight: 700, color: c.color }}>{c.value}</div>
+                </div>
+              ))}
+            </div>
+            {apiVersionQuery.data.versions.map((v: any) => (
+              <div key={v.version} style={{ padding: 16, marginBottom: 12, background: 'white', borderRadius: 12, border: '1px solid #e5e7eb' }}>
+                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 8 }}>
+                  <span style={{ fontSize: 18, fontWeight: 700 }}>{v.version}</span>
+                  {statusBadge(v.status.toUpperCase())}
+                </div>
+                <div style={{ fontSize: 12, color: '#6b7280' }}>Released: {v.released} | Routes: {v.routes}</div>
+                <div style={{ marginTop: 8 }}>
+                  {v.changes.map((c: string, i: number) => (
+                    <span key={i} style={{ display: 'inline-block', padding: '2px 8px', borderRadius: 9999, fontSize: 11, background: '#f3f4f6', color: '#374151', marginRight: 6, marginBottom: 4 }}>{c}</span>
+                  ))}
+                </div>
+              </div>
+            ))}
+          </div>
+        )}
+
+      </main>
+    </div>
+  );
+}

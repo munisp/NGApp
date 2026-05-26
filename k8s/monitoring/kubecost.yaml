@@ -1,0 +1,584 @@
+apiVersion: v1
+kind: Namespace
+metadata:
+  name: kubecost
+  labels:
+    name: kubecost
+    app.kubernetes.io/name: kubecost
+    app.kubernetes.io/part-of: enterprise-crm
+
+---
+# Kubecost ConfigMap
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: kubecost-config
+  namespace: kubecost
+data:
+  kubecost-config.yaml: |
+    # Kubecost Configuration for Enterprise CRM
+    global:
+      prometheus:
+        enabled: true
+        fqdn: "http://prometheus-server.enterprise-crm.svc.cluster.local:80"
+      grafana:
+        enabled: true
+        fqdn: "http://grafana.enterprise-crm.svc.cluster.local:80"
+        proxy: true
+      notifications:
+        alertmanager:
+          enabled: true
+          fqdn: "http://alertmanager.enterprise-crm.svc.cluster.local:9093"
+    
+    # Cost Allocation Configuration
+    costAllocation:
+      # Cluster Configuration
+      cluster:
+        name: "enterprise-crm-cluster"
+        provider: "aws"  # or "gcp", "azure", "on-premise"
+        region: "us-west-2"
+        defaultCPUPrice: "0.031611"
+        defaultRAMPrice: "0.004237"
+        defaultGPUPrice: "0.95"
+        defaultStoragePrice: "0.04"
+        
+      # Namespace Cost Allocation
+      namespaces:
+        enterprise-crm:
+          costCenter: "Engineering"
+          department: "Product Development"
+          team: "CRM Team"
+          environment: "production"
+          project: "enterprise-crm"
+        kubecost:
+          costCenter: "Operations"
+          department: "Infrastructure"
+          team: "Platform Team"
+          environment: "monitoring"
+          project: "cost-management"
+      
+      # Resource Pricing
+      pricing:
+        cpu:
+          hourly: 0.031611
+          monthly: 22.76
+        memory:
+          hourly: 0.004237
+          monthly: 3.05
+        storage:
+          hourly: 0.000137
+          monthly: 0.10
+        network:
+          internetEgress: 0.09
+          regionEgress: 0.01
+          zoneEgress: 0.01
+      
+      # Idle Resource Detection
+      idle:
+        enabled: true
+        cpuThreshold: 0.05  # 5% CPU utilization threshold
+        memoryThreshold: 0.05  # 5% memory utilization threshold
+        timeWindow: "7d"  # 7-day window for idle detection
+      
+      # Recommendations
+      recommendations:
+        enabled: true
+        rightSizing:
+          enabled: true
+          cpuTarget: 0.8  # Target 80% CPU utilization
+          memoryTarget: 0.8  # Target 80% memory utilization
+        nodeOptimization:
+          enabled: true
+          utilizationThreshold: 0.6  # 60% node utilization threshold
+    
+    # Reporting Configuration
+    reporting:
+      # Cost Reports
+      costReports:
+        enabled: true
+        schedule: "0 9 * * 1"  # Weekly on Monday at 9 AM
+        recipients:
+          - "finance@company.com"
+          - "engineering-leads@company.com"
+        formats: ["pdf", "csv"]
+        
+      # Budget Alerts
+      budgets:
+        - name: "enterprise-crm-monthly"
+          amount: 10000
+          period: "monthly"
+          threshold: 0.8  # Alert at 80% of budget
+          recipients:
+            - "finance@company.com"
+            - "crm-team-leads@company.com"
+        - name: "enterprise-crm-daily"
+          amount: 350
+          period: "daily"
+          threshold: 0.9  # Alert at 90% of daily budget
+          recipients:
+            - "crm-team-leads@company.com"
+      
+      # Anomaly Detection
+      anomalies:
+        enabled: true
+        threshold: 1.5  # 50% increase threshold
+        timeWindow: "24h"
+        recipients:
+          - "ops-team@company.com"
+          - "crm-team-leads@company.com"
+    
+    # Integration Configuration
+    integrations:
+      # Cloud Provider Integration
+      aws:
+        enabled: true
+        accessKeyId: ""  # Set via secret
+        secretAccessKey: ""  # Set via secret
+        region: "us-west-2"
+        s3Bucket: "kubecost-enterprise-crm"
+        
+      # Slack Integration
+      slack:
+        enabled: true
+        webhook: ""  # Set via secret
+        channel: "#crm-ops"
+        
+      # Email Integration
+      email:
+        enabled: true
+        smtp:
+          host: "smtp.company.com"
+          port: 587
+          username: ""  # Set via secret
+          password: ""  # Set via secret
+          from: "kubecost@company.com"
+
+---
+# Kubecost Deployment
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: kubecost-cost-analyzer
+  namespace: kubecost
+  labels:
+    app: kubecost-cost-analyzer
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: kubecost-cost-analyzer
+  template:
+    metadata:
+      labels:
+        app: kubecost-cost-analyzer
+    spec:
+      serviceAccountName: kubecost-cost-analyzer
+      containers:
+      - name: cost-analyzer-frontend
+        image: kubecost/frontend:prod-1.106.0
+        ports:
+        - containerPort: 9090
+          name: http-frontend
+        env:
+        - name: GET_HOSTS_FROM
+          value: "dns"
+        resources:
+          requests:
+            memory: "256Mi"
+            cpu: "100m"
+          limits:
+            memory: "512Mi"
+            cpu: "200m"
+        volumeMounts:
+        - name: config
+          mountPath: /var/configs
+        livenessProbe:
+          httpGet:
+            path: /healthz
+            port: 9090
+          initialDelaySeconds: 30
+          periodSeconds: 30
+        readinessProbe:
+          httpGet:
+            path: /healthz
+            port: 9090
+          initialDelaySeconds: 10
+          periodSeconds: 10
+      
+      - name: cost-analyzer-server
+        image: kubecost/server:prod-1.106.0
+        ports:
+        - containerPort: 9003
+          name: http-server
+        env:
+        - name: PROMETHEUS_SERVER_ENDPOINT
+          value: "http://prometheus-server.enterprise-crm.svc.cluster.local:80"
+        - name: CLOUD_PROVIDER_API_KEY
+          value: "AIzaSyDXQPG_MHUEy9neR7stolq6l0ujXmjJlvk"
+        - name: CLUSTER_ID
+          value: "enterprise-crm-cluster"
+        - name: KUBECOST_NAMESPACE
+          value: "kubecost"
+        - name: KUBECOST_TOKEN
+          valueFrom:
+            secretKeyRef:
+              name: kubecost-secret
+              key: kubecost-token
+        resources:
+          requests:
+            memory: "512Mi"
+            cpu: "200m"
+          limits:
+            memory: "1Gi"
+            cpu: "500m"
+        volumeMounts:
+        - name: config
+          mountPath: /var/configs
+        - name: persistent-storage
+          mountPath: /var/kubecost
+        livenessProbe:
+          httpGet:
+            path: /healthz
+            port: 9003
+          initialDelaySeconds: 30
+          periodSeconds: 30
+        readinessProbe:
+          httpGet:
+            path: /healthz
+            port: 9003
+          initialDelaySeconds: 10
+          periodSeconds: 10
+      
+      - name: cost-model
+        image: kubecost/cost-model:prod-1.106.0
+        ports:
+        - containerPort: 9003
+          name: http-model
+        env:
+        - name: PROMETHEUS_SERVER_ENDPOINT
+          value: "http://prometheus-server.enterprise-crm.svc.cluster.local:80"
+        - name: CLOUD_PROVIDER_API_KEY
+          value: "AIzaSyDXQPG_MHUEy9neR7stolq6l0ujXmjJlvk"
+        - name: CLUSTER_ID
+          value: "enterprise-crm-cluster"
+        - name: CONFIG_PATH
+          value: "/var/configs/"
+        - name: DB_BASIC_AUTH_USERNAME
+          valueFrom:
+            secretKeyRef:
+              name: kubecost-secret
+              key: db-username
+        - name: DB_BASIC_AUTH_PW
+          valueFrom:
+            secretKeyRef:
+              name: kubecost-secret
+              key: db-password
+        resources:
+          requests:
+            memory: "512Mi"
+            cpu: "200m"
+          limits:
+            memory: "1Gi"
+            cpu: "500m"
+        volumeMounts:
+        - name: config
+          mountPath: /var/configs
+        - name: persistent-storage
+          mountPath: /var/kubecost
+        livenessProbe:
+          httpGet:
+            path: /healthz
+            port: 9003
+          initialDelaySeconds: 30
+          periodSeconds: 30
+        readinessProbe:
+          httpGet:
+            path: /healthz
+            port: 9003
+          initialDelaySeconds: 10
+          periodSeconds: 10
+      
+      volumes:
+      - name: config
+        configMap:
+          name: kubecost-config
+      - name: persistent-storage
+        persistentVolumeClaim:
+          claimName: kubecost-pvc
+
+---
+# Kubecost Service
+apiVersion: v1
+kind: Service
+metadata:
+  name: kubecost-cost-analyzer
+  namespace: kubecost
+  labels:
+    app: kubecost-cost-analyzer
+spec:
+  ports:
+  - port: 9090
+    targetPort: 9090
+    name: http-frontend
+  - port: 9003
+    targetPort: 9003
+    name: http-server
+  selector:
+    app: kubecost-cost-analyzer
+  type: ClusterIP
+
+---
+# Kubecost ServiceAccount
+apiVersion: v1
+kind: ServiceAccount
+metadata:
+  name: kubecost-cost-analyzer
+  namespace: kubecost
+  labels:
+    app: kubecost-cost-analyzer
+
+---
+# Kubecost ClusterRole
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRole
+metadata:
+  name: kubecost-cost-analyzer
+  labels:
+    app: kubecost-cost-analyzer
+rules:
+- apiGroups: [""]
+  resources: ["configmaps", "deployments", "nodes", "pods", "services", "resourcequotas", "replicationcontrollers", "limitranges", "persistentvolumeclaims", "persistentvolumes", "namespaces", "endpoints"]
+  verbs: ["get", "list", "watch"]
+- apiGroups: ["extensions"]
+  resources: ["daemonsets", "deployments", "replicasets"]
+  verbs: ["get", "list", "watch"]
+- apiGroups: ["apps"]
+  resources: ["statefulsets", "deployments", "daemonsets", "replicasets"]
+  verbs: ["get", "list", "watch"]
+- apiGroups: ["batch"]
+  resources: ["cronjobs", "jobs"]
+  verbs: ["get", "list", "watch"]
+- apiGroups: ["autoscaling"]
+  resources: ["horizontalpodautoscalers"]
+  verbs: ["get", "list", "watch"]
+- apiGroups: ["policy"]
+  resources: ["poddisruptionbudgets"]
+  verbs: ["get", "list", "watch"]
+- apiGroups: ["storage.k8s.io"]
+  resources: ["storageclasses"]
+  verbs: ["get", "list", "watch"]
+- apiGroups: ["metrics.k8s.io"]
+  resources: ["nodes", "pods"]
+  verbs: ["get", "list"]
+
+---
+# Kubecost ClusterRoleBinding
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRoleBinding
+metadata:
+  name: kubecost-cost-analyzer
+  labels:
+    app: kubecost-cost-analyzer
+roleRef:
+  apiGroup: rbac.authorization.k8s.io
+  kind: ClusterRole
+  name: kubecost-cost-analyzer
+subjects:
+- kind: ServiceAccount
+  name: kubecost-cost-analyzer
+  namespace: kubecost
+
+---
+# Kubecost PersistentVolumeClaim
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: kubecost-pvc
+  namespace: kubecost
+  labels:
+    app: kubecost-cost-analyzer
+spec:
+  accessModes:
+    - ReadWriteOnce
+  resources:
+    requests:
+      storage: 32Gi
+  storageClassName: fast-ssd
+
+---
+# Kubecost Ingress
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
+  name: kubecost-ingress
+  namespace: kubecost
+  annotations:
+    kubernetes.io/ingress.class: "nginx"
+    cert-manager.io/cluster-issuer: "letsencrypt-prod"
+    nginx.ingress.kubernetes.io/rewrite-target: /
+    nginx.ingress.kubernetes.io/ssl-redirect: "true"
+    nginx.ingress.kubernetes.io/force-ssl-redirect: "true"
+spec:
+  tls:
+  - hosts:
+    - kubecost.enterprise-crm.local
+    secretName: kubecost-tls
+  rules:
+  - host: kubecost.enterprise-crm.local
+    http:
+      paths:
+      - path: /
+        pathType: Prefix
+        backend:
+          service:
+            name: kubecost-cost-analyzer
+            port:
+              number: 9090
+
+---
+# Cost Optimization CronJob
+apiVersion: batch/v1
+kind: CronJob
+metadata:
+  name: cost-optimization-job
+  namespace: kubecost
+  labels:
+    app: cost-optimization
+spec:
+  schedule: "0 2 * * *"  # Daily at 2 AM
+  jobTemplate:
+    spec:
+      template:
+        spec:
+          serviceAccountName: kubecost-cost-analyzer
+          containers:
+          - name: cost-optimizer
+            image: kubecost/cost-optimizer:latest
+            env:
+            - name: KUBECOST_ENDPOINT
+              value: "http://kubecost-cost-analyzer:9090"
+            - name: PROMETHEUS_ENDPOINT
+              value: "http://prometheus-server.enterprise-crm.svc.cluster.local:80"
+            - name: OPTIMIZATION_THRESHOLD
+              value: "0.3"  # 30% cost savings threshold
+            - name: DRY_RUN
+              value: "false"  # Set to true for testing
+            command:
+            - /bin/sh
+            - -c
+            - |
+              echo "Starting cost optimization analysis..."
+              
+              # Get cost data from Kubecost
+              COST_DATA=$(curl -s "${KUBECOST_ENDPOINT}/model/allocation?window=7d&aggregate=namespace")
+              
+              # Analyze idle resources
+              IDLE_RESOURCES=$(curl -s "${KUBECOST_ENDPOINT}/model/assets?window=7d&filterIdle=true")
+              
+              # Generate recommendations
+              RECOMMENDATIONS=$(curl -s "${KUBECOST_ENDPOINT}/model/savings?window=7d")
+              
+              # Process recommendations and apply optimizations
+              echo "Processing cost optimization recommendations..."
+              
+              # Right-size deployments based on actual usage
+              kubectl get deployments -n enterprise-crm -o json | \
+              jq -r '.items[] | select(.spec.replicas > 1) | .metadata.name' | \
+              while read deployment; do
+                # Get actual resource usage
+                USAGE=$(kubectl top pods -n enterprise-crm -l app=$deployment --no-headers | \
+                       awk '{cpu+=$2; mem+=$3} END {print cpu, mem}')
+                
+                if [ ! -z "$USAGE" ]; then
+                  echo "Analyzing $deployment usage: $USAGE"
+                  # Add optimization logic here
+                fi
+              done
+              
+              # Clean up unused resources
+              echo "Cleaning up unused resources..."
+              
+              # Remove unused ConfigMaps and Secrets older than 30 days
+              kubectl get configmaps -n enterprise-crm --sort-by=.metadata.creationTimestamp | \
+              awk 'NR>1 && $3 ~ /[0-9]+d/ && $3 > "30d" {print $1}' | \
+              while read cm; do
+                if ! kubectl get pods -n enterprise-crm -o yaml | grep -q "$cm"; then
+                  echo "Removing unused ConfigMap: $cm"
+                  [ "$DRY_RUN" != "true" ] && kubectl delete configmap "$cm" -n enterprise-crm
+                fi
+              done
+              
+              echo "Cost optimization analysis completed."
+            resources:
+              requests:
+                memory: "128Mi"
+                cpu: "100m"
+              limits:
+                memory: "256Mi"
+                cpu: "200m"
+          restartPolicy: OnFailure
+
+---
+# Kubecost Network Policy
+apiVersion: networking.k8s.io/v1
+kind: NetworkPolicy
+metadata:
+  name: kubecost-network-policy
+  namespace: kubecost
+spec:
+  podSelector:
+    matchLabels:
+      app: kubecost-cost-analyzer
+  policyTypes:
+  - Ingress
+  - Egress
+  ingress:
+  - from:
+    - namespaceSelector:
+        matchLabels:
+          name: enterprise-crm
+    - namespaceSelector:
+        matchLabels:
+          name: ingress-nginx
+    ports:
+    - protocol: TCP
+      port: 9090
+    - protocol: TCP
+      port: 9003
+  egress:
+  - to:
+    - namespaceSelector:
+        matchLabels:
+          name: enterprise-crm
+    ports:
+    - protocol: TCP
+      port: 80
+    - protocol: TCP
+      port: 9093
+  - to: []
+    ports:
+    - protocol: TCP
+      port: 443
+    - protocol: TCP
+      port: 53
+    - protocol: UDP
+      port: 53
+
+---
+# Kubecost Secrets
+apiVersion: v1
+kind: Secret
+metadata:
+  name: kubecost-secret
+  namespace: kubecost
+type: Opaque
+data:
+  kubecost-token: "a3ViZWNvc3QtdG9rZW4tMjAyNA=="  # Base64 encoded
+  db-username: "a3ViZWNvc3Q="  # Base64 encoded "kubecost"
+  db-password: REPLACE_WITH_BASE64_ENCODED_PASSWORD  # Generate: echo -n "your-password" | base64
+  aws-access-key-id: ""  # Set your AWS access key
+  aws-secret-access-key: ""  # Set your AWS secret key
+  slack-webhook: ""  # Set your Slack webhook URL
+  smtp-username: ""  # Set your SMTP username
+  smtp-password: ""  # Set your SMTP password
+

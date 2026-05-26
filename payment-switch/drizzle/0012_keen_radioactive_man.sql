@@ -1,0 +1,1 @@
+ALTER TABLE `api_key_webhooks` ADD `payload_template` text;

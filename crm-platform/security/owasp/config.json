@@ -1,0 +1,99 @@
+{
+  "version": "1.0",
+  "compliance": "OWASP Top 10 2023",
+  "checks": [
+    {
+      "id": "A01",
+      "name": "Broken Access Control",
+      "controls": [
+        "RBAC enforcement",
+        "Permify authorization",
+        "Rate limiting",
+        "CORS restriction"
+      ]
+    },
+    {
+      "id": "A02",
+      "name": "Cryptographic Failures",
+      "controls": [
+        "TLS 1.3",
+        "AES-256 at rest",
+        "HMAC webhook signing",
+        "Keycloak OIDC"
+      ]
+    },
+    {
+      "id": "A03",
+      "name": "Injection",
+      "controls": [
+        "Parameterized queries",
+        "Input validation",
+        "OpenAppSec WAF",
+        "CSP headers"
+      ]
+    },
+    {
+      "id": "A04",
+      "name": "Insecure Design",
+      "controls": [
+        "Threat modeling",
+        "Secure defaults",
+        "Least privilege"
+      ]
+    },
+    {
+      "id": "A05",
+      "name": "Security Misconfiguration",
+      "controls": [
+        "No default credentials",
+        "Security headers",
+        "Error handling"
+      ]
+    },
+    {
+      "id": "A06",
+      "name": "Vulnerable Components",
+      "controls": [
+        "Dependency scanning",
+        "Go/Rust safety",
+        "Container scanning"
+      ]
+    },
+    {
+      "id": "A07",
+      "name": "Auth Failures",
+      "controls": [
+        "Keycloak MFA",
+        "Session management",
+        "Password policy"
+      ]
+    },
+    {
+      "id": "A08",
+      "name": "Data Integrity Failures",
+      "controls": [
+        "CI/CD signing",
+        "SBOM generation",
+        "Supply chain verification"
+      ]
+    },
+    {
+      "id": "A09",
+      "name": "Logging Failures",
+      "controls": [
+        "Structured logging",
+        "Audit trail",
+        "SIEM integration"
+      ]
+    },
+    {
+      "id": "A10",
+      "name": "SSRF",
+      "controls": [
+        "Network segmentation",
+        "URL validation",
+        "WAF rules"
+      ]
+    }
+  ]
+}

@@ -1,0 +1,180 @@
+syntax = "proto3";
+
+package payment.v1;
+
+option go_package = "github.com/payment-switch/payment-core/go-services/internal/highperf/proto;proto";
+
+// TransferRequest is the high-performance transfer message
+// Optimized for minimal serialization overhead
+message TransferRequest {
+  bytes id = 1;                    // 16-byte UUID
+  bytes debit_account_id = 2;      // 16-byte account ID
+  bytes credit_account_id = 3;     // 16-byte account ID
+  uint64 amount = 4;               // Amount in smallest currency unit
+  uint32 ledger = 5;               // Ledger ID
+  uint32 code = 6;                 // Transfer code
+  uint32 flags = 7;                // Transfer flags
+  bytes user_data_128 = 8;         // 16-byte user data
+  uint64 user_data_64 = 9;         // 8-byte user data
+  uint32 user_data_32 = 10;        // 4-byte user data
+  uint32 timeout = 11;             // Timeout in seconds
+  int64 timestamp = 12;            // Request timestamp (unix nano)
+}
+
+// TransferResponse is the transfer result
+message TransferResponse {
+  bytes id = 1;                    // 16-byte UUID
+  uint32 result = 2;               // Result code (0 = success)
+  string error_message = 3;        // Error message if failed
+  int64 timestamp = 4;             // Response timestamp (unix nano)
+}
+
+// BatchTransferRequest contains multiple transfers for batching
+message BatchTransferRequest {
+  repeated TransferRequest transfers = 1;
+  string batch_id = 2;             // Batch identifier
+  int64 timestamp = 3;             // Batch timestamp
+}
+
+// BatchTransferResponse contains batch results
+message BatchTransferResponse {
+  repeated TransferResponse responses = 1;
+  string batch_id = 2;
+  int64 timestamp = 3;
+  uint32 success_count = 4;
+  uint32 failure_count = 5;
+}
+
+// ParticipantLookup for fast routing
+message ParticipantLookup {
+  string fsp_id = 1;
+  string party_id_type = 2;        // MSISDN, ACCOUNT_ID, etc.
+  string party_id = 3;
+}
+
+// ParticipantInfo cached participant data
+message ParticipantInfo {
+  string fsp_id = 1;
+  string name = 2;
+  bytes default_account_id = 3;    // 16-byte account ID
+  uint32 ledger = 4;
+  bool active = 5;
+  int64 cached_at = 6;
+}
+
+// QuoteRequest for fast quote processing
+message QuoteRequest {
+  bytes id = 1;
+  string payer_fsp = 2;
+  string payee_fsp = 3;
+  uint64 amount = 4;
+  string currency = 5;
+  string amount_type = 6;          // SEND or RECEIVE
+  int64 expiration = 7;            // Unix timestamp
+}
+
+// QuoteResponse
+message QuoteResponse {
+  bytes id = 1;
+  uint64 transfer_amount = 2;
+  uint64 payee_receive_amount = 3;
+  uint64 payee_fsp_fee = 4;
+  uint64 payee_fsp_commission = 5;
+  string condition = 6;            // ILP condition
+  int64 expiration = 7;
+}
+
+// FraudCheckRequest for inline fraud scoring
+message FraudCheckRequest {
+  bytes transfer_id = 1;
+  string payer_id = 2;
+  string payee_id = 3;
+  uint64 amount = 4;
+  string currency = 5;
+  string device_id = 6;
+  string ip_address = 7;
+  string geo_location = 8;
+  int64 timestamp = 9;
+}
+
+// FraudCheckResponse
+message FraudCheckResponse {
+  bytes transfer_id = 1;
+  float score = 2;                 // 0.0 - 1.0
+  string decision = 3;             // ALLOW, REVIEW, BLOCK
+  repeated string risk_factors = 4;
+  int64 latency_ns = 5;            // Processing time in nanoseconds
+}
+
+// KafkaEvent for async event emission
+message KafkaEvent {
+  string event_type = 1;
+  bytes payload = 2;               // Serialized event payload
+  string key = 3;                  // Partition key
+  int64 timestamp = 4;
+  map<string, string> headers = 5;
+}
+
+// TransferEvent for Kafka
+message TransferEvent {
+  bytes transfer_id = 1;
+  string event_type = 2;           // CREATED, COMMITTED, FAILED, etc.
+  bytes debit_account_id = 3;
+  bytes credit_account_id = 4;
+  uint64 amount = 5;
+  uint32 ledger = 6;
+  string payer_fsp = 7;
+  string payee_fsp = 8;
+  int64 timestamp = 9;
+  map<string, string> metadata = 10;
+}
+
+// SettlementEvent for async settlement processing
+message SettlementEvent {
+  string settlement_id = 1;
+  string event_type = 2;
+  repeated string participant_ids = 3;
+  uint64 total_amount = 4;
+  string currency = 5;
+  int64 window_start = 6;
+  int64 window_end = 7;
+  int64 timestamp = 8;
+}
+
+// HealthCheck for service health
+message HealthCheckRequest {
+  string service = 1;
+}
+
+message HealthCheckResponse {
+  string status = 1;               // SERVING, NOT_SERVING
+  int64 timestamp = 2;
+  map<string, string> details = 3;
+}
+
+// TransferService for high-performance transfers
+service TransferService {
+  // Single transfer (for compatibility)
+  rpc CreateTransfer(TransferRequest) returns (TransferResponse);
+  
+  // Batch transfer (preferred for high throughput)
+  rpc CreateTransferBatch(BatchTransferRequest) returns (BatchTransferResponse);
+  
+  // Streaming transfers (for very high throughput)
+  rpc StreamTransfers(stream TransferRequest) returns (stream TransferResponse);
+  
+  // Health check
+  rpc HealthCheck(HealthCheckRequest) returns (HealthCheckResponse);
+}
+
+// QuoteService for fast quote processing
+service QuoteService {
+  rpc CreateQuote(QuoteRequest) returns (QuoteResponse);
+  rpc HealthCheck(HealthCheckRequest) returns (HealthCheckResponse);
+}
+
+// FraudService for inline fraud checks
+service FraudService {
+  rpc CheckFraud(FraudCheckRequest) returns (FraudCheckResponse);
+  rpc HealthCheck(HealthCheckRequest) returns (HealthCheckResponse);
+}

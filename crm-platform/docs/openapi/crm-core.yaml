@@ -1,0 +1,492 @@
+openapi: 3.1.0
+info:
+  title: CRM Platform API
+  version: 2.0.0
+  description: Multi-vertical CRM platform API — Banking, Telco, Commodity, CPaaS
+  contact:
+    name: CRM Platform Team
+    email: api@crm.platform.ng
+  license:
+    name: Proprietary
+
+servers:
+  - url: https://api.crm.platform.ng/api/v1
+    description: Production
+  - url: http://localhost:8080/api/v1
+    description: Local Development
+
+security:
+  - bearerAuth: []
+
+components:
+  securitySchemes:
+    bearerAuth:
+      type: http
+      scheme: bearer
+      bearerFormat: JWT
+      description: Keycloak OIDC JWT token
+
+  parameters:
+    tenantId:
+      name: X-Tenant-ID
+      in: header
+      required: true
+      schema:
+        type: string
+      description: Tenant slug for multi-tenancy
+    pageParam:
+      name: page
+      in: query
+      schema:
+        type: integer
+        default: 1
+    limitParam:
+      name: limit
+      in: query
+      schema:
+        type: integer
+        default: 20
+        maximum: 100
+
+  schemas:
+    Customer:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+        tenant_id:
+          type: string
+          format: uuid
+        full_name:
+          type: string
+        email:
+          type: string
+          format: email
+        phone:
+          type: string
+        segment:
+          type: string
+          enum: [enterprise, mid_market, smb, consumer]
+        health_score:
+          type: integer
+          minimum: 0
+          maximum: 100
+        lifetime_value:
+          type: number
+          format: decimal
+        metadata:
+          type: object
+        created_at:
+          type: string
+          format: date-time
+        updated_at:
+          type: string
+          format: date-time
+      required: [full_name]
+
+    Campaign:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+        name:
+          type: string
+        type:
+          type: string
+          enum: [email, sms, whatsapp, push, multi_channel]
+        status:
+          type: string
+          enum: [draft, scheduled, active, paused, completed]
+        channels:
+          type: array
+          items:
+            type: string
+        metrics:
+          type: object
+          properties:
+            sent:
+              type: integer
+            delivered:
+              type: integer
+            opened:
+              type: integer
+            clicked:
+              type: integer
+
+    Deal:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+        name:
+          type: string
+        value:
+          type: number
+        stage:
+          type: string
+          enum: [lead, qualified, proposal, negotiation, closed_won, closed_lost]
+        probability:
+          type: integer
+          minimum: 0
+          maximum: 100
+
+    TelcoSubscriber:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+        msisdn:
+          type: string
+        sim_iccid:
+          type: string
+        plan_name:
+          type: string
+        status:
+          type: string
+          enum: [active, suspended, deactivated]
+        data_balance_mb:
+          type: number
+        voice_balance_min:
+          type: number
+
+    CommodityTrade:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+        trade_id:
+          type: string
+        commodity:
+          type: string
+        quantity:
+          type: number
+        price:
+          type: number
+        trade_type:
+          type: string
+          enum: [spot, forward, futures, options]
+        settlement_status:
+          type: string
+          enum: [pending, matched, cleared, settled, failed]
+
+    CPaaSMessage:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+        message_id:
+          type: string
+        channel:
+          type: string
+          enum: [sms, whatsapp, voice, email, push, rcs]
+        direction:
+          type: string
+          enum: [inbound, outbound]
+        status:
+          type: string
+          enum: [queued, sent, delivered, failed, read]
+        latency_ms:
+          type: integer
+        cost:
+          type: number
+
+    Error:
+      type: object
+      properties:
+        status:
+          type: integer
+        message:
+          type: string
+        code:
+          type: string
+
+    PaginatedResponse:
+      type: object
+      properties:
+        data:
+          type: array
+          items: {}
+        total:
+          type: integer
+        page:
+          type: integer
+        limit:
+          type: integer
+
+paths:
+  /health:
+    get:
+      summary: Health check
+      security: []
+      responses:
+        "200":
+          description: Service is healthy
+  /ready:
+    get:
+      summary: Readiness check
+      security: []
+      responses:
+        "200":
+          description: Service is ready
+
+  /customers:
+    get:
+      summary: List customers
+      tags: [Customers]
+      parameters:
+        - $ref: "#/components/parameters/tenantId"
+        - $ref: "#/components/parameters/pageParam"
+        - $ref: "#/components/parameters/limitParam"
+        - name: segment
+          in: query
+          schema:
+            type: string
+        - name: search
+          in: query
+          schema:
+            type: string
+      responses:
+        "200":
+          description: Customer list
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/PaginatedResponse"
+        "401":
+          description: Unauthorized
+    post:
+      summary: Create customer
+      tags: [Customers]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/Customer"
+      responses:
+        "201":
+          description: Customer created
+
+  /customers/{id}:
+    get:
+      summary: Get customer by ID
+      tags: [Customers]
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      responses:
+        "200":
+          description: Customer details
+        "404":
+          description: Not found
+    put:
+      summary: Update customer
+      tags: [Customers]
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/Customer"
+      responses:
+        "200":
+          description: Customer updated
+    delete:
+      summary: Delete customer
+      tags: [Customers]
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      responses:
+        "204":
+          description: Customer deleted
+
+  /customers/search:
+    get:
+      summary: Search customers (full-text via OpenSearch)
+      tags: [Customers]
+      parameters:
+        - name: q
+          in: query
+          required: true
+          schema:
+            type: string
+      responses:
+        "200":
+          description: Search results
+
+  /dashboard/metrics:
+    get:
+      summary: Dashboard KPI metrics
+      tags: [Dashboard]
+      responses:
+        "200":
+          description: Dashboard metrics
+
+  /deals:
+    get:
+      summary: List deals
+      tags: [Deals]
+      responses:
+        "200":
+          description: Deal list
+    post:
+      summary: Create deal
+      tags: [Deals]
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/Deal"
+      responses:
+        "201":
+          description: Deal created
+
+  /campaigns:
+    get:
+      summary: List campaigns
+      tags: [Campaigns]
+      responses:
+        "200":
+          description: Campaign list
+    post:
+      summary: Create campaign
+      tags: [Campaigns]
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/Campaign"
+      responses:
+        "201":
+          description: Campaign created
+
+  /telco/subscribers:
+    get:
+      summary: List telco subscribers
+      tags: [Telco]
+      responses:
+        "200":
+          description: Subscriber list
+
+  /telco/cell-sites:
+    get:
+      summary: List cell sites
+      tags: [Telco]
+      responses:
+        "200":
+          description: Cell site list
+
+  /commodity/trades:
+    get:
+      summary: List commodity trades
+      tags: [Commodity]
+      responses:
+        "200":
+          description: Trade list
+
+  /commodity/positions:
+    get:
+      summary: Get commodity positions
+      tags: [Commodity]
+      responses:
+        "200":
+          description: Position data
+
+  /cpaas/channels:
+    get:
+      summary: Get CPaaS channel metrics
+      tags: [CPaaS]
+      responses:
+        "200":
+          description: Channel metrics
+
+  /cpaas/messages:
+    get:
+      summary: List messages
+      tags: [CPaaS]
+      parameters:
+        - name: channel
+          in: query
+          schema:
+            type: string
+      responses:
+        "200":
+          description: Message list
+
+  /agents:
+    get:
+      summary: List AI agents
+      tags: [Agentic AI]
+      responses:
+        "200":
+          description: Agent list
+
+  /agents/{agentId}/execute:
+    post:
+      summary: Execute an AI agent action
+      tags: [Agentic AI]
+      parameters:
+        - name: agentId
+          in: path
+          required: true
+          schema:
+            type: string
+      requestBody:
+        content:
+          application/json:
+            schema:
+              type: object
+      responses:
+        "200":
+          description: Agent execution result
+
+  /revops/pipeline:
+    get:
+      summary: Get RevOps pipeline
+      tags: [RevOps]
+      responses:
+        "200":
+          description: Pipeline data
+
+  /ws:
+    get:
+      summary: WebSocket connection for real-time events
+      tags: [Real-time]
+      description: Upgrade to WebSocket for streaming CRM events
+      responses:
+        "101":
+          description: Switching protocols
+
+  /events:
+    get:
+      summary: SSE stream for real-time events
+      tags: [Real-time]
+      description: Server-Sent Events stream for clients without WebSocket support
+      responses:
+        "200":
+          description: SSE event stream
+          content:
+            text/event-stream:
+              schema:
+                type: string

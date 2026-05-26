@@ -1,0 +1,58 @@
+global:
+  scrape_interval: 15s
+  evaluation_interval: 15s
+
+rule_files:
+  - "alerts/*.yml"
+
+scrape_configs:
+  - job_name: "crm-go-services"
+    static_configs:
+      - targets: ["crm-services:8080"]
+    metrics_path: /metrics
+
+  - job_name: "crm-rust-services"
+    static_configs:
+      - targets:
+        - "workflow-runtime:8090"
+        - "anomaly-detection:8091"
+        - "offline-sync:8092"
+        - "semantic-search:8093"
+        - "bulk-sender:8094"
+        - "usage-metering:8095"
+        - "hsm-service:8096"
+        - "mdm-engine:8097"
+        - "waf-engine:8098"
+
+  - job_name: "crm-python-services"
+    static_configs:
+      - targets:
+        - "sales-agent:8100"
+        - "predictive-analytics:8101"
+        - "customer-success-agent:8102"
+        - "cdp-engine:8103"
+        - "campaign-analytics:8104"
+        - "compliance-reporting:8105"
+        - "lakehouse-analytics:8106"
+        - "ollama-inference:8107"
+        - "cocoindex-pipeline:8108"
+        - "epr-kgqa:8109"
+        - "threat-detection:8110"
+        - "art-security:8111"
+        - "mcmc-engine:8112"
+
+  - job_name: "node-exporter"
+    static_configs:
+      - targets: ["node-exporter:9100"]
+
+  - job_name: "postgres"
+    static_configs:
+      - targets: ["postgres-exporter:9187"]
+
+  - job_name: "redis"
+    static_configs:
+      - targets: ["redis-exporter:9121"]
+
+  - job_name: "kafka"
+    static_configs:
+      - targets: ["kafka:9092"]

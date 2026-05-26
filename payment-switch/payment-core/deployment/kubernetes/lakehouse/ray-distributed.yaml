@@ -1,0 +1,507 @@
+---
+# Ray Distributed Computing for Machine Learning
+# Provides distributed ML training and serving capabilities
+
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: ray-config
+  namespace: lakehouse
+  labels:
+    app: ray
+data:
+  ray.yaml: |
+    # Ray Configuration
+    cluster_name: payment-switch-ray
+    max_workers: 50
+    upscaling_speed: 10
+    idle_timeout_minutes: 5
+    
+    # Head node configuration
+    head_node:
+      resources:
+        CPU: 8
+        memory: 32000000000
+        GPU: 0
+    
+    # Worker node configuration
+    worker_nodes:
+      - min_workers: 10
+        max_workers: 50
+        resources:
+          CPU: 16
+          memory: 64000000000
+          GPU: 0
+        node_config:
+          labels:
+            ray-node-type: worker
+    
+    # Setup commands
+    setup_commands:
+      - pip install --upgrade pip
+      - pip install ray[default]==2.9.0
+      - pip install delta-spark==2.4.0
+      - pip install pandas pyarrow scikit-learn xgboost lightgbm
+      - pip install boto3 s3fs
+    
+    # Environment variables - credentials injected from Kubernetes secrets
+    env_vars:
+      # AWS_ACCESS_KEY_ID and AWS_SECRET_ACCESS_KEY are injected via secretRef in pod spec
+      AWS_ENDPOINT_URL: http://rustfs.lakehouse:9000
+      DELTA_LAKE_WAREHOUSE: s3://delta-lake/
+
+---
+apiVersion: v1
+kind: ServiceAccount
+metadata:
+  name: ray
+  namespace: lakehouse
+  labels:
+    app: ray
+
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: Role
+metadata:
+  name: ray
+  namespace: lakehouse
+rules:
+  - apiGroups: [""]
+    resources: ["pods", "services", "endpoints"]
+    verbs: ["get", "list", "watch", "create", "update", "patch", "delete"]
+  - apiGroups: [""]
+    resources: ["pods/log"]
+    verbs: ["get", "list"]
+
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: RoleBinding
+metadata:
+  name: ray
+  namespace: lakehouse
+roleRef:
+  apiGroup: rbac.authorization.k8s.io
+  kind: Role
+  name: ray
+subjects:
+  - kind: ServiceAccount
+    name: ray
+    namespace: lakehouse
+
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: ray-head
+  namespace: lakehouse
+  labels:
+    app: ray
+    component: head
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: ray
+      component: head
+  template:
+    metadata:
+      labels:
+        app: ray
+        component: head
+        ray-node-type: head
+      annotations:
+        prometheus.io/scrape: "true"
+        prometheus.io/port: "8080"
+    spec:
+      serviceAccountName: ray
+      
+      securityContext:
+        runAsUser: 1000
+        runAsGroup: 1000
+        fsGroup: 1000
+      
+      containers:
+        - name: ray-head
+          image: rayproject/ray:2.9.0-py310
+          imagePullPolicy: IfNotPresent
+          
+          command:
+            - /bin/bash
+            - -c
+            - |
+              ray start --head \
+                --port=6379 \
+                --dashboard-host=0.0.0.0 \
+                --dashboard-port=8265 \
+                --metrics-export-port=8080 \
+                --num-cpus=8 \
+                --memory=32000000000 \
+                --block
+          
+          ports:
+            - name: client
+              containerPort: 10001
+            - name: dashboard
+              containerPort: 8265
+            - name: gcs
+              containerPort: 6379
+            - name: metrics
+              containerPort: 8080
+            - name: serve
+              containerPort: 8000
+          
+          env:
+            - name: RAY_GRAFANA_HOST
+              value: "http://grafana.monitoring:3000"
+            - name: RAY_PROMETHEUS_HOST
+              value: "http://prometheus.monitoring:9090"
+            - name: AWS_ACCESS_KEY_ID
+              valueFrom:
+                secretKeyRef:
+                  name: minio-secrets
+                  key: MINIO_ACCESS_KEY
+            - name: AWS_SECRET_ACCESS_KEY
+              valueFrom:
+                secretKeyRef:
+                  name: minio-secrets
+                  key: MINIO_SECRET_KEY
+            - name: AWS_ENDPOINT_URL
+              value: "http://rustfs.lakehouse:9000"
+            - name: RAY_memory_monitor_refresh_ms
+              value: "0"
+          
+          resources:
+            requests:
+              cpu: 4000m
+              memory: 16Gi
+            limits:
+              cpu: 8000m
+              memory: 32Gi
+          
+          livenessProbe:
+            httpGet:
+              path: /api/version
+              port: 8265
+            initialDelaySeconds: 30
+            periodSeconds: 10
+            timeoutSeconds: 5
+            failureThreshold: 3
+          
+          readinessProbe:
+            httpGet:
+              path: /api/version
+              port: 8265
+            initialDelaySeconds: 10
+            periodSeconds: 5
+            timeoutSeconds: 3
+            failureThreshold: 2
+          
+          volumeMounts:
+            - name: ray-logs
+              mountPath: /tmp/ray
+            - name: ray-config
+              mountPath: /home/ray/ray.yaml
+              subPath: ray.yaml
+      
+      volumes:
+        - name: ray-logs
+          emptyDir: {}
+        - name: ray-config
+          configMap:
+            name: ray-config
+
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: ray-worker
+  namespace: lakehouse
+  labels:
+    app: ray
+    component: worker
+spec:
+  replicas: 10
+  selector:
+    matchLabels:
+      app: ray
+      component: worker
+  template:
+    metadata:
+      labels:
+        app: ray
+        component: worker
+        ray-node-type: worker
+      annotations:
+        prometheus.io/scrape: "true"
+        prometheus.io/port: "8080"
+    spec:
+      serviceAccountName: ray
+      
+      securityContext:
+        runAsUser: 1000
+        runAsGroup: 1000
+        fsGroup: 1000
+      
+      affinity:
+        podAntiAffinity:
+          preferredDuringSchedulingIgnoredDuringExecution:
+            - weight: 100
+              podAffinityTerm:
+                labelSelector:
+                  matchLabels:
+                    app: ray
+                    component: worker
+                topologyKey: kubernetes.io/hostname
+      
+      containers:
+        - name: ray-worker
+          image: rayproject/ray:2.9.0-py310
+          imagePullPolicy: IfNotPresent
+          
+          command:
+            - /bin/bash
+            - -c
+            - |
+              ray start --address=ray-head.lakehouse:6379 \
+                --metrics-export-port=8080 \
+                --num-cpus=16 \
+                --memory=64000000000 \
+                --block
+          
+          ports:
+            - name: metrics
+              containerPort: 8080
+          
+          env:
+            - name: RAY_GRAFANA_HOST
+              value: "http://grafana.monitoring:3000"
+            - name: RAY_PROMETHEUS_HOST
+              value: "http://prometheus.monitoring:9090"
+            - name: AWS_ACCESS_KEY_ID
+              valueFrom:
+                secretKeyRef:
+                  name: minio-secrets
+                  key: MINIO_ACCESS_KEY
+            - name: AWS_SECRET_ACCESS_KEY
+              valueFrom:
+                secretKeyRef:
+                  name: minio-secrets
+                  key: MINIO_SECRET_KEY
+            - name: AWS_ENDPOINT_URL
+              value: "http://rustfs.lakehouse:9000"
+            - name: RAY_memory_monitor_refresh_ms
+              value: "0"
+          
+          resources:
+            requests:
+              cpu: 8000m
+              memory: 32Gi
+            limits:
+              cpu: 16000m
+              memory: 64Gi
+          
+          volumeMounts:
+            - name: ray-logs
+              mountPath: /tmp/ray
+      
+      volumes:
+        - name: ray-logs
+          emptyDir: {}
+
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: ray-head
+  namespace: lakehouse
+  labels:
+    app: ray
+    component: head
+spec:
+  type: ClusterIP
+  selector:
+    app: ray
+    component: head
+  ports:
+    - name: client
+      port: 10001
+      targetPort: 10001
+    - name: dashboard
+      port: 8265
+      targetPort: 8265
+    - name: gcs
+      port: 6379
+      targetPort: 6379
+    - name: metrics
+      port: 8080
+      targetPort: 8080
+    - name: serve
+      port: 8000
+      targetPort: 8000
+
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: ray-dashboard
+  namespace: lakehouse
+  labels:
+    app: ray
+    component: head
+spec:
+  type: LoadBalancer
+  selector:
+    app: ray
+    component: head
+  ports:
+    - name: dashboard
+      port: 8265
+      targetPort: 8265
+
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: ray-serve
+  namespace: lakehouse
+  labels:
+    app: ray
+    component: head
+spec:
+  type: LoadBalancer
+  selector:
+    app: ray
+    component: head
+  ports:
+    - name: serve
+      port: 8000
+      targetPort: 8000
+
+---
+apiVersion: autoscaling/v2
+kind: HorizontalPodAutoscaler
+metadata:
+  name: ray-worker-hpa
+  namespace: lakehouse
+  labels:
+    app: ray
+    component: worker
+spec:
+  scaleTargetRef:
+    apiVersion: apps/v1
+    kind: Deployment
+    name: ray-worker
+  minReplicas: 10
+  maxReplicas: 50
+  metrics:
+    - type: Resource
+      resource:
+        name: cpu
+        target:
+          type: Utilization
+          averageUtilization: 70
+    - type: Resource
+      resource:
+        name: memory
+        target:
+          type: Utilization
+          averageUtilization: 80
+
+---
+apiVersion: policy/v1
+kind: PodDisruptionBudget
+metadata:
+  name: ray-worker-pdb
+  namespace: lakehouse
+  labels:
+    app: ray
+    component: worker
+spec:
+  minAvailable: 5
+  selector:
+    matchLabels:
+      app: ray
+      component: worker
+
+---
+apiVersion: networking.k8s.io/v1
+kind: NetworkPolicy
+metadata:
+  name: ray-network-policy
+  namespace: lakehouse
+  labels:
+    app: ray
+spec:
+  podSelector:
+    matchLabels:
+      app: ray
+  policyTypes:
+    - Ingress
+    - Egress
+  ingress:
+    # Allow traffic between Ray components
+    - from:
+        - podSelector:
+            matchLabels:
+              app: ray
+      ports:
+        - protocol: TCP
+          port: 6379
+        - protocol: TCP
+          port: 10001
+    # Allow dashboard access
+    - from:
+        - namespaceSelector: {}
+      ports:
+        - protocol: TCP
+          port: 8265
+    # Allow serve access
+    - from:
+        - namespaceSelector: {}
+      ports:
+        - protocol: TCP
+          port: 8000
+    # Allow metrics scraping
+    - from:
+        - namespaceSelector:
+            matchLabels:
+              name: monitoring
+      ports:
+        - protocol: TCP
+          port: 8080
+  egress:
+    # Allow traffic to MinIO
+    - to:
+        - podSelector:
+            matchLabels:
+              app: minio
+      ports:
+        - protocol: TCP
+          port: 9000
+    # Allow traffic between Ray components
+    - to:
+        - podSelector:
+            matchLabels:
+              app: ray
+      ports:
+        - protocol: TCP
+          port: 6379
+        - protocol: TCP
+          port: 10001
+    # Allow DNS
+    - to:
+        - namespaceSelector: {}
+          podSelector:
+            matchLabels:
+              k8s-app: kube-dns
+      ports:
+        - protocol: UDP
+          port: 53
+    # Allow external access for package installation
+    - to:
+        - namespaceSelector: {}
+      ports:
+        - protocol: TCP
+          port: 443
+        - protocol: TCP
+          port: 80

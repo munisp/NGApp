@@ -1,0 +1,191 @@
+---
+apiVersion: dapr.io/v1alpha1
+kind: Component
+metadata:
+  name: fraud-detection-statestore
+  namespace: payment-switch
+spec:
+  type: state.redis
+  version: v1
+  metadata:
+  - name: redisHost
+    value: redis-master.payment-switch.svc.cluster.local:6379
+  - name: redisPassword
+    secretKeyRef:
+      name: redis-secret
+      key: password
+  - name: enableTLS
+    value: "true"
+  - name: maxRetries
+    value: "3"
+  - name: maxRetryBackoff
+    value: "2s"
+  - name: ttlInSeconds
+    value: "3600"
+
+---
+apiVersion: dapr.io/v1alpha1
+kind: Component
+metadata:
+  name: fraud-detection-pubsub
+  namespace: payment-switch
+spec:
+  type: pubsub.kafka
+  version: v1
+  metadata:
+  - name: brokers
+    value: kafka-0.kafka-headless.payment-switch.svc.cluster.local:9092,kafka-1.kafka-headless.payment-switch.svc.cluster.local:9092,kafka-2.kafka-headless.payment-switch.svc.cluster.local:9092
+  - name: authType
+    value: "none"
+  - name: consumerGroup
+    value: "fraud-detection-group"
+  - name: clientID
+    value: "fraud-detection-service"
+  - name: maxMessageBytes
+    value: "1048576"
+
+---
+apiVersion: dapr.io/v1alpha1
+kind: Subscription
+metadata:
+  name: fraud-detection-subscription
+  namespace: payment-switch
+spec:
+  topic: transaction-events
+  route: /dapr/subscribe
+  pubsubname: fraud-detection-pubsub
+  metadata:
+    rawPayload: "true"
+
+---
+apiVersion: dapr.io/v1alpha1
+kind: Configuration
+metadata:
+  name: fraud-detection-config
+  namespace: payment-switch
+spec:
+  tracing:
+    samplingRate: "1"
+    zipkin:
+      endpointAddress: "http://zipkin.monitoring.svc.cluster.local:9411/api/v2/spans"
+  
+  metric:
+    enabled: true
+  
+  mtls:
+    enabled: true
+    workloadCertTTL: "24h"
+    allowedClockSkew: "15m"
+  
+  accessControl:
+    defaultAction: deny
+    trustDomain: "payment-switch"
+    policies:
+    - appId: payment-gateway
+      defaultAction: allow
+      trustDomain: "payment-switch"
+      namespace: "payment-switch"
+      operations:
+      - name: /score
+        httpVerb: ["POST"]
+        action: allow
+    
+    - appId: workflow-orchestrator
+      defaultAction: allow
+      trustDomain: "payment-switch"
+      namespace: "payment-switch"
+      operations:
+      - name: /score
+        httpVerb: ["POST"]
+        action: allow
+    
+    - appId: pos-gateway
+      defaultAction: allow
+      trustDomain: "payment-switch"
+      namespace: "payment-switch"
+      operations:
+      - name: /score
+        httpVerb: ["POST"]
+        action: allow
+  
+  features:
+  - name: ServiceInvocation
+    enabled: true
+  - name: ActorStateStore
+    enabled: false
+  - name: Resiliency
+    enabled: true
+  
+  nameResolution:
+    component: "kubernetes"
+    version: "v1"
+    configuration:
+      clusterDomain: "cluster.local"
+
+---
+apiVersion: dapr.io/v1alpha1
+kind: Resiliency
+metadata:
+  name: fraud-detection-resiliency
+  namespace: payment-switch
+spec:
+  policies:
+    timeouts:
+      general: 5s
+      scoring: 100ms
+      feature_extraction: 50ms
+      model_inference: 30ms
+    
+    retries:
+      retryForever:
+        policy: constant
+        duration: 5s
+        maxRetries: -1
+      
+      retryThreeTimes:
+        policy: exponential
+        maxInterval: 10s
+        maxRetries: 3
+      
+      retryFiveTimes:
+        policy: exponential
+        maxInterval: 30s
+        maxRetries: 5
+    
+    circuitBreakers:
+      simpleCB:
+        maxRequests: 1
+        interval: 30s
+        timeout: 60s
+        trip: consecutiveFailures >= 5
+      
+      aggressiveCB:
+        maxRequests: 1
+        interval: 10s
+        timeout: 30s
+        trip: consecutiveFailures >= 3
+  
+  targets:
+    apps:
+      payment-gateway:
+        timeout: general
+        retry: retryThreeTimes
+        circuitBreaker: simpleCB
+      
+      workflow-orchestrator:
+        timeout: general
+        retry: retryThreeTimes
+        circuitBreaker: simpleCB
+    
+    components:
+      fraud-detection-statestore:
+        outbound:
+          timeout: 2s
+          retry: retryFiveTimes
+          circuitBreaker: aggressiveCB
+      
+      fraud-detection-pubsub:
+        outbound:
+          timeout: 5s
+          retry: retryThreeTimes
+          circuitBreaker: simpleCB

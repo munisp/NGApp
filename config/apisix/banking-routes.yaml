@@ -1,0 +1,187 @@
+routes:
+  - id: 100
+    name: banking_customer_api
+    uri: /api/v1/banking/customers/*
+    upstream:
+      type: roundrobin
+      nodes:
+        "customer-service:8080": 1
+    plugins:
+      jwt-auth:
+        header: Authorization
+        query: token
+        cookie: jwt
+        hide_credentials: true
+      proxy-rewrite:
+        regex_uri: ["^/api/v1/banking/customers/(.*)", "/api/customers/$1"]
+      request-validation:
+        body_schema:
+          type: object
+          required:
+            - customer_id
+          properties:
+            customer_id:
+              type: string
+              pattern: "^[a-zA-Z0-9-]+$"
+      response-rewrite:
+        headers:
+          set:
+            X-API-Version: "v1"
+      limit-req:
+        rate: 10
+        burst: 5
+        rejected_code: 429
+        key: remote_addr
+      cors:
+        allow_origins: "*"
+        allow_methods: "GET,POST,PUT,DELETE,PATCH,OPTIONS"
+        allow_headers: "Content-Type,Authorization"
+        expose_headers: "X-Request-ID"
+        max_age: 3600
+      prometheus:
+        prefer_name: true
+      proxy-cache:
+        cache_zone: banking_cache
+        cache_key: "$uri$args"
+        cache_bypass: "$arg_bypass_cache"
+        cache_method: ["GET"]
+        cache_http_status: [200]
+        hide_cache_headers: true
+        no_cache: "$arg_no_cache"
+  
+  - id: 101
+    name: banking_transaction_api
+    uri: /api/v1/banking/transactions/*
+    upstream:
+      type: roundrobin
+      nodes:
+        "transaction-service:8080": 1
+    plugins:
+      jwt-auth:
+        header: Authorization
+        query: token
+        cookie: jwt
+        hide_credentials: true
+      proxy-rewrite:
+        regex_uri: ["^/api/v1/banking/transactions/(.*)", "/api/transactions/$1"]
+      request-validation:
+        body_schema:
+          type: object
+          required:
+            - transaction_id
+          properties:
+            transaction_id:
+              type: string
+              pattern: "^[a-zA-Z0-9-]+$"
+      response-rewrite:
+        headers:
+          set:
+            X-API-Version: "v1"
+      limit-req:
+        rate: 20
+        burst: 10
+        rejected_code: 429
+        key: remote_addr
+      cors:
+        allow_origins: "*"
+        allow_methods: "GET,POST,PUT,DELETE,PATCH,OPTIONS"
+        allow_headers: "Content-Type,Authorization"
+        expose_headers: "X-Request-ID"
+        max_age: 3600
+      prometheus:
+        prefer_name: true
+  
+  - id: 102
+    name: banking_fraud_api
+    uri: /api/v1/banking/fraud/*
+    upstream:
+      type: roundrobin
+      nodes:
+        "fraud-service:8080": 1
+    plugins:
+      jwt-auth:
+        header: Authorization
+        query: token
+        cookie: jwt
+        hide_credentials: true
+      proxy-rewrite:
+        regex_uri: ["^/api/v1/banking/fraud/(.*)", "/api/fraud/$1"]
+      request-validation:
+        body_schema:
+          type: object
+          required:
+            - alert_id
+          properties:
+            alert_id:
+              type: string
+              pattern: "^[a-zA-Z0-9-]+$"
+      response-rewrite:
+        headers:
+          set:
+            X-API-Version: "v1"
+      limit-req:
+        rate: 5
+        burst: 3
+        rejected_code: 429
+        key: remote_addr
+      cors:
+        allow_origins: "*"
+        allow_methods: "GET,POST,PUT,DELETE,PATCH,OPTIONS"
+        allow_headers: "Content-Type,Authorization"
+        expose_headers: "X-Request-ID"
+        max_age: 3600
+      prometheus:
+        prefer_name: true
+      ip-restriction:
+        whitelist:
+          - "10.0.0.0/8"
+          - "172.16.0.0/12"
+          - "192.168.0.0/16"
+  
+  - id: 103
+    name: banking_notification_api
+    uri: /api/v1/banking/notifications/*
+    upstream:
+      type: roundrobin
+      nodes:
+        "notification-service:8080": 1
+    plugins:
+      jwt-auth:
+        header: Authorization
+        query: token
+        cookie: jwt
+        hide_credentials: true
+      proxy-rewrite:
+        regex_uri: ["^/api/v1/banking/notifications/(.*)", "/api/notifications/$1"]
+      request-validation:
+        body_schema:
+          type: object
+          required:
+            - recipient_id
+            - message
+          properties:
+            recipient_id:
+              type: string
+              pattern: "^[a-zA-Z0-9-]+$"
+            message:
+              type: string
+              minLength: 1
+              maxLength: 1000
+      response-rewrite:
+        headers:
+          set:
+            X-API-Version: "v1"
+      limit-req:
+        rate: 10
+        burst: 5
+        rejected_code: 429
+        key: remote_addr
+      cors:
+        allow_origins: "*"
+        allow_methods: "GET,POST,PUT,DELETE,PATCH,OPTIONS"
+        allow_headers: "Content-Type,Authorization"
+        expose_headers: "X-Request-ID"
+        max_age: 3600
+      prometheus:
+        prefer_name: true
+

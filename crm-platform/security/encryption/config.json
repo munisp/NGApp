@@ -1,0 +1,32 @@
+{
+  "version": "1.0",
+  "at_rest": {
+    "algorithm": "AES-256-GCM",
+    "key_management": "HashiCorp Vault",
+    "key_rotation_days": 90,
+    "encrypted_fields": [
+      "customer.email",
+      "customer.phone",
+      "customer.bvn",
+      "customer.nin",
+      "transaction.amount",
+      "payment.card_number",
+      "subscriber.sim_iccid",
+      "trade.counterparty_details"
+    ]
+  },
+  "in_transit": {
+    "tls_version": "1.3",
+    "cipher_suites": [
+      "TLS_AES_256_GCM_SHA384",
+      "TLS_CHACHA20_POLY1305_SHA256"
+    ],
+    "certificate_rotation_days": 365,
+    "mtls_enabled": true
+  },
+  "webhooks": {
+    "signing_algorithm": "HMAC-SHA256",
+    "signature_header": "X-CRM-Signature",
+    "timestamp_tolerance_seconds": 300
+  }
+}

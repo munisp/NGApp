@@ -1,0 +1,9 @@
+FROM golang:1.21-alpine AS builder
+WORKDIR /app
+COPY crm-platform/services/go/gnn-neo4j/ .
+RUN go mod download && CGO_ENABLED=0 go build -o /gnn-neo4j .
+
+FROM alpine:3.19
+COPY --from=builder /gnn-neo4j /gnn-neo4j
+EXPOSE 8090
+CMD ["/gnn-neo4j"]

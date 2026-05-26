@@ -1,0 +1,92 @@
+# Default Deny Network Policy
+# Implements Zero Trust micro-segmentation by denying all traffic by default
+# Each namespace must explicitly allow required traffic
+
+apiVersion: networking.k8s.io/v1
+kind: NetworkPolicy
+metadata:
+  name: default-deny-all
+  namespace: payment-core
+  labels:
+    app.kubernetes.io/part-of: paygate
+    security.paygate.io/policy: zero-trust
+spec:
+  podSelector: {}
+  policyTypes:
+    - Ingress
+    - Egress
+
+---
+apiVersion: networking.k8s.io/v1
+kind: NetworkPolicy
+metadata:
+  name: default-deny-all
+  namespace: mojaloop
+  labels:
+    app.kubernetes.io/part-of: paygate
+    security.paygate.io/policy: zero-trust
+spec:
+  podSelector: {}
+  policyTypes:
+    - Ingress
+    - Egress
+
+---
+apiVersion: networking.k8s.io/v1
+kind: NetworkPolicy
+metadata:
+  name: default-deny-all
+  namespace: security
+  labels:
+    app.kubernetes.io/part-of: paygate
+    security.paygate.io/policy: zero-trust
+spec:
+  podSelector: {}
+  policyTypes:
+    - Ingress
+    - Egress
+
+---
+apiVersion: networking.k8s.io/v1
+kind: NetworkPolicy
+metadata:
+  name: default-deny-all
+  namespace: data
+  labels:
+    app.kubernetes.io/part-of: paygate
+    security.paygate.io/policy: zero-trust
+spec:
+  podSelector: {}
+  policyTypes:
+    - Ingress
+    - Egress
+
+---
+apiVersion: networking.k8s.io/v1
+kind: NetworkPolicy
+metadata:
+  name: default-deny-all
+  namespace: monitoring
+  labels:
+    app.kubernetes.io/part-of: paygate
+    security.paygate.io/policy: zero-trust
+spec:
+  podSelector: {}
+  policyTypes:
+    - Ingress
+    - Egress
+
+---
+apiVersion: networking.k8s.io/v1
+kind: NetworkPolicy
+metadata:
+  name: default-deny-all
+  namespace: admin
+  labels:
+    app.kubernetes.io/part-of: paygate
+    security.paygate.io/policy: zero-trust
+spec:
+  podSelector: {}
+  policyTypes:
+    - Ingress
+    - Egress

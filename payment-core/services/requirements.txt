@@ -1,0 +1,45 @@
+# Core web framework
+fastapi==0.104.1
+uvicorn[standard]==0.24.0
+pydantic==2.5.0
+
+# gRPC for high-performance communication with Go services
+grpcio==1.60.0
+grpcio-tools==1.60.0
+protobuf==4.25.1
+
+# Temporal workflow engine
+temporalio==1.4.0
+
+# Database drivers
+asyncpg==0.29.0
+psycopg2-binary==2.9.9
+
+# Redis for caching
+redis==5.0.1
+hiredis==2.2.3
+
+# Kafka for event streaming
+aiokafka==0.9.0
+kafka-python==2.0.2
+
+# HTTP client
+httpx==0.25.2
+aiohttp==3.9.1
+
+# Monitoring and logging
+prometheus-client==0.19.0
+python-json-logger==2.0.7
+
+# Security
+cryptography==41.0.7
+pyjwt==2.8.0
+
+# Utilities
+python-dotenv==1.0.0
+pyyaml==6.0.1
+
+# Testing
+pytest==7.4.3
+pytest-asyncio==0.21.1
+pytest-cov==4.1.0

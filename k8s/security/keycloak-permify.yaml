@@ -1,0 +1,221 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: keycloak-permify-integration-config
+  namespace: security
+data:
+  config.yaml: |
+    keycloak:
+      base_url: "https://auth.enterprise-crm.com"
+      realm: "enterprise-crm"
+      client_id: "permify-integration"
+      client_secret: "permify-integration-secret"
+      admin_username: "admin"
+      admin_password: "admin_password"
+      
+    permify:
+      grpc_endpoint: "permify:3476"
+      http_endpoint: "http://permify:3477"
+      api_key: "permify_secret_key_123"
+      
+    sync:
+      interval: "5m"
+      batch_size: 100
+      retry_attempts: 3
+      retry_delay: "30s"
+      
+    mapping:
+      # Map KeyCloak roles to Permify relations
+      role_mappings:
+        crm-admin: "admin"
+        crm-manager: "manager"
+        crm-user: "member"
+        sales-manager: "manager"
+        sales-rep: "member"
+        marketing-manager: "manager"
+        customer-service: "member"
+        inventory-manager: "manager"
+        analytics-viewer: "member"
+        
+      # Map KeyCloak groups to Permify entities
+      group_mappings:
+        "/Administrators": "organization"
+        "/Sales Team": "department"
+        "/Sales Team/Sales Managers": "department"
+        "/Marketing Team": "department"
+        "/Marketing Team/Marketing Managers": "department"
+        "/Customer Service": "department"
+        "/Inventory Team": "department"
+        "/Inventory Team/Inventory Managers": "department"
+        
+    logging:
+      level: "info"
+      format: "json"
+      
+    metrics:
+      enabled: true
+      port: 8080
+      path: "/metrics"
+---
+apiVersion: v1
+kind: Secret
+metadata:
+  name: keycloak-permify-integration-secrets
+  namespace: security
+type: Opaque
+data:
+  # Base64 encoded values - replace with actual values
+  keycloak-admin-password: REPLACE_WITH_BASE64_ENCODED_PASSWORD  # Generate: echo -n "your-password" | base64
+  permify-api-key: cGVybWlmeV9zZWNyZXRfa2V5XzEyMw==  # permify_secret_key_123
+  integration-client-secret: cGVybWlmeS1pbnRlZ3JhdGlvbi1zZWNyZXQ=  # permify-integration-secret
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: keycloak-permify-integration
+  namespace: security
+  labels:
+    app: keycloak-permify-integration
+spec:
+  replicas: 2
+  selector:
+    matchLabels:
+      app: keycloak-permify-integration
+  template:
+    metadata:
+      labels:
+        app: keycloak-permify-integration
+    spec:
+      containers:
+      - name: integration-service
+        image: enterprise-crm/keycloak-permify-integration:latest
+        ports:
+        - containerPort: 8080
+          name: http
+        - containerPort: 8090
+          name: metrics
+        env:
+        - name: CONFIG_PATH
+          value: "/etc/config/config.yaml"
+        - name: KEYCLOAK_ADMIN_PASSWORD
+          valueFrom:
+            secretKeyRef:
+              name: keycloak-permify-integration-secrets
+              key: keycloak-admin-password
+        - name: PERMIFY_API_KEY
+          valueFrom:
+            secretKeyRef:
+              name: keycloak-permify-integration-secrets
+              key: permify-api-key
+        - name: INTEGRATION_CLIENT_SECRET
+          valueFrom:
+            secretKeyRef:
+              name: keycloak-permify-integration-secrets
+              key: integration-client-secret
+        volumeMounts:
+        - name: config
+          mountPath: /etc/config
+        resources:
+          requests:
+            memory: "256Mi"
+            cpu: "250m"
+          limits:
+            memory: "512Mi"
+            cpu: "500m"
+        livenessProbe:
+          httpGet:
+            path: /health
+            port: 8080
+          initialDelaySeconds: 30
+          periodSeconds: 10
+        readinessProbe:
+          httpGet:
+            path: /ready
+            port: 8080
+          initialDelaySeconds: 10
+          periodSeconds: 5
+      volumes:
+      - name: config
+        configMap:
+          name: keycloak-permify-integration-config
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: keycloak-permify-integration
+  namespace: security
+  labels:
+    app: keycloak-permify-integration
+spec:
+  ports:
+  - name: http
+    port: 8080
+    targetPort: 8080
+  - name: metrics
+    port: 8090
+    targetPort: 8090
+  selector:
+    app: keycloak-permify-integration
+  type: ClusterIP
+---
+apiVersion: batch/v1
+kind: CronJob
+metadata:
+  name: keycloak-permify-sync
+  namespace: security
+spec:
+  schedule: "*/5 * * * *"  # Every 5 minutes
+  jobTemplate:
+    spec:
+      template:
+        spec:
+          containers:
+          - name: sync-job
+            image: enterprise-crm/keycloak-permify-integration:latest
+            command:
+            - /app/sync
+            - --config=/etc/config/config.yaml
+            - --mode=full
+            env:
+            - name: KEYCLOAK_ADMIN_PASSWORD
+              valueFrom:
+                secretKeyRef:
+                  name: keycloak-permify-integration-secrets
+                  key: keycloak-admin-password
+            - name: PERMIFY_API_KEY
+              valueFrom:
+                secretKeyRef:
+                  name: keycloak-permify-integration-secrets
+                  key: permify-api-key
+            volumeMounts:
+            - name: config
+              mountPath: /etc/config
+            resources:
+              requests:
+                memory: "128Mi"
+                cpu: "100m"
+              limits:
+                memory: "256Mi"
+                cpu: "200m"
+          volumes:
+          - name: config
+            configMap:
+              name: keycloak-permify-integration-config
+          restartPolicy: OnFailure
+---
+apiVersion: v1
+kind: ServiceMonitor
+metadata:
+  name: keycloak-permify-integration-metrics
+  namespace: security
+  labels:
+    app: keycloak-permify-integration
+spec:
+  selector:
+    matchLabels:
+      app: keycloak-permify-integration
+  endpoints:
+  - port: metrics
+    interval: 30s
+    path: /metrics
+

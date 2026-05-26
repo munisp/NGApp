@@ -1,0 +1,1 @@
+export { KYBVerificationPortal } from './KYBVerificationPortal';

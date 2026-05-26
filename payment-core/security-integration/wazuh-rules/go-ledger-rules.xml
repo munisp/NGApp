@@ -1,0 +1,176 @@
+<!--
+  Wazuh Custom Rules for Go Ledger Service Security Monitoring
+  Rule ID range: 100000-100099 (custom application rules)
+-->
+
+<group name="go-ledger,application,">
+
+  <!-- Base rule for Go Ledger service -->
+  <rule id="100000" level="0">
+    <decoded_as>go-ledger-json</decoded_as>
+    <description>Go Ledger service event</description>
+  </rule>
+
+  <!-- Authentication failures -->
+  <rule id="100001" level="5">
+    <if_sid>100000</if_sid>
+    <decoded_as>go-ledger-auth-failure</decoded_as>
+    <description>Go Ledger: Authentication failure from $(srcip)</description>
+    <group>authentication_failed,pci_dss_10.2.4,pci_dss_10.2.5,gpg13_7.1,gdpr_IV_35.7.d,gdpr_IV_32.2,hipaa_164.312.b,nist_800_53_AU.14,nist_800_53_AC.7,tsc_CC6.1,tsc_CC6.8,tsc_CC7.2,tsc_CC7.3,</group>
+  </rule>
+
+  <rule id="100002" level="10" frequency="5" timeframe="300">
+    <if_matched_sid>100001</if_matched_sid>
+    <same_source_ip />
+    <description>Go Ledger: Multiple authentication failures from $(srcip)</description>
+    <mitre>
+      <id>T1110</id>
+    </mitre>
+    <group>authentication_failures,pci_dss_11.4,pci_dss_10.2.4,pci_dss_10.2.5,gdpr_IV_35.7.d,gdpr_IV_32.2,hipaa_164.312.b,nist_800_53_SI.4,nist_800_53_AU.14,nist_800_53_AC.7,tsc_CC6.1,tsc_CC6.8,tsc_CC7.2,tsc_CC7.3,</group>
+  </rule>
+
+  <!-- Rate limiting violations -->
+  <rule id="100003" level="7">
+    <if_sid>100000</if_sid>
+    <decoded_as>go-ledger-rate-limit</decoded_as>
+    <description>Go Ledger: Rate limit exceeded from $(srcip)</description>
+    <group>dos,pci_dss_11.4,gdpr_IV_35.7.d,nist_800_53_SI.4,tsc_CC6.1,tsc_CC7.2,</group>
+  </rule>
+
+  <rule id="100004" level="12" frequency="10" timeframe="60">
+    <if_matched_sid>100003</if_matched_sid>
+    <same_source_ip />
+    <description>Go Ledger: Potential DoS attack from $(srcip)</description>
+    <mitre>
+      <id>T1498</id>
+    </mitre>
+    <group>dos,attack,pci_dss_11.4,gdpr_IV_35.7.d,nist_800_53_SI.4,tsc_CC6.1,tsc_CC7.2,</group>
+  </rule>
+
+  <!-- Suspicious transaction patterns -->
+  <rule id="100010" level="8">
+    <if_sid>100000</if_sid>
+    <field name="amount">^[1-9]\d{7,}$</field>
+    <description>Go Ledger: Large transaction detected - Amount: $(amount) $(currency)</description>
+    <group>fraud,pci_dss_10.6.1,gdpr_IV_35.7.d,nist_800_53_AU.6,tsc_CC7.2,</group>
+  </rule>
+
+  <rule id="100011" level="10" frequency="5" timeframe="60">
+    <if_matched_sid>100010</if_matched_sid>
+    <same_field>account_id</same_field>
+    <description>Go Ledger: Multiple large transactions from account $(account_id)</description>
+    <mitre>
+      <id>T1537</id>
+    </mitre>
+    <group>fraud,money_laundering,pci_dss_10.6.1,gdpr_IV_35.7.d,nist_800_53_AU.6,tsc_CC7.2,</group>
+  </rule>
+
+  <rule id="100012" level="9" frequency="20" timeframe="300">
+    <if_sid>100000</if_sid>
+    <field name="operation">transfer</field>
+    <same_field>from_account</same_field>
+    <description>Go Ledger: Rapid fire transactions from account $(from_account)</description>
+    <mitre>
+      <id>T1537</id>
+    </mitre>
+    <group>fraud,velocity_check,pci_dss_10.6.1,gdpr_IV_35.7.d,nist_800_53_AU.6,tsc_CC7.2,</group>
+  </rule>
+
+  <!-- Account enumeration attempts -->
+  <rule id="100020" level="6" frequency="10" timeframe="60">
+    <if_sid>100000</if_sid>
+    <field name="status_code">404</field>
+    <same_source_ip />
+    <description>Go Ledger: Possible account enumeration from $(srcip)</description>
+    <mitre>
+      <id>T1087</id>
+    </mitre>
+    <group>reconnaissance,pci_dss_11.4,gdpr_IV_35.7.d,nist_800_53_SI.4,tsc_CC6.1,tsc_CC7.2,</group>
+  </rule>
+
+  <!-- Unauthorized access attempts -->
+  <rule id="100030" level="8">
+    <if_sid>100000</if_sid>
+    <field name="status_code">^40[13]$</field>
+    <description>Go Ledger: Unauthorized access attempt - Status: $(status_code)</description>
+    <group>access_denied,pci_dss_10.2.4,gdpr_IV_35.7.d,hipaa_164.312.b,nist_800_53_AU.14,nist_800_53_AC.7,tsc_CC6.1,tsc_CC6.8,</group>
+  </rule>
+
+  <rule id="100031" level="10" frequency="5" timeframe="120">
+    <if_matched_sid>100030</if_matched_sid>
+    <same_source_ip />
+    <description>Go Ledger: Multiple unauthorized access attempts from $(srcip)</description>
+    <mitre>
+      <id>T1078</id>
+    </mitre>
+    <group>access_denied,attack,pci_dss_11.4,gdpr_IV_35.7.d,hipaa_164.312.b,nist_800_53_SI.4,tsc_CC6.1,tsc_CC6.8,</group>
+  </rule>
+
+  <!-- Application errors indicating potential attacks -->
+  <rule id="100040" level="7">
+    <if_sid>100000</if_sid>
+    <decoded_as>go-ledger-error</decoded_as>
+    <field name="error">injection|overflow|exploit|malicious</field>
+    <description>Go Ledger: Potential attack detected - $(error_message)</description>
+    <mitre>
+      <id>T1190</id>
+    </mitre>
+    <group>attack,exploit,pci_dss_11.4,gdpr_IV_35.7.d,nist_800_53_SI.4,tsc_CC6.1,tsc_CC6.8,tsc_CC7.2,</group>
+  </rule>
+
+  <!-- Database connection errors (potential infrastructure attack) -->
+  <rule id="100041" level="9" frequency="3" timeframe="60">
+    <if_sid>100000</if_sid>
+    <field name="error">database connection|tigerbeetle.*error|postgres.*error</field>
+    <description>Go Ledger: Multiple database errors detected</description>
+    <group>service_availability,pci_dss_10.6.1,gdpr_IV_35.7.d,nist_800_53_AU.6,tsc_CC7.2,</group>
+  </rule>
+
+  <!-- Anomalous response times (potential performance attack) -->
+  <rule id="100050" level="6">
+    <if_sid>100000</if_sid>
+    <field name="response_time_ms">^[5-9]\d{3,}$</field>
+    <description>Go Ledger: Slow response time detected - $(response_time_ms)ms</description>
+    <group>performance,pci_dss_10.6.1,gdpr_IV_35.7.d,nist_800_53_AU.6,tsc_CC7.2,</group>
+  </rule>
+
+  <rule id="100051" level="9" frequency="10" timeframe="300">
+    <if_matched_sid>100050</if_matched_sid>
+    <description>Go Ledger: Sustained performance degradation detected</description>
+    <group>performance,dos,pci_dss_10.6.1,gdpr_IV_35.7.d,nist_800_53_AU.6,tsc_CC7.2,</group>
+  </rule>
+
+  <!-- Cross-account transfer patterns (potential fraud) -->
+  <rule id="100060" level="8" frequency="10" timeframe="600">
+    <if_sid>100000</if_sid>
+    <field name="operation">transfer</field>
+    <same_field>to_account</same_field>
+    <description>Go Ledger: Multiple transfers to single account $(to_account)</description>
+    <mitre>
+      <id>T1537</id>
+    </mitre>
+    <group>fraud,structuring,pci_dss_10.6.1,gdpr_IV_35.7.d,nist_800_53_AU.6,tsc_CC7.2,</group>
+  </rule>
+
+  <!-- Suspicious geographic patterns -->
+  <rule id="100070" level="9">
+    <if_sid>100000</if_sid>
+    <field name="operation">transfer</field>
+    <same_field>user_id</same_field>
+    <different_geoip />
+    <timeframe>300</timeframe>
+    <description>Go Ledger: Impossible travel detected for user $(user_id)</description>
+    <mitre>
+      <id>T1078</id>
+    </mitre>
+    <group>fraud,account_takeover,pci_dss_10.6.1,gdpr_IV_35.7.d,nist_800_53_AU.6,tsc_CC7.2,</group>
+  </rule>
+
+  <!-- Critical alerts that should trigger OpenCTI integration -->
+  <rule id="100080" level="12">
+    <if_sid>100002,100004,100011,100031,100040</if_sid>
+    <description>Go Ledger: Critical security event - Trigger threat intelligence correlation</description>
+    <group>critical,opencti_integration,</group>
+  </rule>
+
+</group>

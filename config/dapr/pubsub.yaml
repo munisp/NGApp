@@ -1,0 +1,55 @@
+apiVersion: dapr.io/v1alpha1
+kind: Component
+metadata:
+  name: banking-pubsub
+  namespace: banking-crm
+spec:
+  type: pubsub.kafka
+  version: v1
+  metadata:
+  - name: brokers
+    value: "kafka-broker:9092"
+  - name: consumerGroup
+    value: "banking-crm-group"
+  - name: clientID
+    value: "banking-crm-client"
+  - name: authRequired
+    value: "true"
+  - name: saslUsername
+    secretKeyRef:
+      name: kafka-secrets
+      key: sasl-username
+  - name: saslPassword
+    secretKeyRef:
+      name: kafka-secrets
+      key: sasl-password
+  - name: maxMessageBytes
+    value: "1048576" # 1MB
+  - name: consumeRetryInterval
+    value: "200ms"
+  - name: authType
+    value: "plain"
+  - name: disableTls
+    value: "false"
+  - name: tlsCaFile
+    secretKeyRef:
+      name: kafka-secrets
+      key: ca-cert
+  - name: tlsClientCertFile
+    secretKeyRef:
+      name: kafka-secrets
+      key: client-cert
+  - name: tlsClientKeyFile
+    secretKeyRef:
+      name: kafka-secrets
+      key: client-key
+  - name: initialOffset
+    value: "newest"
+scopes:
+  - banking-service
+  - crm-service
+  - customer-service
+  - transaction-service
+  - fraud-service
+  - notification-service
+

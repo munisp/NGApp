@@ -1,0 +1,23 @@
+apiVersion: v1
+kind: Namespace
+metadata:
+  name: payment-switch
+  labels:
+    name: payment-switch
+    environment: production
+---
+apiVersion: v1
+kind: Namespace
+metadata:
+  name: payment-switch-monitoring
+  labels:
+    name: payment-switch-monitoring
+    environment: production
+---
+apiVersion: v1
+kind: Namespace
+metadata:
+  name: payment-switch-security
+  labels:
+    name: payment-switch-security
+    environment: production

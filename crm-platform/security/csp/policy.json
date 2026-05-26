@@ -1,0 +1,45 @@
+{
+  "version": "1.0",
+  "policies": {
+    "default-src": [
+      "'self'"
+    ],
+    "script-src": [
+      "'self'",
+      "'unsafe-inline'",
+      "https://cdn.jsdelivr.net"
+    ],
+    "style-src": [
+      "'self'",
+      "'unsafe-inline'"
+    ],
+    "img-src": [
+      "'self'",
+      "data:",
+      "https:"
+    ],
+    "font-src": [
+      "'self'",
+      "https://fonts.gstatic.com"
+    ],
+    "connect-src": [
+      "'self'",
+      "https://api.crm.platform.ng",
+      "wss://ws.crm.platform.ng"
+    ],
+    "frame-ancestors": [
+      "'none'"
+    ],
+    "form-action": [
+      "'self'"
+    ],
+    "base-uri": [
+      "'self'"
+    ],
+    "object-src": [
+      "'none'"
+    ],
+    "upgrade-insecure-requests": true
+  },
+  "report_uri": "/api/v1/security/csp-report"
+}

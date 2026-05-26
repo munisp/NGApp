@@ -1,0 +1,40 @@
+CREATE TABLE `login_history` (
+	`id` int AUTO_INCREMENT NOT NULL,
+	`userId` int NOT NULL,
+	`loginAt` timestamp NOT NULL DEFAULT (now()),
+	`success` enum('true','false') NOT NULL,
+	`deviceFingerprint` varchar(128),
+	`deviceName` varchar(255),
+	`userAgent` text,
+	`ipAddress` varchar(45),
+	`country` varchar(100),
+	`city` varchar(100),
+	`region` varchar(100),
+	`latitude` varchar(20),
+	`longitude` varchar(20),
+	`isTrustedDevice` enum('true','false') NOT NULL DEFAULT 'false',
+	`isSuspicious` enum('true','false') NOT NULL DEFAULT 'false',
+	`requiresTwoFactor` enum('true','false') NOT NULL DEFAULT 'false',
+	`twoFactorCompleted` enum('true','false') NOT NULL DEFAULT 'false',
+	`sessionId` varchar(255),
+	`sessionActive` enum('true','false') NOT NULL DEFAULT 'true',
+	`sessionEndedAt` timestamp,
+	`failureReason` varchar(255),
+	CONSTRAINT `login_history_id` PRIMARY KEY(`id`)
+);
+--> statement-breakpoint
+CREATE TABLE `notification_preferences` (
+	`id` int AUTO_INCREMENT NOT NULL,
+	`userId` int NOT NULL,
+	`emailNotifications` enum('true','false') NOT NULL DEFAULT 'true',
+	`smsNotifications` enum('true','false') NOT NULL DEFAULT 'false',
+	`newDeviceAlerts` enum('true','false') NOT NULL DEFAULT 'true',
+	`suspiciousActivityAlerts` enum('true','false') NOT NULL DEFAULT 'true',
+	`loginAlerts` enum('true','false') NOT NULL DEFAULT 'false',
+	`passwordChangeAlerts` enum('true','false') NOT NULL DEFAULT 'true',
+	`twoFactorChangeAlerts` enum('true','false') NOT NULL DEFAULT 'true',
+	`createdAt` timestamp NOT NULL DEFAULT (now()),
+	`updatedAt` timestamp NOT NULL DEFAULT (now()) ON UPDATE CURRENT_TIMESTAMP,
+	CONSTRAINT `notification_preferences_id` PRIMARY KEY(`id`),
+	CONSTRAINT `notification_preferences_userId_unique` UNIQUE(`userId`)
+);

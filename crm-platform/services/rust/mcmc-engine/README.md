@@ -1,0 +1,38 @@
+# Mcmc Engine
+
+**Language:** Rust
+**Platform:** CRM Multi-Vertical
+
+## Quick Start
+
+```bash
+cd services/rust/mcmc-engine
+cargo build --release
+```
+
+## Environment Variables
+
+| Variable | Default | Description |
+|----------|---------|-------------|
+| `PORT` | `8080` | Service port |
+| `DATABASE_URL` | — | PostgreSQL connection string |
+| `REDIS_URL` | `redis://redis:6379/0` | Redis connection string |
+| `KAFKA_BROKERS` | `kafka:9092` | Kafka broker addresses |
+| `LOG_LEVEL` | `info` | Log verbosity |
+
+## Health Checks
+
+- `GET /health` — Liveness probe
+- `GET /ready` — Readiness probe
+- `GET /metrics` — Prometheus metrics
+
+## API
+
+See OpenAPI spec at `GET /swagger/` when running.
+
+## Docker
+
+```bash
+docker build -t crm-platform/mcmc-engine:latest .
+docker run -p 8080:8080 crm-platform/mcmc-engine:latest
+```

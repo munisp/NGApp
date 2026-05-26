@@ -1,0 +1,7 @@
+[package]
+name = "realtime-events"
+version = "0.1.0"
+edition = "2021"
+description = "Real-time campaign event streaming via WebSocket"
+
+[dependencies]

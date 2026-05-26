@@ -1,0 +1,106 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: instant-settlement-service
+  namespace: payment-switch
+  labels:
+    app: instant-settlement-service
+    tier: core
+spec:
+  replicas: 3
+  selector:
+    matchLabels:
+      app: instant-settlement-service
+  template:
+    metadata:
+      labels:
+        app: instant-settlement-service
+    spec:
+      containers:
+        - name: instant-settlement-service
+          image: payment-switch/instant-settlement-service:latest
+          ports:
+            - containerPort: 8000
+          env:
+            - name: POSTGRES_HOST
+              valueFrom:
+                secretKeyRef:
+                  name: instant-settlement-secrets
+                  key: POSTGRES_HOST
+            - name: POSTGRES_PASSWORD
+              valueFrom:
+                secretKeyRef:
+                  name: instant-settlement-secrets
+                  key: POSTGRES_PASSWORD
+            - name: REDIS_HOST
+              value: "redis.payment-switch.svc.cluster.local"
+            - name: KAFKA_BOOTSTRAP_SERVERS
+              value: "kafka.payment-switch.svc.cluster.local:9092"
+            - name: TIGERBEETLE_HOST
+              value: "tigerbeetle.payment-switch.svc.cluster.local:3000"
+            - name: SETTLEMENT_MODE
+              value: "instant"
+          resources:
+            requests:
+              memory: "256Mi"
+              cpu: "200m"
+            limits:
+              memory: "1Gi"
+              cpu: "1000m"
+          livenessProbe:
+            httpGet:
+              path: /health
+              port: 8000
+            initialDelaySeconds: 30
+            periodSeconds: 10
+            timeoutSeconds: 5
+            failureThreshold: 3
+          readinessProbe:
+            httpGet:
+              path: /health
+              port: 8000
+            initialDelaySeconds: 5
+            periodSeconds: 5
+            timeoutSeconds: 3
+            failureThreshold: 3
+      affinity:
+        podAntiAffinity:
+          preferredDuringSchedulingIgnoredDuringExecution:
+            - weight: 100
+              podAffinityTerm:
+                labelSelector:
+                  matchExpressions:
+                    - key: app
+                      operator: In
+                      values:
+                        - instant-settlement-service
+                topologyKey: kubernetes.io/hostname
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: instant-settlement-service
+  namespace: payment-switch
+  labels:
+    app: instant-settlement-service
+spec:
+  selector:
+    app: instant-settlement-service
+  ports:
+    - port: 8000
+      targetPort: 8000
+      protocol: TCP
+  type: ClusterIP
+---
+apiVersion: v1
+kind: Secret
+metadata:
+  name: instant-settlement-secrets
+  namespace: payment-switch
+  labels:
+    app: instant-settlement-service
+    external-secrets.io/managed: "true"
+type: Opaque
+stringData:
+  POSTGRES_HOST: "PLACEHOLDER_INJECT_FROM_VAULT"
+  POSTGRES_PASSWORD: "PLACEHOLDER_INJECT_FROM_VAULT"

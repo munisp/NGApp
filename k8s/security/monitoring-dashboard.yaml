@@ -1,0 +1,776 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: security-dashboard-config
+  namespace: security
+data:
+  grafana.ini: |
+    [server]
+    protocol = http
+    http_port = 3000
+    domain = security-dashboard.enterprise-crm.com
+    root_url = https://security-dashboard.enterprise-crm.com
+    serve_from_sub_path = false
+
+    [database]
+    type = postgres
+    host = security-dashboard-postgres:5432
+    name = grafana
+    user = grafana
+    password = grafana_password
+    ssl_mode = disable
+
+    [session]
+    provider = postgres
+    provider_config = user=grafana password=grafana_password host=security-dashboard-postgres port=5432 dbname=grafana sslmode=disable
+
+    [security]
+    admin_user = admin
+    admin_password = security_admin_password
+    secret_key = security_dashboard_secret_key
+    disable_gravatar = true
+    cookie_secure = true
+    cookie_samesite = strict
+    content_type_protection = true
+    x_content_type_options = true
+    x_xss_protection = true
+    strict_transport_security = true
+    strict_transport_security_max_age_seconds = 86400
+    strict_transport_security_preload = true
+    strict_transport_security_subdomains = true
+    x_content_type_options = true
+    referrer_policy = strict-origin-when-cross-origin
+
+    [auth]
+    disable_login_form = false
+    disable_signout_menu = false
+    signout_redirect_url = https://auth.enterprise-crm.com/realms/enterprise-crm/protocol/openid_connect/logout
+
+    [auth.generic_oauth]
+    enabled = true
+    name = KeyCloak
+    allow_sign_up = true
+    client_id = security-dashboard
+    client_secret = security_dashboard_client_secret
+    scopes = openid profile email
+    auth_url = https://auth.enterprise-crm.com/realms/enterprise-crm/protocol/openid_connect/auth
+    token_url = https://auth.enterprise-crm.com/realms/enterprise-crm/protocol/openid_connect/token
+    api_url = https://auth.enterprise-crm.com/realms/enterprise-crm/protocol/openid_connect/userinfo
+    role_attribute_path = contains(realm_access.roles[*], 'security-admin') && 'Admin' || contains(realm_access.roles[*], 'security-analyst') && 'Editor' || 'Viewer'
+    allow_assign_grafana_admin = true
+
+    [alerting]
+    enabled = true
+    execute_alerts = true
+    error_or_timeout = alerting
+    nodata_or_nullvalues = no_data
+    concurrent_render_limit = 5
+    evaluation_timeout_seconds = 30
+    notification_timeout_seconds = 30
+    max_attempts = 3
+
+    [smtp]
+    enabled = true
+    host = smtp.enterprise-crm.com:587
+    user = security-dashboard@enterprise-crm.com
+    password = smtp_password
+    cert_file =
+    key_file =
+    skip_verify = false
+    from_address = security-dashboard@enterprise-crm.com
+    from_name = Security Dashboard
+    ehlo_identity = security-dashboard.enterprise-crm.com
+    startTLS_policy = MandatoryStartTLS
+
+    [log]
+    mode = console
+    level = info
+    format = json
+
+    [metrics]
+    enabled = true
+    interval_seconds = 10
+
+    [tracing.jaeger]
+    address = jaeger-collector:14268
+    always_included_tag = tag1:value1
+    sampler_type = const
+    sampler_param = 1
+
+    [feature_toggles]
+    enable = ngalert
+    
+  datasources.yaml: |
+    apiVersion: 1
+    datasources:
+      # Prometheus for metrics
+      - name: Prometheus
+        type: prometheus
+        access: proxy
+        url: http://prometheus.monitoring.svc.cluster.local:9090
+        isDefault: true
+        editable: true
+        jsonData:
+          timeInterval: "5s"
+          queryTimeout: "60s"
+          httpMethod: "POST"
+
+      # Elasticsearch for Wazuh logs
+      - name: Wazuh-Elasticsearch
+        type: elasticsearch
+        access: proxy
+        url: http://wazuh-indexer:9200
+        database: "wazuh-alerts-*"
+        basicAuth: true
+        basicAuthUser: admin
+        secureJsonData:
+          basicAuthPassword: indexer_admin_password
+        jsonData:
+          interval: "Daily"
+          timeField: "@timestamp"
+          esVersion: "7.10.0"
+          maxConcurrentShardRequests: 5
+          logMessageField: "full_log"
+          logLevelField: "rule.level"
+
+      # OpenCTI for threat intelligence
+      - name: OpenCTI
+        type: grafana-opensearch-datasource
+        access: proxy
+        url: http://opencti-elasticsearch:9200
+        basicAuth: true
+        basicAuthUser: elastic
+        secureJsonData:
+          basicAuthPassword: elastic_password
+        jsonData:
+          database: "opencti-*"
+          interval: "Daily"
+          timeField: "created_at"
+
+      # OpenAppSec logs
+      - name: OpenAppSec-Logs
+        type: elasticsearch
+        access: proxy
+        url: http://elasticsearch.enterprise-crm.svc.cluster.local:9200
+        database: "openappsec-logs-*"
+        basicAuth: true
+        basicAuthUser: elastic
+        secureJsonData:
+          basicAuthPassword: elastic_password
+        jsonData:
+          interval: "Daily"
+          timeField: "@timestamp"
+          esVersion: "7.10.0"
+
+      # InfluxDB for time series data
+      - name: InfluxDB
+        type: influxdb
+        access: proxy
+        url: http://influxdb.monitoring.svc.cluster.local:8086
+        database: security_metrics
+        user: security_user
+        secureJsonData:
+          password: influxdb_password
+        jsonData:
+          timeInterval: "10s"
+
+  dashboards.yaml: |
+    apiVersion: 1
+    providers:
+      - name: 'Security Dashboards'
+        orgId: 1
+        folder: 'Security'
+        type: file
+        disableDeletion: false
+        updateIntervalSeconds: 10
+        allowUiUpdates: true
+        options:
+          path: /var/lib/grafana/dashboards
+
+  security-overview-dashboard.json: |
+    {
+      "dashboard": {
+        "id": null,
+        "title": "Security Overview Dashboard",
+        "tags": ["security", "overview"],
+        "style": "dark",
+        "timezone": "browser",
+        "panels": [
+          {
+            "id": 1,
+            "title": "Security Alerts Summary",
+            "type": "stat",
+            "targets": [
+              {
+                "expr": "sum(rate(wazuh_alerts_total[5m]))",
+                "legendFormat": "Alerts/sec"
+              }
+            ],
+            "fieldConfig": {
+              "defaults": {
+                "color": {
+                  "mode": "thresholds"
+                },
+                "thresholds": {
+                  "steps": [
+                    {"color": "green", "value": null},
+                    {"color": "yellow", "value": 10},
+                    {"color": "red", "value": 50}
+                  ]
+                }
+              }
+            },
+            "gridPos": {"h": 8, "w": 6, "x": 0, "y": 0}
+          },
+          {
+            "id": 2,
+            "title": "Threat Intelligence Indicators",
+            "type": "stat",
+            "targets": [
+              {
+                "expr": "opencti_indicators_total",
+                "legendFormat": "Total IOCs"
+              }
+            ],
+            "gridPos": {"h": 8, "w": 6, "x": 6, "y": 0}
+          },
+          {
+            "id": 3,
+            "title": "WAF Blocked Requests",
+            "type": "stat",
+            "targets": [
+              {
+                "expr": "sum(rate(openappsec_blocked_requests_total[5m]))",
+                "legendFormat": "Blocked/sec"
+              }
+            ],
+            "gridPos": {"h": 8, "w": 6, "x": 12, "y": 0}
+          },
+          {
+            "id": 4,
+            "title": "Active Security Incidents",
+            "type": "stat",
+            "targets": [
+              {
+                "expr": "sum(wazuh_active_incidents)",
+                "legendFormat": "Active Incidents"
+              }
+            ],
+            "fieldConfig": {
+              "defaults": {
+                "color": {
+                  "mode": "thresholds"
+                },
+                "thresholds": {
+                  "steps": [
+                    {"color": "green", "value": 0},
+                    {"color": "yellow", "value": 1},
+                    {"color": "red", "value": 5}
+                  ]
+                }
+              }
+            },
+            "gridPos": {"h": 8, "w": 6, "x": 18, "y": 0}
+          },
+          {
+            "id": 5,
+            "title": "Security Events Timeline",
+            "type": "timeseries",
+            "targets": [
+              {
+                "expr": "rate(wazuh_alerts_total[5m])",
+                "legendFormat": "Wazuh Alerts"
+              },
+              {
+                "expr": "rate(openappsec_threats_total[5m])",
+                "legendFormat": "WAF Threats"
+              },
+              {
+                "expr": "rate(keycloak_login_failures_total[5m])",
+                "legendFormat": "Auth Failures"
+              }
+            ],
+            "gridPos": {"h": 8, "w": 24, "x": 0, "y": 8}
+          },
+          {
+            "id": 6,
+            "title": "Top Attack Sources",
+            "type": "table",
+            "targets": [
+              {
+                "expr": "topk(10, sum by (source_ip) (rate(wazuh_attacks_total[1h])))",
+                "format": "table"
+              }
+            ],
+            "gridPos": {"h": 8, "w": 12, "x": 0, "y": 16}
+          },
+          {
+            "id": 7,
+            "title": "Security Rule Triggers",
+            "type": "piechart",
+            "targets": [
+              {
+                "expr": "sum by (rule_id) (rate(wazuh_rule_triggers_total[1h]))",
+                "legendFormat": "{{rule_id}}"
+              }
+            ],
+            "gridPos": {"h": 8, "w": 12, "x": 12, "y": 16}
+          },
+          {
+            "id": 8,
+            "title": "Compliance Status",
+            "type": "bargauge",
+            "targets": [
+              {
+                "expr": "wazuh_compliance_score",
+                "legendFormat": "{{compliance_framework}}"
+              }
+            ],
+            "fieldConfig": {
+              "defaults": {
+                "min": 0,
+                "max": 100,
+                "unit": "percent",
+                "thresholds": {
+                  "steps": [
+                    {"color": "red", "value": 0},
+                    {"color": "yellow", "value": 70},
+                    {"color": "green", "value": 90}
+                  ]
+                }
+              }
+            },
+            "gridPos": {"h": 8, "w": 24, "x": 0, "y": 24}
+          }
+        ],
+        "time": {
+          "from": "now-1h",
+          "to": "now"
+        },
+        "refresh": "30s"
+      }
+    }
+
+  threat-intelligence-dashboard.json: |
+    {
+      "dashboard": {
+        "id": null,
+        "title": "Threat Intelligence Dashboard",
+        "tags": ["security", "threat-intelligence", "opencti"],
+        "style": "dark",
+        "timezone": "browser",
+        "panels": [
+          {
+            "id": 1,
+            "title": "Threat Indicators by Type",
+            "type": "piechart",
+            "targets": [
+              {
+                "expr": "sum by (indicator_type) (opencti_indicators_total)",
+                "legendFormat": "{{indicator_type}}"
+              }
+            ],
+            "gridPos": {"h": 8, "w": 12, "x": 0, "y": 0}
+          },
+          {
+            "id": 2,
+            "title": "Recent Threat Reports",
+            "type": "table",
+            "targets": [
+              {
+                "expr": "opencti_reports_recent",
+                "format": "table"
+              }
+            ],
+            "gridPos": {"h": 8, "w": 12, "x": 12, "y": 0}
+          },
+          {
+            "id": 3,
+            "title": "MITRE ATT&CK Techniques",
+            "type": "heatmap",
+            "targets": [
+              {
+                "expr": "opencti_mitre_techniques_coverage",
+                "legendFormat": "{{technique_id}}"
+              }
+            ],
+            "gridPos": {"h": 12, "w": 24, "x": 0, "y": 8}
+          },
+          {
+            "id": 4,
+            "title": "Threat Actor Activity",
+            "type": "timeseries",
+            "targets": [
+              {
+                "expr": "rate(opencti_threat_actor_activity[1h])",
+                "legendFormat": "{{threat_actor}}"
+              }
+            ],
+            "gridPos": {"h": 8, "w": 24, "x": 0, "y": 20}
+          }
+        ],
+        "time": {
+          "from": "now-24h",
+          "to": "now"
+        },
+        "refresh": "5m"
+      }
+    }
+
+  incident-response-dashboard.json: |
+    {
+      "dashboard": {
+        "id": null,
+        "title": "Incident Response Dashboard",
+        "tags": ["security", "incident-response", "siem"],
+        "style": "dark",
+        "timezone": "browser",
+        "panels": [
+          {
+            "id": 1,
+            "title": "Active Incidents",
+            "type": "table",
+            "targets": [
+              {
+                "expr": "wazuh_active_incidents",
+                "format": "table"
+              }
+            ],
+            "gridPos": {"h": 10, "w": 24, "x": 0, "y": 0}
+          },
+          {
+            "id": 2,
+            "title": "Incident Severity Distribution",
+            "type": "piechart",
+            "targets": [
+              {
+                "expr": "sum by (severity) (wazuh_incidents_total)",
+                "legendFormat": "{{severity}}"
+              }
+            ],
+            "gridPos": {"h": 8, "w": 12, "x": 0, "y": 10}
+          },
+          {
+            "id": 3,
+            "title": "Mean Time to Resolution",
+            "type": "stat",
+            "targets": [
+              {
+                "expr": "avg(wazuh_incident_resolution_time)",
+                "legendFormat": "MTTR (minutes)"
+              }
+            ],
+            "fieldConfig": {
+              "defaults": {
+                "unit": "m"
+              }
+            },
+            "gridPos": {"h": 8, "w": 12, "x": 12, "y": 10}
+          },
+          {
+            "id": 4,
+            "title": "Incident Timeline",
+            "type": "timeseries",
+            "targets": [
+              {
+                "expr": "rate(wazuh_incidents_created_total[5m])",
+                "legendFormat": "New Incidents"
+              },
+              {
+                "expr": "rate(wazuh_incidents_resolved_total[5m])",
+                "legendFormat": "Resolved Incidents"
+              }
+            ],
+            "gridPos": {"h": 8, "w": 24, "x": 0, "y": 18}
+          }
+        ],
+        "time": {
+          "from": "now-6h",
+          "to": "now"
+        },
+        "refresh": "1m"
+      }
+    }
+---
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: security-dashboard-postgres-pvc
+  namespace: security
+spec:
+  accessModes:
+    - ReadWriteOnce
+  resources:
+    requests:
+      storage: 10Gi
+  storageClassName: fast-ssd
+---
+apiVersion: v1
+kind: Secret
+metadata:
+  name: security-dashboard-secrets
+  namespace: security
+type: Opaque
+data:
+  # Base64 encoded values - replace with actual values
+  postgres-password: REPLACE_WITH_BASE64_ENCODED_PASSWORD  # Generate: echo -n "your-password" | base64
+  admin-password: REPLACE_WITH_BASE64_ENCODED_PASSWORD  # Generate: echo -n "your-password" | base64
+  secret-key: c2VjdXJpdHlfZGFzaGJvYXJkX3NlY3JldF9rZXk=  # security_dashboard_secret_key
+  oauth-client-secret: c2VjdXJpdHlfZGFzaGJvYXJkX2NsaWVudF9zZWNyZXQ=  # security_dashboard_client_secret
+  smtp-password: REPLACE_WITH_BASE64_ENCODED_PASSWORD  # Generate: echo -n "your-password" | base64
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: security-dashboard-postgres
+  namespace: security
+  labels:
+    app: security-dashboard-postgres
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: security-dashboard-postgres
+  template:
+    metadata:
+      labels:
+        app: security-dashboard-postgres
+    spec:
+      containers:
+      - name: postgres
+        image: postgres:13
+        ports:
+        - containerPort: 5432
+        env:
+        - name: POSTGRES_DB
+          value: grafana
+        - name: POSTGRES_USER
+          value: grafana
+        - name: POSTGRES_PASSWORD
+          valueFrom:
+            secretKeyRef:
+              name: security-dashboard-secrets
+              key: postgres-password
+        - name: PGDATA
+          value: /var/lib/postgresql/data/pgdata
+        volumeMounts:
+        - name: postgres-storage
+          mountPath: /var/lib/postgresql/data
+        resources:
+          requests:
+            memory: "512Mi"
+            cpu: "250m"
+          limits:
+            memory: "1Gi"
+            cpu: "500m"
+      volumes:
+      - name: postgres-storage
+        persistentVolumeClaim:
+          claimName: security-dashboard-postgres-pvc
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: security-dashboard-postgres
+  namespace: security
+  labels:
+    app: security-dashboard-postgres
+spec:
+  ports:
+  - port: 5432
+    targetPort: 5432
+  selector:
+    app: security-dashboard-postgres
+  type: ClusterIP
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: security-dashboard
+  namespace: security
+  labels:
+    app: security-dashboard
+spec:
+  replicas: 2
+  selector:
+    matchLabels:
+      app: security-dashboard
+  template:
+    metadata:
+      labels:
+        app: security-dashboard
+    spec:
+      initContainers:
+      - name: wait-for-postgres
+        image: postgres:13
+        command:
+        - sh
+        - -c
+        - |
+          until pg_isready -h security-dashboard-postgres -p 5432 -U grafana; do
+            echo "Waiting for PostgreSQL..."
+            sleep 2
+          done
+        env:
+        - name: PGPASSWORD
+          valueFrom:
+            secretKeyRef:
+              name: security-dashboard-secrets
+              key: postgres-password
+      containers:
+      - name: grafana
+        image: grafana/grafana:10.2.0
+        ports:
+        - containerPort: 3000
+        env:
+        - name: GF_SECURITY_ADMIN_PASSWORD
+          valueFrom:
+            secretKeyRef:
+              name: security-dashboard-secrets
+              key: admin-password
+        - name: GF_SECURITY_SECRET_KEY
+          valueFrom:
+            secretKeyRef:
+              name: security-dashboard-secrets
+              key: secret-key
+        - name: GF_AUTH_GENERIC_OAUTH_CLIENT_SECRET
+          valueFrom:
+            secretKeyRef:
+              name: security-dashboard-secrets
+              key: oauth-client-secret
+        - name: GF_SMTP_PASSWORD
+          valueFrom:
+            secretKeyRef:
+              name: security-dashboard-secrets
+              key: smtp-password
+        volumeMounts:
+        - name: config
+          mountPath: /etc/grafana/grafana.ini
+          subPath: grafana.ini
+        - name: config
+          mountPath: /etc/grafana/provisioning/datasources/datasources.yaml
+          subPath: datasources.yaml
+        - name: config
+          mountPath: /etc/grafana/provisioning/dashboards/dashboards.yaml
+          subPath: dashboards.yaml
+        - name: config
+          mountPath: /var/lib/grafana/dashboards/security-overview-dashboard.json
+          subPath: security-overview-dashboard.json
+        - name: config
+          mountPath: /var/lib/grafana/dashboards/threat-intelligence-dashboard.json
+          subPath: threat-intelligence-dashboard.json
+        - name: config
+          mountPath: /var/lib/grafana/dashboards/incident-response-dashboard.json
+          subPath: incident-response-dashboard.json
+        - name: grafana-storage
+          mountPath: /var/lib/grafana
+        resources:
+          requests:
+            memory: "512Mi"
+            cpu: "250m"
+          limits:
+            memory: "1Gi"
+            cpu: "500m"
+        livenessProbe:
+          httpGet:
+            path: /api/health
+            port: 3000
+          initialDelaySeconds: 60
+          periodSeconds: 30
+        readinessProbe:
+          httpGet:
+            path: /api/health
+            port: 3000
+          initialDelaySeconds: 30
+          periodSeconds: 10
+      volumes:
+      - name: config
+        configMap:
+          name: security-dashboard-config
+      - name: grafana-storage
+        emptyDir: {}
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: security-dashboard
+  namespace: security
+  labels:
+    app: security-dashboard
+spec:
+  ports:
+  - port: 3000
+    targetPort: 3000
+  selector:
+    app: security-dashboard
+  type: ClusterIP
+---
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
+  name: security-dashboard-ingress
+  namespace: security
+  annotations:
+    kubernetes.io/ingress.class: "nginx"
+    cert-manager.io/cluster-issuer: "letsencrypt-prod"
+    nginx.ingress.kubernetes.io/ssl-redirect: "true"
+    nginx.ingress.kubernetes.io/force-ssl-redirect: "true"
+    nginx.ingress.kubernetes.io/configuration-snippet: |
+      more_set_headers "X-Frame-Options: SAMEORIGIN";
+      more_set_headers "X-Content-Type-Options: nosniff";
+      more_set_headers "X-XSS-Protection: 1; mode=block";
+      more_set_headers "Strict-Transport-Security: max-age=31536000; includeSubDomains";
+spec:
+  tls:
+  - hosts:
+    - security-dashboard.enterprise-crm.com
+    secretName: security-dashboard-tls
+  rules:
+  - host: security-dashboard.enterprise-crm.com
+    http:
+      paths:
+      - path: /
+        pathType: Prefix
+        backend:
+          service:
+            name: security-dashboard
+            port:
+              number: 3000
+---
+apiVersion: policy/v1
+kind: PodDisruptionBudget
+metadata:
+  name: security-dashboard-pdb
+  namespace: security
+spec:
+  minAvailable: 1
+  selector:
+    matchLabels:
+      app: security-dashboard
+---
+apiVersion: autoscaling/v2
+kind: HorizontalPodAutoscaler
+metadata:
+  name: security-dashboard-hpa
+  namespace: security
+spec:
+  scaleTargetRef:
+    apiVersion: apps/v1
+    kind: Deployment
+    name: security-dashboard
+  minReplicas: 2
+  maxReplicas: 5
+  metrics:
+  - type: Resource
+    resource:
+      name: cpu
+      target:
+        type: Utilization
+        averageUtilization: 70
+  - type: Resource
+    resource:
+      name: memory
+      target:
+        type: Utilization
+        averageUtilization: 80
+

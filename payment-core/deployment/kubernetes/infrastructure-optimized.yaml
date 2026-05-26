@@ -1,0 +1,1113 @@
+---
+# =============================================================================
+# Kafka 3-Broker Cluster with SASL/SSL - Optimized for 1M TPS
+# =============================================================================
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: kafka-config
+  namespace: payment-switch
+data:
+  server.properties: |
+    # Kafka Broker Configuration - Optimized for 1M TPS
+    num.network.threads=8
+    num.io.threads=16
+    socket.send.buffer.bytes=1048576
+    socket.receive.buffer.bytes=1048576
+    socket.request.max.bytes=104857600
+    num.partitions=32
+    default.replication.factor=3
+    min.insync.replicas=2
+    unclean.leader.election.enable=false
+    log.retention.hours=168
+    log.segment.bytes=1073741824
+    log.retention.check.interval.ms=300000
+    log.cleaner.enable=true
+    num.replica.fetchers=4
+    replica.fetch.max.bytes=10485760
+    replica.fetch.wait.max.ms=500
+    message.max.bytes=10485760
+    compression.type=producer
+    security.inter.broker.protocol=SASL_SSL
+    sasl.mechanism.inter.broker.protocol=SCRAM-SHA-512
+    sasl.enabled.mechanisms=SCRAM-SHA-512
+---
+apiVersion: apps/v1
+kind: StatefulSet
+metadata:
+  name: kafka
+  namespace: payment-switch
+spec:
+  serviceName: kafka-headless
+  replicas: 3
+  selector:
+    matchLabels:
+      app: kafka
+  template:
+    metadata:
+      labels:
+        app: kafka
+    spec:
+      containers:
+      - name: kafka
+        image: confluentinc/cp-kafka:7.5.0
+        ports:
+        - containerPort: 9092
+          name: plaintext
+        - containerPort: 9093
+          name: sasl-ssl
+        env:
+        - name: KAFKA_BROKER_ID
+          valueFrom:
+            fieldRef:
+              fieldPath: metadata.name
+        - name: KAFKA_ZOOKEEPER_CONNECT
+          value: "zk-0.zk-headless:2181,zk-1.zk-headless:2181,zk-2.zk-headless:2181"
+        - name: KAFKA_LISTENER_SECURITY_PROTOCOL_MAP
+          value: "PLAINTEXT:PLAINTEXT,SASL_SSL:SASL_SSL"
+        - name: KAFKA_INTER_BROKER_LISTENER_NAME
+          value: "SASL_SSL"
+        - name: KAFKA_SASL_MECHANISM_INTER_BROKER_PROTOCOL
+          value: "SCRAM-SHA-512"
+        - name: KAFKA_SASL_ENABLED_MECHANISMS
+          value: "SCRAM-SHA-512"
+        - name: KAFKA_NUM_PARTITIONS
+          value: "32"
+        - name: KAFKA_DEFAULT_REPLICATION_FACTOR
+          value: "3"
+        - name: KAFKA_MIN_INSYNC_REPLICAS
+          value: "2"
+        - name: KAFKA_LOG_RETENTION_HOURS
+          value: "168"
+        - name: KAFKA_COMPRESSION_TYPE
+          value: "lz4"
+        resources:
+          requests:
+            memory: "4Gi"
+            cpu: "2000m"
+          limits:
+            memory: "8Gi"
+            cpu: "4000m"
+        volumeMounts:
+        - name: kafka-data
+          mountPath: /var/lib/kafka/data
+  volumeClaimTemplates:
+  - metadata:
+      name: kafka-data
+    spec:
+      accessModes: ["ReadWriteOnce"]
+      storageClassName: fast-ssd
+      resources:
+        requests:
+          storage: 100Gi
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: kafka-headless
+  namespace: payment-switch
+spec:
+  clusterIP: None
+  ports:
+  - port: 9092
+    name: plaintext
+  - port: 9093
+    name: sasl-ssl
+  selector:
+    app: kafka
+---
+# =============================================================================
+# PostgreSQL with PgBouncer Connection Pooling
+# =============================================================================
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: pgbouncer-config
+  namespace: payment-switch
+data:
+  pgbouncer.ini: |
+    [pgbouncer]
+    listen_addr = *
+    listen_port = 6432
+    auth_type = scram-sha-256
+    auth_file = /etc/pgbouncer/userlist.txt
+    pool_mode = transaction
+    max_client_conn = 10000
+    default_pool_size = 100
+    min_pool_size = 50
+    reserve_pool_size = 25
+    reserve_pool_timeout = 5
+    max_db_connections = 200
+    max_user_connections = 200
+    server_idle_timeout = 600
+    server_connect_timeout = 15
+    query_timeout = 30
+    query_wait_timeout = 120
+    tcp_keepalive = 1
+    tcp_keepcnt = 5
+    tcp_keepidle = 30
+    tcp_keepintvl = 30
+    server_tls_sslmode = require
+    log_connections = 0
+    log_disconnections = 0
+    log_pooler_errors = 1
+    stats_users = stats_user
+    admin_users = admin_user
+    
+    [databases]
+    payment_switch = host=postgres-primary port=5432 dbname=payment_switch
+    temporal = host=postgres-primary port=5432 dbname=temporal
+    keycloak = host=postgres-primary port=5432 dbname=keycloak
+    permify = host=postgres-primary port=5432 dbname=permify
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: pgbouncer
+  namespace: payment-switch
+spec:
+  replicas: 3
+  selector:
+    matchLabels:
+      app: pgbouncer
+  template:
+    metadata:
+      labels:
+        app: pgbouncer
+    spec:
+      containers:
+      - name: pgbouncer
+        image: bitnami/pgbouncer:1.21.0
+        ports:
+        - containerPort: 6432
+        env:
+        - name: PGBOUNCER_DATABASE
+          value: "payment_switch"
+        - name: POSTGRESQL_HOST
+          value: "postgres-primary"
+        - name: POSTGRESQL_USERNAME
+          valueFrom:
+            secretKeyRef:
+              name: postgres-credentials
+              key: username
+        - name: POSTGRESQL_PASSWORD
+          valueFrom:
+            secretKeyRef:
+              name: postgres-credentials
+              key: password
+        resources:
+          requests:
+            memory: "256Mi"
+            cpu: "250m"
+          limits:
+            memory: "512Mi"
+            cpu: "500m"
+        volumeMounts:
+        - name: pgbouncer-config
+          mountPath: /bitnami/pgbouncer/conf
+      volumes:
+      - name: pgbouncer-config
+        configMap:
+          name: pgbouncer-config
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: pgbouncer
+  namespace: payment-switch
+spec:
+  ports:
+  - port: 6432
+    targetPort: 6432
+  selector:
+    app: pgbouncer
+---
+# =============================================================================
+# PostgreSQL Primary with Read Replicas
+# =============================================================================
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: postgres-config
+  namespace: payment-switch
+data:
+  postgresql.conf: |
+    # Memory
+    shared_buffers = 8GB
+    effective_cache_size = 24GB
+    work_mem = 256MB
+    maintenance_work_mem = 2GB
+    wal_buffers = 64MB
+    
+    # Connections
+    max_connections = 500
+    superuser_reserved_connections = 5
+    
+    # WAL
+    wal_level = replica
+    max_wal_size = 4GB
+    min_wal_size = 1GB
+    checkpoint_completion_target = 0.9
+    checkpoint_timeout = 15min
+    
+    # Replication
+    max_wal_senders = 10
+    max_replication_slots = 10
+    hot_standby = on
+    hot_standby_feedback = on
+    
+    # Query planning
+    random_page_cost = 1.1
+    effective_io_concurrency = 200
+    default_statistics_target = 100
+    
+    # Parallelism
+    max_worker_processes = 16
+    max_parallel_workers_per_gather = 4
+    max_parallel_workers = 16
+    max_parallel_maintenance_workers = 4
+    
+    # Logging
+    log_min_duration_statement = 1000
+    log_checkpoints = on
+    log_lock_waits = on
+    
+    # Autovacuum
+    autovacuum = on
+    autovacuum_max_workers = 4
+    autovacuum_naptime = 30s
+    autovacuum_vacuum_scale_factor = 0.05
+    autovacuum_analyze_scale_factor = 0.025
+    
+    # Security
+    ssl = on
+    ssl_min_protocol_version = TLSv1.2
+    password_encryption = scram-sha-256
+---
+apiVersion: apps/v1
+kind: StatefulSet
+metadata:
+  name: postgres-primary
+  namespace: payment-switch
+spec:
+  serviceName: postgres-primary
+  replicas: 1
+  selector:
+    matchLabels:
+      app: postgres
+      role: primary
+  template:
+    metadata:
+      labels:
+        app: postgres
+        role: primary
+    spec:
+      containers:
+      - name: postgres
+        image: postgres:15-alpine
+        ports:
+        - containerPort: 5432
+        env:
+        - name: POSTGRES_DB
+          value: "payment_switch"
+        - name: POSTGRES_USER
+          valueFrom:
+            secretKeyRef:
+              name: postgres-credentials
+              key: username
+        - name: POSTGRES_PASSWORD
+          valueFrom:
+            secretKeyRef:
+              name: postgres-credentials
+              key: password
+        - name: PGDATA
+          value: "/var/lib/postgresql/data/pgdata"
+        resources:
+          requests:
+            memory: "16Gi"
+            cpu: "4000m"
+          limits:
+            memory: "32Gi"
+            cpu: "8000m"
+        volumeMounts:
+        - name: postgres-data
+          mountPath: /var/lib/postgresql/data
+        - name: postgres-config
+          mountPath: /etc/postgresql/postgresql.conf
+          subPath: postgresql.conf
+  volumeClaimTemplates:
+  - metadata:
+      name: postgres-data
+    spec:
+      accessModes: ["ReadWriteOnce"]
+      storageClassName: fast-ssd
+      resources:
+        requests:
+          storage: 500Gi
+---
+apiVersion: apps/v1
+kind: StatefulSet
+metadata:
+  name: postgres-replica
+  namespace: payment-switch
+spec:
+  serviceName: postgres-replica
+  replicas: 2
+  selector:
+    matchLabels:
+      app: postgres
+      role: replica
+  template:
+    metadata:
+      labels:
+        app: postgres
+        role: replica
+    spec:
+      containers:
+      - name: postgres
+        image: postgres:15-alpine
+        ports:
+        - containerPort: 5432
+        env:
+        - name: PGDATA
+          value: "/var/lib/postgresql/data/pgdata"
+        - name: POSTGRES_PRIMARY_HOST
+          value: "postgres-primary"
+        resources:
+          requests:
+            memory: "8Gi"
+            cpu: "2000m"
+          limits:
+            memory: "16Gi"
+            cpu: "4000m"
+        volumeMounts:
+        - name: postgres-data
+          mountPath: /var/lib/postgresql/data
+  volumeClaimTemplates:
+  - metadata:
+      name: postgres-data
+    spec:
+      accessModes: ["ReadWriteOnce"]
+      storageClassName: fast-ssd
+      resources:
+        requests:
+          storage: 500Gi
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: postgres-primary
+  namespace: payment-switch
+spec:
+  ports:
+  - port: 5432
+    targetPort: 5432
+  selector:
+    app: postgres
+    role: primary
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: postgres-replica
+  namespace: payment-switch
+spec:
+  ports:
+  - port: 5432
+    targetPort: 5432
+  selector:
+    app: postgres
+    role: replica
+---
+# =============================================================================
+# Redis Cluster (6 nodes - 3 masters, 3 replicas)
+# =============================================================================
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: redis-config
+  namespace: payment-switch
+data:
+  redis.conf: |
+    bind 0.0.0.0
+    port 6379
+    tcp-backlog 511
+    timeout 0
+    tcp-keepalive 300
+    maxmemory 8gb
+    maxmemory-policy volatile-lru
+    maxmemory-samples 10
+    appendonly yes
+    appendfsync everysec
+    no-appendfsync-on-rewrite no
+    auto-aof-rewrite-percentage 100
+    auto-aof-rewrite-min-size 64mb
+    aof-use-rdb-preamble yes
+    save 900 1
+    save 300 10
+    save 60 10000
+    rdbcompression yes
+    rdbchecksum yes
+    replica-serve-stale-data yes
+    replica-read-only yes
+    repl-diskless-sync no
+    repl-backlog-size 64mb
+    cluster-enabled yes
+    cluster-config-file nodes.conf
+    cluster-node-timeout 15000
+    cluster-require-full-coverage no
+    activerehashing yes
+    hz 10
+    dynamic-hz yes
+    io-threads 4
+    io-threads-do-reads yes
+    slowlog-log-slower-than 10000
+    slowlog-max-len 128
+    latency-monitor-threshold 100
+---
+apiVersion: apps/v1
+kind: StatefulSet
+metadata:
+  name: redis-cluster
+  namespace: payment-switch
+spec:
+  serviceName: redis-cluster
+  replicas: 6
+  selector:
+    matchLabels:
+      app: redis-cluster
+  template:
+    metadata:
+      labels:
+        app: redis-cluster
+    spec:
+      containers:
+      - name: redis
+        image: redis:7.2-alpine
+        ports:
+        - containerPort: 6379
+          name: client
+        - containerPort: 16379
+          name: gossip
+        command:
+        - redis-server
+        - /etc/redis/redis.conf
+        - --requirepass
+        - $(REDIS_PASSWORD)
+        - --masterauth
+        - $(REDIS_PASSWORD)
+        env:
+        - name: REDIS_PASSWORD
+          valueFrom:
+            secretKeyRef:
+              name: redis-credentials
+              key: password
+        resources:
+          requests:
+            memory: "8Gi"
+            cpu: "2000m"
+          limits:
+            memory: "16Gi"
+            cpu: "4000m"
+        volumeMounts:
+        - name: redis-data
+          mountPath: /data
+        - name: redis-config
+          mountPath: /etc/redis
+      volumes:
+      - name: redis-config
+        configMap:
+          name: redis-config
+  volumeClaimTemplates:
+  - metadata:
+      name: redis-data
+    spec:
+      accessModes: ["ReadWriteOnce"]
+      storageClassName: fast-ssd
+      resources:
+        requests:
+          storage: 50Gi
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: redis-cluster
+  namespace: payment-switch
+spec:
+  clusterIP: None
+  ports:
+  - port: 6379
+    name: client
+  - port: 16379
+    name: gossip
+  selector:
+    app: redis-cluster
+---
+# =============================================================================
+# Temporal Optimized (1024 shards)
+# =============================================================================
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: temporal-optimized-config
+  namespace: payment-switch
+data:
+  config.yaml: |
+    log:
+      stdout: true
+      level: info
+    persistence:
+      defaultStore: default
+      visibilityStore: visibility
+      numHistoryShards: 1024
+      datastores:
+        default:
+          sql:
+            pluginName: "postgres"
+            databaseName: "temporal"
+            connectAddr: "pgbouncer:6432"
+            connectProtocol: "tcp"
+            user: "temporal"
+            password: "${TEMPORAL_DB_PASSWORD}"
+            maxConns: 50
+            maxIdleConns: 25
+            maxConnLifetime: "1h"
+        visibility:
+          sql:
+            pluginName: "postgres"
+            databaseName: "temporal_visibility"
+            connectAddr: "pgbouncer:6432"
+            connectProtocol: "tcp"
+            user: "temporal"
+            password: "${TEMPORAL_DB_PASSWORD}"
+            maxConns: 25
+            maxIdleConns: 12
+            maxConnLifetime: "1h"
+    global:
+      membership:
+        maxJoinDuration: 30s
+      pprof:
+        port: 7936
+      metrics:
+        prometheus:
+          timerType: histogram
+          listenAddress: "0.0.0.0:9090"
+    services:
+      frontend:
+        rpc:
+          grpcPort: 7233
+          membershipPort: 6933
+          bindOnLocalHost: false
+      matching:
+        rpc:
+          grpcPort: 7235
+          membershipPort: 6935
+          bindOnLocalHost: false
+      history:
+        rpc:
+          grpcPort: 7234
+          membershipPort: 6934
+          bindOnLocalHost: false
+      worker:
+        rpc:
+          grpcPort: 7239
+          membershipPort: 6939
+          bindOnLocalHost: false
+  dynamic_config.yaml: |
+    frontend.rps:
+      - value: 10000
+    frontend.namespaceRPS:
+      - value: 10000
+    history.rps:
+      - value: 10000
+    history.persistenceMaxQPS:
+      - value: 10000
+    history.persistenceGlobalMaxQPS:
+      - value: 20000
+    matching.rps:
+      - value: 10000
+    matching.numTaskqueueReadPartitions:
+      - value: 16
+    matching.numTaskqueueWritePartitions:
+      - value: 16
+    worker.replicatorConcurrency:
+      - value: 1000
+    system.visibilityPersistenceMaxReadQPS:
+      - value: 10000
+    system.visibilityPersistenceMaxWriteQPS:
+      - value: 10000
+    history.taskProcessRPS:
+      - value: 10000
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: temporal-frontend-optimized
+  namespace: payment-switch
+spec:
+  replicas: 5
+  selector:
+    matchLabels:
+      app: temporal
+      service: frontend
+  template:
+    metadata:
+      labels:
+        app: temporal
+        service: frontend
+    spec:
+      containers:
+      - name: temporal-frontend
+        image: temporalio/server:1.22.0
+        args: ["start", "--service=frontend"]
+        ports:
+        - containerPort: 7233
+          name: grpc
+        - containerPort: 6933
+          name: membership
+        - containerPort: 9090
+          name: metrics
+        env:
+        - name: TEMPORAL_CONFIG
+          value: "/etc/temporal/config.yaml"
+        - name: DYNAMIC_CONFIG_FILE_PATH
+          value: "/etc/temporal/dynamic_config.yaml"
+        - name: TEMPORAL_DB_PASSWORD
+          valueFrom:
+            secretKeyRef:
+              name: temporal-credentials
+              key: password
+        resources:
+          requests:
+            memory: "4Gi"
+            cpu: "2000m"
+          limits:
+            memory: "8Gi"
+            cpu: "4000m"
+        volumeMounts:
+        - name: config
+          mountPath: /etc/temporal
+      volumes:
+      - name: config
+        configMap:
+          name: temporal-optimized-config
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: temporal-history-optimized
+  namespace: payment-switch
+spec:
+  replicas: 5
+  selector:
+    matchLabels:
+      app: temporal
+      service: history
+  template:
+    metadata:
+      labels:
+        app: temporal
+        service: history
+    spec:
+      containers:
+      - name: temporal-history
+        image: temporalio/server:1.22.0
+        args: ["start", "--service=history"]
+        ports:
+        - containerPort: 7234
+          name: grpc
+        - containerPort: 6934
+          name: membership
+        - containerPort: 9090
+          name: metrics
+        env:
+        - name: TEMPORAL_CONFIG
+          value: "/etc/temporal/config.yaml"
+        - name: DYNAMIC_CONFIG_FILE_PATH
+          value: "/etc/temporal/dynamic_config.yaml"
+        - name: TEMPORAL_DB_PASSWORD
+          valueFrom:
+            secretKeyRef:
+              name: temporal-credentials
+              key: password
+        resources:
+          requests:
+            memory: "8Gi"
+            cpu: "4000m"
+          limits:
+            memory: "16Gi"
+            cpu: "8000m"
+        volumeMounts:
+        - name: config
+          mountPath: /etc/temporal
+      volumes:
+      - name: config
+        configMap:
+          name: temporal-optimized-config
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: temporal-matching-optimized
+  namespace: payment-switch
+spec:
+  replicas: 5
+  selector:
+    matchLabels:
+      app: temporal
+      service: matching
+  template:
+    metadata:
+      labels:
+        app: temporal
+        service: matching
+    spec:
+      containers:
+      - name: temporal-matching
+        image: temporalio/server:1.22.0
+        args: ["start", "--service=matching"]
+        ports:
+        - containerPort: 7235
+          name: grpc
+        - containerPort: 6935
+          name: membership
+        - containerPort: 9090
+          name: metrics
+        env:
+        - name: TEMPORAL_CONFIG
+          value: "/etc/temporal/config.yaml"
+        - name: DYNAMIC_CONFIG_FILE_PATH
+          value: "/etc/temporal/dynamic_config.yaml"
+        - name: TEMPORAL_DB_PASSWORD
+          valueFrom:
+            secretKeyRef:
+              name: temporal-credentials
+              key: password
+        resources:
+          requests:
+            memory: "4Gi"
+            cpu: "2000m"
+          limits:
+            memory: "8Gi"
+            cpu: "4000m"
+        volumeMounts:
+        - name: config
+          mountPath: /etc/temporal
+      volumes:
+      - name: config
+        configMap:
+          name: temporal-optimized-config
+---
+# =============================================================================
+# OpenSearch Cluster (Optimized)
+# =============================================================================
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: opensearch-config
+  namespace: payment-switch
+data:
+  opensearch.yml: |
+    cluster.name: payment-switch-opensearch
+    network.host: 0.0.0.0
+    http.port: 9200
+    transport.port: 9300
+    discovery.seed_hosts:
+      - opensearch-0.opensearch-headless
+      - opensearch-1.opensearch-headless
+      - opensearch-2.opensearch-headless
+    cluster.initial_master_nodes:
+      - opensearch-0
+      - opensearch-1
+      - opensearch-2
+    bootstrap.memory_lock: true
+    indices.memory.index_buffer_size: 20%
+    indices.queries.cache.size: 15%
+    indices.fielddata.cache.size: 15%
+    thread_pool.write.size: 16
+    thread_pool.write.queue_size: 10000
+    thread_pool.search.size: 25
+    thread_pool.search.queue_size: 1000
+    index.refresh_interval: 5s
+    index.translog.durability: async
+    index.translog.sync_interval: 5s
+    index.merge.scheduler.max_thread_count: 4
+    indices.breaker.total.limit: 70%
+    indices.breaker.request.limit: 40%
+    indices.breaker.fielddata.limit: 30%
+    cluster.routing.allocation.disk.threshold_enabled: true
+    cluster.routing.allocation.disk.watermark.low: 85%
+    cluster.routing.allocation.disk.watermark.high: 90%
+    cluster.routing.allocation.disk.watermark.flood_stage: 95%
+    plugins.security.ssl.transport.enabled: true
+    plugins.security.ssl.http.enabled: true
+---
+apiVersion: apps/v1
+kind: StatefulSet
+metadata:
+  name: opensearch
+  namespace: payment-switch
+spec:
+  serviceName: opensearch-headless
+  replicas: 3
+  selector:
+    matchLabels:
+      app: opensearch
+  template:
+    metadata:
+      labels:
+        app: opensearch
+    spec:
+      initContainers:
+      - name: sysctl
+        image: busybox
+        command: ["sysctl", "-w", "vm.max_map_count=262144"]
+        securityContext:
+          privileged: true
+      containers:
+      - name: opensearch
+        image: opensearchproject/opensearch:2.11.0
+        ports:
+        - containerPort: 9200
+          name: http
+        - containerPort: 9300
+          name: transport
+        env:
+        - name: node.name
+          valueFrom:
+            fieldRef:
+              fieldPath: metadata.name
+        - name: OPENSEARCH_JAVA_OPTS
+          value: "-Xms8g -Xmx8g"
+        resources:
+          requests:
+            memory: "16Gi"
+            cpu: "4000m"
+          limits:
+            memory: "32Gi"
+            cpu: "8000m"
+        volumeMounts:
+        - name: opensearch-data
+          mountPath: /usr/share/opensearch/data
+        - name: opensearch-config
+          mountPath: /usr/share/opensearch/config/opensearch.yml
+          subPath: opensearch.yml
+      volumes:
+      - name: opensearch-config
+        configMap:
+          name: opensearch-config
+  volumeClaimTemplates:
+  - metadata:
+      name: opensearch-data
+    spec:
+      accessModes: ["ReadWriteOnce"]
+      storageClassName: fast-ssd
+      resources:
+        requests:
+          storage: 500Gi
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: opensearch-headless
+  namespace: payment-switch
+spec:
+  clusterIP: None
+  ports:
+  - port: 9200
+    name: http
+  - port: 9300
+    name: transport
+  selector:
+    app: opensearch
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: opensearch
+  namespace: payment-switch
+spec:
+  ports:
+  - port: 9200
+    name: http
+  selector:
+    app: opensearch
+---
+# =============================================================================
+# KEDA ScaledObjects for All Services
+# =============================================================================
+apiVersion: keda.sh/v1alpha1
+kind: TriggerAuthentication
+metadata:
+  name: kafka-auth
+  namespace: payment-switch
+spec:
+  secretTargetRef:
+  - parameter: sasl
+    name: kafka-credentials
+    key: sasl
+---
+apiVersion: keda.sh/v1alpha1
+kind: TriggerAuthentication
+metadata:
+  name: redis-auth
+  namespace: payment-switch
+spec:
+  secretTargetRef:
+  - parameter: password
+    name: redis-credentials
+    key: password
+---
+apiVersion: keda.sh/v1alpha1
+kind: ScaledObject
+metadata:
+  name: payment-gateway-scaler
+  namespace: payment-switch
+spec:
+  scaleTargetRef:
+    apiVersion: apps/v1
+    kind: Deployment
+    name: payment-gateway
+  minReplicaCount: 3
+  maxReplicaCount: 50
+  pollingInterval: 15
+  cooldownPeriod: 60
+  triggers:
+  - type: kafka
+    metadata:
+      bootstrapServers: "kafka-0.kafka-headless:9092,kafka-1.kafka-headless:9092,kafka-2.kafka-headless:9092"
+      consumerGroup: "payment-gateway-group"
+      topic: "payment.transfers"
+      lagThreshold: "100"
+      activationLagThreshold: "10"
+    authenticationRef:
+      name: kafka-auth
+      kind: TriggerAuthentication
+  - type: cpu
+    metadata:
+      type: Utilization
+      value: "70"
+  advanced:
+    horizontalPodAutoscalerConfig:
+      behavior:
+        scaleUp:
+          stabilizationWindowSeconds: 0
+          selectPolicy: Max
+          policies:
+          - type: Percent
+            value: 100
+            periodSeconds: 15
+          - type: Pods
+            value: 10
+            periodSeconds: 15
+        scaleDown:
+          stabilizationWindowSeconds: 300
+          selectPolicy: Min
+          policies:
+          - type: Percent
+            value: 10
+            periodSeconds: 60
+---
+apiVersion: keda.sh/v1alpha1
+kind: ScaledObject
+metadata:
+  name: fraud-detection-scaler
+  namespace: payment-switch
+spec:
+  scaleTargetRef:
+    apiVersion: apps/v1
+    kind: Deployment
+    name: fraud-detection
+  minReplicaCount: 2
+  maxReplicaCount: 30
+  pollingInterval: 10
+  cooldownPeriod: 60
+  triggers:
+  - type: kafka
+    metadata:
+      bootstrapServers: "kafka-0.kafka-headless:9092,kafka-1.kafka-headless:9092,kafka-2.kafka-headless:9092"
+      consumerGroup: "fraud-detection-group"
+      topic: "transaction-events"
+      lagThreshold: "50"
+      activationLagThreshold: "5"
+    authenticationRef:
+      name: kafka-auth
+      kind: TriggerAuthentication
+  - type: cpu
+    metadata:
+      type: Utilization
+      value: "60"
+---
+apiVersion: keda.sh/v1alpha1
+kind: ScaledObject
+metadata:
+  name: go-ledger-scaler
+  namespace: payment-switch
+spec:
+  scaleTargetRef:
+    apiVersion: apps/v1
+    kind: Deployment
+    name: go-ledger
+  minReplicaCount: 3
+  maxReplicaCount: 50
+  pollingInterval: 15
+  cooldownPeriod: 60
+  triggers:
+  - type: prometheus
+    metadata:
+      serverAddress: "http://prometheus.monitoring:9090"
+      metricName: "http_requests_per_second"
+      query: "sum(rate(http_requests_total{service=\"go-ledger\"}[1m]))"
+      threshold: "1000"
+  - type: cpu
+    metadata:
+      type: Utilization
+      value: "70"
+---
+apiVersion: keda.sh/v1alpha1
+kind: ScaledObject
+metadata:
+  name: mojaloop-service-scaler
+  namespace: payment-switch
+spec:
+  scaleTargetRef:
+    apiVersion: apps/v1
+    kind: Deployment
+    name: mojaloop-service
+  minReplicaCount: 3
+  maxReplicaCount: 30
+  pollingInterval: 15
+  cooldownPeriod: 60
+  triggers:
+  - type: prometheus
+    metadata:
+      serverAddress: "http://prometheus.monitoring:9090"
+      metricName: "mojaloop_transfers_per_second"
+      query: "sum(rate(mojaloop_transfer_requests_total[1m]))"
+      threshold: "500"
+  - type: cpu
+    metadata:
+      type: Utilization
+      value: "70"
+---
+apiVersion: keda.sh/v1alpha1
+kind: ScaledObject
+metadata:
+  name: temporal-worker-scaler
+  namespace: payment-switch
+spec:
+  scaleTargetRef:
+    apiVersion: apps/v1
+    kind: Deployment
+    name: temporal-worker
+  minReplicaCount: 2
+  maxReplicaCount: 20
+  pollingInterval: 15
+  cooldownPeriod: 120
+  triggers:
+  - type: prometheus
+    metadata:
+      serverAddress: "http://prometheus.monitoring:9090"
+      metricName: "temporal_workflow_task_queue_depth"
+      query: "sum(temporal_workflow_task_schedule_to_start_latency_count{namespace=\"payment-switch\"})"
+      threshold: "100"

@@ -1,0 +1,2 @@
+DROP TABLE IF EXISTS interactions;
+DROP TABLE IF EXISTS campaigns;

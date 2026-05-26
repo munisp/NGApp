@@ -1,0 +1,1 @@
+-- Migration 0007: Already applied
