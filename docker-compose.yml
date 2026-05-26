@@ -7,12 +7,12 @@
 version: "3.9"
 
 x-common-env: &common-env
-  POSTGRES_URL: postgres://ngapp:ngapp_secret@postgres:5432/ngapp?sslmode=disable
+  POSTGRES_URL: postgres://${POSTGRES_USER:-ngapp}:${POSTGRES_PASSWORD}@postgres:5432/${POSTGRES_DB:-ngapp}?sslmode=disable
   REDIS_ADDR: redis:6379
   KAFKA_BROKERS: kafka:9092
   OPENSEARCH_URL: http://opensearch:9200
   KEYCLOAK_REALM_URL: http://keycloak:8080/realms/insurance
-  KEYCLOAK_CLIENT_ID: ngapp-service
+  KEYCLOAK_CLIENT_ID: ${KEYCLOAK_CLIENT_ID:-ngapp-service}
   KEYCLOAK_ADMIN_URL: http://keycloak:8080
   PERMIFY_URL: http://permify:3476
   APISIX_ADMIN_URL: http://apisix:9180
@@ -36,9 +36,9 @@ services:
   postgres:
     image: postgres:16-alpine
     environment:
-      POSTGRES_USER: ngapp
-      POSTGRES_PASSWORD: ngapp_secret
-      POSTGRES_DB: ngapp
+      POSTGRES_USER: ${POSTGRES_USER:-ngapp}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
+      POSTGRES_DB: ${POSTGRES_DB:-ngapp}
     ports:
       - "5432:5432"
     volumes:
@@ -54,7 +54,7 @@ services:
 
   redis:
     image: redis:7-alpine
-    command: redis-server --maxmemory 256mb --maxmemory-policy allkeys-lru --requirepass ""
+    command: redis-server --maxmemory 256mb --maxmemory-policy allkeys-lru
     ports:
       - "6379:6379"
     volumes:
@@ -103,7 +103,7 @@ services:
     environment:
       <<: *common-env
       NODE_ENV: production
-      DATABASE_URL: postgres://ngapp:ngapp_secret@postgres:5432/ngapp?sslmode=disable
+      DATABASE_URL: postgres://${POSTGRES_USER:-ngapp}:${POSTGRES_PASSWORD}@postgres:5432/${POSTGRES_DB:-ngapp}?sslmode=disable
     depends_on:
       postgres:
         condition: service_healthy
