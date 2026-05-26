@@ -247,10 +247,15 @@ class ForecastResult(BaseModel):
     source: str  # "openstef" | "xgboost_fallback" | "simulated"
 
 
-def _train_xgb_model(X_train: pd.DataFrame, y_train: pd.Series):
-    """Train a quantile XGBoost model (OpenSTEF-compatible fallback)."""
+_XGB_MODEL_DIR = os.path.join(os.getenv("ML_MODEL_DIR", "/tmp/og-rmm-models"), "openstef")
+
+
+def _train_xgb_model(X_train: pd.DataFrame, y_train: pd.Series, tag: str = "default"):
+    """Train a quantile XGBoost model (OpenSTEF-compatible fallback). Persists to disk."""
     try:
         from xgboost import XGBRegressor
+        import joblib
+
         models = {}
         for q, alpha in [(0.05, 0.05), (0.50, 0.50), (0.95, 0.95)]:
             m = XGBRegressor(
@@ -264,10 +269,31 @@ def _train_xgb_model(X_train: pd.DataFrame, y_train: pd.Series):
             )
             m.fit(X_train, y_train)
             models[q] = m
+
+        # Persist trained models to disk
+        os.makedirs(_XGB_MODEL_DIR, exist_ok=True)
+        model_path = os.path.join(_XGB_MODEL_DIR, f"xgb_quantile_{tag}.joblib")
+        joblib.dump(models, model_path)
+        logger.info("XGBoost quantile models saved to %s", model_path)
+
         return models
     except ImportError:
         logger.warning("xgboost not installed — using linear fallback")
         return None
+
+
+def _load_xgb_model(tag: str = "default"):
+    """Load persisted XGBoost quantile models from disk."""
+    try:
+        import joblib
+        model_path = os.path.join(_XGB_MODEL_DIR, f"xgb_quantile_{tag}.joblib")
+        if os.path.exists(model_path):
+            models = joblib.load(model_path)
+            logger.info("Loaded XGBoost quantile models from %s", model_path)
+            return models
+    except Exception as e:
+        logger.warning("Failed to load XGBoost models: %s", e)
+    return None
 
 
 def _generate_forecast_simulated(

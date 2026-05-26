@@ -6,3 +6,9 @@ xgboost==2.1.1
 pydantic==2.8.2
 python-dotenv==1.0.1
 asyncpg==0.29.0
+scipy==1.14.1
+joblib==1.4.2
+networkx==3.3
+# LSTM encoder (CPU-only build)
+--extra-index-url https://download.pytorch.org/whl/cpu
+torch==2.5.1+cpu

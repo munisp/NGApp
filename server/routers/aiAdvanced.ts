@@ -341,4 +341,100 @@ Return ONLY valid JSON with:
         .where(eq(federatedParticipants.modelId, input.modelId));
       return { model, participants };
     }),
+
+  runFederatedRound: adminProcedure
+    .input(z.object({
+      modelId: z.string(),
+      nParticipants: z.number().int().min(2).default(5),
+      localEpochs: z.number().int().min(1).default(5),
+      dpEpsilon: z.number().positive().default(1.0),
+    }))
+    .mutation(async ({ input }) => {
+      const db = await getDb();
+      if (!db) throw new TRPCError({ code: "INTERNAL_SERVER_ERROR" });
+      const [model] = await db.select().from(federatedModels).where(eq(federatedModels.modelId, input.modelId));
+      if (!model) throw new TRPCError({ code: "NOT_FOUND" });
+
+      const mlServiceUrl = process.env.ML_PIPELINE_URL ?? "http://localhost:8086";
+      const resp = await fetch(`${mlServiceUrl}/api/v1/ml/federated/round`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          n_participants: input.nParticipants,
+          samples_per_participant: 200,
+          local_epochs: input.localEpochs,
+          strategy: model.aggregationStrategy ?? "fedavg",
+          dp_epsilon: input.dpEpsilon,
+        }),
+      });
+      if (!resp.ok) throw new TRPCError({ code: "INTERNAL_SERVER_ERROR", message: "FL round failed" });
+      const result = await resp.json();
+
+      await db.update(federatedModels).set({
+        globalRound: (model.globalRound || 0) + 1,
+        updatedAt: new Date(),
+      }).where(eq(federatedModels.modelId, input.modelId));
+
+      return result;
+    }),
+
+  // ════════════════════════════════════════════════════════════════════════
+  // GNN Well-Network (proxy to Python ML service)
+  // ════════════════════════════════════════════════════════════════════════
+  gnnCascade: protectedProcedure
+    .input(z.object({ failedNodeIdx: z.number().int().min(0) }))
+    .mutation(async ({ input }) => {
+      const mlServiceUrl = process.env.ML_PIPELINE_URL ?? "http://localhost:8086";
+      const resp = await fetch(`${mlServiceUrl}/api/v1/ml/gnn/cascade`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ failed_node_idx: input.failedNodeIdx }),
+      });
+      if (!resp.ok) throw new TRPCError({ code: "INTERNAL_SERVER_ERROR", message: "GNN cascade failed" });
+      return resp.json();
+    }),
+
+  gnnCriticalNodes: protectedProcedure.query(async () => {
+    const mlServiceUrl = process.env.ML_PIPELINE_URL ?? "http://localhost:8086";
+    const resp = await fetch(`${mlServiceUrl}/api/v1/ml/gnn/critical-nodes`);
+    if (!resp.ok) throw new TRPCError({ code: "INTERNAL_SERVER_ERROR", message: "GNN critical nodes failed" });
+    return resp.json();
+  }),
+
+  // ════════════════════════════════════════════════════════════════════════
+  // Knowledge Graph (proxy to Python ML service)
+  // ════════════════════════════════════════════════════════════════════════
+  graphStats: protectedProcedure.query(async () => {
+    const mlServiceUrl = process.env.ML_PIPELINE_URL ?? "http://localhost:8086";
+    const resp = await fetch(`${mlServiceUrl}/api/v1/ml/graph/stats`);
+    if (!resp.ok) throw new TRPCError({ code: "INTERNAL_SERVER_ERROR", message: "Graph stats failed" });
+    return resp.json();
+  }),
+
+  graphCascade: protectedProcedure
+    .input(z.object({ equipmentId: z.string() }))
+    .query(async ({ input }) => {
+      const mlServiceUrl = process.env.ML_PIPELINE_URL ?? "http://localhost:8086";
+      const resp = await fetch(`${mlServiceUrl}/api/v1/ml/graph/cascade/${encodeURIComponent(input.equipmentId)}`);
+      if (!resp.ok) throw new TRPCError({ code: "INTERNAL_SERVER_ERROR", message: "Graph cascade failed" });
+      return resp.json();
+    }),
+
+  graphDependencies: protectedProcedure
+    .input(z.object({ equipmentId: z.string() }))
+    .query(async ({ input }) => {
+      const mlServiceUrl = process.env.ML_PIPELINE_URL ?? "http://localhost:8086";
+      const resp = await fetch(`${mlServiceUrl}/api/v1/ml/graph/dependencies/${encodeURIComponent(input.equipmentId)}`);
+      if (!resp.ok) throw new TRPCError({ code: "INTERNAL_SERVER_ERROR", message: "Graph dependencies failed" });
+      return resp.json();
+    }),
+
+  graphRootCause: protectedProcedure
+    .input(z.object({ equipmentId: z.string() }))
+    .query(async ({ input }) => {
+      const mlServiceUrl = process.env.ML_PIPELINE_URL ?? "http://localhost:8086";
+      const resp = await fetch(`${mlServiceUrl}/api/v1/ml/graph/root-cause/${encodeURIComponent(input.equipmentId)}`);
+      if (!resp.ok) throw new TRPCError({ code: "INTERNAL_SERVER_ERROR", message: "Root cause analysis failed" });
+      return resp.json();
+    }),
 });
