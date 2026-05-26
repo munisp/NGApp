@@ -76,7 +76,7 @@ export const openStefRouter = router({
         status: "unavailable",
         service: "openstef-og",
         openstef_enabled: false,
-        message: "OpenSTEF Python service is not running. Using simulated forecasts.",
+        message: "OpenSTEF Python service is not running.",
       };
     }
   }),

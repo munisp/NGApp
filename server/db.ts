@@ -51,9 +51,11 @@ export async function getDb() {
       _pool = new Pool({
         connectionString: dbUrl,
         ssl: sslConfig(dbUrl),
-        max: 10,
-        idleTimeoutMillis: 30000,
-        connectionTimeoutMillis: 5000,
+        max: parseInt(process.env.DB_POOL_MAX ?? "20", 10),
+        min: parseInt(process.env.DB_POOL_MIN ?? "2", 10),
+        idleTimeoutMillis: parseInt(process.env.DB_IDLE_TIMEOUT ?? "30000", 10),
+        connectionTimeoutMillis: parseInt(process.env.DB_CONNECT_TIMEOUT ?? "5000", 10),
+        statement_timeout: parseInt(process.env.DB_STATEMENT_TIMEOUT ?? "30000", 10),
       });
       _db = drizzle(_pool);
       // Quick connectivity check
@@ -72,6 +74,16 @@ export async function getDb() {
 export async function getPool(): Promise<Pool | null> {
   await getDb(); // ensure pool is initialized
   return _pool;
+}
+
+/** Close the DB pool (used during graceful shutdown) */
+export async function closePool(): Promise<void> {
+  if (_pool) {
+    await _pool.end();
+    _pool = null;
+    _db = null;
+    console.log("[Database] Pool closed");
+  }
 }
 
 export async function upsertUser(user: InsertUser): Promise<void> {

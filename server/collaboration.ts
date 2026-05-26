@@ -12,6 +12,8 @@
 
 import { WebSocketServer, WebSocket } from "ws";
 import type { Server } from "http";
+import { COOKIE_NAME } from "@shared/const";
+import cookie from "cookie";
 // ── Types ─────────────────────────────────────────────────────────────────────
 
 export interface CollabUser {
@@ -97,6 +99,14 @@ export function attachCollaborationWS(httpServer: Server) {
   });
 
   wss.on("connection", (ws, req) => {
+    // Verify session cookie for WebSocket authentication
+    const cookies = cookie.parse(req.headers.cookie ?? "");
+    const sessionToken = cookies[COOKIE_NAME];
+    if (!sessionToken && process.env.NODE_ENV === "production") {
+      ws.close(4001, "Authentication required");
+      return;
+    }
+
     const url = new URL(req.url ?? "/", `http://${req.headers.host}`);
     const wellId = url.searchParams.get("wellId") ?? "WELL-001";
     const userId = url.searchParams.get("userId") ?? `user-${Date.now()}`;

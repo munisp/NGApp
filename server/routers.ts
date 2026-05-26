@@ -93,6 +93,9 @@ import { physicsEngineRouter, pinnRouter } from "./routers/physicsEngine";
 import { masterSeedRouter } from "./routers/masterSeed";
 import { collaborationRouter } from "./routers/collaboration";
 import { dataExportRouter } from "./routers/dataExport";
+// v56.0 Platform improvements
+import { featureFlagsRouter } from "./routers/featureFlags";
+import { dataQualityRouter } from "./routers/dataQuality";
 
 export const appRouter = router({
   system: systemRouter,
@@ -234,6 +237,9 @@ export const appRouter = router({
   pinn: pinnRouter,
   // ── v54.0 Data Export (CSV/JSON production, alarms, KPI, audit, physics) ──
   dataExport: dataExportRouter,
+  // ── v56.0 Platform Improvements ─────────────────────────────────────────
+  featureFlags: featureFlagsRouter,
+  dataQuality: dataQualityRouter,
 });
 
 export type AppRouter = typeof appRouter;
