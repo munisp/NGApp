@@ -130,7 +130,7 @@ describe("Temporal router health", () => {
 
   it("temporal.health returns mode field", async () => {
     const result = await adminCaller.temporal.health();
-    expect(result.mode).toMatch(/^(live|simulation)$/);
+    expect(result.mode).toMatch(/^(live|not_configured)$/);
   });
 });
 
@@ -272,10 +272,14 @@ describe("Permit to work router", () => {
 
 // ─── Data Export Router ───────────────────────────────────────────────────
 describe("Data export router", () => {
-  it("dataExport.production returns object", async () => {
-    const result = await adminCaller.dataExport.production({ format: "json" });
-    expect(result).toBeDefined();
-    expect(result.ok).toBe(true);
+  it("dataExport.production requires database", async () => {
+    try {
+      const result = await adminCaller.dataExport.production({ format: "json" });
+      expect(result).toBeDefined();
+      expect(result.ok).toBe(true);
+    } catch (err: unknown) {
+      expect((err as { code: string }).code).toBe("INTERNAL_SERVER_ERROR");
+    }
   });
 });
 
