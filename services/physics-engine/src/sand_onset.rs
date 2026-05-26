@@ -156,16 +156,17 @@ pub fn critical_drawdown_psi(
     let stress_conc = 3.0 * sigma_v_eff - sigma_h_eff;
     // CDP = (UCS × c_phi - stress_conc) / (c_phi + 1)
     let cdp_base = (ucs_psi * c_phi - stress_conc) / (c_phi + 1.0);
-    // Completion type factor (sand control reduces risk)
-    let completion_factor = match completion_type {
-        CompletionType::OpenHole => 1.0,
-        CompletionType::CasedPerforated => 0.85,
-        CompletionType::StandaloneScreen => 0.70,
-        CompletionType::GravelPack => 0.50,
-        CompletionType::FracPack => 0.40,
-        CompletionType::ExpandableSandScreen => 0.45,
+    // Completion type bonus (psi) — sand control raises effective CDP
+    let completion_bonus_psi = match completion_type {
+        CompletionType::OpenHole => 0.0,
+        CompletionType::CasedPerforated => 50.0,
+        CompletionType::StandaloneScreen => 150.0,
+        CompletionType::ExpandableSandScreen => 200.0,
+        CompletionType::GravelPack => 300.0,
+        CompletionType::FracPack => 400.0,
     };
-    (cdp_base * completion_factor).max(100.0) // Minimum 100 psi CDP
+    // Apply bonus after floor — sand control always adds to effective CDP
+    cdp_base.max(100.0) + completion_bonus_psi
 }
 
 /// Estimate sand production rate from empirical correlation

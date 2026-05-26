@@ -64,6 +64,14 @@ jobs:
           --health-interval 10s
           --health-timeout 5s
           --health-retries 5
+      redis:
+        image: redis:7-alpine
+        ports: ["6379:6379"]
+        options: >-
+          --health-cmd "redis-cli ping"
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
     env:
       DATABASE_URL: postgresql://ogrmm:ogrmm_ci@localhost:5432/og_rmm_test
       POSTGRES_URL: postgresql://ogrmm:ogrmm_ci@localhost:5432/og_rmm_test
@@ -87,6 +95,8 @@ jobs:
           node-version: ${{ env.NODE_VERSION }}
           cache: pnpm
       - run: pnpm install --frozen-lockfile
+      - name: Push database schema
+        run: pnpm db:push
       - name: Run unit tests
         run: pnpm test
       - name: Upload coverage

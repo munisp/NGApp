@@ -375,7 +375,7 @@ mod tests {
     fn default_req() -> CoupledRequest {
         CoupledRequest {
             well_id:                "TEST-001".to_string(),
-            reservoir_pressure:     3500.0,
+            reservoir_pressure:     5000.0,
             q_max:                  2000.0,
             skin_factor:            0.0,
             esp_frequency_hz:       0.0,
