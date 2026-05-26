@@ -81,7 +81,7 @@ async function scoreDpiaCompletion(pool: Pool, orgId: number): Promise<number> {
 async function scoreBreachHistory(pool: Pool, orgId: number): Promise<number> {
   const { rows: [row] } = await pool.query(
     `SELECT COUNT(*)::int AS cnt FROM breach_incidents
-     WHERE org_id = $1 AND created_at > NOW() - INTERVAL '1 year'`, [orgId]
+     WHERE organization_id = $1 AND created_at > NOW() - INTERVAL '1 year'`, [orgId]
   );
   if (row.cnt === 0) return 100;
   if (row.cnt <= 2) return 70;
@@ -92,7 +92,7 @@ async function scoreBreachHistory(pool: Pool, orgId: number): Promise<number> {
 async function scoreDpoAppointment(pool: Pool, orgId: number): Promise<number> {
   const { rows: [row] } = await pool.query(
     `SELECT COUNT(*)::int AS cnt FROM dpo_appointments
-     WHERE organization_id = $1 AND status = 'active'`, [orgId]
+     WHERE organization_id = $1 AND is_active = true`, [orgId]
   );
   return row.cnt > 0 ? 100 : 0;
 }

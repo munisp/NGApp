@@ -61,17 +61,17 @@ def load_organizations(sectors: list[str] | None = None, limit: int = 50) -> lis
         with conn.cursor(cursor_factory=psycopg2.extras.RealDictCursor) as cur:
             sql = """
                 SELECT o.id, o.name, o.sector, o.compliance_score,
-                       o.size AS org_size, o.risk_level,
-                       (SELECT COUNT(*) FROM breach_incidents b WHERE b.org_id = o.id
+                       o.risk_score,
+                       (SELECT COUNT(*) FROM breach_incidents b WHERE b.organization_id = o.id
                         AND b.created_at > NOW() - INTERVAL '1 year') AS recent_breaches,
                        (SELECT COUNT(*) FROM staff_training_records t WHERE t.organization_id = o.id
                         AND t.passed = true) AS trained_staff,
                        (SELECT COUNT(*) FROM dpo_appointments d WHERE d.organization_id = o.id
-                        AND d.status = 'active') AS has_dpo,
+                        AND d.is_active = true) AS has_dpo,
                        (SELECT COUNT(*) FROM consent_records c WHERE c.organization_id = o.id
                         AND c.consent_status = 'active') AS active_consents
                 FROM organizations o
-                WHERE o.status = 'active'
+                WHERE 1=1
             """
             params: list[Any] = []
             if sectors:
@@ -254,7 +254,7 @@ def build_org_graph() -> dict[str, list[str]]:
                 SELECT o1.name AS org1, o2.name AS org2
                 FROM organizations o1
                 JOIN organizations o2 ON o1.sector = o2.sector AND o1.id < o2.id
-                WHERE o1.status = 'active' AND o2.status = 'active'
+                WHERE o1.compliance_status != 'suspended' AND o2.compliance_status != 'suspended'
                 LIMIT 500
             """)
             graph: dict[str, list[str]] = {}
@@ -271,7 +271,7 @@ def load_org_sectors() -> dict[str, str]:
     conn = get_db()
     try:
         with conn.cursor(cursor_factory=psycopg2.extras.RealDictCursor) as cur:
-            cur.execute("SELECT name, sector FROM organizations WHERE status = 'active'")
+            cur.execute("SELECT name, sector FROM organizations")
             return {row["name"]: row["sector"] for row in cur.fetchall()}
     finally:
         conn.close()
@@ -331,7 +331,7 @@ async def health():
     try:
         conn = get_db()
         with conn.cursor() as cur:
-            cur.execute("SELECT COUNT(*) FROM organizations WHERE status = 'active'")
+            cur.execute("SELECT COUNT(*) FROM organizations")
             org_count = cur.fetchone()[0]
         conn.close()
         db_ok = True
