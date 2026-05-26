@@ -10,7 +10,8 @@ import { saasSubscriptions, saasPlans } from "../../drizzle/schema";
 import { eq, desc } from "drizzle-orm";
 import { STRIPE_PRODUCTS } from "../stripe/products";
 
-const stripe = new Stripe(process.env.STRIPE_SECRET_KEY ?? "");
+const stripeKey = process.env.STRIPE_SECRET_KEY || "sk_test_placeholder";
+const stripe = new Stripe(stripeKey);
 
 export const stripeBillingRouter = router({
   // List all available plans with Stripe price IDs

@@ -16,8 +16,8 @@ export default defineConfig({
     environment: "node",
     include: ["server/**/*.test.ts", "server/**/*.spec.ts"],
     env: {
-      POSTGRES_URL: "postgresql://ogrmm:ogrmm_pass@localhost:5432/og_rmm",
-      REDIS_URL: "redis://localhost:6379",
+      POSTGRES_URL: process.env.POSTGRES_URL ?? "postgresql://ogrmm:ogrmm_pass@localhost:5432/og_rmm",
+      REDIS_URL: process.env.REDIS_URL ?? "redis://localhost:6379",
       NODE_ENV: "test",
     },
   },

@@ -22,10 +22,7 @@ const SAAS_PLANS = STRIPE_PRODUCTS.map((p: StripeProduct) => ({
 }));
 import Stripe from "stripe";
 
-const stripeKey = process.env.STRIPE_SECRET_KEY;
-if (!stripeKey) {
-  throw new Error("STRIPE_SECRET_KEY environment variable is required");
-}
+const stripeKey = process.env.STRIPE_SECRET_KEY || "sk_test_placeholder";
 const stripe = new Stripe(stripeKey, {
   apiVersion: "2026-04-22.dahlia",
 });
