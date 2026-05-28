@@ -5,6 +5,7 @@ import { lazy, Suspense } from "react";
 import ErrorBoundary from "./components/ErrorBoundary";
 import { ThemeProvider } from "./contexts/ThemeContext";
 import OfflineIndicator from "./components/OfflineIndicator";
+import AppShell from "./components/AppShell";
 
 // Lazy-loaded pages — each becomes a separate chunk (code splitting)
 const OnboardingHome = lazy(() => import("./pages/OnboardingHome"));
@@ -65,6 +66,7 @@ function PageLoader() {
 function Router() {
   return (
     <Suspense fallback={<PageLoader />}>
+      <AppShell>
       <Switch>
         <Route path={"/"} component={OnboardingHome} />
         <Route path="/admin" component={AdminDashboard} />
@@ -112,6 +114,7 @@ function Router() {
         {/* Final fallback route */}
         <Route component={NotFound} />
       </Switch>
+      </AppShell>
     </Suspense>
   );
 }

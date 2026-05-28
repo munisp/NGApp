@@ -187,26 +187,81 @@ class MainShell extends StatelessWidget {
     }
   }
 
-  // More menu bottom sheet
+  // More menu bottom sheet — grouped by category
   void _showMoreSheet(BuildContext context) {
+    final colorScheme = Theme.of(context).colorScheme;
     showModalBottomSheet(
       context: context,
-      builder: (ctx) => ListView(
-        shrinkWrap: true,
+      isScrollControlled: true,
+      builder: (ctx) => DraggableScrollableSheet(
+        initialChildSize: 0.6,
+        minChildSize: 0.3,
+        maxChildSize: 0.85,
+        expand: false,
+        builder: (_, scrollController) => ListView(
+          controller: scrollController,
+          padding: const EdgeInsets.symmetric(vertical: 12),
+          children: [
+            // Drag handle
+            Center(
+              child: Container(
+                width: 36,
+                height: 4,
+                margin: const EdgeInsets.only(bottom: 16),
+                decoration: BoxDecoration(
+                  color: colorScheme.onSurface.withValues(alpha: 0.3),
+                  borderRadius: BorderRadius.circular(2),
+                ),
+              ),
+            ),
+            // Operations
+            _sectionHeader(context, 'Operations', Icons.swap_horiz),
+            ListTile(leading: const Icon(Icons.gavel), title: const Text('Disputes'), onTap: () { Navigator.pop(ctx); context.go('/disputes'); }),
+            ListTile(leading: const Icon(Icons.receipt_long), title: const Text('Fees & Pricing'), onTap: () { Navigator.pop(ctx); context.go('/fees'); }),
+            ListTile(leading: const Icon(Icons.speed), title: const Text('Transaction Limits'), onTap: () { Navigator.pop(ctx); context.go('/limits'); }),
+            const Divider(height: 1, indent: 16, endIndent: 16),
+            // Compliance & Security
+            _sectionHeader(context, 'Compliance & Security', Icons.shield_outlined),
+            ListTile(leading: const Icon(Icons.verified_user), title: const Text('Compliance'), onTap: () { Navigator.pop(ctx); context.go('/compliance'); }),
+            ListTile(leading: const Icon(Icons.security), title: const Text('Security'), onTap: () { Navigator.pop(ctx); context.go('/security'); }),
+            ListTile(leading: const Icon(Icons.history), title: const Text('Audit Log'), onTap: () { Navigator.pop(ctx); context.go('/audit-log'); }),
+            const Divider(height: 1, indent: 16, endIndent: 16),
+            // Account
+            _sectionHeader(context, 'Account', Icons.person_outline),
+            ListTile(leading: const Icon(Icons.people), title: const Text('Referrals'), onTap: () { Navigator.pop(ctx); context.go('/referrals'); }),
+            ListTile(leading: const Icon(Icons.support_agent), title: const Text('Support'), onTap: () { Navigator.pop(ctx); context.go('/support'); }),
+            const Divider(height: 1, indent: 16, endIndent: 16),
+            // Preferences
+            _sectionHeader(context, 'Preferences', Icons.tune),
+            ListTile(
+              leading: Icon(themeNotifier.mode == ThemeMode.dark ? Icons.light_mode : Icons.dark_mode),
+              title: Text(themeNotifier.mode == ThemeMode.dark ? 'Light Mode' : 'Dark Mode'),
+              onTap: () { Navigator.pop(ctx); themeNotifier.toggle(); },
+            ),
+            ListTile(leading: const Icon(Icons.settings), title: const Text('Settings'), onTap: () { Navigator.pop(ctx); context.go('/settings'); }),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _sectionHeader(BuildContext context, String title, IconData icon) {
+    final colorScheme = Theme.of(context).colorScheme;
+    return Padding(
+      padding: const EdgeInsets.fromLTRB(16, 12, 16, 4),
+      child: Row(
         children: [
-          ListTile(leading: const Icon(Icons.gavel), title: const Text('Disputes'), onTap: () { Navigator.pop(ctx); context.go('/disputes'); }),
-          ListTile(leading: const Icon(Icons.verified_user), title: const Text('Compliance'), onTap: () { Navigator.pop(ctx); context.go('/compliance'); }),
-          ListTile(leading: const Icon(Icons.security), title: const Text('Security'), onTap: () { Navigator.pop(ctx); context.go('/security'); }),
-          ListTile(leading: const Icon(Icons.people), title: const Text('Referrals'), onTap: () { Navigator.pop(ctx); context.go('/referrals'); }),
-          ListTile(leading: const Icon(Icons.receipt_long), title: const Text('Fees'), onTap: () { Navigator.pop(ctx); context.go('/fees'); }),
-          ListTile(leading: const Icon(Icons.history), title: const Text('Audit Log'), onTap: () { Navigator.pop(ctx); context.go('/audit-log'); }),
-          ListTile(leading: const Icon(Icons.support_agent), title: const Text('Support'), onTap: () { Navigator.pop(ctx); context.go('/support'); }),
-          ListTile(
-            leading: Icon(themeNotifier.mode == ThemeMode.dark ? Icons.light_mode : Icons.dark_mode),
-            title: Text(themeNotifier.mode == ThemeMode.dark ? 'Light Mode' : 'Dark Mode'),
-            onTap: () { Navigator.pop(ctx); themeNotifier.toggle(); },
+          Icon(icon, size: 16, color: colorScheme.primary),
+          const SizedBox(width: 8),
+          Text(
+            title.toUpperCase(),
+            style: TextStyle(
+              fontSize: 11,
+              fontWeight: FontWeight.w700,
+              letterSpacing: 1.2,
+              color: colorScheme.primary,
+            ),
           ),
-          ListTile(leading: const Icon(Icons.settings), title: const Text('Settings'), onTap: () { Navigator.pop(ctx); context.go('/settings'); }),
         ],
       ),
     );

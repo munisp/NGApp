@@ -1,4 +1,4 @@
-import React, { useMemo } from 'react';
+import React, { useMemo, useState, useEffect, useCallback, useRef } from 'react';
 import {
   LayoutDashboard,
   Users,
@@ -10,6 +10,7 @@ import {
   Bell,
   LogOut,
   ChevronDown,
+  ChevronRight,
   Activity,
   AlertTriangle,
   Wallet,
@@ -46,6 +47,8 @@ import {
   Landmark,
   Network,
   Ship,
+  Search,
+  X,
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { useAuth, ROLES } from '@/lib/auth';
@@ -396,30 +399,144 @@ export const ROLE_DEFAULT_PAGES: Record<string, string> = {
   user: 'hub',
 };
 
+function NavItemRow({
+  item,
+  currentPage,
+  onNavigate,
+  collapsed,
+  expandedIds,
+  toggleExpand,
+  depth = 0,
+}: {
+  item: NavItem;
+  currentPage: string;
+  onNavigate: (page: string) => void;
+  collapsed: boolean;
+  expandedIds: Set<string>;
+  toggleExpand: (id: string) => void;
+  depth?: number;
+}) {
+  const hasChildren = item.children && item.children.length > 0;
+  const isExpanded = expandedIds.has(item.id);
+  const isActive = currentPage === item.id;
+
+  return (
+    <>
+      <button
+        onClick={() => {
+          if (hasChildren) {
+            toggleExpand(item.id);
+          } else {
+            onNavigate(item.id);
+          }
+        }}
+        className={cn(
+          'flex w-full items-center rounded-lg px-3 py-2 text-sm font-medium transition-colors',
+          isActive
+            ? 'bg-primary-600 text-white'
+            : 'text-gray-300 hover:bg-gray-800 hover:text-white'
+        )}
+        style={{ paddingLeft: collapsed ? undefined : `${12 + depth * 16}px` }}
+      >
+        <span className="flex-shrink-0">{item.icon}</span>
+        {!collapsed && (
+          <>
+            <span className="ml-3 flex-1 text-left truncate">{item.label}</span>
+            {item.badge !== undefined && item.badge > 0 && (
+              <span className="ml-2 flex-shrink-0 rounded-full bg-red-500 px-2 py-0.5 text-xs font-semibold text-white">
+                {item.badge}
+              </span>
+            )}
+            {hasChildren && (
+              <span className="ml-1 flex-shrink-0 text-gray-400">
+                {isExpanded ? <ChevronDown className="h-4 w-4" /> : <ChevronRight className="h-4 w-4" />}
+              </span>
+            )}
+          </>
+        )}
+      </button>
+      {hasChildren && isExpanded && !collapsed && (
+        <ul className="space-y-0.5">
+          {item.children!.map((child) => (
+            <li key={child.id}>
+              <NavItemRow
+                item={child}
+                currentPage={currentPage}
+                onNavigate={onNavigate}
+                collapsed={collapsed}
+                expandedIds={expandedIds}
+                toggleExpand={toggleExpand}
+                depth={depth + 1}
+              />
+            </li>
+          ))}
+        </ul>
+      )}
+    </>
+  );
+}
+
 export function Sidebar({ currentPage, onNavigate, collapsed = false }: SidebarProps) {
   const { user, hasRole } = useAuth();
+  const [searchQuery, setSearchQuery] = useState('');
+  const [expandedIds, setExpandedIds] = useState<Set<string>>(new Set());
+  const searchRef = useRef<HTMLInputElement>(null);
+
+  const toggleExpand = useCallback((id: string) => {
+    setExpandedIds((prev) => {
+      const next = new Set(prev);
+      if (next.has(id)) next.delete(id);
+      else next.add(id);
+      return next;
+    });
+  }, []);
+
+  // Keyboard shortcuts: Ctrl+K to focus search, Escape to clear
+  useEffect(() => {
+    function handleKeyDown(e: KeyboardEvent) {
+      if ((e.ctrlKey || e.metaKey) && e.key === 'k') {
+        e.preventDefault();
+        searchRef.current?.focus();
+      }
+      if (e.key === 'Escape' && document.activeElement === searchRef.current) {
+        setSearchQuery('');
+        searchRef.current?.blur();
+      }
+    }
+    window.addEventListener('keydown', handleKeyDown);
+    return () => window.removeEventListener('keydown', handleKeyDown);
+  }, []);
 
   // Filter nav items based on user roles
   const visibleItems = useMemo(() => {
     return navItems.filter((item) => {
-      // Empty allowedRoles means visible to all
       if (!item.allowedRoles || item.allowedRoles.length === 0) return true;
-      // super_admin or admin see everything
       if (hasRole(ROLES.SUPER_ADMIN) || hasRole('admin')) return true;
-      // Check if user has any of the allowed roles
       return item.allowedRoles.some((role) => hasRole(role));
     });
   }, [user, hasRole]);
 
+  // Filter by search query
+  const filteredItems = useMemo(() => {
+    if (!searchQuery) return visibleItems;
+    const q = searchQuery.toLowerCase();
+    return visibleItems.filter((item) => {
+      if (item.label.toLowerCase().includes(q)) return true;
+      if (item.section?.toLowerCase().includes(q)) return true;
+      if (item.children?.some((c) => c.label.toLowerCase().includes(q))) return true;
+      return false;
+    });
+  }, [visibleItems, searchQuery]);
+
   return (
     <aside
       className={cn(
-        'fixed left-0 top-0 z-40 h-screen bg-gray-900 text-white transition-all duration-300',
+        'fixed left-0 top-0 z-40 h-screen bg-gray-900 text-white transition-all duration-300 flex flex-col',
         collapsed ? 'w-16' : 'w-64'
       )}
     >
       {/* Logo */}
-      <div className="flex h-16 items-center justify-center border-b border-gray-800">
+      <div className="flex h-16 items-center justify-center border-b border-gray-800 flex-shrink-0">
         {collapsed ? (
           <span className="text-xl font-bold text-primary-400">PS</span>
         ) : (
@@ -430,10 +547,35 @@ export function Sidebar({ currentPage, onNavigate, collapsed = false }: SidebarP
         )}
       </div>
 
+      {/* Search */}
+      {!collapsed && (
+        <div className="px-3 pt-3 pb-1 flex-shrink-0">
+          <div className="relative">
+            <Search className="absolute left-2.5 top-1/2 -translate-y-1/2 h-3.5 w-3.5 text-gray-400" />
+            <input
+              ref={searchRef}
+              type="text"
+              placeholder="Search... (Ctrl+K)"
+              value={searchQuery}
+              onChange={(e) => setSearchQuery(e.target.value)}
+              className="w-full rounded-md border border-gray-700 bg-gray-800 pl-8 pr-8 py-1.5 text-xs text-white placeholder:text-gray-500 focus:outline-none focus:ring-1 focus:ring-primary-500"
+            />
+            {searchQuery && (
+              <button
+                onClick={() => setSearchQuery('')}
+                className="absolute right-2 top-1/2 -translate-y-1/2 text-gray-400 hover:text-white"
+              >
+                <X className="h-3 w-3" />
+              </button>
+            )}
+          </div>
+        </div>
+      )}
+
       {/* Navigation */}
-      <nav className="mt-2 px-2 overflow-y-auto" style={{ maxHeight: 'calc(100vh - 140px)' }}>
+      <nav className="flex-1 mt-2 px-2 overflow-y-auto">
         <ul className="space-y-0.5 pb-4">
-          {visibleItems.map((item) => (
+          {filteredItems.map((item) => (
             <li key={item.id}>
               {item.section && !collapsed && (
                 <div className="px-3 pt-4 pb-1 text-[10px] font-bold uppercase tracking-widest text-gray-500">
@@ -443,34 +585,33 @@ export function Sidebar({ currentPage, onNavigate, collapsed = false }: SidebarP
               {item.section && collapsed && (
                 <div className="my-2 mx-2 border-t border-gray-700" />
               )}
-              <button
-                onClick={() => onNavigate(item.id)}
-                className={cn(
-                  'flex w-full items-center rounded-lg px-3 py-2 text-sm font-medium transition-colors',
-                  currentPage === item.id
-                    ? 'bg-primary-600 text-white'
-                    : 'text-gray-300 hover:bg-gray-800 hover:text-white'
-                )}
-              >
-                <span className="flex-shrink-0">{item.icon}</span>
-                {!collapsed && (
-                  <>
-                    <span className="ml-3 flex-1 text-left truncate">{item.label}</span>
-                    {item.badge !== undefined && item.badge > 0 && (
-                      <span className="ml-2 flex-shrink-0 rounded-full bg-red-500 px-2 py-0.5 text-xs font-semibold text-white">
-                        {item.badge}
-                      </span>
-                    )}
-                  </>
-                )}
-              </button>
+              <NavItemRow
+                item={item}
+                currentPage={currentPage}
+                onNavigate={onNavigate}
+                collapsed={collapsed}
+                expandedIds={expandedIds}
+                toggleExpand={toggleExpand}
+              />
             </li>
           ))}
+          {filteredItems.length === 0 && !collapsed && (
+            <li className="px-3 py-4 text-center text-xs text-gray-500">
+              No items match &ldquo;{searchQuery}&rdquo;
+            </li>
+          )}
         </ul>
       </nav>
 
+      {/* Footer hint */}
+      {!collapsed && (
+        <div className="px-4 py-1.5 text-[10px] text-gray-600 flex-shrink-0">
+          Ctrl+K search &middot; Esc clear
+        </div>
+      )}
+
       {/* User section */}
-      <div className="absolute bottom-0 left-0 right-0 border-t border-gray-800 p-4">
+      <div className="border-t border-gray-800 p-4 flex-shrink-0">
         {!collapsed && (
           <div className="flex items-center">
             <div className="h-8 w-8 rounded-full bg-primary-600 flex items-center justify-center">
