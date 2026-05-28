@@ -1,6 +1,6 @@
 /**
  * Infrastructure middleware that wires all 12 components into Express/Node services.
- * Enforces KYC gates, rate limiting, RBAC, and audit logging on every request.
+ * Enforces KYC gates, rate limiting, RBAC, HTTP caching, and audit logging on every request.
  */
 
 import { Platform } from './platform';
@@ -11,6 +11,23 @@ export interface RequestContext {
   clientIp: string;
   token: string;
 }
+
+/** HTTP cache configuration for different endpoint patterns. */
+const CACHE_RULES: Array<{ pattern: string; maxAge: number; scope: 'public' | 'private'; staleWhileRevalidate?: number }> = [
+  // Static reference data — cache aggressively
+  { pattern: '/api/v1/products', maxAge: 300, scope: 'public', staleWhileRevalidate: 600 },
+  { pattern: '/api/v1/premium-rates', maxAge: 300, scope: 'public', staleWhileRevalidate: 600 },
+  { pattern: '/api/v1/regions', maxAge: 3600, scope: 'public' },
+  { pattern: '/api/v1/categories', maxAge: 3600, scope: 'public' },
+  { pattern: '/api/v1/config', maxAge: 600, scope: 'public' },
+  // User-specific data — private cache with shorter TTL
+  { pattern: '/api/v1/policies', maxAge: 60, scope: 'private' },
+  { pattern: '/api/v1/claims', maxAge: 30, scope: 'private' },
+  { pattern: '/api/v1/notifications', maxAge: 0, scope: 'private' },
+  // Analytics — moderate cache
+  { pattern: '/api/v1/analytics', maxAge: 120, scope: 'private' },
+  { pattern: '/api/v1/reports', maxAge: 300, scope: 'private' },
+];
 
 export class InfraMiddleware {
   private platform: Platform;
@@ -25,7 +42,7 @@ export class InfraMiddleware {
       const clientIp = req.headers['x-forwarded-for']?.split(',')[0] || req.ip || '';
       const ctx: RequestContext = { userId: '', kycLevel: 0, clientIp, token: '' };
 
-      // 1. Rate limiting via Redis
+      // 1. Rate limiting via Redis (atomic Lua script)
       try {
         const allowed = await this.platform.redis.rateLimit(`rate:${clientIp}`, 100, 60);
         if (!allowed) {
@@ -74,12 +91,17 @@ export class InfraMiddleware {
         }
       }
 
+      // 5. HTTP Cache Headers (GET requests only)
+      if (req.method === 'GET') {
+        setCacheHeaders(req.path, res);
+      }
+
       // Inject context
       req.infraPlatform = this.platform;
       req.infraContext = ctx;
       next();
 
-      // 5. Async audit logging
+      // 6. Async audit logging
       const latencyMs = Date.now() - start;
       const auditEntry = {
         method: req.method, path: req.path, user_id: ctx.userId,
@@ -89,6 +111,36 @@ export class InfraMiddleware {
       this.platform.opensearch.indexAudit('api-gateway', req.method, 'request', req.path, ctx.userId, auditEntry).catch(() => {});
       this.platform.kafka.publishAuditEvent('api-gateway', `${req.method} ${req.path}`, auditEntry).catch(() => {});
     };
+  }
+}
+
+function setCacheHeaders(path: string, res: any): void {
+  for (const rule of CACHE_RULES) {
+    if (path.startsWith(rule.pattern)) {
+      if (rule.maxAge === 0) {
+        res.setHeader('Cache-Control', 'no-store');
+      } else {
+        let directive = `${rule.scope}, max-age=${rule.maxAge}`;
+        if (rule.staleWhileRevalidate) {
+          directive += `, stale-while-revalidate=${rule.staleWhileRevalidate}`;
+        }
+        res.setHeader('Cache-Control', directive);
+      }
+      // Add ETag support based on response content hash
+      const originalJson = res.json.bind(res);
+      res.json = (body: any) => {
+        const content = JSON.stringify(body);
+        const crypto = require('crypto');
+        const etag = `"${crypto.createHash('md5').update(content).digest('hex').slice(0, 16)}"`;
+        res.setHeader('ETag', etag);
+        return originalJson(body);
+      };
+      return;
+    }
+  }
+  // Default: no-cache for unmatched API paths
+  if (path.startsWith('/api/')) {
+    res.setHeader('Cache-Control', 'no-cache');
   }
 }
 

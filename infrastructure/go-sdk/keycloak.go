@@ -15,6 +15,8 @@ import (
 	"go.uber.org/zap"
 )
 
+const maxTokenCacheSize = 10000
+
 type KeycloakClient struct {
 	realmURL     string
 	clientID     string
@@ -24,6 +26,7 @@ type KeycloakClient struct {
 	logger       *zap.Logger
 	tokenCache   map[string]*cachedToken
 	mu           sync.RWMutex
+	redis        *RedisClient
 }
 
 type cachedToken struct {
@@ -96,6 +99,15 @@ func (c *KeycloakClient) ValidateToken(ctx context.Context, token string) (map[s
 
 	c.mu.Lock()
 	c.tokenCache[token] = &cachedToken{Claims: claims, ExpiresAt: time.Now().Add(5 * time.Minute)}
+	// Enforce max cache size — evict expired entries
+	if len(c.tokenCache) > maxTokenCacheSize {
+		now := time.Now()
+		for k, v := range c.tokenCache {
+			if now.After(v.ExpiresAt) {
+				delete(c.tokenCache, k)
+			}
+		}
+	}
 	c.mu.Unlock()
 
 	return claims, nil
@@ -209,10 +221,72 @@ func (c *KeycloakClient) SetupRealmClients(ctx context.Context) error {
 	return nil
 }
 
+// SetRedisClient attaches Redis for distributed token invalidation across replicas.
+func (c *KeycloakClient) SetRedisClient(redis *RedisClient) {
+	c.redis = redis
+	go c.subscribeToInvalidations()
+}
+
+func (c *KeycloakClient) subscribeToInvalidations() {
+	if c.redis == nil || c.redis.client == nil {
+		return
+	}
+	ctx := context.Background()
+	sub := c.redis.Subscribe(ctx, "__token_invalidation__")
+	defer sub.Close()
+
+	for msg := range sub.Channel() {
+		var data map[string]interface{}
+		if err := json.Unmarshal([]byte(msg.Payload), &data); err != nil {
+			continue
+		}
+		if token, ok := data["token"].(string); ok && token != "" {
+			c.mu.Lock()
+			delete(c.tokenCache, token)
+			c.mu.Unlock()
+		}
+		if userID, ok := data["user_id"].(string); ok && userID != "" {
+			c.mu.Lock()
+			for k, v := range c.tokenCache {
+				if sub, ok := v.Claims["sub"].(string); ok && sub == userID {
+					delete(c.tokenCache, k)
+				}
+			}
+			c.mu.Unlock()
+		}
+	}
+}
+
 func (c *KeycloakClient) InvalidateTokenCache(token string) {
 	c.mu.Lock()
 	delete(c.tokenCache, token)
 	c.mu.Unlock()
+}
+
+// InvalidateToken invalidates a specific token across all service replicas via Redis pub/sub.
+func (c *KeycloakClient) InvalidateToken(ctx context.Context, token string) error {
+	c.InvalidateTokenCache(token)
+	if c.redis != nil {
+		event := map[string]interface{}{"token": token, "timestamp": time.Now().Unix()}
+		return c.redis.Publish(ctx, "__token_invalidation__", event)
+	}
+	return nil
+}
+
+// InvalidateUserTokens invalidates all tokens for a user across all replicas.
+func (c *KeycloakClient) InvalidateUserTokens(ctx context.Context, userID string) error {
+	c.mu.Lock()
+	for k, v := range c.tokenCache {
+		if sub, ok := v.Claims["sub"].(string); ok && sub == userID {
+			delete(c.tokenCache, k)
+		}
+	}
+	c.mu.Unlock()
+	if c.redis != nil {
+		event := map[string]interface{}{"user_id": userID, "timestamp": time.Now().Unix()}
+		return c.redis.Publish(ctx, "__token_invalidation__", event)
+	}
+	return nil
 }
 
 func extractRealm(realmURL string) string {

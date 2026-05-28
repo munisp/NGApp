@@ -101,7 +101,12 @@ func (m *InfraMiddleware) Handler(next http.Handler) http.Handler {
 			}
 		}
 
-		// 5. Inject platform into context and serve
+		// 5. HTTP Cache Headers (GET requests only)
+		if r.Method == "GET" {
+			setCacheHeaders(r.URL.Path, w)
+		}
+
+		// 6. Inject platform into context and serve
 		ctx = context.WithValue(ctx, platformKey, m.Platform)
 		next.ServeHTTP(w, r.WithContext(ctx))
 
@@ -193,5 +198,45 @@ func extractPermission(method, path string) (string, string) {
 		return entity, "manage"
 	default:
 		return entity, "view"
+	}
+}
+
+type cacheRule struct {
+	pattern             string
+	maxAge              int
+	scope               string
+	staleWhileRevalidate int
+}
+
+var cacheRules = []cacheRule{
+	{"/api/v1/products", 300, "public", 600},
+	{"/api/v1/premium-rates", 300, "public", 600},
+	{"/api/v1/regions", 3600, "public", 0},
+	{"/api/v1/categories", 3600, "public", 0},
+	{"/api/v1/config", 600, "public", 0},
+	{"/api/v1/policies", 60, "private", 0},
+	{"/api/v1/claims", 30, "private", 0},
+	{"/api/v1/notifications", 0, "private", 0},
+	{"/api/v1/analytics", 120, "private", 0},
+	{"/api/v1/reports", 300, "private", 0},
+}
+
+func setCacheHeaders(path string, w http.ResponseWriter) {
+	for _, rule := range cacheRules {
+		if strings.HasPrefix(path, rule.pattern) {
+			if rule.maxAge == 0 {
+				w.Header().Set("Cache-Control", "no-store")
+			} else {
+				directive := fmt.Sprintf("%s, max-age=%d", rule.scope, rule.maxAge)
+				if rule.staleWhileRevalidate > 0 {
+					directive += fmt.Sprintf(", stale-while-revalidate=%d", rule.staleWhileRevalidate)
+				}
+				w.Header().Set("Cache-Control", directive)
+			}
+			return
+		}
+	}
+	if strings.HasPrefix(path, "/api/") {
+		w.Header().Set("Cache-Control", "no-cache")
 	}
 }
