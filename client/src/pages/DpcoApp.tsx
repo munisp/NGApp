@@ -63,15 +63,24 @@ function formatDate(d: string | number) {
 }
 
 // ─── Tab Types ────────────────────────────────────────────────────────────────
-type Tab = "home" | "clients" | "billing" | "audit" | "settings";
+type Tab = "home" | "clients" | "billing" | "audit" | "settings" | "registry" | "evidence" | "scorecard" | "renewal" | "ai-tools" | "verification" | "subscription";
 
-const NAV_ITEMS: { id: Tab; label: string; icon: React.ElementType }[] = [
-  { id: "home", label: "Dashboard", icon: LayoutDashboard },
-  { id: "clients", label: "Clients", icon: Users },
-  { id: "billing", label: "Billing", icon: Receipt },
-  { id: "audit", label: "Audit", icon: ClipboardCheck },
-  { id: "settings", label: "Settings", icon: Settings },
+const NAV_ITEMS: { id: Tab; label: string; icon: React.ElementType; bottomNav?: boolean }[] = [
+  { id: "home", label: "Dashboard", icon: LayoutDashboard, bottomNav: true },
+  { id: "clients", label: "Clients", icon: Users, bottomNav: true },
+  { id: "billing", label: "Billing", icon: Receipt, bottomNav: true },
+  { id: "audit", label: "Audit", icon: ClipboardCheck, bottomNav: true },
+  { id: "registry", label: "Registry", icon: Building2 },
+  { id: "evidence", label: "Evidence", icon: FileText },
+  { id: "scorecard", label: "Scorecard", icon: BarChart2 },
+  { id: "verification", label: "Verification", icon: ShieldCheck },
+  { id: "subscription", label: "Subscription", icon: CreditCard },
+  { id: "renewal", label: "Renewal", icon: RefreshCw },
+  { id: "ai-tools", label: "AI Tools", icon: Zap },
+  { id: "settings", label: "Settings", icon: Settings, bottomNav: true },
 ];
+
+const BOTTOM_NAV_ITEMS = NAV_ITEMS.filter(i => i.bottomNav);
 
 // ─── Compliance Ring ──────────────────────────────────────────────────────────
 function ComplianceRing({ score, size = 140 }: { score: number; size?: number }) {
@@ -906,13 +915,34 @@ function SidebarNav({ active, onChange }: { active: Tab; onChange: (t: Tab) => v
 
 // ─── BOTTOM NAV (mobile) ──────────────────────────────────────────────────────
 function BottomNav({ active, onChange }: { active: Tab; onChange: (t: Tab) => void }) {
+  const [moreOpen, setMoreOpen] = useState(false);
+  const moreItems = NAV_ITEMS.filter(i => !i.bottomNav);
+  const isMoreActive = moreItems.some(i => i.id === active);
+
   return (
     <nav className="lg:hidden fixed bottom-0 left-0 right-0 z-40 bg-slate-950/95 backdrop-blur border-t border-border/60">
+      {/* More menu overlay */}
+      {moreOpen && (
+        <div className="absolute bottom-full left-0 right-0 bg-slate-950/98 backdrop-blur border-t border-border/60 p-3 grid grid-cols-4 gap-2">
+          {moreItems.map(({ id, label, icon: Icon }) => (
+            <button
+              key={id}
+              onClick={() => { onChange(id); setMoreOpen(false); }}
+              className={`flex flex-col items-center justify-center py-2.5 gap-1 rounded-xl transition-colors ${
+                active === id ? "bg-cyan-500/15 text-cyan-400" : "text-slate-400 hover:text-foreground hover:bg-card/60"
+              }`}
+            >
+              <Icon className="h-5 w-5" />
+              <span className="text-[9px] font-medium leading-none text-center">{label}</span>
+            </button>
+          ))}
+        </div>
+      )}
       <div className="flex items-stretch">
-        {NAV_ITEMS.map(({ id, label, icon: Icon }) => (
+        {BOTTOM_NAV_ITEMS.map(({ id, label, icon: Icon }) => (
           <button
             key={id}
-            onClick={() => onChange(id)}
+            onClick={() => { onChange(id); setMoreOpen(false); }}
             className={`flex-1 flex flex-col items-center justify-center py-2.5 gap-0.5 transition-colors ${
               active === id ? "text-cyan-400" : "text-slate-500 hover:text-muted-foreground"
             }`}
@@ -921,6 +951,16 @@ function BottomNav({ active, onChange }: { active: Tab; onChange: (t: Tab) => vo
             <span className="text-[10px] font-medium leading-none">{label}</span>
           </button>
         ))}
+        {/* More button */}
+        <button
+          onClick={() => setMoreOpen(p => !p)}
+          className={`flex-1 flex flex-col items-center justify-center py-2.5 gap-0.5 transition-colors ${
+            isMoreActive || moreOpen ? "text-cyan-400" : "text-slate-500 hover:text-muted-foreground"
+          }`}
+        >
+          <Menu className="h-5 w-5" />
+          <span className="text-[10px] font-medium leading-none">More</span>
+        </button>
       </div>
     </nav>
   );
@@ -939,6 +979,13 @@ export default function DpcoApp() {
     billing: <BillingTab />,
     audit: <AuditTab />,
     settings: <SettingsTab lock={lock} />,
+    registry: <div className="text-center py-16 text-muted-foreground"><Building2 className="h-12 w-12 mx-auto mb-3 opacity-40" /><p className="font-semibold">DPCO Registry</p><p className="text-sm mt-1">Manage your DPCO registration, certifications, and compliance records.</p></div>,
+    evidence: <div className="text-center py-16 text-muted-foreground"><FileText className="h-12 w-12 mx-auto mb-3 opacity-40" /><p className="font-semibold">Evidence Vault</p><p className="text-sm mt-1">Upload and manage audit evidence packages and compliance documentation.</p></div>,
+    scorecard: <div className="text-center py-16 text-muted-foreground"><BarChart2 className="h-12 w-12 mx-auto mb-3 opacity-40" /><p className="font-semibold">DPCO Scorecard</p><p className="text-sm mt-1">View your compliance scorecard with category breakdowns and trends.</p></div>,
+    verification: <div className="text-center py-16 text-muted-foreground"><ShieldCheck className="h-12 w-12 mx-auto mb-3 opacity-40" /><p className="font-semibold">Verification Statements</p><p className="text-sm mt-1">Manage and issue verification statements for your clients.</p></div>,
+    subscription: <div className="text-center py-16 text-muted-foreground"><CreditCard className="h-12 w-12 mx-auto mb-3 opacity-40" /><p className="font-semibold">Subscription Plan</p><p className="text-sm mt-1">View and manage your DPCO subscription, billing cycle, and payment methods.</p></div>,
+    renewal: <div className="text-center py-16 text-muted-foreground"><RefreshCw className="h-12 w-12 mx-auto mb-3 opacity-40" /><p className="font-semibold">Licence Renewal</p><p className="text-sm mt-1">Renew your DPCO licence and track renewal deadlines.</p></div>,
+    "ai-tools": <div className="text-center py-16 text-muted-foreground"><Zap className="h-12 w-12 mx-auto mb-3 opacity-40" /><p className="font-semibold">AI Audit Tools</p><p className="text-sm mt-1">AI-powered compliance gap detection, policy analysis, and audit recommendations.</p></div>,
   };
 
   const activeItem = NAV_ITEMS.find((n) => n.id === activeTab)!;

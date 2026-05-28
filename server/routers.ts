@@ -1333,6 +1333,10 @@ export const appRouter = router({
         createAuditLog({ userId: ctx.user.id, action: "transfer.delete", resourceType: "transfer_approval", resourceId: input.id, details: `Deleted transfer approval #${input.id}` }).catch((e: unknown) => logger.debug({ err: e instanceof Error ? e.message : String(e) }, "fire-and-forget failed"));
         return result;
       }),
+    pendingCount: protectedProcedure.query(async () => {
+      const all = await getTransferApprovals(500, "pending");
+      return { count: (all as any[]).length };
+    }),
   }),
   monitoring: router({
     snapshots: protectedProcedure
@@ -2338,6 +2342,11 @@ export const appRouter = router({
         createAuditLog({ userId: ctx.user.id, action: "breach.delete", resourceType: "breach_incident", resourceId: input.id, details: `Deleted breach_incident #${input.id}` }).catch((e: unknown) => logger.debug({ err: e instanceof Error ? e.message : String(e) }, "fire-and-forget failed"));
         return result;
       }),
+    activeCount: protectedProcedure.query(async () => {
+      const all = await listBreachIncidents(undefined, undefined, 500);
+      const count = (all as any[]).filter((b: any) => !["resolved", "closed"].includes(b.status)).length;
+      return { count };
+    }),
   }),
 
   // Gap 3: DPO Registry (GAID Art. 11–14)

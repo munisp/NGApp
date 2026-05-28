@@ -198,6 +198,15 @@ export const dsarRouter = router({
       emitMutationEvent("ndsep.compliance.mutation", { action: "enhancements", ts: new Date().toISOString() }).catch((e: unknown) => logger.debug({ err: e instanceof Error ? e.message : String(e) }, "fire-and-forget failed"));
       return { success: true };
     }),
+
+  /** Badge count: DSARs not yet resolved or closed */
+  pendingCount: protectedProcedure.query(async () => {
+    const pool = getPool();
+    const { rows } = await pool.query(
+      `SELECT COUNT(*) as count FROM citizen_requests WHERE status NOT IN ('resolved', 'closed')`
+    );
+    return { count: Number(rows[0].count) };
+  }),
 });
 
 // ─── DPIA / TIA Wizard Router ────────────────────────────────────────────────

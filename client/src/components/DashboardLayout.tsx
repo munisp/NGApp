@@ -35,16 +35,17 @@ import {
   Heart, Zap as ZapIcon, HeartPulse, FlaskConical, AlertCircle, Clock, UserCog, MonitorDot,
   Calculator, CalendarDays, HeartHandshake, Mail, Brain,
   Workflow, Share2, FileSearch, Eye, Microscope,
-  MapPin, ArrowRightLeft
+  MapPin, ArrowRightLeft, Star
 } from "lucide-react";
 import { useRbac, getRoleBadgeColor, getRoleLabel } from "@/hooks/useRbac";
-import { CSSProperties, useEffect, useRef, useState, useCallback } from "react";
+import { CSSProperties, useEffect, useRef, useState, useCallback, useMemo } from "react";
 import { useLocation } from "wouter";
 import { DashboardLayoutSkeleton } from './DashboardLayoutSkeleton';
 import { CriticalEventBanner } from './CriticalEventBanner';
 import { FloatingChatBubble } from './FloatingChatBubble';
 import { OnboardingBanner } from './OnboardingBanner';
 import { Button } from "./ui/button";
+import { Input } from "./ui/input";
 import { LanguageSelector } from "./LanguageSelector";
 import ThemeToggle from "@/components/ThemeToggle";
 import { WhatsNewModal } from "@/components/WhatsNewModal";
@@ -271,6 +272,40 @@ const menuSections: MenuSection[] = [
 
 // Flat menuItems for backward compat (route matching, etc.)
 const menuItems = menuSections.flatMap(s => s.items);
+
+// ── Favorites & Recents persistence ──────────────────────────────────────────
+const FAVORITES_KEY = "ndsep_nav_favorites";
+const RECENTS_KEY = "ndsep_nav_recents";
+const MAX_RECENTS = 8;
+
+function useFavorites() {
+  const [favorites, setFavorites] = useState<string[]>(() => {
+    try { return JSON.parse(localStorage.getItem(FAVORITES_KEY) || "[]"); } catch { return []; }
+  });
+  const toggle = useCallback((path: string) => {
+    setFavorites(prev => {
+      const next = prev.includes(path) ? prev.filter(p => p !== path) : [...prev, path];
+      localStorage.setItem(FAVORITES_KEY, JSON.stringify(next));
+      return next;
+    });
+  }, []);
+  return { favorites, toggle };
+}
+
+function useRecents(currentPath: string) {
+  const [recents, setRecents] = useState<string[]>(() => {
+    try { return JSON.parse(localStorage.getItem(RECENTS_KEY) || "[]"); } catch { return []; }
+  });
+  useEffect(() => {
+    if (!currentPath || currentPath === "/") return;
+    setRecents(prev => {
+      const next = [currentPath, ...prev.filter(p => p !== currentPath)].slice(0, MAX_RECENTS);
+      localStorage.setItem(RECENTS_KEY, JSON.stringify(next));
+      return next;
+    });
+  }, [currentPath]);
+  return recents;
+}
 
 const SIDEBAR_WIDTH_KEY = "sidebar-width";
 const DEFAULT_WIDTH = 280;
@@ -649,6 +684,41 @@ function DashboardLayoutContent({
   });
   const openCaseCount = openCasesData?.count ?? 0;
 
+  // ── Sidebar search ──
+  const [navSearch, setNavSearch] = useState("");
+  const navSearchRef = useRef<HTMLInputElement>(null);
+  const filteredSections = useMemo(() => {
+    if (!navSearch.trim()) return menuSections;
+    const q = navSearch.toLowerCase();
+    return menuSections.map(s => ({
+      ...s,
+      items: s.items.filter(i => i.label.toLowerCase().includes(q)),
+    })).filter(s => s.items.length > 0);
+  }, [navSearch]);
+
+  // ── Favorites & Recents ──
+  const { favorites, toggle: toggleFavorite } = useFavorites();
+  const recents = useRecents(location);
+  const favoriteItems = useMemo(() => menuItems.filter(i => favorites.includes(i.path)), [favorites]);
+  const recentItems = useMemo(() => recents.map(p => menuItems.find(i => i.path === p)).filter(Boolean) as MenuItem[], [recents]);
+
+  // ── Badge counts ──
+  const { data: dsarCountData } = trpc.dsar.pendingCount.useQuery(undefined, {
+    refetchInterval: 60_000,
+    enabled: !!user,
+  });
+  const dsarCount = (dsarCountData as any)?.count ?? 0;
+  const { data: breachCountData } = trpc.breaches.activeCount.useQuery(undefined, {
+    refetchInterval: 60_000,
+    enabled: !!user,
+  });
+  const breachCount = (breachCountData as any)?.count ?? 0;
+  const { data: transferCountData } = trpc.transfers.pendingCount.useQuery(undefined, {
+    refetchInterval: 60_000,
+    enabled: !!user,
+  });
+  const transferCount = (transferCountData as any)?.count ?? 0;
+
   useEffect(() => {
     if (isCollapsed) {
       setIsResizing(false);
@@ -717,8 +787,89 @@ function DashboardLayoutContent({
           </SidebarHeader>
 
           <SidebarContent className="gap-0">
+            {/* ── Sidebar Search ── */}
+            {!isCollapsed && (
+              <div className="px-3 pt-2 pb-1">
+                <div className="relative">
+                  <Search className="absolute left-2.5 top-1/2 -translate-y-1/2 h-3.5 w-3.5 text-muted-foreground pointer-events-none" />
+                  <Input
+                    ref={navSearchRef}
+                    value={navSearch}
+                    onChange={e => setNavSearch(e.target.value)}
+                    placeholder="Filter pages..."
+                    className="h-8 pl-8 pr-8 text-xs bg-sidebar-accent/40 border-sidebar-border"
+                    aria-label="Filter navigation items"
+                  />
+                  {navSearch && (
+                    <button
+                      onClick={() => setNavSearch("")}
+                      className="absolute right-2 top-1/2 -translate-y-1/2 h-4 w-4 flex items-center justify-center rounded-sm hover:bg-accent"
+                      aria-label="Clear search"
+                    >
+                      <span className="text-xs text-muted-foreground">&times;</span>
+                    </button>
+                  )}
+                </div>
+              </div>
+            )}
+
+            {/* ── Favorites Section ── */}
+            {!isCollapsed && favoriteItems.length > 0 && !navSearch && (
+              <div className="px-2 pt-1 pb-1">
+                <div className="flex items-center gap-2 px-2 py-1">
+                  <span className="inline-block w-2 h-2 rounded-full bg-amber-400" />
+                  <span className="mono text-[10px] font-semibold uppercase tracking-wider text-amber-400">Pinned</span>
+                  <span className="mono text-[9px] text-muted-foreground">{favoriteItems.length}</span>
+                </div>
+                {favoriteItems.map(item => {
+                  const isActive = location === item.path;
+                  return (
+                    <SidebarMenuItem key={`fav-${item.path}`}>
+                      <SidebarMenuButton
+                        isActive={isActive}
+                        onClick={() => setLocation(item.path)}
+                        tooltip={item.label}
+                        className={`h-8 transition-all duration-200 font-normal rounded-lg ${isActive ? "sidebar-item-active shadow-sm font-medium" : "hover:translate-x-0.5 hover:bg-accent/40"}`}
+                      >
+                        <item.icon className={`h-4 w-4 shrink-0 ${isActive ? "text-primary" : ""}`} />
+                        <span className="flex-1 truncate text-sm">{item.label}</span>
+                        <Star className="h-3 w-3 text-amber-400 fill-amber-400 shrink-0" />
+                      </SidebarMenuButton>
+                    </SidebarMenuItem>
+                  );
+                })}
+              </div>
+            )}
+
+            {/* ── Recently Visited ── */}
+            {!isCollapsed && recentItems.length > 0 && !navSearch && (
+              <div className="px-2 pt-1 pb-1">
+                <div className="flex items-center gap-2 px-2 py-1">
+                  <span className="inline-block w-2 h-2 rounded-full bg-emerald-400" />
+                  <span className="mono text-[10px] font-semibold uppercase tracking-wider text-emerald-400">Recent</span>
+                  <span className="mono text-[9px] text-muted-foreground">{recentItems.length}</span>
+                </div>
+                {recentItems.slice(0, 5).map(item => {
+                  const isActive = location === item.path;
+                  return (
+                    <SidebarMenuItem key={`recent-${item.path}`}>
+                      <SidebarMenuButton
+                        isActive={isActive}
+                        onClick={() => setLocation(item.path)}
+                        tooltip={item.label}
+                        className={`h-8 transition-all duration-200 font-normal rounded-lg ${isActive ? "sidebar-item-active shadow-sm font-medium" : "hover:translate-x-0.5 hover:bg-accent/40"}`}
+                      >
+                        <item.icon className={`h-4 w-4 shrink-0 ${isActive ? "text-primary" : ""}`} />
+                        <span className="flex-1 truncate text-sm">{item.label}</span>
+                      </SidebarMenuButton>
+                    </SidebarMenuItem>
+                  );
+                })}
+              </div>
+            )}
+
             <SidebarMenu className="px-2 py-1" role="navigation" aria-label="Main navigation">
-              {menuSections.map(section => {
+              {filteredSections.map(section => {
                 const isSectionCollapsed = collapsedSections.has(section.title);
                 const hasActiveItem = section.items.some(item => item.path === location);
                 return (
@@ -745,7 +896,7 @@ function DashboardLayoutContent({
                     {(!isSectionCollapsed || isCollapsed) && section.items.map(item => {
                       const isActive = location === item.path;
                       return (
-                        <SidebarMenuItem key={item.path}>
+                        <SidebarMenuItem key={item.path} className="group/item">
                           <SidebarMenuButton
                             isActive={isActive}
                             onClick={() => setLocation(item.path)}
@@ -765,6 +916,24 @@ function DashboardLayoutContent({
                             <span className="flex-1 truncate text-sm">{item.label}</span>
                             {item.path === "/enforcement-cases" && openCaseCount > 0 && (
                               <span className="mono text-[9px] font-bold px-1.5 py-0.5 rounded-full bg-red-500 text-white group-data-[collapsible=icon]:hidden">{openCaseCount}</span>
+                            )}
+                            {item.path === "/dsar" && dsarCount > 0 && (
+                              <span className="mono text-[9px] font-bold px-1.5 py-0.5 rounded-full bg-blue-500 text-white group-data-[collapsible=icon]:hidden">{dsarCount}</span>
+                            )}
+                            {item.path === "/breach-notification" && breachCount > 0 && (
+                              <span className="mono text-[9px] font-bold px-1.5 py-0.5 rounded-full bg-orange-500 text-white group-data-[collapsible=icon]:hidden">{breachCount}</span>
+                            )}
+                            {item.path === "/transfers" && transferCount > 0 && (
+                              <span className="mono text-[9px] font-bold px-1.5 py-0.5 rounded-full bg-violet-500 text-white group-data-[collapsible=icon]:hidden">{transferCount}</span>
+                            )}
+                            {!isCollapsed && (
+                              <button
+                                onClick={(e) => { e.stopPropagation(); toggleFavorite(item.path); }}
+                                className={`h-4 w-4 flex items-center justify-center rounded-sm opacity-0 group-hover/item:opacity-100 transition-opacity ${favorites.includes(item.path) ? "opacity-100" : ""}`}
+                                aria-label={favorites.includes(item.path) ? `Unpin ${item.label}` : `Pin ${item.label}`}
+                              >
+                                <Star className={`h-3 w-3 ${favorites.includes(item.path) ? "text-amber-400 fill-amber-400" : "text-muted-foreground hover:text-amber-400"}`} />
+                              </button>
                             )}
                           </SidebarMenuButton>
                         </SidebarMenuItem>
