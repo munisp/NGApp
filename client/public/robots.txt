@@ -1,0 +1,15 @@
+User-agent: *
+Disallow: /api/
+Disallow: /api/trpc/
+Disallow: /api/oauth/
+Disallow: /api/stripe/
+
+# Allow public pages
+Allow: /
+Allow: /wells
+Allow: /alarms
+Allow: /pwa-twin-physics
+Allow: /well-kpi-dashboard
+
+# Sitemap
+Sitemap: /sitemap.xml

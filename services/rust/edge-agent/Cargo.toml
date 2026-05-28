@@ -1,0 +1,48 @@
+[package]
+name = "edge-agent"
+version = "2.0.0"
+edition = "2021"
+description = "Oil & Gas RMM Platform — Rust Edge Agent v2. Bridges field sensors to the central platform via Modbus TCP/RTU, OPC-UA, DNP3, MQTT."
+
+[[bin]]
+name = "edge-agent"
+path = "src/main.rs"
+
+[dependencies]
+tokio = { version = "1", features = ["full"] }
+serde = { version = "1", features = ["derive"] }
+serde_json = "1"
+reqwest = { version = "0.12", features = ["json", "rustls-tls"], default-features = false }
+rumqttc = "0.24"
+tracing = "0.1"
+tracing-subscriber = { version = "0.3", features = ["env-filter", "json"] }
+uuid = { version = "1", features = ["v4"] }
+chrono = { version = "0.4", features = ["serde"] }
+anyhow = "1"
+thiserror = "1"
+bytes = "1"
+
+# ── Real protocol adapters ────────────────────────────────────────────────────
+# Modbus TCP/RTU — WT Petrotech PLC-based wellhead systems
+tokio-modbus = { version = "0.14", features = ["tcp"] }
+
+# OPC-UA — Allen-Bradley, Siemens, Schneider PLCs
+# opcua crate requires native-tls; enable the "client" feature only
+opcua = { version = "0.12", features = ["client", "console-logging"], optional = true }
+
+# DNP3 — legacy SCADA outstations and RTUs (IEEE 1815)
+dnp3 = { version = "1", optional = true }
+
+[features]
+default = ["modbus"]
+modbus = []
+opcua-support = ["opcua"]
+dnp3-support = ["dnp3"]
+# Enable all protocols for full production build:
+# cargo build --release --features "modbus,opcua-support,dnp3-support"
+
+[profile.release]
+opt-level = 3
+lto = true
+codegen-units = 1
+strip = true

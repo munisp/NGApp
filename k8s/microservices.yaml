@@ -1,0 +1,480 @@
+---
+# ── Telemetry Ingestion Service ─────────────────────────────────────────────
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: telemetry-ingestion
+  namespace: og-rmm
+  labels:
+    app: telemetry-ingestion
+spec:
+  replicas: 2
+  selector:
+    matchLabels:
+      app: telemetry-ingestion
+  template:
+    metadata:
+      labels:
+        app: telemetry-ingestion
+      annotations:
+        dapr.io/enabled: "true"
+        dapr.io/app-id: "telemetry-ingestion"
+        dapr.io/app-port: "8080"
+    spec:
+      containers:
+        - name: telemetry-ingestion
+          image: og-rmm/telemetry-ingestion:v43
+          ports:
+            - containerPort: 8080
+              name: http
+            - containerPort: 9090
+              name: metrics
+          env:
+            - name: KAFKA_BROKERS
+              valueFrom:
+                secretKeyRef:
+                  name: og-rmm-secrets
+                  key: KAFKA_BROKERS
+            - name: POSTGRES_URL
+              valueFrom:
+                secretKeyRef:
+                  name: og-rmm-secrets
+                  key: POSTGRES_URL
+            - name: OTEL_EXPORTER_OTLP_ENDPOINT
+              value: "http://otel-collector:4317"
+          resources:
+            requests:
+              cpu: "200m"
+              memory: "256Mi"
+            limits:
+              cpu: "500m"
+              memory: "512Mi"
+          livenessProbe:
+            httpGet:
+              path: /health
+              port: 8080
+            initialDelaySeconds: 15
+            periodSeconds: 10
+          readinessProbe:
+            httpGet:
+              path: /health
+              port: 8080
+            initialDelaySeconds: 5
+            periodSeconds: 5
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: telemetry-ingestion
+  namespace: og-rmm
+spec:
+  selector:
+    app: telemetry-ingestion
+  ports:
+    - port: 8080
+      targetPort: 8080
+      name: http
+    - port: 9090
+      targetPort: 9090
+      name: metrics
+---
+# ── Alarm Engine Service ─────────────────────────────────────────────────────
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: alarm-engine
+  namespace: og-rmm
+  labels:
+    app: alarm-engine
+spec:
+  replicas: 2
+  selector:
+    matchLabels:
+      app: alarm-engine
+  template:
+    metadata:
+      labels:
+        app: alarm-engine
+      annotations:
+        dapr.io/enabled: "true"
+        dapr.io/app-id: "alarm-engine"
+        dapr.io/app-port: "8081"
+    spec:
+      containers:
+        - name: alarm-engine
+          image: og-rmm/alarm-engine:v43
+          ports:
+            - containerPort: 8081
+              name: http
+          env:
+            - name: KAFKA_BROKERS
+              valueFrom:
+                secretKeyRef:
+                  name: og-rmm-secrets
+                  key: KAFKA_BROKERS
+            - name: REDIS_URL
+              valueFrom:
+                secretKeyRef:
+                  name: og-rmm-secrets
+                  key: REDIS_URL
+            - name: POSTGRES_URL
+              valueFrom:
+                secretKeyRef:
+                  name: og-rmm-secrets
+                  key: POSTGRES_URL
+          resources:
+            requests:
+              cpu: "150m"
+              memory: "256Mi"
+            limits:
+              cpu: "400m"
+              memory: "512Mi"
+          livenessProbe:
+            httpGet:
+              path: /health
+              port: 8081
+            initialDelaySeconds: 15
+            periodSeconds: 10
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: alarm-engine
+  namespace: og-rmm
+spec:
+  selector:
+    app: alarm-engine
+  ports:
+    - port: 8081
+      targetPort: 8081
+---
+# ── EdgeX Device Service ─────────────────────────────────────────────────────
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: edgex-device-service
+  namespace: og-rmm
+  labels:
+    app: edgex-device-service
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: edgex-device-service
+  template:
+    metadata:
+      labels:
+        app: edgex-device-service
+      annotations:
+        dapr.io/enabled: "true"
+        dapr.io/app-id: "edgex-device-service"
+        dapr.io/app-port: "8082"
+    spec:
+      containers:
+        - name: edgex-device-service
+          image: og-rmm/edgex-device-service:v43
+          ports:
+            - containerPort: 8082
+              name: http
+          env:
+            - name: KAFKA_BROKERS
+              valueFrom:
+                secretKeyRef:
+                  name: og-rmm-secrets
+                  key: KAFKA_BROKERS
+          resources:
+            requests:
+              cpu: "100m"
+              memory: "128Mi"
+            limits:
+              cpu: "300m"
+              memory: "256Mi"
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: edgex-device-service
+  namespace: og-rmm
+spec:
+  selector:
+    app: edgex-device-service
+  ports:
+    - port: 8082
+      targetPort: 8082
+---
+# ── ERP Connector Service ─────────────────────────────────────────────────────
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: erp-connector
+  namespace: og-rmm
+  labels:
+    app: erp-connector
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: erp-connector
+  template:
+    metadata:
+      labels:
+        app: erp-connector
+      annotations:
+        dapr.io/enabled: "true"
+        dapr.io/app-id: "erp-connector"
+        dapr.io/app-port: "8083"
+    spec:
+      containers:
+        - name: erp-connector
+          image: og-rmm/erp-connector:v43
+          ports:
+            - containerPort: 8083
+              name: http
+          resources:
+            requests:
+              cpu: "100m"
+              memory: "128Mi"
+            limits:
+              cpu: "300m"
+              memory: "256Mi"
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: erp-connector
+  namespace: og-rmm
+spec:
+  selector:
+    app: erp-connector
+  ports:
+    - port: 8083
+      targetPort: 8083
+---
+# ── Analytics Python Service ─────────────────────────────────────────────────
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: analytics-service
+  namespace: og-rmm
+  labels:
+    app: analytics-service
+spec:
+  replicas: 2
+  selector:
+    matchLabels:
+      app: analytics-service
+  template:
+    metadata:
+      labels:
+        app: analytics-service
+      annotations:
+        dapr.io/enabled: "true"
+        dapr.io/app-id: "analytics-service"
+        dapr.io/app-port: "8090"
+    spec:
+      containers:
+        - name: analytics-service
+          image: og-rmm/analytics-service:v43
+          ports:
+            - containerPort: 8090
+              name: http
+          env:
+            - name: POSTGRES_URL
+              valueFrom:
+                secretKeyRef:
+                  name: og-rmm-secrets
+                  key: POSTGRES_URL
+            - name: REDIS_URL
+              valueFrom:
+                secretKeyRef:
+                  name: og-rmm-secrets
+                  key: REDIS_URL
+            - name: OLLAMA_BASE_URL
+              valueFrom:
+                secretKeyRef:
+                  name: og-rmm-secrets
+                  key: OLLAMA_BASE_URL
+          resources:
+            requests:
+              cpu: "500m"
+              memory: "1Gi"
+            limits:
+              cpu: "2000m"
+              memory: "4Gi"
+          livenessProbe:
+            httpGet:
+              path: /health
+              port: 8090
+            initialDelaySeconds: 30
+            periodSeconds: 15
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: analytics-service
+  namespace: og-rmm
+spec:
+  selector:
+    app: analytics-service
+  ports:
+    - port: 8090
+      targetPort: 8090
+---
+# ── ML Pipeline Service ──────────────────────────────────────────────────────
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: ml-pipeline
+  namespace: og-rmm
+  labels:
+    app: ml-pipeline
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: ml-pipeline
+  template:
+    metadata:
+      labels:
+        app: ml-pipeline
+    spec:
+      containers:
+        - name: ml-pipeline
+          image: og-rmm/ml-pipeline:v43
+          ports:
+            - containerPort: 8091
+              name: http
+          env:
+            - name: POSTGRES_URL
+              valueFrom:
+                secretKeyRef:
+                  name: og-rmm-secrets
+                  key: POSTGRES_URL
+            - name: OLLAMA_BASE_URL
+              valueFrom:
+                secretKeyRef:
+                  name: og-rmm-secrets
+                  key: OLLAMA_BASE_URL
+          resources:
+            requests:
+              cpu: "1000m"
+              memory: "2Gi"
+            limits:
+              cpu: "4000m"
+              memory: "8Gi"
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: ml-pipeline
+  namespace: og-rmm
+spec:
+  selector:
+    app: ml-pipeline
+  ports:
+    - port: 8091
+      targetPort: 8091
+---
+# ── OpenTelemetry Collector ──────────────────────────────────────────────────
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: otel-collector
+  namespace: og-rmm
+  labels:
+    app: otel-collector
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: otel-collector
+  template:
+    metadata:
+      labels:
+        app: otel-collector
+    spec:
+      containers:
+        - name: otel-collector
+          image: otel/opentelemetry-collector-contrib:0.96.0
+          ports:
+            - containerPort: 4317
+              name: otlp-grpc
+            - containerPort: 4318
+              name: otlp-http
+            - containerPort: 8888
+              name: metrics
+          volumeMounts:
+            - name: otel-config
+              mountPath: /etc/otelcol-contrib
+          resources:
+            requests:
+              cpu: "100m"
+              memory: "256Mi"
+            limits:
+              cpu: "500m"
+              memory: "512Mi"
+      volumes:
+        - name: otel-config
+          configMap:
+            name: otel-collector-config
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: otel-collector
+  namespace: og-rmm
+spec:
+  selector:
+    app: otel-collector
+  ports:
+    - port: 4317
+      targetPort: 4317
+      name: otlp-grpc
+    - port: 4318
+      targetPort: 4318
+      name: otlp-http
+    - port: 8888
+      targetPort: 8888
+      name: metrics
+---
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: otel-collector-config
+  namespace: og-rmm
+data:
+  config.yaml: |
+    receivers:
+      otlp:
+        protocols:
+          grpc:
+            endpoint: 0.0.0.0:4317
+          http:
+            endpoint: 0.0.0.0:4318
+    processors:
+      batch:
+        timeout: 1s
+        send_batch_size: 1024
+      memory_limiter:
+        check_interval: 1s
+        limit_mib: 400
+        spike_limit_mib: 100
+    exporters:
+      prometheus:
+        endpoint: "0.0.0.0:8889"
+      jaeger:
+        endpoint: jaeger-collector:14250
+        tls:
+          insecure: true
+      logging:
+        loglevel: warn
+    service:
+      pipelines:
+        traces:
+          receivers: [otlp]
+          processors: [memory_limiter, batch]
+          exporters: [jaeger, logging]
+        metrics:
+          receivers: [otlp]
+          processors: [memory_limiter, batch]
+          exporters: [prometheus]

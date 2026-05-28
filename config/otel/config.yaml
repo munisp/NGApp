@@ -1,0 +1,65 @@
+receivers:
+  otlp:
+    protocols:
+      grpc:
+        endpoint: 0.0.0.0:4317
+      http:
+        endpoint: 0.0.0.0:4318
+  prometheus:
+    config:
+      scrape_configs:
+        - job_name: og-rmm-app
+          scrape_interval: 15s
+          static_configs:
+            - targets: [og-rmm-app:3000]
+          metrics_path: /api/metrics
+        - job_name: telemetry-ingestion
+          scrape_interval: 15s
+          static_configs:
+            - targets: [telemetry-ingestion:9090]
+        - job_name: alarm-engine
+          scrape_interval: 15s
+          static_configs:
+            - targets: [alarm-engine:9091]
+
+processors:
+  batch:
+    timeout: 1s
+    send_batch_size: 1024
+  memory_limiter:
+    check_interval: 1s
+    limit_mib: 400
+    spike_limit_mib: 100
+  resource:
+    attributes:
+      - key: service.environment
+        value: production
+        action: upsert
+      - key: service.platform
+        value: og-rmm
+        action: upsert
+
+exporters:
+  otlp/jaeger:
+    endpoint: jaeger:14250
+    tls:
+      insecure: true
+  prometheus:
+    endpoint: "0.0.0.0:8889"
+    namespace: og_rmm
+  logging:
+    loglevel: warn
+
+service:
+  telemetry:
+    logs:
+      level: warn
+  pipelines:
+    traces:
+      receivers: [otlp]
+      processors: [memory_limiter, resource, batch]
+      exporters: [otlp/jaeger, logging]
+    metrics:
+      receivers: [otlp, prometheus]
+      processors: [memory_limiter, batch]
+      exporters: [prometheus]

@@ -1,0 +1,99 @@
+syntax = "proto3";
+package og.ml.v1;
+option go_package = "github.com/og-rmm/platform/proto/ml";
+
+import "google/protobuf/timestamp.proto";
+
+// ─── Demand Forecast ─────────────────────────────────────────────────────────
+
+message ForecastRequest {
+  string         well_id       = 1;
+  int32          horizon_hours = 2;  // default 24
+  repeated double history      = 3;  // recent production values (BPD)
+}
+
+message ForecastPoint {
+  google.protobuf.Timestamp ts = 1;
+  double value                 = 2;
+  double lower_80              = 3;
+  double upper_80              = 4;
+}
+
+message ForecastResponse {
+  repeated ForecastPoint points = 1;
+  double                 mape   = 2;
+  string                 model  = 3;
+}
+
+// ─── Decline Calibration ─────────────────────────────────────────────────────
+
+message CalibrateRequest {
+  string         well_id = 1;
+  repeated double rates  = 2;  // historical BPD
+  repeated double times  = 3;  // months since first production
+}
+
+message CalibrateResponse {
+  double qi    = 1;
+  double di    = 2;
+  double b     = 3;
+  double r2    = 4;
+  string model = 5;
+}
+
+// ─── Anomaly Detection ───────────────────────────────────────────────────────
+
+message AnomalyRequest {
+  string         well_id   = 1;
+  repeated double readings  = 2;
+  string         parameter  = 3;
+}
+
+message AnomalyResult {
+  int32  index      = 1;
+  double score      = 2;
+  bool   is_anomaly = 3;
+  string reason     = 4;
+}
+
+message AnomalyResponse {
+  repeated AnomalyResult results   = 1;
+  double                 threshold = 2;
+  string                 model     = 3;
+}
+
+// ─── LLM Recommendations ─────────────────────────────────────────────────────
+
+message RecommendRequest {
+  string well_id            = 1;
+  double current_q_bpd      = 2;
+  double optimal_q_bpd      = 3;
+  double reservoir_pressure = 4;
+  double skin_factor        = 5;
+  double esp_frequency_hz   = 6;
+  double water_cut          = 7;
+  double gor_scf_per_bbl    = 8;
+  string well_type          = 9;
+}
+
+message Recommendation {
+  string action      = 1;
+  string rationale   = 2;
+  double expected_gain_bpd = 3;
+  string priority    = 4;  // "HIGH" | "MEDIUM" | "LOW"
+}
+
+message RecommendResponse {
+  repeated Recommendation recommendations = 1;
+  string                  summary         = 2;
+  string                  model           = 3;
+}
+
+// ─── Service ─────────────────────────────────────────────────────────────────
+
+service MLService {
+  rpc Forecast   (ForecastRequest)   returns (ForecastResponse);
+  rpc Calibrate  (CalibrateRequest)  returns (CalibrateResponse);
+  rpc Detect     (AnomalyRequest)    returns (AnomalyResponse);
+  rpc Recommend  (RecommendRequest)  returns (RecommendResponse);
+}

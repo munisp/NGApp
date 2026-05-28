@@ -1,0 +1,3 @@
+[workspace]
+members = ["edge-agent", "stream-processor", "datafusion-query"]
+resolver = "2"

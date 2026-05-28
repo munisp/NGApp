@@ -1,0 +1,55 @@
+global:
+  scrape_interval: 15s
+  evaluation_interval: 15s
+  external_labels:
+    platform: og-rmm
+    environment: production
+
+alerting:
+  alertmanagers:
+    - static_configs:
+        - targets: []
+
+rule_files: []
+
+scrape_configs:
+  - job_name: prometheus
+    static_configs:
+      - targets: [localhost:9090]
+
+  - job_name: og-rmm-app
+    scrape_interval: 15s
+    static_configs:
+      - targets: [og-rmm-app:3000]
+    metrics_path: /api/metrics
+
+  - job_name: otel-collector
+    scrape_interval: 15s
+    static_configs:
+      - targets: [otel-collector:8889]
+
+  - job_name: telemetry-ingestion
+    scrape_interval: 10s
+    static_configs:
+      - targets: [telemetry-ingestion:9090]
+
+  - job_name: alarm-engine
+    scrape_interval: 10s
+    static_configs:
+      - targets: [alarm-engine:9091]
+
+  - job_name: analytics-service
+    scrape_interval: 30s
+    static_configs:
+      - targets: [analytics-service:8090]
+
+  - job_name: apisix
+    scrape_interval: 15s
+    static_configs:
+      - targets: [apisix:9091]
+    metrics_path: /apisix/prometheus/metrics
+
+  - job_name: kafka
+    scrape_interval: 30s
+    static_configs:
+      - targets: [redpanda:9644]

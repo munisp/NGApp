@@ -1,0 +1,127 @@
+/**
+ * OG-RMM Platform — Permify Authorization Schema
+ *
+ * Version: 1.0.0
+ * Compatible with: Permify v0.9+
+ *
+ * Entities:
+ *   - organization: Top-level tenant (oil company / NOC)
+ *   - field:        Oil/gas field (e.g., Burgan, Rumaila)
+ *   - well:         Individual wellbore
+ *   - alarm:        ISA-18.2 alarm instance
+ *   - permit:       Permit-to-work document
+ *   - report:       Regulatory report submission
+ *   - workorder:    Repair / workover work order
+ *
+ * Roles (mapped from Keycloak realm roles):
+ *   - admin:        Full access to all entities
+ *   - operator:     Read all + write operational data (telemetry, alarms, PTW)
+ *   - viewer:       Read-only access to dashboards and reports
+ *   - auditor:      Read all including audit logs + export regulatory reports
+ *   - contractor:   Read assigned work orders only
+ */
+
+entity user {}
+
+entity organization {
+  // ── Relations ──────────────────────────────────────────────────────────────
+  relation admin    @user
+  relation operator @user
+  relation viewer   @user
+  relation auditor  @user
+
+  // ── Actions ────────────────────────────────────────────────────────────────
+  action read          = admin or operator or viewer or auditor
+  action write         = admin or operator
+  action delete        = admin
+  action manage_users  = admin
+  action export_reports = admin or auditor
+  action view_audit_log = admin or auditor
+}
+
+entity field {
+  // ── Relations ──────────────────────────────────────────────────────────────
+  relation organization @organization
+  relation manager      @user
+  relation engineer     @user
+
+  // ── Actions ────────────────────────────────────────────────────────────────
+  action read   = organization.admin or organization.operator or organization.viewer or organization.auditor or manager or engineer
+  action write  = organization.admin or organization.operator or manager or engineer
+  action delete = organization.admin or manager
+}
+
+entity well {
+  // ── Relations ──────────────────────────────────────────────────────────────
+  relation field    @field
+  relation owner    @user
+  relation operator @user
+  relation viewer   @user
+
+  // ── Actions ────────────────────────────────────────────────────────────────
+  action read             = field.read or owner or operator or viewer
+  action write            = field.write or owner or operator
+  action delete           = field.field.organization.admin or owner
+  action ingest_telemetry = field.write or owner or operator
+  action acknowledge_alarm = field.write or owner or operator
+  action suppress_alarm   = field.field.organization.admin or owner or operator
+  action issue_command    = field.field.organization.admin or owner or operator
+}
+
+entity alarm {
+  // ── Relations ──────────────────────────────────────────────────────────────
+  relation well     @well
+  relation assigned @user
+
+  // ── Actions ────────────────────────────────────────────────────────────────
+  action read        = well.read
+  action acknowledge = well.acknowledge_alarm
+  action suppress    = well.suppress_alarm
+  action clear       = well.suppress_alarm
+  action assign      = well.write
+}
+
+entity permit {
+  // ── Relations ──────────────────────────────────────────────────────────────
+  relation well      @well
+  relation requester @user
+  relation approver  @user
+  relation issuer    @user
+
+  // ── Actions ────────────────────────────────────────────────────────────────
+  action read     = well.read
+  action create   = well.write
+  action approve  = well.well.field.field.organization.admin or approver
+  action issue    = well.well.field.field.organization.admin or issuer
+  action close    = well.well.field.field.organization.admin or issuer or requester
+  action delete   = well.well.field.field.organization.admin
+}
+
+entity report {
+  // ── Relations ──────────────────────────────────────────────────────────────
+  relation organization @organization
+  relation author       @user
+  relation reviewer     @user
+
+  // ── Actions ────────────────────────────────────────────────────────────────
+  action read     = organization.read
+  action create   = organization.write
+  action submit   = organization.admin or organization.auditor or author
+  action approve  = organization.admin or reviewer
+  action export   = organization.export_reports
+  action delete   = organization.admin
+}
+
+entity workorder {
+  // ── Relations ──────────────────────────────────────────────────────────────
+  relation well       @well
+  relation assignee   @user
+  relation contractor @user
+
+  // ── Actions ────────────────────────────────────────────────────────────────
+  action read     = well.read or contractor
+  action create   = well.write
+  action update   = well.write or assignee
+  action complete = well.write or assignee or contractor
+  action delete   = well.well.field.field.organization.admin
+}

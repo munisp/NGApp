@@ -1,0 +1,9 @@
+{
+  "query": "SELECT table_name FROM information_schema.tables WHERE table_name = 'decline_curve_params';",
+  "command": "mysql --batch --raw --column-names --default-character-set=utf8mb4 --host gateway04.us-east-1.prod.aws.tidbcloud.com --port 4000 --user 2t5rixfHAYLQmtB.033db82f385c --database KDV4VuP2aAGuW7WLgvDFQk --execute SELECT table_name FROM information_schema.tables WHERE table_name = 'decline_curve_params';",
+  "rows": [],
+  "messages": [],
+  "stdout": "",
+  "stderr": "",
+  "execution_time_ms": 1108
+}
