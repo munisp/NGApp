@@ -56,6 +56,11 @@ import {
   CheckCircle,
   ScrollText,
   ChevronDown,
+  ChevronRight,
+  Search,
+  X,
+  History,
+  StarOff,
   Bot,
   Brain,
   TrendingUp,
@@ -118,7 +123,9 @@ import {
   FlaskConical,
   Activity as ActivityIcon,
 } from "lucide-react";
-import { CSSProperties, ReactNode } from "react";
+import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
+import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
+import { CSSProperties, ReactNode, useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { useLocation } from "wouter";
 
 interface MenuItem {
@@ -354,6 +361,73 @@ const menuGroups: MenuGroup[] = [
   },
 ];
 
+const RECENTS_KEY = "insureportal_recent_pages";
+const FAVORITES_KEY = "insureportal_favorites";
+const COLLAPSED_GROUPS_KEY = "insureportal_collapsed_groups";
+const MAX_RECENTS = 5;
+
+function useRecentPages() {
+  const [recents, setRecents] = useState<string[]>(() => {
+    try {
+      return JSON.parse(localStorage.getItem(RECENTS_KEY) || "[]");
+    } catch { return []; }
+  });
+
+  const addRecent = useCallback((path: string) => {
+    setRecents((prev) => {
+      const next = [path, ...prev.filter((p) => p !== path)].slice(0, MAX_RECENTS);
+      localStorage.setItem(RECENTS_KEY, JSON.stringify(next));
+      return next;
+    });
+  }, []);
+
+  return { recents, addRecent };
+}
+
+function useFavorites() {
+  const [favorites, setFavorites] = useState<string[]>(() => {
+    try {
+      return JSON.parse(localStorage.getItem(FAVORITES_KEY) || "[]");
+    } catch { return []; }
+  });
+
+  const toggleFavorite = useCallback((path: string) => {
+    setFavorites((prev) => {
+      const next = prev.includes(path)
+        ? prev.filter((p) => p !== path)
+        : [...prev, path];
+      localStorage.setItem(FAVORITES_KEY, JSON.stringify(next));
+      return next;
+    });
+  }, []);
+
+  const isFavorite = useCallback((path: string) => favorites.includes(path), [favorites]);
+
+  return { favorites, toggleFavorite, isFavorite };
+}
+
+function useCollapsedGroups() {
+  const [collapsed, setCollapsed] = useState<Set<string>>(() => {
+    try {
+      return new Set(JSON.parse(localStorage.getItem(COLLAPSED_GROUPS_KEY) || "[]"));
+    } catch { return new Set(); }
+  });
+
+  const toggle = useCallback((label: string) => {
+    setCollapsed((prev) => {
+      const next = new Set(prev);
+      if (next.has(label)) next.delete(label);
+      else next.add(label);
+      localStorage.setItem(COLLAPSED_GROUPS_KEY, JSON.stringify([...next]));
+      return next;
+    });
+  }, []);
+
+  const isCollapsedGroup = useCallback((label: string) => collapsed.has(label), [collapsed]);
+
+  return { toggle, isCollapsedGroup };
+}
+
 const roleLabels: Record<UserRole, string> = {
   admin: "Administrator",
   user: "Customer",
@@ -372,6 +446,57 @@ const DEMO_USER = {
   name: "Demo User",
   email: "demo@insureportal.ng",
 };
+
+function NavItemButton({
+  item,
+  isActive,
+  isFav,
+  onNavigate,
+  onToggleFavorite,
+}: {
+  item: MenuItem;
+  isActive: boolean;
+  isFav: boolean;
+  onNavigate: (path: string) => void;
+  onToggleFavorite: (path: string) => void;
+}) {
+  return (
+    <div className="group/item relative flex items-center">
+      <button
+        onClick={() => onNavigate(item.path)}
+        className={`flex items-center gap-3 w-full px-3 py-2 text-sm rounded-md transition-colors ${
+          isActive
+            ? "bg-blue-50 text-blue-700 font-medium"
+            : "text-gray-700 hover:bg-gray-100"
+        }`}
+      >
+        <item.icon
+          className={`h-4 w-4 shrink-0 ${isActive ? "text-blue-600" : "text-gray-500"}`}
+        />
+        <span className="truncate">{item.label}</span>
+        {item.badge && (
+          <Badge variant="destructive" className="h-5 px-1.5 text-xs ml-auto shrink-0">
+            {item.badge}
+          </Badge>
+        )}
+      </button>
+      <button
+        onClick={(e) => {
+          e.stopPropagation();
+          onToggleFavorite(item.path);
+        }}
+        className={`absolute right-1 p-1 rounded-sm transition-opacity ${
+          isFav
+            ? "opacity-100 text-amber-500 hover:text-amber-600"
+            : "opacity-0 group-hover/item:opacity-100 text-gray-400 hover:text-amber-500"
+        }`}
+        title={isFav ? "Remove from favorites" : "Add to favorites"}
+      >
+        <Star className={`h-3 w-3 ${isFav ? "fill-amber-500" : ""}`} />
+      </button>
+    </div>
+  );
+}
 
 export default function UnifiedLayout({ children }: { children: ReactNode }) {
   return (
@@ -393,8 +518,13 @@ function UnifiedLayoutContent({ children }: { children: ReactNode }) {
   const isCollapsed = state === "collapsed";
   const isMobile = useIsMobile();
   const { role, setRole, hasPermission } = useRole();
+  const [searchQuery, setSearchQuery] = useState("");
+  const searchInputRef = useRef<HTMLInputElement>(null);
+  const { recents, addRecent } = useRecentPages();
+  const { favorites, toggleFavorite, isFavorite } = useFavorites();
+  const { toggle: toggleGroup, isCollapsedGroup } = useCollapsedGroups();
 
-  const filteredMenuGroups = menuGroups
+  const permissionFiltered = useMemo(() => menuGroups
     .map((group) => ({
       ...group,
       items: group.items.filter((item) => {
@@ -402,11 +532,64 @@ function UnifiedLayoutContent({ children }: { children: ReactNode }) {
         return hasPermission(item.permission as any);
       }),
     }))
-    .filter((group) => group.items.length > 0);
+    .filter((group) => group.items.length > 0), [role]);
+
+  const allPermittedItems = useMemo(
+    () => permissionFiltered.flatMap((g) => g.items),
+    [permissionFiltered]
+  );
+
+  const filteredMenuGroups = useMemo(() => {
+    if (!searchQuery.trim()) return permissionFiltered;
+    const q = searchQuery.toLowerCase();
+    return permissionFiltered
+      .map((group) => ({
+        ...group,
+        items: group.items.filter(
+          (item) =>
+            item.label.toLowerCase().includes(q) ||
+            group.label.toLowerCase().includes(q)
+        ),
+      }))
+      .filter((group) => group.items.length > 0);
+  }, [permissionFiltered, searchQuery]);
+
+  const favoriteItems = useMemo(
+    () => allPermittedItems.filter((item) => isFavorite(item.path)),
+    [allPermittedItems, isFavorite]
+  );
+
+  const recentItems = useMemo(
+    () => recents
+      .map((path) => allPermittedItems.find((item) => item.path === path))
+      .filter((item): item is MenuItem => !!item)
+      .filter((item) => !isFavorite(item.path)),
+    [recents, allPermittedItems, isFavorite]
+  );
 
   const activeMenuItem = menuGroups
     .flatMap((g) => g.items)
     .find((item) => item.path === location);
+
+  const handleNavigate = useCallback((path: string) => {
+    addRecent(path);
+    setLocation(path);
+  }, [addRecent, setLocation]);
+
+  useEffect(() => {
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if ((e.metaKey || e.ctrlKey) && e.key === "k") {
+        e.preventDefault();
+        searchInputRef.current?.focus();
+      }
+      if (e.key === "Escape" && searchQuery) {
+        setSearchQuery("");
+        searchInputRef.current?.blur();
+      }
+    };
+    document.addEventListener("keydown", handleKeyDown);
+    return () => document.removeEventListener("keydown", handleKeyDown);
+  }, [searchQuery]);
 
   return (
     <>
@@ -430,43 +613,141 @@ function UnifiedLayoutContent({ children }: { children: ReactNode }) {
         </SidebarHeader>
 
         <SidebarContent>
-          <div className="flex flex-col">
-            {filteredMenuGroups.map((group, groupIndex) => (
-              <div key={group.label} className="px-3 py-2">
-                <div className="text-xs font-semibold text-muted-foreground uppercase tracking-wider mb-2">
-                  {group.label}
-                </div>
-                <div className="space-y-1">
-                  {group.items.map((item) => {
-                    const isActive = location === item.path;
-                    return (
-                      <button
-                        key={item.path}
-                        onClick={() => setLocation(item.path)}
-                        className={`flex items-center gap-3 w-full px-3 py-2 text-sm rounded-md transition-colors ${
-                          isActive
-                            ? "bg-blue-50 text-blue-700 font-medium"
-                            : "text-gray-700 hover:bg-gray-100"
-                        }`}
-                      >
-                        <item.icon
-                          className={`h-4 w-4 shrink-0 ${isActive ? "text-blue-600" : "text-gray-500"}`}
-                        />
-                        <span className="truncate">{item.label}</span>
-                        {item.badge && (
-                          <Badge variant="destructive" className="h-5 px-1.5 text-xs ml-auto shrink-0">
-                            {item.badge}
-                          </Badge>
-                        )}
-                      </button>
-                    );
-                  })}
-                </div>
-                {groupIndex < filteredMenuGroups.length - 1 && (
-                  <div className="border-b border-gray-200 mt-3" />
+          {/* Search Bar */}
+          {!isCollapsed && (
+            <div className="px-3 pt-3 pb-1">
+              <div className="relative">
+                <Search className="absolute left-2.5 top-1/2 -translate-y-1/2 h-3.5 w-3.5 text-muted-foreground" />
+                <input
+                  ref={searchInputRef}
+                  type="text"
+                  placeholder="Search... (Ctrl+K)"
+                  value={searchQuery}
+                  onChange={(e) => setSearchQuery(e.target.value)}
+                  className="h-8 w-full rounded-md border border-input bg-transparent pl-8 pr-8 text-xs placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring"
+                />
+                {searchQuery && (
+                  <button
+                    onClick={() => setSearchQuery("")}
+                    className="absolute right-2 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground"
+                  >
+                    <X className="h-3.5 w-3.5" />
+                  </button>
                 )}
               </div>
-            ))}
+            </div>
+          )}
+
+          {/* Favorites Section */}
+          {!searchQuery && favoriteItems.length > 0 && !isCollapsed && (
+            <div className="px-3 py-2">
+              <div className="text-xs font-semibold text-amber-600 uppercase tracking-wider mb-2 flex items-center gap-1.5">
+                <Star className="h-3 w-3 fill-amber-500 text-amber-500" />
+                Favorites
+              </div>
+              <div className="space-y-0.5">
+                {favoriteItems.map((item) => {
+                  const isActive = location === item.path;
+                  return (
+                    <NavItemButton
+                      key={`fav-${item.path}`}
+                      item={item}
+                      isActive={isActive}
+                      isFav={true}
+                      onNavigate={handleNavigate}
+                      onToggleFavorite={toggleFavorite}
+                    />
+                  );
+                })}
+              </div>
+              <div className="border-b border-gray-200 mt-3" />
+            </div>
+          )}
+
+          {/* Recently Visited Section */}
+          {!searchQuery && recentItems.length > 0 && !isCollapsed && (
+            <div className="px-3 py-2">
+              <div className="text-xs font-semibold text-muted-foreground uppercase tracking-wider mb-2 flex items-center gap-1.5">
+                <History className="h-3 w-3" />
+                Recently Visited
+              </div>
+              <div className="space-y-0.5">
+                {recentItems.slice(0, 3).map((item) => {
+                  const isActive = location === item.path;
+                  return (
+                    <NavItemButton
+                      key={`recent-${item.path}`}
+                      item={item}
+                      isActive={isActive}
+                      isFav={false}
+                      onNavigate={handleNavigate}
+                      onToggleFavorite={toggleFavorite}
+                    />
+                  );
+                })}
+              </div>
+              <div className="border-b border-gray-200 mt-3" />
+            </div>
+          )}
+
+          {/* Search Results Count */}
+          {searchQuery && (
+            <div className="px-4 py-1">
+              <span className="text-xs text-muted-foreground">
+                {filteredMenuGroups.reduce((acc, g) => acc + g.items.length, 0)} results
+              </span>
+            </div>
+          )}
+
+          {/* Nav Groups */}
+          <div className="flex flex-col">
+            {filteredMenuGroups.map((group, groupIndex) => {
+              const isGroupCollapsed = isCollapsedGroup(group.label) && !searchQuery;
+              return (
+                <div key={group.label} className="px-3 py-2">
+                  {!isCollapsed ? (
+                    <button
+                      onClick={() => toggleGroup(group.label)}
+                      className="flex items-center gap-1 w-full text-xs font-semibold text-muted-foreground uppercase tracking-wider mb-2 hover:text-foreground transition-colors group"
+                    >
+                      <ChevronRight
+                        className={`h-3 w-3 shrink-0 transition-transform duration-200 ${
+                          isGroupCollapsed ? "" : "rotate-90"
+                        }`}
+                      />
+                      <span>{group.label}</span>
+                      <span className="ml-auto text-[10px] font-normal opacity-0 group-hover:opacity-100 transition-opacity">
+                        {group.items.length}
+                      </span>
+                    </button>
+                  ) : (
+                    <div className="text-xs font-semibold text-muted-foreground uppercase tracking-wider mb-2">
+                      {group.label}
+                    </div>
+                  )}
+                  {!isGroupCollapsed && (
+                    <div className="space-y-0.5">
+                      {group.items.map((item) => {
+                        const isActive = location === item.path;
+                        return (
+                          <NavItemButton
+                            key={item.path}
+                            item={item}
+                            isActive={isActive}
+                            isFav={isFavorite(item.path)}
+                            onNavigate={handleNavigate}
+                            onToggleFavorite={toggleFavorite}
+                          />
+                        );
+                      })}
+                    </div>
+                  )}
+                  {groupIndex < filteredMenuGroups.length - 1 && (
+                    <div className="border-b border-gray-200 mt-3" />
+                  )}
+                </div>
+              );
+            })}
           </div>
         </SidebarContent>
 
