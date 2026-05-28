@@ -8,9 +8,13 @@
 //!   - Internal service auth token injection
 //!
 //! Usage:
-//! ```
-//! let interceptor = GrpcInterceptor::new("audit-chain", InterceptorConfig::default());
-//! let result = interceptor.execute(|| async { do_grpc_call().await }).await;
+//! ```no_run
+//! use ndsep_shared::grpc_interceptors::{GrpcInterceptor, InterceptorConfig};
+//! async fn do_grpc_call() -> Result<(), Box<dyn std::error::Error>> { Ok(()) }
+//! async fn example() {
+//!     let interceptor = GrpcInterceptor::new("audit-chain", InterceptorConfig::default());
+//!     let result = interceptor.execute(|| async { do_grpc_call().await }).await;
+//! }
 //! ```
 
 use std::collections::HashMap;

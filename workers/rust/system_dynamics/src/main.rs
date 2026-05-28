@@ -173,7 +173,7 @@ fn run_simulation(req: &SDRequest) -> SDResponse {
         stocks.compliance_investment = (stocks.compliance_investment + investment_flow * dt).max(0.0);
         stocks.public_trust = (stocks.public_trust + trust_flow * dt).clamp(0.0, 100.0);
         stocks.regulatory_capacity = (stocks.regulatory_capacity + capacity_flow * dt).clamp(0.0, 100.0);
-        stocks.data_economy_growth = stocks.data_economy_growth + economy_flow * dt * 0.01;
+        stocks.data_economy_growth += economy_flow * dt * 0.01;
         stocks.cross_border_volume = (stocks.cross_border_volume + cb_flow * dt).max(0.0);
         stocks.fdi_confidence = (stocks.fdi_confidence + fdi_flow * dt).clamp(0.0, 100.0);
         stocks.insurance_cost_index = (stocks.insurance_cost_index + ins_flow * dt).max(50.0);
@@ -299,7 +299,7 @@ fn run_sim_final_stocks(req: &SDRequest) -> Stocks {
 
         stocks.compliance_level = (stocks.compliance_level + comp_flow * dt).clamp(0.0, 100.0);
         stocks.breach_rate = (stocks.breach_rate + breach_flow * dt).clamp(0.0, 1.0);
-        stocks.data_economy_growth = stocks.data_economy_growth + economy_flow * dt * 0.01;
+        stocks.data_economy_growth += economy_flow * dt * 0.01;
         stocks.public_trust = (stocks.public_trust + stocks.compliance_level * 0.01 * dt).clamp(0.0, 100.0);
         stocks.fdi_confidence = (stocks.fdi_confidence + (stocks.compliance_level - 60.0) * 0.05 * dt).clamp(0.0, 100.0);
     }
