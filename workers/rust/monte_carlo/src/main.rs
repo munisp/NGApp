@@ -6,7 +6,11 @@
 ///
 /// Port: 8177
 /// Integration: Called by Go Digital Twin (8175) via Dapr service invocation
-use axum::{extract::Json, routing::{get, post}, Router};
+use axum::{
+    extract::Json,
+    routing::{get, post},
+    Router,
+};
 use rand::prelude::*;
 use rayon::prelude::*;
 use serde::{Deserialize, Serialize};
@@ -144,7 +148,8 @@ fn run_single_iteration(
 
         let sla_factor = 72.0 / sla;
         let breach_base = -sector.breach_rate * 0.1 * duration as f64 * sla_factor;
-        let breach_noise: f64 = rng.gen::<f64>() * sector.breach_rate * 0.6 - sector.breach_rate * 0.3;
+        let breach_noise: f64 =
+            rng.gen::<f64>() * sector.breach_rate * 0.6 - sector.breach_rate * 0.3;
         let breach_delta = breach_base + breach_noise + tech_disruption * 0.01;
 
         let pen_delta = sector.avg_penalty_local
@@ -166,7 +171,8 @@ fn run_single_iteration(
             monthly_comp[m] += score * sector.organizations as f64;
 
             let m_breach_red = (1.0 - sector.breach_rate) * 0.01 * sla_factor * month as f64;
-            let m_breaches = (sector.organizations as f64 * sector.breach_rate * (1.0 - m_breach_red)).max(0.0);
+            let m_breaches =
+                (sector.organizations as f64 * sector.breach_rate * (1.0 - m_breach_red)).max(0.0);
             monthly_breach[m] += m_breaches;
             monthly_pen[m] += sector.avg_penalty_local * pen_mult * m_breaches;
         }
@@ -209,7 +215,13 @@ fn run_single_iteration(
 fn calc_ci(values: &[f64]) -> ConfidenceInterval {
     if values.is_empty() {
         return ConfidenceInterval {
-            p5: 0.0, p25: 0.0, p50: 0.0, p75: 0.0, p95: 0.0, mean: 0.0, std_dev: 0.0,
+            p5: 0.0,
+            p25: 0.0,
+            p50: 0.0,
+            p75: 0.0,
+            p95: 0.0,
+            mean: 0.0,
+            std_dev: 0.0,
         };
     }
     let mut sorted = values.to_vec();
@@ -272,9 +284,18 @@ async fn run_monte_carlo(Json(req): Json<MonteCarloRequest>) -> Json<MonteCarloR
     let sector_count = req.sectors.len();
     let mut per_sector = Vec::new();
     for s_idx in 0..sector_count {
-        let s_comp: Vec<f64> = results.iter().map(|r| r.sector_results[s_idx].compliance_delta).collect();
-        let s_breach: Vec<f64> = results.iter().map(|r| r.sector_results[s_idx].breach_delta).collect();
-        let s_pen: Vec<f64> = results.iter().map(|r| r.sector_results[s_idx].penalty_delta).collect();
+        let s_comp: Vec<f64> = results
+            .iter()
+            .map(|r| r.sector_results[s_idx].compliance_delta)
+            .collect();
+        let s_breach: Vec<f64> = results
+            .iter()
+            .map(|r| r.sector_results[s_idx].breach_delta)
+            .collect();
+        let s_pen: Vec<f64> = results
+            .iter()
+            .map(|r| r.sector_results[s_idx].penalty_delta)
+            .collect();
         per_sector.push(SectorMCResult {
             sector: req.sectors[s_idx].sector.clone(),
             jurisdiction: req.sectors[s_idx].jurisdiction.clone(),

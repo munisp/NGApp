@@ -12,7 +12,7 @@ use axum::{
 };
 use chrono::Utc;
 use lazy_static::lazy_static;
-use prometheus::{Counter, Gauge, Registry, TextEncoder, Encoder};
+use prometheus::{Counter, Encoder, Gauge, Registry, TextEncoder};
 use serde::{Deserialize, Serialize};
 use std::{
     collections::HashMap,
@@ -35,23 +35,25 @@ lazy_static! {
     static ref TRANSFER_COUNTER: Counter = Counter::new(
         "ndsep_tigerbeetle_transfers_total",
         "Total TigerBeetle transfers"
-    ).unwrap();
+    )
+    .unwrap();
     static ref ACCOUNT_COUNTER: Counter = Counter::new(
         "ndsep_tigerbeetle_accounts_total",
         "Total TigerBeetle accounts created"
-    ).unwrap();
+    )
+    .unwrap();
     static ref HOLD_COUNTER: Counter = Counter::new(
         "ndsep_tigerbeetle_holds_total",
         "Total AML/regulatory holds"
-    ).unwrap();
-    static ref ERROR_COUNTER: Counter = Counter::new(
-        "ndsep_tigerbeetle_errors_total",
-        "Total errors"
-    ).unwrap();
+    )
+    .unwrap();
+    static ref ERROR_COUNTER: Counter =
+        Counter::new("ndsep_tigerbeetle_errors_total", "Total errors").unwrap();
     static ref BALANCE_GAUGE: Gauge = Gauge::new(
         "ndsep_tigerbeetle_total_ledger_balance",
         "Total balance across all accounts (NGN kobo)"
-    ).unwrap();
+    )
+    .unwrap();
 }
 
 fn init_metrics() {
@@ -67,15 +69,15 @@ fn init_metrics() {
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct Account {
     pub id: String,
-    pub ledger: u32,           // 1=NGN, 2=USD, 3=EUR
-    pub code: u16,             // Account type code
-    pub flags: u16,            // 0=normal, 1=debits_must_not_exceed_credits
+    pub ledger: u32, // 1=NGN, 2=USD, 3=EUR
+    pub code: u16,   // Account type code
+    pub flags: u16,  // 0=normal, 1=debits_must_not_exceed_credits
     pub debits_pending: i64,
     pub debits_posted: i64,
     pub credits_pending: i64,
     pub credits_posted: i64,
     pub timestamp: i64,
-    pub user_data: String,     // JSON metadata
+    pub user_data: String, // JSON metadata
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
@@ -83,19 +85,19 @@ pub struct Transfer {
     pub id: String,
     pub debit_account_id: String,
     pub credit_account_id: String,
-    pub amount: i64,           // In kobo (smallest unit)
+    pub amount: i64, // In kobo (smallest unit)
     pub ledger: u32,
-    pub code: u16,             // Transfer type: 1=fine, 2=aml_hold, 3=settlement, 4=penalty
+    pub code: u16, // Transfer type: 1=fine, 2=aml_hold, 3=settlement, 4=penalty
     pub flags: u16,
     pub pending_id: Option<String>,
     pub timestamp: i64,
-    pub user_data: String,     // JSON: {fineId, caseId, entityId, regulatoryRef}
+    pub user_data: String, // JSON: {fineId, caseId, entityId, regulatoryRef}
 }
 
 #[derive(Debug, Deserialize)]
 pub struct CreateAccountRequest {
     pub entity_id: String,
-    pub entity_type: String,   // institution, individual, regulator
+    pub entity_type: String, // institution, individual, regulator
     pub ledger: Option<u32>,
     pub code: Option<u16>,
     pub metadata: Option<serde_json::Value>,
@@ -115,7 +117,7 @@ pub struct CreateTransferRequest {
 pub struct PlaceHoldRequest {
     pub account_id: String,
     pub amount_ngn: f64,
-    pub hold_type: String,     // aml_freeze, regulatory_hold, pending_fine
+    pub hold_type: String, // aml_freeze, regulatory_hold, pending_fine
     pub case_id: String,
     pub expiry_hours: Option<u32>,
 }
@@ -162,7 +164,8 @@ async fn create_account(
             "entityId": req.entity_id,
             "entityType": req.entity_type,
             "metadata": req.metadata,
-        }).to_string(),
+        })
+        .to_string(),
     };
 
     let mut accounts = state.accounts.lock().unwrap();
@@ -182,9 +185,13 @@ async fn create_transfer(
 ) -> impl IntoResponse {
     let amount_kobo = (req.amount_ngn * 100.0) as i64;
     if amount_kobo <= 0 {
-        return (StatusCode::BAD_REQUEST, Json(serde_json::json!({
-            "error": "amount must be positive"
-        }))).into_response();
+        return (
+            StatusCode::BAD_REQUEST,
+            Json(serde_json::json!({
+                "error": "amount must be positive"
+            })),
+        )
+            .into_response();
     }
 
     let transfer_id = Uuid::new_v4().to_string();
@@ -211,7 +218,8 @@ async fn create_transfer(
             "reference": req.reference,
             "transferType": req.transfer_type,
             "metadata": req.metadata,
-        }).to_string(),
+        })
+        .to_string(),
     };
 
     // Update account balances
@@ -237,7 +245,8 @@ async fn create_transfer(
         "amountKobo": amount_kobo,
         "reference": req.reference,
         "timestamp": transfer.timestamp,
-    })).into_response()
+    }))
+    .into_response()
 }
 
 async fn place_hold(
@@ -254,7 +263,7 @@ async fn place_hold(
         credit_account_id: "ndsep-regulatory-escrow".to_string(),
         amount: amount_kobo,
         ledger: 1,
-        code: 2, // aml_hold
+        code: 2,  // aml_hold
         flags: 1, // pending flag
         pending_id: None,
         timestamp: Utc::now().timestamp_millis(),
@@ -262,7 +271,8 @@ async fn place_hold(
             "holdType": req.hold_type,
             "caseId": req.case_id,
             "expiryHours": req.expiry_hours,
-        }).to_string(),
+        })
+        .to_string(),
     };
 
     {
@@ -295,16 +305,21 @@ async fn void_hold(
     let transfers = state.transfers.lock().unwrap();
     let found = transfers.iter().find(|t| t.id == req.pending_transfer_id);
     if found.is_none() {
-        return (StatusCode::NOT_FOUND, Json(serde_json::json!({
-            "error": "pending transfer not found"
-        }))).into_response();
+        return (
+            StatusCode::NOT_FOUND,
+            Json(serde_json::json!({
+                "error": "pending transfer not found"
+            })),
+        )
+            .into_response();
     }
     Json(serde_json::json!({
         "success": true,
         "voidedId": req.pending_transfer_id,
         "reason": req.reason,
         "timestamp": Utc::now().timestamp_millis(),
-    })).into_response()
+    }))
+    .into_response()
 }
 
 async fn get_account(
@@ -317,10 +332,15 @@ async fn get_account(
             "success": true,
             "account": acct,
             "balanceNgn": (acct.credits_posted - acct.debits_posted) as f64 / 100.0,
-        })).into_response(),
-        None => (StatusCode::NOT_FOUND, Json(serde_json::json!({
-            "error": "account not found"
-        }))).into_response(),
+        }))
+        .into_response(),
+        None => (
+            StatusCode::NOT_FOUND,
+            Json(serde_json::json!({
+                "error": "account not found"
+            })),
+        )
+            .into_response(),
     }
 }
 
@@ -352,7 +372,10 @@ async fn metrics() -> impl IntoResponse {
     let mut buffer = Vec::new();
     encoder.encode(&metric_families, &mut buffer).unwrap();
     (
-        [(axum::http::header::CONTENT_TYPE, "text/plain; version=0.0.4")],
+        [(
+            axum::http::header::CONTENT_TYPE,
+            "text/plain; version=0.0.4",
+        )],
         String::from_utf8(buffer).unwrap_or_default(),
     )
 }

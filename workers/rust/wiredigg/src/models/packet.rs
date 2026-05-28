@@ -161,12 +161,24 @@ impl TcpFlags {
 
     pub fn label(&self) -> String {
         let mut parts = Vec::new();
-        if self.syn { parts.push("SYN"); }
-        if self.ack { parts.push("ACK"); }
-        if self.fin { parts.push("FIN"); }
-        if self.rst { parts.push("RST"); }
-        if self.psh { parts.push("PSH"); }
-        if self.urg { parts.push("URG"); }
+        if self.syn {
+            parts.push("SYN");
+        }
+        if self.ack {
+            parts.push("ACK");
+        }
+        if self.fin {
+            parts.push("FIN");
+        }
+        if self.rst {
+            parts.push("RST");
+        }
+        if self.psh {
+            parts.push("PSH");
+        }
+        if self.urg {
+            parts.push("URG");
+        }
         parts.join("|")
     }
 }

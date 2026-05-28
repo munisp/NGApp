@@ -15,7 +15,12 @@
 //   - Integration: Kafka, Redis, OpenSearch, PostgreSQL
 // ============================================================================
 
-use axum::{extract::State, http::StatusCode, routing::{get, post}, Json, Router};
+use axum::{
+    extract::State,
+    http::StatusCode,
+    routing::{get, post},
+    Json, Router,
+};
 use chrono::{DateTime, Utc};
 use rand::Rng;
 use serde::{Deserialize, Serialize};
@@ -129,10 +134,11 @@ struct AppState {
 
 impl AppState {
     fn new() -> Self {
-        let db_url = std::env::var("DATABASE_URL")
-            .unwrap_or_else(|_| "postgresql://ndsep_user:ndsep_secure_2026@localhost:5432/ndsep_db".to_string());
-        let relay_url = std::env::var("RELAY_URL")
-            .unwrap_or_else(|_| "http://localhost:4000".to_string());
+        let db_url = std::env::var("DATABASE_URL").unwrap_or_else(|_| {
+            "postgresql://ndsep_user:ndsep_secure_2026@localhost:5432/ndsep_db".to_string()
+        });
+        let relay_url =
+            std::env::var("RELAY_URL").unwrap_or_else(|_| "http://localhost:4000".to_string());
 
         Self {
             db_url,
@@ -168,7 +174,9 @@ fn build_isolation_forest() -> IsolationForest {
     for _ in 0..ISOLATION_FOREST_ESTIMATORS {
         let depth = rng.gen_range(3..=max_depth);
         let nodes = (1 << depth) - 1;
-        let split_features: Vec<usize> = (0..nodes).map(|_| rng.gen_range(0..feature_count)).collect();
+        let split_features: Vec<usize> = (0..nodes)
+            .map(|_| rng.gen_range(0..feature_count))
+            .collect();
         let split_values: Vec<f64> = (0..nodes).map(|_| rng.gen_range(-2.0..2.0)).collect();
         trees.push(IsolationTree {
             max_depth: depth,
@@ -185,22 +193,31 @@ fn build_isolation_forest() -> IsolationForest {
 }
 
 fn isolation_score(forest: &IsolationForest, features: &[f64]) -> f64 {
-    let avg_path_length: f64 = forest.trees.iter().map(|tree| {
-        let mut depth = 0usize;
-        let mut node_idx = 0usize;
-        while depth < tree.max_depth && node_idx < tree.split_features.len() {
-            let feat_idx = tree.split_features[node_idx];
-            let split_val = tree.split_values[node_idx];
-            let val = if feat_idx < features.len() { features[feat_idx] } else { 0.0 };
-            if val < split_val {
-                node_idx = 2 * node_idx + 1;
-            } else {
-                node_idx = 2 * node_idx + 2;
+    let avg_path_length: f64 = forest
+        .trees
+        .iter()
+        .map(|tree| {
+            let mut depth = 0usize;
+            let mut node_idx = 0usize;
+            while depth < tree.max_depth && node_idx < tree.split_features.len() {
+                let feat_idx = tree.split_features[node_idx];
+                let split_val = tree.split_values[node_idx];
+                let val = if feat_idx < features.len() {
+                    features[feat_idx]
+                } else {
+                    0.0
+                };
+                if val < split_val {
+                    node_idx = 2 * node_idx + 1;
+                } else {
+                    node_idx = 2 * node_idx + 2;
+                }
+                depth += 1;
             }
-            depth += 1;
-        }
-        depth as f64
-    }).sum::<f64>() / forest.trees.len() as f64;
+            depth as f64
+        })
+        .sum::<f64>()
+        / forest.trees.len() as f64;
 
     let n = forest.sample_size as f64;
     let c_n = 2.0 * (n.ln() + 0.5772) - (2.0 * (n - 1.0) / n);
@@ -233,8 +250,10 @@ fn extract_features(
         let mean = vals.iter().sum::<f64>() / n;
         let var = vals.iter().map(|v| (v - mean).powi(2)).sum::<f64>() / n;
         let trend = if vals.len() >= 2 {
-            (vals[vals.len()-1] - vals[0]) / vals.len() as f64
-        } else { 0.0 };
+            (vals[vals.len() - 1] - vals[0]) / vals.len() as f64
+        } else {
+            0.0
+        };
         (trend, var.sqrt())
     } else {
         (0.0, 0.0)
@@ -249,7 +268,11 @@ fn extract_features(
     let burst_score = if recent.len() >= 5 {
         let last_5: Vec<f64> = recent.iter().rev().take(5).map(|(v, _)| *v).collect();
         let l5_mean = last_5.iter().sum::<f64>() / 5.0;
-        if baseline.mean > 0.0 { l5_mean / baseline.mean } else { 1.0 }
+        if baseline.mean > 0.0 {
+            l5_mean / baseline.mean
+        } else {
+            1.0
+        }
     } else {
         1.0
     };
@@ -284,20 +307,29 @@ fn classify_anomaly(z_score: f64, iso_score: f64) -> (String, String, String, f6
     };
 
     let impact = match severity {
-        "critical" => "Service outage imminent — multiple dependent services may be affected within minutes",
+        "critical" => {
+            "Service outage imminent — multiple dependent services may be affected within minutes"
+        }
         "high" => "Significant degradation detected — performance impact likely within 15 minutes",
         "medium" => "Unusual behavior detected — may indicate emerging issue, monitor closely",
         _ => "Minor deviation from baseline — likely transient, auto-monitoring",
     };
 
     let action = match severity {
-        "critical" => "IMMEDIATE: Auto-execute remediation runbook, notify on-call, prepare rollback",
+        "critical" => {
+            "IMMEDIATE: Auto-execute remediation runbook, notify on-call, prepare rollback"
+        }
         "high" => "URGENT: Initiate root cause analysis, pre-stage remediation, alert L2",
         "medium" => "MONITOR: Increase sampling frequency, correlate with related services",
         _ => "OBSERVE: Log for trend analysis, no immediate action required",
     };
 
-    (severity.to_string(), impact.to_string(), action.to_string(), combined)
+    (
+        severity.to_string(),
+        impact.to_string(),
+        action.to_string(),
+        combined,
+    )
 }
 
 // ── Trend Prediction ─────────────────────────────────────────────────────────
@@ -308,7 +340,9 @@ fn predict_trend(
     recent: &[(f64, DateTime<Utc>)],
     baseline: &ServiceBaseline,
 ) -> Option<Prediction> {
-    if recent.len() < 10 { return None; }
+    if recent.len() < 10 {
+        return None;
+    }
 
     let vals: Vec<f64> = recent.iter().map(|(v, _)| *v).collect();
     let n = vals.len() as f64;
@@ -323,7 +357,11 @@ fn predict_trend(
         numerator += (x - x_mean) * (v - y_mean);
         denominator += (x - x_mean).powi(2);
     }
-    let slope = if denominator > 0.0 { numerator / denominator } else { 0.0 };
+    let slope = if denominator > 0.0 {
+        numerator / denominator
+    } else {
+        0.0
+    };
 
     // Predict value at PREDICTION_HORIZON_MINUTES
     let steps_ahead = PREDICTION_HORIZON_MINUTES as f64 * 2.0;
@@ -332,7 +370,9 @@ fn predict_trend(
     let p99_threshold = baseline.p99 * 1.2;
     if predicted_value > p99_threshold && slope > 0.0 {
         let confidence = (slope.abs() / baseline.std_dev.max(0.001)).min(1.0) * 0.8;
-        if confidence < 0.3 { return None; }
+        if confidence < 0.3 {
+            return None;
+        }
 
         let predicted_time = Utc::now() + chrono::Duration::minutes(PREDICTION_HORIZON_MINUTES);
         let prediction_type = if metric_name.contains("cpu") || metric_name.contains("memory") {
@@ -351,7 +391,11 @@ fn predict_trend(
             affected_service: service_name.to_string(),
             predicted_event: format!(
                 "{}.{} projected to reach {:.1} (p99 threshold: {:.1}) in ~{} minutes",
-                service_name, metric_name, predicted_value, p99_threshold, PREDICTION_HORIZON_MINUTES
+                service_name,
+                metric_name,
+                predicted_value,
+                p99_threshold,
+                PREDICTION_HORIZON_MINUTES
             ),
             predicted_time,
             confidence,
@@ -420,7 +464,8 @@ async fn anomalies_handler(State(state): State<Arc<AppState>>) -> Json<serde_jso
 
 async fn predictions_handler(State(state): State<Arc<AppState>>) -> Json<serde_json::Value> {
     let predictions = state.predictions.read().unwrap();
-    let active: Vec<&Prediction> = predictions.iter()
+    let active: Vec<&Prediction> = predictions
+        .iter()
         .filter(|p| p.predicted_time > Utc::now())
         .collect();
     Json(serde_json::json!({ "predictions": active, "total": predictions.len() }))
@@ -446,7 +491,9 @@ async fn ingest_handler(
             let mut recent = state.recent_metrics.write().unwrap();
             let buffer = recent.entry(key.clone()).or_insert_with(Vec::new);
             buffer.push((metric.value, metric.timestamp));
-            if buffer.len() > 500 { buffer.drain(0..250); }
+            if buffer.len() > 500 {
+                buffer.drain(0..250);
+            }
         }
 
         // Get or create baseline
@@ -514,7 +561,10 @@ async fn ingest_handler(
 
         // Run prediction
         if let Some(pred) = predict_trend(
-            &metric.service_name, &metric.metric_name, &recent_vals, &baseline
+            &metric.service_name,
+            &metric.metric_name,
+            &recent_vals,
+            &baseline,
         ) {
             new_predictions.push(pred);
         }
@@ -526,10 +576,17 @@ async fn ingest_handler(
             let n = b.sample_count as f64 + 1.0;
             let old_mean = b.mean;
             b.mean = old_mean + (metric.value - old_mean) / n;
-            b.std_dev = ((b.std_dev.powi(2) * (n - 1.0) + (metric.value - old_mean) * (metric.value - b.mean)) / n).sqrt();
+            b.std_dev = ((b.std_dev.powi(2) * (n - 1.0)
+                + (metric.value - old_mean) * (metric.value - b.mean))
+                / n)
+                .sqrt();
             b.sample_count += 1;
-            if metric.value < b.min { b.min = metric.value; }
-            if metric.value > b.max { b.max = metric.value; }
+            if metric.value < b.min {
+                b.min = metric.value;
+            }
+            if metric.value > b.max {
+                b.max = metric.value;
+            }
             b.last_updated = Utc::now();
         }
     }
@@ -541,12 +598,16 @@ async fn ingest_handler(
     {
         let mut anomalies = state.anomalies.write().unwrap();
         anomalies.extend(new_anomalies);
-        if anomalies.len() > 10000 { anomalies.drain(0..5000); }
+        if anomalies.len() > 10000 {
+            anomalies.drain(0..5000);
+        }
     }
     {
         let mut predictions = state.predictions.write().unwrap();
         predictions.extend(new_predictions);
-        if predictions.len() > 1000 { predictions.drain(0..500); }
+        if predictions.len() > 1000 {
+            predictions.drain(0..500);
+        }
     }
 
     // Update metrics
@@ -559,11 +620,14 @@ async fn ingest_handler(
         m.services_monitored = baselines.len();
     }
 
-    (StatusCode::OK, Json(serde_json::json!({
-        "ingested": payload.metrics.len(),
-        "anomalies_detected": anomaly_count,
-        "predictions_made": prediction_count,
-    })))
+    (
+        StatusCode::OK,
+        Json(serde_json::json!({
+            "ingested": payload.metrics.len(),
+            "anomalies_detected": anomaly_count,
+            "predictions_made": prediction_count,
+        })),
+    )
 }
 
 #[derive(Deserialize)]
@@ -578,7 +642,10 @@ async fn false_positive_handler(
     let mut found = false;
     {
         let anomalies = state.anomalies.read().unwrap();
-        if let Some(a) = anomalies.iter().find(|a| a.anomaly_id == payload.anomaly_id) {
+        if let Some(a) = anomalies
+            .iter()
+            .find(|a| a.anomaly_id == payload.anomaly_id)
+        {
             let key = format!("{}:{}", a.service_name, a.metric_name);
             let mut baselines = state.baselines.write().unwrap();
             if let Some(b) = baselines.get_mut(&key) {
@@ -602,9 +669,15 @@ async fn dashboard_handler(State(state): State<Arc<AppState>>) -> Json<serde_jso
     let anomalies = state.anomalies.read().unwrap();
     let predictions = state.predictions.read().unwrap();
 
-    let critical_anomalies = anomalies.iter().filter(|a| a.severity == "critical").count();
+    let critical_anomalies = anomalies
+        .iter()
+        .filter(|a| a.severity == "critical")
+        .count();
     let high_anomalies = anomalies.iter().filter(|a| a.severity == "high").count();
-    let active_predictions = predictions.iter().filter(|p| p.predicted_time > Utc::now()).count();
+    let active_predictions = predictions
+        .iter()
+        .filter(|p| p.predicted_time > Utc::now())
+        .count();
 
     let top_anomalous_services: Vec<serde_json::Value> = {
         let mut service_counts: HashMap<String, usize> = HashMap::new();
@@ -613,9 +686,11 @@ async fn dashboard_handler(State(state): State<Arc<AppState>>) -> Json<serde_jso
         }
         let mut sorted: Vec<_> = service_counts.into_iter().collect();
         sorted.sort_by(|a, b| b.1.cmp(&a.1));
-        sorted.into_iter().take(10).map(|(name, count)| {
-            serde_json::json!({ "service": name, "anomaly_count": count })
-        }).collect()
+        sorted
+            .into_iter()
+            .take(10)
+            .map(|(name, count)| serde_json::json!({ "service": name, "anomaly_count": count }))
+            .collect()
     };
 
     Json(serde_json::json!({
@@ -645,19 +720,26 @@ async fn dashboard_handler(State(state): State<Arc<AppState>>) -> Json<serde_jso
 async fn get_db_client(url: &str) -> Option<tokio_postgres::Client> {
     match tokio_postgres::connect(url, NoTls).await {
         Ok((client, connection)) => {
-            tokio::spawn(async move { let _ = connection.await; });
+            tokio::spawn(async move {
+                let _ = connection.await;
+            });
             Some(client)
         }
-        Err(e) => { log::warn!("[DB] Connection failed: {}", e); None }
+        Err(e) => {
+            log::warn!("[DB] Connection failed: {}", e);
+            None
+        }
     }
 }
 
 async fn relay_event(relay_url: &str, topic: &str, data: &serde_json::Value) {
     let client = reqwest::Client::new();
-    let _ = client.post(format!("{}/publish", relay_url))
+    let _ = client
+        .post(format!("{}/publish", relay_url))
         .json(&serde_json::json!({ "topic": topic, "event": data }))
         .timeout(std::time::Duration::from_secs(3))
-        .send().await;
+        .send()
+        .await;
 }
 
 async fn poll_noc_metrics(state: Arc<AppState>) {
@@ -676,9 +758,11 @@ async fn poll_noc_metrics(state: Arc<AppState>) {
         for (url, service) in &endpoints {
             let health_url = format!("{}/health", url);
             let start = std::time::Instant::now();
-            match client.get(&health_url)
+            match client
+                .get(&health_url)
                 .timeout(std::time::Duration::from_secs(5))
-                .send().await
+                .send()
+                .await
             {
                 Ok(resp) => {
                     let latency = start.elapsed().as_millis() as f64;
@@ -717,7 +801,9 @@ async fn poll_noc_metrics(state: Arc<AppState>) {
                 let mut recent = state.recent_metrics.write().unwrap();
                 let buffer = recent.entry(key).or_insert_with(Vec::new);
                 buffer.push((metric.value, metric.timestamp));
-                if buffer.len() > 500 { buffer.drain(0..250); }
+                if buffer.len() > 500 {
+                    buffer.drain(0..250);
+                }
             }
             let mut m = state.metrics.write().unwrap();
             m.metrics_ingested += all_metrics.len() as u64;
@@ -734,7 +820,9 @@ async fn persist_anomalies(state: Arc<AppState>) {
             anomalies.iter().rev().take(50).cloned().collect()
         };
 
-        if anomalies_to_persist.is_empty() { continue; }
+        if anomalies_to_persist.is_empty() {
+            continue;
+        }
 
         if let Some(client) = get_db_client(&state.db_url).await {
             for a in &anomalies_to_persist {
@@ -768,7 +856,11 @@ async fn persist_anomalies(state: Arc<AppState>) {
 #[tokio::main]
 async fn main() {
     env_logger::init();
-    log::info!("[{}] Starting AI Perception Engine on port {}", WORKER_NAME, HTTP_PORT);
+    log::info!(
+        "[{}] Starting AI Perception Engine on port {}",
+        WORKER_NAME,
+        HTTP_PORT
+    );
 
     let state = Arc::new(AppState::new());
 
@@ -823,7 +915,9 @@ async fn main() {
         .route("/api/dashboard", get(dashboard_handler))
         .with_state(state);
 
-    let listener = tokio::net::TcpListener::bind(format!("0.0.0.0:{}", HTTP_PORT)).await.unwrap();
+    let listener = tokio::net::TcpListener::bind(format!("0.0.0.0:{}", HTTP_PORT))
+        .await
+        .unwrap();
     log::info!("[{}] Listening on 0.0.0.0:{}", WORKER_NAME, HTTP_PORT);
     axum::serve(listener, app).await.unwrap();
 }

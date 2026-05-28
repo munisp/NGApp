@@ -31,8 +31,8 @@ struct QueueEntry {
 
 #[derive(Clone, Debug)]
 struct BandwidthProfile {
-    quality: String,    // excellent, good, fair, poor, offline
-    score: u8,          // 0-100
+    quality: String, // excellent, good, fair, poor, offline
+    score: u8,       // 0-100
     batch_size: usize,
     compress: bool,
     poll_interval_ms: u64,
@@ -105,7 +105,11 @@ fn handle_enqueue(state: &Arc<Mutex<OfflineResilienceState>>, body: &str) -> Str
     // Sort by priority (higher first)
     s.queue.sort_by(|a, b| b.priority.cmp(&a.priority));
 
-    format!(r#"{{"status":"queued","id":"{}","queue_size":{}}}"#, id, s.queue.len())
+    format!(
+        r#"{{"status":"queued","id":"{}","queue_size":{}}}"#,
+        id,
+        s.queue.len()
+    )
 }
 
 fn handle_request(

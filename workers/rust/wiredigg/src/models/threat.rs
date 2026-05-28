@@ -94,9 +94,10 @@ impl ThreatType {
             Self::SynFlood | Self::DdosAmplification | Self::SlowLoris => {
                 ("Impact", "T1499 Endpoint Denial of Service")
             }
-            Self::DnsExfiltration | Self::DnsTunnel | Self::DataExfiltration => {
-                ("Exfiltration", "T1048 Exfiltration Over Alternative Protocol")
-            }
+            Self::DnsExfiltration | Self::DnsTunnel | Self::DataExfiltration => (
+                "Exfiltration",
+                "T1048 Exfiltration Over Alternative Protocol",
+            ),
             Self::ArpSpoofing | Self::ManInTheMiddle => {
                 ("Credential Access", "T1557 Adversary-in-the-Middle")
             }
@@ -105,12 +106,16 @@ impl ThreatType {
                 ("Command and Control", "T1071 Application Layer Protocol")
             }
             Self::LateralMovement => ("Lateral Movement", "T1021 Remote Services"),
-            Self::PrivilegeEscalation => {
-                ("Privilege Escalation", "T1068 Exploitation for Privilege Escalation")
-            }
+            Self::PrivilegeEscalation => (
+                "Privilege Escalation",
+                "T1068 Exploitation for Privilege Escalation",
+            ),
             Self::RansomwareActivity => ("Impact", "T1486 Data Encrypted for Impact"),
             Self::CryptoMining => ("Impact", "T1496 Resource Hijacking"),
-            Self::IcmpTunnel => ("Command and Control", "T1095 Non-Application Layer Protocol"),
+            Self::IcmpTunnel => (
+                "Command and Control",
+                "T1095 Non-Application Layer Protocol",
+            ),
             Self::TlsDowngrade | Self::CertificateAnomaly => {
                 ("Collection", "T1040 Network Sniffing")
             }

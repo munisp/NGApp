@@ -7,15 +7,14 @@ Writes to sla_breaches table and sends notifications for new breaches.
 Health: GET /health  Metrics: GET /metrics  Port: 8102
 */
 
-use std::collections::HashMap;
 use std::env;
 use std::sync::{Arc, Mutex};
-use std::time::{Duration, Instant, SystemTime, UNIX_EPOCH};
+use std::time::{Duration, SystemTime, UNIX_EPOCH};
 
 use serde::{Deserialize, Serialize};
-use serde_json::{json, Value};
+use serde_json::json;
 use tokio::time::sleep;
-use tokio_postgres::{NoTls, Row};
+use tokio_postgres::NoTls;
 use warp::Filter;
 
 const PORT: u16 = 8102;
@@ -188,10 +187,7 @@ async fn evaluate_org_slas(
                             12.0
                         }
                     }
-                    _ => {
-                        let rng = (org_id as f64 * 3.1 + now_ts() as f64 * 0.0002) % 36.0;
-                        rng
-                    }
+                    _ => (org_id as f64 * 3.1 + now_ts() as f64 * 0.0002) % 36.0,
                 }
             }
             "audit_log_completeness" => {
@@ -207,8 +203,7 @@ async fn evaluate_org_slas(
                     Ok(Some(r)) => {
                         let count: i64 = r.get(0);
                         let expected = 100.0;
-                        let completeness = (count as f64 / expected * 100.0).min(100.0);
-                        completeness
+                        (count as f64 / expected * 100.0).min(100.0)
                     }
                     _ => {
                         let rng = (org_id as f64 * 5.7 + now_ts() as f64 * 0.0003) % 20.0;
@@ -284,7 +279,7 @@ async fn evaluate_org_slas(
                 .await;
             if let Ok(n) = result {
                 if n > 0 {
-                    resolved += n as u64;
+                    resolved += n;
                 }
             }
         }

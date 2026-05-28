@@ -5,7 +5,6 @@ use std::sync::Arc;
 use chrono::Utc;
 use dashmap::DashMap;
 
-
 use crate::models::packet::{AppProtocol, CapturedPacket};
 use crate::models::threat::{IoTDevice, IoTDeviceType};
 
@@ -142,28 +141,39 @@ impl IoTDetector {
         // Manufacturer-based classification
         if let Some(mfr) = &device.manufacturer {
             let lower = mfr.to_lowercase();
-            if lower.contains("ring") || lower.contains("arlo") || lower.contains("hikvision") || lower.contains("dahua") {
+            if lower.contains("ring")
+                || lower.contains("arlo")
+                || lower.contains("hikvision")
+                || lower.contains("dahua")
+            {
                 device.device_type = IoTDeviceType::Camera;
-            } else if lower.contains("sonos") || lower.contains("amazon") || lower.contains("google") {
+            } else if lower.contains("sonos")
+                || lower.contains("amazon")
+                || lower.contains("google")
+            {
                 if device.device_type == IoTDeviceType::UnknownIoT {
                     device.device_type = IoTDeviceType::SmartSpeaker;
                 }
             } else if lower.contains("nest") || lower.contains("ecobee") {
                 device.device_type = IoTDeviceType::Thermostat;
-            } else if lower.contains("philips") || lower.contains("lifx") || lower.contains("sengled") {
+            } else if lower.contains("philips")
+                || lower.contains("lifx")
+                || lower.contains("sengled")
+            {
                 device.device_type = IoTDeviceType::LightBulb;
             } else if lower.contains("tp-link") || lower.contains("wemo") {
                 device.device_type = IoTDeviceType::SmartPlug;
-            } else if lower.contains("hp") || lower.contains("canon") || lower.contains("epson") || lower.contains("brother") {
+            } else if lower.contains("hp")
+                || lower.contains("canon")
+                || lower.contains("epson")
+                || lower.contains("brother")
+            {
                 device.device_type = IoTDeviceType::Printer;
             }
         }
     }
 
-    fn compute_risk(
-        &self,
-        device: &mut dashmap::mapref::one::RefMut<'_, IpAddr, IoTDevice>,
-    ) {
+    fn compute_risk(&self, device: &mut dashmap::mapref::one::RefMut<'_, IpAddr, IoTDevice>) {
         let mut risk: f64 = 0.0;
         let mut factors = Vec::new();
 
@@ -241,9 +251,7 @@ impl IoTDetector {
 
 fn is_private_ip(ip: &IpAddr) -> bool {
     match ip {
-        IpAddr::V4(v4) => {
-            v4.is_private() || v4.is_loopback() || v4.is_link_local()
-        }
+        IpAddr::V4(v4) => v4.is_private() || v4.is_loopback() || v4.is_link_local(),
         IpAddr::V6(v6) => v6.is_loopback(),
     }
 }
@@ -285,17 +293,17 @@ fn build_oui_database() -> HashMap<String, &'static str> {
 
 fn build_port_fingerprints() -> HashMap<u16, IoTDeviceType> {
     let mut db = HashMap::new();
-    db.insert(554, IoTDeviceType::Camera);      // RTSP
-    db.insert(8554, IoTDeviceType::Camera);     // RTSP alternate
-    db.insert(37777, IoTDeviceType::Camera);    // Dahua
-    db.insert(8000, IoTDeviceType::Camera);     // Hikvision
-    db.insert(9100, IoTDeviceType::Printer);    // Raw printing
-    db.insert(631, IoTDeviceType::Printer);     // IPP
-    db.insert(502, IoTDeviceType::IndustrialController);  // Modbus
+    db.insert(554, IoTDeviceType::Camera); // RTSP
+    db.insert(8554, IoTDeviceType::Camera); // RTSP alternate
+    db.insert(37777, IoTDeviceType::Camera); // Dahua
+    db.insert(8000, IoTDeviceType::Camera); // Hikvision
+    db.insert(9100, IoTDeviceType::Printer); // Raw printing
+    db.insert(631, IoTDeviceType::Printer); // IPP
+    db.insert(502, IoTDeviceType::IndustrialController); // Modbus
     db.insert(4840, IoTDeviceType::IndustrialController); // OPC-UA
     db.insert(47808, IoTDeviceType::IndustrialController); // BACnet
-    db.insert(1883, IoTDeviceType::Sensor);     // MQTT
-    db.insert(8883, IoTDeviceType::Sensor);     // MQTT/TLS
-    db.insert(5683, IoTDeviceType::Sensor);     // CoAP
+    db.insert(1883, IoTDeviceType::Sensor); // MQTT
+    db.insert(8883, IoTDeviceType::Sensor); // MQTT/TLS
+    db.insert(5683, IoTDeviceType::Sensor); // CoAP
     db
 }

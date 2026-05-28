@@ -31,7 +31,11 @@ struct LocalCache {
 }
 
 impl LocalCache {
-    fn new() -> Self { Self { store: HashMap::new() } }
+    fn new() -> Self {
+        Self {
+            store: HashMap::new(),
+        }
+    }
 
     fn set(&mut self, key: String, value: String, ttl_secs: Option<u64>) {
         let expires_at = ttl_secs.map(|s| Instant::now() + Duration::from_secs(s));
@@ -41,17 +45,22 @@ impl LocalCache {
     fn get(&self, key: &str) -> Option<String> {
         self.store.get(key).and_then(|e| {
             if let Some(exp) = e.expires_at {
-                if Instant::now() > exp { return None; }
+                if Instant::now() > exp {
+                    return None;
+                }
             }
             Some(e.value.clone())
         })
     }
 
-    fn del(&mut self, key: &str) { self.store.remove(key); }
+    fn del(&mut self, key: &str) {
+        self.store.remove(key);
+    }
 
     fn evict_expired(&mut self) {
         let now = Instant::now();
-        self.store.retain(|_, e| e.expires_at.map(|exp| now < exp).unwrap_or(true));
+        self.store
+            .retain(|_, e| e.expires_at.map(|exp| now < exp).unwrap_or(true));
     }
 }
 
@@ -61,7 +70,11 @@ struct RateLimiter {
 }
 
 impl RateLimiter {
-    fn new() -> Self { Self { windows: HashMap::new() } }
+    fn new() -> Self {
+        Self {
+            windows: HashMap::new(),
+        }
+    }
 
     fn check(&mut self, key: &str, limit: usize, window_secs: u64) -> (bool, usize, u64) {
         let now = Instant::now();
@@ -101,13 +114,23 @@ fn read_request(stream: &mut TcpStream) -> (String, String, String) {
     loop {
         let mut header = String::new();
         let _ = reader.read_line(&mut header);
-        if header.trim().is_empty() { break; }
+        if header.trim().is_empty() {
+            break;
+        }
         if header.to_lowercase().starts_with("content-length:") {
-            content_length = header.split(':').nth(1).unwrap_or("0").trim().parse().unwrap_or(0);
+            content_length = header
+                .split(':')
+                .nth(1)
+                .unwrap_or("0")
+                .trim()
+                .parse()
+                .unwrap_or(0);
         }
     }
     let mut body = vec![0u8; content_length];
-    if content_length > 0 { let _ = reader.get_mut().read_exact(&mut body); }
+    if content_length > 0 {
+        let _ = reader.get_mut().read_exact(&mut body);
+    }
     (method, path, String::from_utf8_lossy(&body).to_string())
 }
 
@@ -134,7 +157,11 @@ fn handle_connection(mut stream: TcpStream, state: Arc<AppState>) {
 
     match (method.as_str(), path.as_str()) {
         ("GET", "/health") => {
-            send_json(&mut stream, 200, r#"{"status":"ok","worker":"middleware_cache"}"#);
+            send_json(
+                &mut stream,
+                200,
+                r#"{"status":"ok","worker":"middleware_cache"}"#,
+            );
         }
         ("GET", "/metrics") => {
             let total = *state.requests_total.lock().unwrap();
@@ -193,7 +220,8 @@ fn handle_connection(mut stream: TcpStream, state: Arc<AppState>) {
             } else {
                 (true, 99, 60)
             };
-            let result = json!({"allowed": allowed, "remaining": remaining, "reset_in": reset}).to_string();
+            let result =
+                json!({"allowed": allowed, "remaining": remaining, "reset_in": reset}).to_string();
             send_json(&mut stream, 200, &result);
         }
         _ => {

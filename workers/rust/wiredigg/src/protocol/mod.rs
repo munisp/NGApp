@@ -34,14 +34,20 @@ pub fn dissect_tcp_payload(payload: &[u8], sport: u16, dport: u16, packet: &mut 
     }
 
     // SMB
-    if (dport == 445 || sport == 445) && payload.len() >= 4 && payload[0..4] == [0xFF, b'S', b'M', b'B'] {
+    if (dport == 445 || sport == 445)
+        && payload.len() >= 4
+        && payload[0..4] == [0xFF, b'S', b'M', b'B']
+    {
         packet.application_protocol = Some(AppProtocol::Smb);
         packet.payload_preview = Some("SMB protocol".to_string());
         return;
     }
 
     // SMB2
-    if (dport == 445 || sport == 445) && payload.len() >= 4 && payload[0..4] == [0xFE, b'S', b'M', b'B'] {
+    if (dport == 445 || sport == 445)
+        && payload.len() >= 4
+        && payload[0..4] == [0xFE, b'S', b'M', b'B']
+    {
         packet.application_protocol = Some(AppProtocol::Smb);
         packet.payload_preview = Some("SMB2 protocol".to_string());
         return;
@@ -169,10 +175,8 @@ pub fn dissect_udp_payload(payload: &[u8], sport: u16, dport: u16, packet: &mut 
             let ver = payload[0] >> 6;
             let code_class = payload[1] >> 5;
             let code_detail = payload[1] & 0x1F;
-            packet.payload_preview = Some(format!(
-                "CoAP v{} {}.{:02}",
-                ver, code_class, code_detail
-            ));
+            packet.payload_preview =
+                Some(format!("CoAP v{} {}.{:02}", ver, code_class, code_detail));
         }
         return;
     }
@@ -211,8 +215,7 @@ fn parse_http(payload: &[u8], packet: &mut CapturedPacket) {
             if parts.len() >= 2 {
                 if parts[0].starts_with("HTTP/") {
                     // Response
-                    packet.payload_preview =
-                        Some(format!("{} {}", parts[0], parts[1]));
+                    packet.payload_preview = Some(format!("{} {}", parts[0], parts[1]));
                 } else {
                     // Request
                     packet.http_method = Some(parts[0].to_string());
@@ -334,11 +337,11 @@ fn extract_sni(payload: &[u8]) -> Option<String> {
             // SNI extension
             if pos + 5 <= payload.len() && pos + ext_len <= payload.len() {
                 // server_name_list_length (2) + type (1) + name_length (2)
-                let name_len =
-                    u16::from_be_bytes([payload[pos + 3], payload[pos + 4]]) as usize;
+                let name_len = u16::from_be_bytes([payload[pos + 3], payload[pos + 4]]) as usize;
                 let name_start = pos + 5;
                 if name_start + name_len <= payload.len() {
-                    if let Ok(name) = std::str::from_utf8(&payload[name_start..name_start + name_len])
+                    if let Ok(name) =
+                        std::str::from_utf8(&payload[name_start..name_start + name_len])
                     {
                         return Some(name.to_string());
                     }
@@ -363,8 +366,7 @@ fn parse_dns(payload: &[u8], packet: &mut CapturedPacket) {
             for a in &dns.answers {
                 answers.push(format!("{}: {:?}", a.name, a.data));
             }
-            packet.payload_preview =
-                Some(format!("DNS Response: {}", answers.join(", ")));
+            packet.payload_preview = Some(format!("DNS Response: {}", answers.join(", ")));
         }
     }
 }
@@ -373,7 +375,13 @@ fn extract_ascii_preview(payload: &[u8], packet: &mut CapturedPacket) {
     let preview_len = payload.len().min(128);
     let preview: String = payload[..preview_len]
         .iter()
-        .map(|&b| if b.is_ascii_graphic() || b == b' ' { b as char } else { '.' })
+        .map(|&b| {
+            if b.is_ascii_graphic() || b == b' ' {
+                b as char
+            } else {
+                '.'
+            }
+        })
         .collect();
     if preview.chars().filter(|c| c.is_ascii_graphic()).count() > preview_len / 3 {
         packet.payload_preview = Some(preview);

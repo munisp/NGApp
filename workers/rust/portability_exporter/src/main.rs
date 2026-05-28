@@ -4,7 +4,11 @@
 // Exports data subject records in JSON, CSV, XML, and Parquet formats.
 // Signs each export with SHA-256 content hash for integrity verification.
 
-use axum::{extract::Query, routing::{get, post}, Json, Router};
+use axum::{
+    extract::Query,
+    routing::{get, post},
+    Json, Router,
+};
 use chrono::Utc;
 use serde::{Deserialize, Serialize};
 use sha2::{Digest, Sha256};
@@ -53,7 +57,11 @@ fn compute_content_hash(data: &str) -> String {
 
 fn generate_export_data(format: &str, email: &str, categories: &[String]) -> (String, u64) {
     let cats = if categories.is_empty() {
-        vec!["personal".to_string(), "contact".to_string(), "financial".to_string()]
+        vec![
+            "personal".to_string(),
+            "contact".to_string(),
+            "financial".to_string(),
+        ]
     } else {
         categories.to_vec()
     };
@@ -67,7 +75,9 @@ fn generate_export_data(format: &str, email: &str, categories: &[String]) -> (St
                 for i in 0..50 {
                     csv.push_str(&format!(
                         "{},{}_field_{},***REDACTED***,{},{}\n",
-                        cat, cat, i,
+                        cat,
+                        cat,
+                        i,
                         Utc::now().to_rfc3339(),
                         "ndsep-platform"
                     ));
@@ -76,7 +86,8 @@ fn generate_export_data(format: &str, email: &str, categories: &[String]) -> (St
             csv
         }
         "xml" => {
-            let mut xml = String::from("<?xml version=\"1.0\" encoding=\"UTF-8\"?>\n<DataExport>\n");
+            let mut xml =
+                String::from("<?xml version=\"1.0\" encoding=\"UTF-8\"?>\n<DataExport>\n");
             xml.push_str(&format!("  <Subject>{}</Subject>\n", email));
             for cat in &cats {
                 xml.push_str(&format!("  <Category name=\"{}\">\n", cat));
@@ -111,7 +122,8 @@ fn generate_export_data(format: &str, email: &str, categories: &[String]) -> (St
                 "format": "json",
                 "record_count": records.len(),
                 "records": records
-            }).to_string()
+            })
+            .to_string()
         }
     };
 
@@ -138,7 +150,8 @@ async fn metrics() -> Json<serde_json::Value> {
 
 async fn process_export(Json(req): Json<ExportRequest>) -> Json<ExportResponse> {
     let categories = req.data_categories.unwrap_or_default();
-    let (content, record_count) = generate_export_data(&req.export_format, &req.data_subject_email, &categories);
+    let (content, record_count) =
+        generate_export_data(&req.export_format, &req.data_subject_email, &categories);
 
     let content_hash = compute_content_hash(&content);
     let file_size = content.len() as u64;

@@ -189,10 +189,8 @@ impl CaptureEngine {
             EtherTypes::Arp => {
                 if let Some(arp) = ArpPacket::new(ethernet.payload()) {
                     packet.protocol = Protocol::Arp;
-                    packet.src_ip =
-                        Some(IpAddr::V4(arp.get_sender_proto_addr()));
-                    packet.dst_ip =
-                        Some(IpAddr::V4(arp.get_target_proto_addr()));
+                    packet.src_ip = Some(IpAddr::V4(arp.get_sender_proto_addr()));
+                    packet.dst_ip = Some(IpAddr::V4(arp.get_target_proto_addr()));
                     self.update_proto_count("ARP");
                 }
             }
@@ -345,8 +343,7 @@ impl CaptureEngine {
             protocols: ProtocolStats {
                 tcp: *proto_map.get("TCP").unwrap_or(&0),
                 udp: *proto_map.get("UDP").unwrap_or(&0),
-                icmp: *proto_map.get("ICMP").unwrap_or(&0)
-                    + *proto_map.get("ICMPv6").unwrap_or(&0),
+                icmp: *proto_map.get("ICMP").unwrap_or(&0) + *proto_map.get("ICMPv6").unwrap_or(&0),
                 arp: *proto_map.get("ARP").unwrap_or(&0),
                 other: *proto_map.get("OTHER").unwrap_or(&0),
                 total: pkts,

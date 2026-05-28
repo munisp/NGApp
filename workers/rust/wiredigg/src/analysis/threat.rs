@@ -223,7 +223,10 @@ impl ThreatClassifier {
                     "SYN flood detected: {} SYN packets in {}s from {}",
                     self.syn_flood_threshold, elapsed, src
                 ),
-                evidence: vec![format!("{} SYN packets in window", self.syn_flood_threshold)],
+                evidence: vec![format!(
+                    "{} SYN packets in window",
+                    self.syn_flood_threshold
+                )],
                 recommendation: "Rate-limit or block source IP. Enable SYN cookies.".into(),
                 confidence: 0.85,
                 packet_ids: vec![packet.id],
@@ -281,8 +284,8 @@ impl ThreatClassifier {
                     src
                 ),
                 evidence: vec![format!("Ports: {:?}", &ports[..ports.len().min(10)])],
-                recommendation:
-                    "Investigate source. Consider firewall rules to block scanning.".into(),
+                recommendation: "Investigate source. Consider firewall rules to block scanning."
+                    .into(),
                 confidence: 0.75,
                 packet_ids: vec![packet.id],
                 mitre_tactic: Some(tactic.into()),
@@ -304,13 +307,10 @@ impl ThreatClassifier {
         let max_label_len = labels.iter().map(|l| l.len()).max().unwrap_or(0);
 
         if max_label_len > self.dns_exfil_length_threshold {
-            let mut entry = self
-                .dns_query_tracker
-                .entry(src)
-                .or_insert(DnsTracker {
-                    queries: Vec::new(),
-                    total_query_bytes: 0,
-                });
+            let mut entry = self.dns_query_tracker.entry(src).or_insert(DnsTracker {
+                queries: Vec::new(),
+                total_query_bytes: 0,
+            });
             entry.queries.push(query.clone());
             entry.total_query_bytes += query.len();
 
@@ -521,8 +521,8 @@ impl ThreatClassifier {
                 protocol: packet.protocol.name().to_string(),
                 description: format!("Communication with known malicious IP: {}", ip),
                 evidence: vec![format!("Matched threat intelligence feed: {}", ip)],
-                recommendation: "Block immediately. Isolate affected host. Investigate for compromise."
-                    .into(),
+                recommendation:
+                    "Block immediately. Isolate affected host. Investigate for compromise.".into(),
                 confidence: 0.95,
                 packet_ids: vec![packet.id],
                 mitre_tactic: Some(tactic.into()),
@@ -583,8 +583,8 @@ impl ThreatClassifier {
                     packet.dst_ip.map(|i| i.to_string()).unwrap_or_default(),
                 ),
                 evidence: vec![format!("TLS version: {}", tls_version)],
-                recommendation:
-                    "Upgrade to TLS 1.2+ minimum. Disable SSLv3, TLS 1.0, TLS 1.1.".into(),
+                recommendation: "Upgrade to TLS 1.2+ minimum. Disable SSLv3, TLS 1.0, TLS 1.1."
+                    .into(),
                 confidence: 0.9,
                 packet_ids: vec![packet.id],
                 mitre_tactic: Some(tactic.into()),
@@ -606,8 +606,8 @@ impl ThreatClassifier {
             "ssn=",
             "social_security",
             "bank_account",
-            "nin=",     // National Identification Number (Nigeria)
-            "bvn=",     // Bank Verification Number (Nigeria)
+            "nin=", // National Identification Number (Nigeria)
+            "bvn=", // Bank Verification Number (Nigeria)
             "date_of_birth",
         ];
 
@@ -678,9 +678,7 @@ impl ThreatClassifier {
         let threats = self.threats.read();
         let mut summary = HashMap::new();
         for t in threats.iter() {
-            *summary
-                .entry(format!("{:?}", t.threat_type))
-                .or_insert(0) += 1;
+            *summary.entry(format!("{:?}", t.threat_type)).or_insert(0) += 1;
         }
         summary
     }

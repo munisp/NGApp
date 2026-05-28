@@ -117,7 +117,9 @@ struct IsolationForest {
 
 #[derive(Debug, Clone)]
 enum IsolationTree {
-    Leaf { size: usize },
+    Leaf {
+        size: usize,
+    },
     Branch {
         split_feature: usize,
         split_value: f64,
@@ -139,11 +141,7 @@ impl IsolationForest {
     fn fit(&mut self, data: &[Vec<f64>]) {
         use rand::Rng;
         let mut rng = rand::thread_rng();
-        let n_features = if data.is_empty() {
-            8
-        } else {
-            data[0].len()
-        };
+        let n_features = if data.is_empty() { 8 } else { data[0].len() };
         let max_depth = (self.max_samples as f64).log2().ceil() as usize;
 
         self.trees.clear();
@@ -189,8 +187,9 @@ impl IsolationForest {
 
         let split_value = rng.gen_range(min_val..max_val);
 
-        let (left_data, right_data): (Vec<&Vec<f64>>, Vec<&Vec<f64>>) =
-            data.iter().partition(|d| d.get(feature).copied().unwrap_or(0.0) < split_value);
+        let (left_data, right_data): (Vec<&Vec<f64>>, Vec<&Vec<f64>>) = data
+            .iter()
+            .partition(|d| d.get(feature).copied().unwrap_or(0.0) < split_value);
 
         if left_data.is_empty() || right_data.is_empty() {
             return IsolationTree::Leaf { size: data.len() };
@@ -199,8 +198,20 @@ impl IsolationForest {
         IsolationTree::Branch {
             split_feature: feature,
             split_value,
-            left: Box::new(Self::build_tree(&left_data, depth + 1, max_depth, n_features, rng)),
-            right: Box::new(Self::build_tree(&right_data, depth + 1, max_depth, n_features, rng)),
+            left: Box::new(Self::build_tree(
+                &left_data,
+                depth + 1,
+                max_depth,
+                n_features,
+                rng,
+            )),
+            right: Box::new(Self::build_tree(
+                &right_data,
+                depth + 1,
+                max_depth,
+                n_features,
+                rng,
+            )),
         }
     }
 
@@ -290,7 +301,11 @@ impl AnomalyDetector {
             is_large,    // large_packet_ratio
             ttl / 255.0, // normalized_ttl
             if packet.dns_query.is_some() { 1.0 } else { 0.0 },
-            if packet.http_method.is_some() { 1.0 } else { 0.0 },
+            if packet.http_method.is_some() {
+                1.0
+            } else {
+                0.0
+            },
         ]
     }
 
@@ -360,10 +375,7 @@ impl AnomalyDetector {
         if data.len() >= self.min_training_samples {
             let mut forest = self.forest.write();
             forest.fit(&data);
-            info!(
-                "Isolation forest trained on {} samples",
-                data.len()
-            );
+            info!("Isolation forest trained on {} samples", data.len());
         }
     }
 

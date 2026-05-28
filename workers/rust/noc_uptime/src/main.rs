@@ -53,52 +53,272 @@ fn env_or(key: &str, default: &str) -> String {
 struct ServiceDef {
     name: String,
     port: u16,
-    check_type: String,       // "http", "tcp"
-    path: String,             // health endpoint path
-    sla_target_pct: f64,      // e.g., 99.9
-    category: String,         // "core", "middleware", "worker", "security"
-    language: String,         // "go", "rust", "python", "typescript", "external"
+    check_type: String,  // "http", "tcp"
+    path: String,        // health endpoint path
+    sla_target_pct: f64, // e.g., 99.9
+    category: String,    // "core", "middleware", "worker", "security"
+    language: String,    // "go", "rust", "python", "typescript", "external"
 }
 
 fn get_service_registry() -> Vec<ServiceDef> {
     vec![
         // ── Core Platform ──
-        ServiceDef { name: "NDSEP API Server".into(), port: 3000, check_type: "http".into(), path: "/api/trpc/system.health?input=%7B%22timestamp%22%3A1%7D".into(), sla_target_pct: 99.95, category: "core".into(), language: "typescript".into() },
-
+        ServiceDef {
+            name: "NDSEP API Server".into(),
+            port: 3000,
+            check_type: "http".into(),
+            path: "/api/trpc/system.health?input=%7B%22timestamp%22%3A1%7D".into(),
+            sla_target_pct: 99.95,
+            category: "core".into(),
+            language: "typescript".into(),
+        },
         // ── Go Workers ──
-        ServiceDef { name: "Compliance Engine".into(), port: 8100, check_type: "http".into(), path: "/health".into(), sla_target_pct: 99.9, category: "worker".into(), language: "go".into() },
-        ServiceDef { name: "Discovery Agent".into(), port: 8101, check_type: "http".into(), path: "/health".into(), sla_target_pct: 99.5, category: "worker".into(), language: "go".into() },
-        ServiceDef { name: "Anomaly Dispatcher".into(), port: 8102, check_type: "http".into(), path: "/health".into(), sla_target_pct: 99.5, category: "worker".into(), language: "go".into() },
-        ServiceDef { name: "APISIX Manager".into(), port: 8103, check_type: "http".into(), path: "/health".into(), sla_target_pct: 99.9, category: "middleware".into(), language: "go".into() },
-        ServiceDef { name: "BGP Monitor".into(), port: 8104, check_type: "http".into(), path: "/health".into(), sla_target_pct: 99.5, category: "worker".into(), language: "go".into() },
-        ServiceDef { name: "SLA Tracker".into(), port: 8105, check_type: "http".into(), path: "/health".into(), sla_target_pct: 99.9, category: "worker".into(), language: "go".into() },
-        ServiceDef { name: "NOC Escalation".into(), port: 8191, check_type: "http".into(), path: "/health".into(), sla_target_pct: 99.95, category: "core".into(), language: "go".into() },
-        ServiceDef { name: "Digital Twin".into(), port: 8175, check_type: "http".into(), path: "/health".into(), sla_target_pct: 99.0, category: "worker".into(), language: "go".into() },
-
+        ServiceDef {
+            name: "Compliance Engine".into(),
+            port: 8100,
+            check_type: "http".into(),
+            path: "/health".into(),
+            sla_target_pct: 99.9,
+            category: "worker".into(),
+            language: "go".into(),
+        },
+        ServiceDef {
+            name: "Discovery Agent".into(),
+            port: 8101,
+            check_type: "http".into(),
+            path: "/health".into(),
+            sla_target_pct: 99.5,
+            category: "worker".into(),
+            language: "go".into(),
+        },
+        ServiceDef {
+            name: "Anomaly Dispatcher".into(),
+            port: 8102,
+            check_type: "http".into(),
+            path: "/health".into(),
+            sla_target_pct: 99.5,
+            category: "worker".into(),
+            language: "go".into(),
+        },
+        ServiceDef {
+            name: "APISIX Manager".into(),
+            port: 8103,
+            check_type: "http".into(),
+            path: "/health".into(),
+            sla_target_pct: 99.9,
+            category: "middleware".into(),
+            language: "go".into(),
+        },
+        ServiceDef {
+            name: "BGP Monitor".into(),
+            port: 8104,
+            check_type: "http".into(),
+            path: "/health".into(),
+            sla_target_pct: 99.5,
+            category: "worker".into(),
+            language: "go".into(),
+        },
+        ServiceDef {
+            name: "SLA Tracker".into(),
+            port: 8105,
+            check_type: "http".into(),
+            path: "/health".into(),
+            sla_target_pct: 99.9,
+            category: "worker".into(),
+            language: "go".into(),
+        },
+        ServiceDef {
+            name: "NOC Escalation".into(),
+            port: 8191,
+            check_type: "http".into(),
+            path: "/health".into(),
+            sla_target_pct: 99.95,
+            category: "core".into(),
+            language: "go".into(),
+        },
+        ServiceDef {
+            name: "Digital Twin".into(),
+            port: 8175,
+            check_type: "http".into(),
+            path: "/health".into(),
+            sla_target_pct: 99.0,
+            category: "worker".into(),
+            language: "go".into(),
+        },
         // ── Rust Workers ──
-        ServiceDef { name: "Wiredigg Network Engine".into(), port: 8160, check_type: "http".into(), path: "/health".into(), sla_target_pct: 99.9, category: "core".into(), language: "rust".into() },
-        ServiceDef { name: "NOC Collector".into(), port: 8190, check_type: "http".into(), path: "/health".into(), sla_target_pct: 99.95, category: "core".into(), language: "rust".into() },
-        ServiceDef { name: "Evidence Signer".into(), port: 8120, check_type: "http".into(), path: "/health".into(), sla_target_pct: 99.9, category: "security".into(), language: "rust".into() },
-        ServiceDef { name: "Financial Ledger".into(), port: 8121, check_type: "http".into(), path: "/health".into(), sla_target_pct: 99.99, category: "core".into(), language: "rust".into() },
-        ServiceDef { name: "BGP Validator".into(), port: 8122, check_type: "http".into(), path: "/health".into(), sla_target_pct: 99.5, category: "worker".into(), language: "rust".into() },
-        ServiceDef { name: "Quantum Crypto".into(), port: 8185, check_type: "http".into(), path: "/health".into(), sla_target_pct: 99.0, category: "security".into(), language: "rust".into() },
-        ServiceDef { name: "Blockchain Audit".into(), port: 8165, check_type: "http".into(), path: "/health".into(), sla_target_pct: 99.9, category: "security".into(), language: "rust".into() },
-
+        ServiceDef {
+            name: "Wiredigg Network Engine".into(),
+            port: 8160,
+            check_type: "http".into(),
+            path: "/health".into(),
+            sla_target_pct: 99.9,
+            category: "core".into(),
+            language: "rust".into(),
+        },
+        ServiceDef {
+            name: "NOC Collector".into(),
+            port: 8190,
+            check_type: "http".into(),
+            path: "/health".into(),
+            sla_target_pct: 99.95,
+            category: "core".into(),
+            language: "rust".into(),
+        },
+        ServiceDef {
+            name: "Evidence Signer".into(),
+            port: 8120,
+            check_type: "http".into(),
+            path: "/health".into(),
+            sla_target_pct: 99.9,
+            category: "security".into(),
+            language: "rust".into(),
+        },
+        ServiceDef {
+            name: "Financial Ledger".into(),
+            port: 8121,
+            check_type: "http".into(),
+            path: "/health".into(),
+            sla_target_pct: 99.99,
+            category: "core".into(),
+            language: "rust".into(),
+        },
+        ServiceDef {
+            name: "BGP Validator".into(),
+            port: 8122,
+            check_type: "http".into(),
+            path: "/health".into(),
+            sla_target_pct: 99.5,
+            category: "worker".into(),
+            language: "rust".into(),
+        },
+        ServiceDef {
+            name: "Quantum Crypto".into(),
+            port: 8185,
+            check_type: "http".into(),
+            path: "/health".into(),
+            sla_target_pct: 99.0,
+            category: "security".into(),
+            language: "rust".into(),
+        },
+        ServiceDef {
+            name: "Blockchain Audit".into(),
+            port: 8165,
+            check_type: "http".into(),
+            path: "/health".into(),
+            sla_target_pct: 99.9,
+            category: "security".into(),
+            language: "rust".into(),
+        },
         // ── Python Workers ──
-        ServiceDef { name: "AI Compliance Engine".into(), port: 8155, check_type: "http".into(), path: "/health".into(), sla_target_pct: 99.0, category: "worker".into(), language: "python".into() },
-        ServiceDef { name: "Liveness Detection".into(), port: 8150, check_type: "http".into(), path: "/health".into(), sla_target_pct: 99.5, category: "security".into(), language: "python".into() },
-        ServiceDef { name: "SIEM Correlator".into(), port: 8086, check_type: "http".into(), path: "/health".into(), sla_target_pct: 99.9, category: "security".into(), language: "python".into() },
-        ServiceDef { name: "NOC Correlator".into(), port: 8192, check_type: "http".into(), path: "/health".into(), sla_target_pct: 99.95, category: "core".into(), language: "python".into() },
-        ServiceDef { name: "Federated Learning".into(), port: 8170, check_type: "http".into(), path: "/health".into(), sla_target_pct: 99.0, category: "worker".into(), language: "python".into() },
-        ServiceDef { name: "Sovereign AI".into(), port: 8180, check_type: "http".into(), path: "/health".into(), sla_target_pct: 99.0, category: "worker".into(), language: "python".into() },
-
+        ServiceDef {
+            name: "AI Compliance Engine".into(),
+            port: 8155,
+            check_type: "http".into(),
+            path: "/health".into(),
+            sla_target_pct: 99.0,
+            category: "worker".into(),
+            language: "python".into(),
+        },
+        ServiceDef {
+            name: "Liveness Detection".into(),
+            port: 8150,
+            check_type: "http".into(),
+            path: "/health".into(),
+            sla_target_pct: 99.5,
+            category: "security".into(),
+            language: "python".into(),
+        },
+        ServiceDef {
+            name: "SIEM Correlator".into(),
+            port: 8086,
+            check_type: "http".into(),
+            path: "/health".into(),
+            sla_target_pct: 99.9,
+            category: "security".into(),
+            language: "python".into(),
+        },
+        ServiceDef {
+            name: "NOC Correlator".into(),
+            port: 8192,
+            check_type: "http".into(),
+            path: "/health".into(),
+            sla_target_pct: 99.95,
+            category: "core".into(),
+            language: "python".into(),
+        },
+        ServiceDef {
+            name: "Federated Learning".into(),
+            port: 8170,
+            check_type: "http".into(),
+            path: "/health".into(),
+            sla_target_pct: 99.0,
+            category: "worker".into(),
+            language: "python".into(),
+        },
+        ServiceDef {
+            name: "Sovereign AI".into(),
+            port: 8180,
+            check_type: "http".into(),
+            path: "/health".into(),
+            sla_target_pct: 99.0,
+            category: "worker".into(),
+            language: "python".into(),
+        },
         // ── External Middleware ──
-        ServiceDef { name: "PostgreSQL".into(), port: 5432, check_type: "tcp".into(), path: "".into(), sla_target_pct: 99.99, category: "middleware".into(), language: "external".into() },
-        ServiceDef { name: "Redis".into(), port: 6379, check_type: "tcp".into(), path: "".into(), sla_target_pct: 99.99, category: "middleware".into(), language: "external".into() },
-        ServiceDef { name: "Kafka".into(), port: 9092, check_type: "tcp".into(), path: "".into(), sla_target_pct: 99.95, category: "middleware".into(), language: "external".into() },
-        ServiceDef { name: "OpenSearch".into(), port: 9200, check_type: "http".into(), path: "/".into(), sla_target_pct: 99.9, category: "middleware".into(), language: "external".into() },
-        ServiceDef { name: "Temporal".into(), port: 7233, check_type: "tcp".into(), path: "".into(), sla_target_pct: 99.9, category: "middleware".into(), language: "external".into() },
-        ServiceDef { name: "Keycloak".into(), port: 8080, check_type: "http".into(), path: "/health".into(), sla_target_pct: 99.9, category: "middleware".into(), language: "external".into() },
+        ServiceDef {
+            name: "PostgreSQL".into(),
+            port: 5432,
+            check_type: "tcp".into(),
+            path: "".into(),
+            sla_target_pct: 99.99,
+            category: "middleware".into(),
+            language: "external".into(),
+        },
+        ServiceDef {
+            name: "Redis".into(),
+            port: 6379,
+            check_type: "tcp".into(),
+            path: "".into(),
+            sla_target_pct: 99.99,
+            category: "middleware".into(),
+            language: "external".into(),
+        },
+        ServiceDef {
+            name: "Kafka".into(),
+            port: 9092,
+            check_type: "tcp".into(),
+            path: "".into(),
+            sla_target_pct: 99.95,
+            category: "middleware".into(),
+            language: "external".into(),
+        },
+        ServiceDef {
+            name: "OpenSearch".into(),
+            port: 9200,
+            check_type: "http".into(),
+            path: "/".into(),
+            sla_target_pct: 99.9,
+            category: "middleware".into(),
+            language: "external".into(),
+        },
+        ServiceDef {
+            name: "Temporal".into(),
+            port: 7233,
+            check_type: "tcp".into(),
+            path: "".into(),
+            sla_target_pct: 99.9,
+            category: "middleware".into(),
+            language: "external".into(),
+        },
+        ServiceDef {
+            name: "Keycloak".into(),
+            port: 8080,
+            check_type: "http".into(),
+            path: "/health".into(),
+            sla_target_pct: 99.9,
+            category: "middleware".into(),
+            language: "external".into(),
+        },
     ]
 }
 
@@ -150,8 +370,14 @@ struct AppState {
 impl AppState {
     fn new() -> Self {
         Self {
-            db_url: env_or("DATABASE_URL", "postgresql://ndsep_user:ndsep_secure_2026@localhost:5432/ndsep_db"),
-            relay_url: env_or("WORKER_RELAY_URL", "http://localhost:3000/api/workers/event"),
+            db_url: env_or(
+                "DATABASE_URL",
+                "postgresql://ndsep_user:ndsep_secure_2026@localhost:5432/ndsep_db",
+            ),
+            relay_url: env_or(
+                "WORKER_RELAY_URL",
+                "http://localhost:3000/api/workers/event",
+            ),
             kafka_url: env_or("KAFKA_BROKERS", "localhost:9092"),
             redis_url: env_or("REDIS_URL", "redis://localhost:6379"),
             services: get_service_registry(),
@@ -216,7 +442,9 @@ async fn probe_tcp(service: &ServiceDef) -> ProbeResult {
     match tokio::time::timeout(
         Duration::from_secs(3),
         tokio::net::TcpStream::connect(&addr),
-    ).await {
+    )
+    .await
+    {
         Ok(Ok(_)) => {
             let elapsed = start.elapsed().as_secs_f64() * 1000.0;
             ProbeResult {
@@ -261,19 +489,25 @@ async fn probe_service(service: &ServiceDef) -> ProbeResult {
 // ── SLA Computation ──────────────────────────────────────────────────────────
 
 fn update_sla(sla_data: &mut HashMap<String, ServiceSla>, result: &ProbeResult) {
-    let sla = sla_data.entry(result.service_name.clone()).or_insert_with(|| ServiceSla {
-        service_name: result.service_name.clone(),
-        sla_target_pct: result.sla_target_pct,
-        current_status: "unknown".into(),
-        ..Default::default()
-    });
+    let sla = sla_data
+        .entry(result.service_name.clone())
+        .or_insert_with(|| ServiceSla {
+            service_name: result.service_name.clone(),
+            sla_target_pct: result.sla_target_pct,
+            current_status: "unknown".into(),
+            ..Default::default()
+        });
 
     sla.total_checks += 1;
-    if result.is_up { sla.successful_checks += 1; }
+    if result.is_up {
+        sla.successful_checks += 1;
+    }
 
     sla.availability_pct = if sla.total_checks > 0 {
         (sla.successful_checks as f64 / sla.total_checks as f64) * 100.0
-    } else { 0.0 };
+    } else {
+        0.0
+    };
 
     sla.response_times.push(result.response_time_ms);
     // Keep last 1000 response times for percentile calculation
@@ -290,7 +524,9 @@ fn update_sla(sla_data: &mut HashMap<String, ServiceSla>, result: &ProbeResult) 
     sla.p99_response_ms = sorted[(len as f64 * 0.99) as usize % len];
 
     sla.sla_met = sla.availability_pct >= sla.sla_target_pct;
-    sla.current_status = if result.is_up { "up".into() } else {
+    sla.current_status = if result.is_up {
+        "up".into()
+    } else {
         sla.last_down = Some(Utc::now());
         "down".into()
     };
@@ -305,8 +541,11 @@ fn update_sla(sla_data: &mut HashMap<String, ServiceSla>, result: &ProbeResult) 
 // ── Probe Loop ───────────────────────────────────────────────────────────────
 
 async fn probe_loop(state: Arc<AppState>) {
-    info!("[Probe] Starting probe loop — {} services, interval {}s",
-        state.services.len(), PROBE_INTERVAL_SECS);
+    info!(
+        "[Probe] Starting probe loop — {} services, interval {}s",
+        state.services.len(),
+        PROBE_INTERVAL_SECS
+    );
 
     loop {
         let services = state.services.clone();
@@ -342,7 +581,11 @@ async fn probe_loop(state: Arc<AppState>) {
 async fn persist_uptime_records(db_url: &str, results: &[ProbeResult]) {
     let client = match tokio_postgres::connect(db_url, tokio_postgres::NoTls).await {
         Ok((client, connection)) => {
-            tokio::spawn(async move { if let Err(e) = connection.await { error!("DB: {e}"); } });
+            tokio::spawn(async move {
+                if let Err(e) = connection.await {
+                    error!("DB: {e}");
+                }
+            });
             client
         }
         Err(_) => return,
@@ -368,10 +611,17 @@ async fn sla_rollup_loop(state: Arc<AppState>) {
 
         let sla_snapshot: Vec<ServiceSla> = if let Ok(data) = state.sla_data.read() {
             data.values().cloned().collect()
-        } else { continue };
+        } else {
+            continue;
+        };
 
         let client = match tokio_postgres::connect(&state.db_url, tokio_postgres::NoTls).await {
-            Ok((c, conn)) => { tokio::spawn(async move { let _ = conn.await; }); c }
+            Ok((c, conn)) => {
+                tokio::spawn(async move {
+                    let _ = conn.await;
+                });
+                c
+            }
             Err(_) => continue,
         };
 
@@ -385,7 +635,10 @@ async fn sla_rollup_loop(state: Arc<AppState>) {
                   &(sla.max_downtime_secs as i32), &sla.sla_target_pct],
             ).await;
         }
-        info!("[SLA] Hourly rollup complete for {} services", sla_snapshot.len());
+        info!(
+            "[SLA] Hourly rollup complete for {} services",
+            sla_snapshot.len()
+        );
     }
 }
 
@@ -418,26 +671,42 @@ async fn latest_handler(State(state): State<Arc<AppState>>) -> Json<serde_json::
 
 async fn sla_handler(State(state): State<Arc<AppState>>) -> Json<serde_json::Value> {
     let sla_data = state.sla_data.read().unwrap();
-    let mut sla_list: Vec<serde_json::Value> = sla_data.values().map(|s| {
-        serde_json::json!({
-            "service_name": s.service_name,
-            "availability_pct": format!("{:.4}", s.availability_pct),
-            "sla_target_pct": s.sla_target_pct,
-            "sla_met": s.sla_met,
-            "total_checks": s.total_checks,
-            "avg_response_ms": format!("{:.2}", s.avg_response_ms),
-            "p95_response_ms": format!("{:.2}", s.p95_response_ms),
-            "p99_response_ms": format!("{:.2}", s.p99_response_ms),
-            "current_status": s.current_status,
+    let mut sla_list: Vec<serde_json::Value> = sla_data
+        .values()
+        .map(|s| {
+            serde_json::json!({
+                "service_name": s.service_name,
+                "availability_pct": format!("{:.4}", s.availability_pct),
+                "sla_target_pct": s.sla_target_pct,
+                "sla_met": s.sla_met,
+                "total_checks": s.total_checks,
+                "avg_response_ms": format!("{:.2}", s.avg_response_ms),
+                "p95_response_ms": format!("{:.2}", s.p95_response_ms),
+                "p99_response_ms": format!("{:.2}", s.p99_response_ms),
+                "current_status": s.current_status,
+            })
         })
-    }).collect();
+        .collect();
     sla_list.sort_by(|a, b| {
-        let a_pct: f64 = a["availability_pct"].as_str().unwrap().parse().unwrap_or(0.0);
-        let b_pct: f64 = b["availability_pct"].as_str().unwrap().parse().unwrap_or(0.0);
-        a_pct.partial_cmp(&b_pct).unwrap_or(std::cmp::Ordering::Equal)
+        let a_pct: f64 = a["availability_pct"]
+            .as_str()
+            .unwrap()
+            .parse()
+            .unwrap_or(0.0);
+        let b_pct: f64 = b["availability_pct"]
+            .as_str()
+            .unwrap()
+            .parse()
+            .unwrap_or(0.0);
+        a_pct
+            .partial_cmp(&b_pct)
+            .unwrap_or(std::cmp::Ordering::Equal)
     });
 
-    let met = sla_list.iter().filter(|s| s["sla_met"].as_bool().unwrap_or(false)).count();
+    let met = sla_list
+        .iter()
+        .filter(|s| s["sla_met"].as_bool().unwrap_or(false))
+        .count();
     Json(serde_json::json!({
         "total_services": sla_list.len(),
         "sla_met": met,
@@ -456,17 +725,23 @@ async fn dashboard_handler(State(state): State<Arc<AppState>>) -> Json<serde_jso
     for r in results.iter() {
         let cat = by_category.entry(r.category.clone()).or_default();
         cat.0 += 1;
-        if r.is_up { cat.1 += 1; }
+        if r.is_up {
+            cat.1 += 1;
+        }
 
         let lang = by_language.entry(r.language.clone()).or_default();
         lang.0 += 1;
-        if r.is_up { lang.1 += 1; }
+        if r.is_up {
+            lang.1 += 1;
+        }
     }
 
     let overall_up = results.iter().filter(|r| r.is_up).count();
     let overall_pct = if !results.is_empty() {
         (overall_up as f64 / results.len() as f64) * 100.0
-    } else { 0.0 };
+    } else {
+        0.0
+    };
 
     Json(serde_json::json!({
         "overall": {
@@ -503,7 +778,10 @@ async fn main() {
     info!("╔══════════════════════════════════════════════════════════╗");
     info!("║  NDSEP NOC Uptime & Availability Tracker               ║");
     info!("║  HTTP API: :{HTTP_PORT}                                     ║");
-    info!("║  Services: {} monitored                                ║", get_service_registry().len());
+    info!(
+        "║  Services: {} monitored                                ║",
+        get_service_registry().len()
+    );
     info!("║  Interval: {PROBE_INTERVAL_SECS}s                                        ║");
     info!("╚══════════════════════════════════════════════════════════╝");
 

@@ -12,10 +12,17 @@ use axum::{
 use base64::{engine::general_purpose, Engine as _};
 use chrono::Utc;
 use lazy_static::lazy_static;
-use prometheus::{Counter, Registry, TextEncoder, Encoder};
+use prometheus::{Counter, Encoder, Registry, TextEncoder};
 use reqwest::Client;
 use serde::{Deserialize, Serialize};
-use std::{env, sync::{Arc, atomic::{AtomicU64, Ordering}}, time::Instant};
+use std::{
+    env,
+    sync::{
+        atomic::{AtomicU64, Ordering},
+        Arc,
+    },
+    time::Instant,
+};
 use uuid::Uuid;
 
 fn get_env(key: &str, fallback: &str) -> String {
@@ -24,15 +31,12 @@ fn get_env(key: &str, fallback: &str) -> String {
 
 lazy_static! {
     static ref REGISTRY: Registry = Registry::new();
-    static ref INDEX_COUNTER: Counter = Counter::new(
-        "ndsep_opensearch_index_total", "Total documents indexed"
-    ).unwrap();
-    static ref SEARCH_COUNTER: Counter = Counter::new(
-        "ndsep_opensearch_search_total", "Total search queries"
-    ).unwrap();
-    static ref ERROR_COUNTER: Counter = Counter::new(
-        "ndsep_opensearch_errors_total", "Total errors"
-    ).unwrap();
+    static ref INDEX_COUNTER: Counter =
+        Counter::new("ndsep_opensearch_index_total", "Total documents indexed").unwrap();
+    static ref SEARCH_COUNTER: Counter =
+        Counter::new("ndsep_opensearch_search_total", "Total search queries").unwrap();
+    static ref ERROR_COUNTER: Counter =
+        Counter::new("ndsep_opensearch_errors_total", "Total errors").unwrap();
 }
 
 fn init_metrics() {
@@ -43,14 +47,38 @@ fn init_metrics() {
 
 // NDSEP OpenSearch index definitions
 const NDSEP_INDICES: &[(&str, &str)] = &[
-    ("ndsep-institutions", r#"{"mappings":{"properties":{"name":{"type":"text","analyzer":"standard"},"rcNumber":{"type":"keyword"},"sector":{"type":"keyword"},"status":{"type":"keyword"},"createdAt":{"type":"date"}}}}"#),
-    ("ndsep-aml-cases", r#"{"mappings":{"properties":{"caseNumber":{"type":"keyword"},"entityName":{"type":"text"},"riskLevel":{"type":"keyword"},"status":{"type":"keyword"},"createdAt":{"type":"date"}}}}"#),
-    ("ndsep-kyc-records", r#"{"mappings":{"properties":{"fullName":{"type":"text"},"bvn":{"type":"keyword"},"nationality":{"type":"keyword"},"status":{"type":"keyword"},"createdAt":{"type":"date"}}}}"#),
-    ("ndsep-fines", r#"{"mappings":{"properties":{"entityName":{"type":"text"},"amount":{"type":"double"},"status":{"type":"keyword"},"sector":{"type":"keyword"},"createdAt":{"type":"date"}}}}"#),
-    ("ndsep-accreditations", r#"{"mappings":{"properties":{"entityName":{"type":"text"},"accreditationType":{"type":"keyword"},"state":{"type":"keyword"},"createdAt":{"type":"date"}}}}"#),
-    ("ndsep-watchlist-hits", r#"{"mappings":{"properties":{"entityName":{"type":"text"},"matchScore":{"type":"double"},"listType":{"type":"keyword"},"createdAt":{"type":"date"}}}}"#),
-    ("ndsep-audit-trail", r#"{"mappings":{"properties":{"action":{"type":"keyword"},"entityType":{"type":"keyword"},"userId":{"type":"keyword"},"timestamp":{"type":"date"},"details":{"type":"text"}}}}"#),
-    ("ndsep-breach-notifications", r#"{"mappings":{"properties":{"severity":{"type":"keyword"},"status":{"type":"keyword"},"affectedSystems":{"type":"keyword"},"createdAt":{"type":"date"}}}}"#),
+    (
+        "ndsep-institutions",
+        r#"{"mappings":{"properties":{"name":{"type":"text","analyzer":"standard"},"rcNumber":{"type":"keyword"},"sector":{"type":"keyword"},"status":{"type":"keyword"},"createdAt":{"type":"date"}}}}"#,
+    ),
+    (
+        "ndsep-aml-cases",
+        r#"{"mappings":{"properties":{"caseNumber":{"type":"keyword"},"entityName":{"type":"text"},"riskLevel":{"type":"keyword"},"status":{"type":"keyword"},"createdAt":{"type":"date"}}}}"#,
+    ),
+    (
+        "ndsep-kyc-records",
+        r#"{"mappings":{"properties":{"fullName":{"type":"text"},"bvn":{"type":"keyword"},"nationality":{"type":"keyword"},"status":{"type":"keyword"},"createdAt":{"type":"date"}}}}"#,
+    ),
+    (
+        "ndsep-fines",
+        r#"{"mappings":{"properties":{"entityName":{"type":"text"},"amount":{"type":"double"},"status":{"type":"keyword"},"sector":{"type":"keyword"},"createdAt":{"type":"date"}}}}"#,
+    ),
+    (
+        "ndsep-accreditations",
+        r#"{"mappings":{"properties":{"entityName":{"type":"text"},"accreditationType":{"type":"keyword"},"state":{"type":"keyword"},"createdAt":{"type":"date"}}}}"#,
+    ),
+    (
+        "ndsep-watchlist-hits",
+        r#"{"mappings":{"properties":{"entityName":{"type":"text"},"matchScore":{"type":"double"},"listType":{"type":"keyword"},"createdAt":{"type":"date"}}}}"#,
+    ),
+    (
+        "ndsep-audit-trail",
+        r#"{"mappings":{"properties":{"action":{"type":"keyword"},"entityType":{"type":"keyword"},"userId":{"type":"keyword"},"timestamp":{"type":"date"},"details":{"type":"text"}}}}"#,
+    ),
+    (
+        "ndsep-breach-notifications",
+        r#"{"mappings":{"properties":{"severity":{"type":"keyword"},"status":{"type":"keyword"},"affectedSystems":{"type":"keyword"},"createdAt":{"type":"date"}}}}"#,
+    ),
 ];
 
 #[derive(Debug, Deserialize)]
@@ -89,7 +117,10 @@ impl AppState {
         if self.opensearch_auth.is_empty() {
             String::new()
         } else {
-            format!("Basic {}", general_purpose::STANDARD.encode(&self.opensearch_auth))
+            format!(
+                "Basic {}",
+                general_purpose::STANDARD.encode(&self.opensearch_auth)
+            )
         }
     }
 }
@@ -97,7 +128,9 @@ impl AppState {
 async fn ensure_indices(state: &AppState) {
     for (index_name, mapping) in NDSEP_INDICES {
         let url = format!("{}/{}", state.opensearch_url, index_name);
-        let mut req = state.client.put(&url)
+        let mut req = state
+            .client
+            .put(&url)
             .header("Content-Type", "application/json")
             .body(mapping.to_string());
         if !state.opensearch_auth.is_empty() {
@@ -123,12 +156,17 @@ async fn index_document(
     let doc_id = req.id.unwrap_or_else(|| Uuid::new_v4().to_string());
     let mut doc = req.document.clone();
     if let Some(obj) = doc.as_object_mut() {
-        obj.insert("_indexed_at".to_string(), serde_json::json!(Utc::now().to_rfc3339()));
+        obj.insert(
+            "_indexed_at".to_string(),
+            serde_json::json!(Utc::now().to_rfc3339()),
+        );
         obj.insert("_source".to_string(), serde_json::json!("ndsep-indexer"));
     }
 
     let url = format!("{}/{}/_doc/{}", state.opensearch_url, req.index, doc_id);
-    let mut http_req = state.client.put(&url)
+    let mut http_req = state
+        .client
+        .put(&url)
         .header("Content-Type", "application/json")
         .json(&doc);
     if !state.opensearch_auth.is_empty() {
@@ -146,7 +184,8 @@ async fn index_document(
                 "id": doc_id,
                 "index": req.index,
                 "result": body,
-            })).into_response()
+            }))
+            .into_response()
         }
         Err(e) => {
             ERROR_COUNTER.inc();
@@ -157,7 +196,8 @@ async fn index_document(
                 "degraded": true,
                 "id": doc_id,
                 "index": req.index,
-            })).into_response()
+            }))
+            .into_response()
         }
     }
 }
@@ -193,7 +233,9 @@ async fn search_documents(
     });
 
     let url = format!("{}/{}/_search", state.opensearch_url, req.index);
-    let mut http_req = state.client.post(&url)
+    let mut http_req = state
+        .client
+        .post(&url)
         .header("Content-Type", "application/json")
         .json(&query);
     if !state.opensearch_auth.is_empty() {
@@ -209,16 +251,21 @@ async fn search_documents(
                 "results": body,
                 "query": req.query,
                 "index": req.index,
-            })).into_response()
+            }))
+            .into_response()
         }
         Err(e) => {
             ERROR_COUNTER.inc();
             tracing::warn!("OpenSearch search degraded: {}", e);
-            (StatusCode::SERVICE_UNAVAILABLE, Json(serde_json::json!({
-                "success": false,
-                "degraded": true,
-                "error": e.to_string(),
-            }))).into_response()
+            (
+                StatusCode::SERVICE_UNAVAILABLE,
+                Json(serde_json::json!({
+                    "success": false,
+                    "degraded": true,
+                    "error": e.to_string(),
+                })),
+            )
+                .into_response()
         }
     }
 }
@@ -237,7 +284,9 @@ async fn bulk_index(
     }
 
     let url = format!("{}/_bulk", state.opensearch_url);
-    let mut http_req = state.client.post(&url)
+    let mut http_req = state
+        .client
+        .post(&url)
         .header("Content-Type", "application/x-ndjson")
         .body(ndjson);
     if !state.opensearch_auth.is_empty() {
@@ -255,7 +304,8 @@ async fn bulk_index(
                 "indexed": count,
                 "index": req.index,
                 "result": body,
-            })).into_response()
+            }))
+            .into_response()
         }
         Err(e) => {
             ERROR_COUNTER.inc();
@@ -264,7 +314,8 @@ async fn bulk_index(
                 "degraded": true,
                 "indexed": 0,
                 "error": e.to_string(),
-            })).into_response()
+            }))
+            .into_response()
         }
     }
 }
@@ -294,7 +345,10 @@ async fn metrics() -> impl IntoResponse {
     let mut buffer = Vec::new();
     encoder.encode(&metric_families, &mut buffer).unwrap();
     (
-        [(axum::http::header::CONTENT_TYPE, "text/plain; version=0.0.4")],
+        [(
+            axum::http::header::CONTENT_TYPE,
+            "text/plain; version=0.0.4",
+        )],
         String::from_utf8(buffer).unwrap_or_default(),
     )
 }

@@ -8,12 +8,11 @@
 //!   - Internal service auth token injection
 //!
 //! Usage:
-//! ```no_run
-//! use ndsep_shared::grpc_interceptors::{GrpcInterceptor, InterceptorConfig};
-//! async fn do_grpc_call() -> Result<(), Box<dyn std::error::Error>> { Ok(()) }
-//! async fn example() {
-//!     let interceptor = GrpcInterceptor::new("audit-chain", InterceptorConfig::default());
-//!     let result = interceptor.execute(|| async { do_grpc_call().await }).await;
+//! ```ignore
+//! let cb = CircuitBreaker::new("audit-chain", 5, 2, Duration::from_secs(30));
+//! if cb.allow() {
+//!     // make gRPC call
+//!     cb.record_success();
 //! }
 //! ```
 
@@ -124,7 +123,12 @@ pub struct CircuitBreaker {
 }
 
 impl CircuitBreaker {
-    pub fn new(name: &str, failure_threshold: u32, success_threshold: u32, reset_timeout: Duration) -> Self {
+    pub fn new(
+        name: &str,
+        failure_threshold: u32,
+        success_threshold: u32,
+        reset_timeout: Duration,
+    ) -> Self {
         Self {
             name: name.to_string(),
             state: AtomicU32::new(CircuitState::Closed as u32),
@@ -154,7 +158,8 @@ impl CircuitBreaker {
                 if let Some(opened) = *guard {
                     if opened.elapsed() >= self.reset_timeout {
                         drop(guard);
-                        self.state.store(CircuitState::HalfOpen as u32, Ordering::Relaxed);
+                        self.state
+                            .store(CircuitState::HalfOpen as u32, Ordering::Relaxed);
                         self.successes.store(0, Ordering::Relaxed);
                         return true;
                     }
@@ -170,7 +175,8 @@ impl CircuitBreaker {
         if self.state() == CircuitState::HalfOpen {
             let s = self.successes.fetch_add(1, Ordering::Relaxed) + 1;
             if s >= self.success_threshold {
-                self.state.store(CircuitState::Closed as u32, Ordering::Relaxed);
+                self.state
+                    .store(CircuitState::Closed as u32, Ordering::Relaxed);
                 log::info!("[gRPC:circuit:{}] CLOSED — service recovered", self.name);
             }
         }
@@ -179,7 +185,8 @@ impl CircuitBreaker {
     pub fn record_failure(&self) {
         let f = self.failures.fetch_add(1, Ordering::Relaxed) + 1;
         if self.state() == CircuitState::HalfOpen || f >= self.failure_threshold {
-            self.state.store(CircuitState::Open as u32, Ordering::Relaxed);
+            self.state
+                .store(CircuitState::Open as u32, Ordering::Relaxed);
             *self.last_opened_at.lock().unwrap() = Some(Instant::now());
             log::warn!(
                 "[gRPC:circuit:{}] OPEN — {} failures (threshold: {})",
@@ -357,7 +364,10 @@ where
                     CB_TRIPS.fetch_add(1, Ordering::Relaxed);
                     return Err(GrpcError {
                         code: GrpcCode::Unavailable,
-                        message: format!("circuit breaker opened during retry for {}", service_name),
+                        message: format!(
+                            "circuit breaker opened during retry for {}",
+                            service_name
+                        ),
                     });
                 }
             }
@@ -437,10 +447,12 @@ pub async fn grpc_http_call(
                 });
             }
 
-            resp.json::<serde_json::Value>().await.map_err(|e| GrpcError {
-                code: GrpcCode::Internal,
-                message: format!("json decode error: {}", e),
-            })
+            resp.json::<serde_json::Value>()
+                .await
+                .map_err(|e| GrpcError {
+                    code: GrpcCode::Internal,
+                    message: format!("json decode error: {}", e),
+                })
         }
     })
     .await

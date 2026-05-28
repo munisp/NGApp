@@ -12,7 +12,7 @@ use axum::{
 use base64::{engine::general_purpose, Engine as _};
 use chrono::Utc;
 use lazy_static::lazy_static;
-use prometheus::{Counter, Registry, TextEncoder, Encoder};
+use prometheus::{Counter, Encoder, Registry, TextEncoder};
 use reqwest::Client;
 use serde::{Deserialize, Serialize};
 use std::{
@@ -29,17 +29,22 @@ fn get_env(key: &str, fallback: &str) -> String {
 lazy_static! {
     static ref REGISTRY: Registry = Registry::new();
     static ref VALIDATE_COUNTER: Counter = Counter::new(
-        "ndsep_keycloak_validations_total", "Total token validations"
-    ).unwrap();
-    static ref VALID_COUNTER: Counter = Counter::new(
-        "ndsep_keycloak_valid_tokens_total", "Total valid tokens"
-    ).unwrap();
+        "ndsep_keycloak_validations_total",
+        "Total token validations"
+    )
+    .unwrap();
+    static ref VALID_COUNTER: Counter =
+        Counter::new("ndsep_keycloak_valid_tokens_total", "Total valid tokens").unwrap();
     static ref INVALID_COUNTER: Counter = Counter::new(
-        "ndsep_keycloak_invalid_tokens_total", "Total invalid tokens"
-    ).unwrap();
+        "ndsep_keycloak_invalid_tokens_total",
+        "Total invalid tokens"
+    )
+    .unwrap();
     static ref INTROSPECT_COUNTER: Counter = Counter::new(
-        "ndsep_keycloak_introspections_total", "Total token introspections"
-    ).unwrap();
+        "ndsep_keycloak_introspections_total",
+        "Total token introspections"
+    )
+    .unwrap();
 }
 
 fn init_metrics() {
@@ -147,7 +152,8 @@ fn decode_jwt_payload(token: &str) -> Option<TokenClaims> {
         3 => format!("{}=", payload),
         _ => payload.to_string(),
     };
-    let decoded = general_purpose::URL_SAFE_NO_PAD.decode(payload)
+    let decoded = general_purpose::URL_SAFE_NO_PAD
+        .decode(payload)
         .or_else(|_| general_purpose::URL_SAFE.decode(&padded))
         .ok()?;
     serde_json::from_slice(&decoded).ok()
@@ -191,20 +197,28 @@ async fn validate_token(
         Some(c) => c,
         None => {
             INVALID_COUNTER.inc();
-            return (StatusCode::UNAUTHORIZED, Json(serde_json::json!({
-                "valid": false,
-                "error": "invalid token format",
-            }))).into_response();
+            return (
+                StatusCode::UNAUTHORIZED,
+                Json(serde_json::json!({
+                    "valid": false,
+                    "error": "invalid token format",
+                })),
+            )
+                .into_response();
         }
     };
 
     // Check expiry
     if is_token_expired(&claims) {
         INVALID_COUNTER.inc();
-        return (StatusCode::UNAUTHORIZED, Json(serde_json::json!({
-            "valid": false,
-            "error": "token expired",
-        }))).into_response();
+        return (
+            StatusCode::UNAUTHORIZED,
+            Json(serde_json::json!({
+                "valid": false,
+                "error": "token expired",
+            })),
+        )
+            .into_response();
     }
 
     // Extract roles
@@ -215,12 +229,16 @@ async fn validate_token(
         let has_all = required.iter().all(|r| roles.contains(r));
         if !has_all {
             INVALID_COUNTER.inc();
-            return (StatusCode::FORBIDDEN, Json(serde_json::json!({
-                "valid": false,
-                "error": "insufficient roles",
-                "required": required,
-                "actual": roles,
-            }))).into_response();
+            return (
+                StatusCode::FORBIDDEN,
+                Json(serde_json::json!({
+                    "valid": false,
+                    "error": "insufficient roles",
+                    "required": required,
+                    "actual": roles,
+                })),
+            )
+                .into_response();
         }
     }
 
@@ -235,7 +253,8 @@ async fn validate_token(
         "tenantId": claims.ndsep_tenant_id,
         "sector": claims.ndsep_sector,
         "exp": claims.exp,
-    })).into_response()
+    }))
+    .into_response()
 }
 
 async fn introspect_token(
@@ -253,7 +272,8 @@ async fn introspect_token(
     params.insert("client_id", state.client_id.as_str());
     params.insert("client_secret", state.client_secret.as_str());
 
-    match state.client
+    match state
+        .client
         .post(&state.introspect_url())
         .header("Authorization", auth_header)
         .form(&params)
@@ -265,7 +285,8 @@ async fn introspect_token(
             Json(serde_json::json!({
                 "success": true,
                 "introspection": body,
-            })).into_response()
+            }))
+            .into_response()
         }
         Err(_) => {
             // Degraded mode — decode locally
@@ -274,7 +295,8 @@ async fn introspect_token(
                 "success": true,
                 "degraded": true,
                 "claims": claims,
-            })).into_response()
+            }))
+            .into_response()
         }
     }
 }
@@ -305,7 +327,10 @@ async fn metrics() -> impl IntoResponse {
     let mut buffer = Vec::new();
     encoder.encode(&metric_families, &mut buffer).unwrap();
     (
-        [(axum::http::header::CONTENT_TYPE, "text/plain; version=0.0.4")],
+        [(
+            axum::http::header::CONTENT_TYPE,
+            "text/plain; version=0.0.4",
+        )],
         String::from_utf8(buffer).unwrap_or_default(),
     )
 }

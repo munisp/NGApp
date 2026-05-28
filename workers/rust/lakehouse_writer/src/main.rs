@@ -82,17 +82,22 @@ async fn forward_to_parquet(state: &AppState, table: &str, record: &serde_json::
         "table": table,
         "records": [record],
     });
-    match client.post(format!("{}/ingest", state.lakehouse_analytics_url))
+    match client
+        .post(format!("{}/ingest", state.lakehouse_analytics_url))
         .json(&payload)
         .timeout(std::time::Duration::from_secs(5))
-        .send().await
+        .send()
+        .await
     {
         Ok(resp) if resp.status().is_success() => {
             state.parquet_forwards.fetch_add(1, Ordering::Relaxed);
             log::debug!("[Lakehouse] Forwarded to Parquet offline store: {table}");
         }
         Ok(resp) => {
-            log::debug!("[Lakehouse] Parquet forward to {table}: HTTP {}", resp.status());
+            log::debug!(
+                "[Lakehouse] Parquet forward to {table}: HTTP {}",
+                resp.status()
+            );
         }
         Err(e) => {
             log::debug!("[Lakehouse] Parquet forward unavailable: {e}");

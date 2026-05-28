@@ -6,23 +6,27 @@
 /// Uses finite-difference approximation of differential equations.
 ///
 /// Port: 8179
-use axum::{extract::Json, routing::{get, post}, Router};
+use axum::{
+    extract::Json,
+    routing::{get, post},
+    Router,
+};
 use serde::{Deserialize, Serialize};
 use std::net::SocketAddr;
 
 /// Stocks are the state variables (levels)
 #[derive(Debug, Clone, Serialize, Deserialize)]
 struct Stocks {
-    compliance_level: f64,          // 0-100
-    breach_rate: f64,               // annual probability
-    penalty_pool: f64,              // accumulated penalties (local currency)
-    compliance_investment: f64,     // monthly spending (USD)
-    public_trust: f64,              // 0-100
-    regulatory_capacity: f64,       // 0-100
-    data_economy_growth: f64,       // annual % growth
-    cross_border_volume: f64,       // GB/month
-    fdi_confidence: f64,            // 0-100
-    insurance_cost_index: f64,      // base 100
+    compliance_level: f64,      // 0-100
+    breach_rate: f64,           // annual probability
+    penalty_pool: f64,          // accumulated penalties (local currency)
+    compliance_investment: f64, // monthly spending (USD)
+    public_trust: f64,          // 0-100
+    regulatory_capacity: f64,   // 0-100
+    data_economy_growth: f64,   // annual % growth
+    cross_border_volume: f64,   // GB/month
+    fdi_confidence: f64,        // 0-100
+    insurance_cost_index: f64,  // base 100
 }
 
 /// Flows are rates of change per time step
@@ -52,10 +56,10 @@ struct SDRequest {
 struct PolicyParams {
     breach_sla_hours: f64,
     penalty_multiplier: f64,
-    enforcement_budget_increase: f64,   // % increase
+    enforcement_budget_increase: f64, // % increase
     awareness_campaign: bool,
     mandatory_audit: bool,
-    cross_border_restriction: f64,      // 0-1, 0=no restriction
+    cross_border_restriction: f64, // 0-1, 0=no restriction
 }
 
 #[derive(Debug, Serialize)]
@@ -78,7 +82,7 @@ struct SDTimePoint {
 #[derive(Debug, Serialize)]
 struct CausalLoop {
     name: String,
-    loop_type: String,         // "reinforcing" or "balancing"
+    loop_type: String, // "reinforcing" or "balancing"
     variables: Vec<String>,
     description: String,
 }
@@ -114,8 +118,15 @@ fn run_simulation(req: &SDRequest) -> SDResponse {
         let audit_bonus = if params.mandatory_audit { 0.15 } else { 0.0 };
         let gap = 100.0 - stocks.compliance_level;
 
-        let compliance_flow = gap * 0.02
-            * (1.0 + sla_pressure * 0.1 + penalty_pressure + investment_effect + capacity_effect + awareness_bonus + audit_bonus);
+        let compliance_flow = gap
+            * 0.02
+            * (1.0
+                + sla_pressure * 0.1
+                + penalty_pressure
+                + investment_effect
+                + capacity_effect
+                + awareness_bonus
+                + audit_bonus);
 
         // Breach rate: decreases with compliance, increases with data volume
         let comp_factor = stocks.compliance_level / 100.0;
@@ -140,14 +151,14 @@ fn run_simulation(req: &SDRequest) -> SDResponse {
             + if params.mandatory_audit { 0.5 } else { 0.0 };
 
         // Data economy: grows with trust and FDI
-        let economy_flow = stocks.public_trust * 0.02 + stocks.fdi_confidence * 0.01 - stocks.breach_rate * 5.0;
+        let economy_flow =
+            stocks.public_trust * 0.02 + stocks.fdi_confidence * 0.01 - stocks.breach_rate * 5.0;
 
         // Cross-border: grows naturally, restricted by policy
         let cb_flow = stocks.cross_border_volume * 0.02 * (1.0 - params.cross_border_restriction);
 
         // FDI: driven by compliance level and economy
-        let fdi_flow = (stocks.compliance_level - 60.0) * 0.05
-            + stocks.data_economy_growth * 0.1
+        let fdi_flow = (stocks.compliance_level - 60.0) * 0.05 + stocks.data_economy_growth * 0.1
             - stocks.breach_rate * 10.0;
 
         // Insurance: decreases with better compliance, increases with breaches
@@ -167,12 +178,15 @@ fn run_simulation(req: &SDRequest) -> SDResponse {
         };
 
         // ── Update stocks (Euler integration) ─────────────────────────
-        stocks.compliance_level = (stocks.compliance_level + compliance_flow * dt).clamp(0.0, 100.0);
+        stocks.compliance_level =
+            (stocks.compliance_level + compliance_flow * dt).clamp(0.0, 100.0);
         stocks.breach_rate = (stocks.breach_rate + breach_flow * dt).clamp(0.0, 1.0);
         stocks.penalty_pool = (stocks.penalty_pool + penalty_flow * dt).max(0.0);
-        stocks.compliance_investment = (stocks.compliance_investment + investment_flow * dt).max(0.0);
+        stocks.compliance_investment =
+            (stocks.compliance_investment + investment_flow * dt).max(0.0);
         stocks.public_trust = (stocks.public_trust + trust_flow * dt).clamp(0.0, 100.0);
-        stocks.regulatory_capacity = (stocks.regulatory_capacity + capacity_flow * dt).clamp(0.0, 100.0);
+        stocks.regulatory_capacity =
+            (stocks.regulatory_capacity + capacity_flow * dt).clamp(0.0, 100.0);
         stocks.data_economy_growth += economy_flow * dt * 0.01;
         stocks.cross_border_volume = (stocks.cross_border_volume + cb_flow * dt).max(0.0);
         stocks.fdi_confidence = (stocks.fdi_confidence + fdi_flow * dt).clamp(0.0, 100.0);
@@ -241,8 +255,14 @@ fn run_simulation(req: &SDRequest) -> SDResponse {
 fn run_sensitivity(base_req: &SDRequest) -> Vec<SensitivityResult> {
     let params = [
         ("breach_sla_hours", base_req.policy_params.breach_sla_hours),
-        ("penalty_multiplier", base_req.policy_params.penalty_multiplier),
-        ("enforcement_budget_increase", base_req.policy_params.enforcement_budget_increase),
+        (
+            "penalty_multiplier",
+            base_req.policy_params.penalty_multiplier,
+        ),
+        (
+            "enforcement_budget_increase",
+            base_req.policy_params.enforcement_budget_increase,
+        ),
     ];
 
     let mut results = Vec::new();
@@ -259,7 +279,9 @@ fn run_sensitivity(base_req: &SDRequest) -> Vec<SensitivityResult> {
         match name {
             "breach_sla_hours" => perturbed_req_params.breach_sla_hours = perturbed,
             "penalty_multiplier" => perturbed_req_params.penalty_multiplier = perturbed,
-            "enforcement_budget_increase" => perturbed_req_params.enforcement_budget_increase = perturbed,
+            "enforcement_budget_increase" => {
+                perturbed_req_params.enforcement_budget_increase = perturbed
+            }
             _ => {}
         }
 
@@ -279,7 +301,9 @@ fn run_sensitivity(base_req: &SDRequest) -> Vec<SensitivityResult> {
             perturbed_value: round2(perturbed),
             compliance_impact: round2(pert_result.compliance_level - base_result.compliance_level),
             breach_impact: round4(pert_result.breach_rate - base_result.breach_rate),
-            economic_impact: round3(pert_result.data_economy_growth - base_result.data_economy_growth),
+            economic_impact: round3(
+                pert_result.data_economy_growth - base_result.data_economy_growth,
+            ),
         });
     }
     results
@@ -294,21 +318,31 @@ fn run_sim_final_stocks(req: &SDRequest) -> Stocks {
         let sla_pressure = 72.0 / params.breach_sla_hours;
         let gap = 100.0 - stocks.compliance_level;
         let comp_flow = gap * 0.02 * (1.0 + sla_pressure * 0.1 + params.penalty_multiplier * 0.05);
-        let breach_flow = -stocks.breach_rate * 0.05 * (stocks.compliance_level / 100.0) * sla_pressure;
+        let breach_flow =
+            -stocks.breach_rate * 0.05 * (stocks.compliance_level / 100.0) * sla_pressure;
         let economy_flow = stocks.public_trust * 0.02 + stocks.fdi_confidence * 0.01;
 
         stocks.compliance_level = (stocks.compliance_level + comp_flow * dt).clamp(0.0, 100.0);
         stocks.breach_rate = (stocks.breach_rate + breach_flow * dt).clamp(0.0, 1.0);
         stocks.data_economy_growth += economy_flow * dt * 0.01;
-        stocks.public_trust = (stocks.public_trust + stocks.compliance_level * 0.01 * dt).clamp(0.0, 100.0);
-        stocks.fdi_confidence = (stocks.fdi_confidence + (stocks.compliance_level - 60.0) * 0.05 * dt).clamp(0.0, 100.0);
+        stocks.public_trust =
+            (stocks.public_trust + stocks.compliance_level * 0.01 * dt).clamp(0.0, 100.0);
+        stocks.fdi_confidence = (stocks.fdi_confidence
+            + (stocks.compliance_level - 60.0) * 0.05 * dt)
+            .clamp(0.0, 100.0);
     }
     stocks
 }
 
-fn round2(v: f64) -> f64 { (v * 100.0).round() / 100.0 }
-fn round3(v: f64) -> f64 { (v * 1000.0).round() / 1000.0 }
-fn round4(v: f64) -> f64 { (v * 10000.0).round() / 10000.0 }
+fn round2(v: f64) -> f64 {
+    (v * 100.0).round() / 100.0
+}
+fn round3(v: f64) -> f64 {
+    (v * 1000.0).round() / 1000.0
+}
+fn round4(v: f64) -> f64 {
+    (v * 10000.0).round() / 10000.0
+}
 
 async fn run_sd(Json(req): Json<SDRequest>) -> Json<SDResponse> {
     Json(run_simulation(&req))

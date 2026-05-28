@@ -20,7 +20,11 @@ Technology: Rust · Tokio · Axum · UDP async sockets
 Port: 8190 (HTTP API)
 */
 
-use axum::{extract::State, routing::{get, post}, Json, Router};
+use axum::{
+    extract::State,
+    routing::{get, post},
+    Json, Router,
+};
 use chrono::{DateTime, Utc};
 use log::{error, info, warn};
 use serde::{Deserialize, Serialize};
@@ -150,10 +154,10 @@ fn oid_to_name(oid: &str) -> &str {
 
 fn classify_snmp_severity(oid: &str) -> &str {
     match oid {
-        "1.3.6.1.6.3.1.1.5.3" => "high",          // linkDown
-        "1.3.6.1.6.3.1.1.5.1" => "critical",       // coldStart
-        "1.3.6.1.6.3.1.1.5.5" => "high",           // authFailure
-        "1.3.6.1.6.3.1.1.5.4" => "info",           // linkUp
+        "1.3.6.1.6.3.1.1.5.3" => "high",     // linkDown
+        "1.3.6.1.6.3.1.1.5.1" => "critical", // coldStart
+        "1.3.6.1.6.3.1.1.5.5" => "high",     // authFailure
+        "1.3.6.1.6.3.1.1.5.4" => "info",     // linkUp
         _ => "medium",
     }
 }
@@ -162,20 +166,44 @@ fn classify_snmp_severity(oid: &str) -> &str {
 
 fn facility_name(facility: u8) -> &'static str {
     match facility {
-        0 => "kern", 1 => "user", 2 => "mail", 3 => "daemon",
-        4 => "auth", 5 => "syslog", 6 => "lpr", 7 => "news",
-        8 => "uucp", 9 => "cron", 10 => "authpriv", 11 => "ftp",
-        12 => "ntp", 13 => "security", 14 => "console", 15 => "solaris-cron",
-        16 => "local0", 17 => "local1", 18 => "local2", 19 => "local3",
-        20 => "local4", 21 => "local5", 22 => "local6", 23 => "local7",
+        0 => "kern",
+        1 => "user",
+        2 => "mail",
+        3 => "daemon",
+        4 => "auth",
+        5 => "syslog",
+        6 => "lpr",
+        7 => "news",
+        8 => "uucp",
+        9 => "cron",
+        10 => "authpriv",
+        11 => "ftp",
+        12 => "ntp",
+        13 => "security",
+        14 => "console",
+        15 => "solaris-cron",
+        16 => "local0",
+        17 => "local1",
+        18 => "local2",
+        19 => "local3",
+        20 => "local4",
+        21 => "local5",
+        22 => "local6",
+        23 => "local7",
         _ => "unknown",
     }
 }
 
 fn syslog_severity_name(sev: u8) -> &'static str {
     match sev {
-        0 => "emergency", 1 => "alert", 2 => "critical", 3 => "error",
-        4 => "warning", 5 => "notice", 6 => "info", 7 => "debug",
+        0 => "emergency",
+        1 => "alert",
+        2 => "critical",
+        3 => "error",
+        4 => "warning",
+        5 => "notice",
+        6 => "info",
+        7 => "debug",
         _ => "unknown",
     }
 }
@@ -193,10 +221,14 @@ fn map_syslog_to_noc_severity(sev: u8) -> &'static str {
 fn parse_syslog(data: &[u8], source_ip: &str) -> Option<SyslogMessage> {
     let msg = String::from_utf8_lossy(data);
     let msg = msg.trim();
-    if msg.len() < 3 { return None; }
+    if msg.len() < 3 {
+        return None;
+    }
 
     // RFC 3164: <PRI>TIMESTAMP HOSTNAME APP-NAME: MESSAGE
-    if !msg.starts_with('<') { return None; }
+    if !msg.starts_with('<') {
+        return None;
+    }
     let pri_end = msg.find('>')?;
     let pri: u16 = msg[1..pri_end].parse().ok()?;
     let facility = (pri >> 3) as u8;
@@ -207,7 +239,9 @@ fn parse_syslog(data: &[u8], source_ip: &str) -> Option<SyslogMessage> {
     let hostname = if parts.len() > 1 { parts[1] } else { source_ip };
     let app_name = if parts.len() > 2 {
         parts[2].trim_end_matches(':')
-    } else { "unknown" };
+    } else {
+        "unknown"
+    };
     let message = if parts.len() > 3 { parts[3] } else { rest };
 
     Some(SyslogMessage {
@@ -227,10 +261,14 @@ fn parse_syslog(data: &[u8], source_ip: &str) -> Option<SyslogMessage> {
 
 fn parse_netflow_v5(data: &[u8], source_ip: &str) -> Vec<NetFlowRecord> {
     let mut records = Vec::new();
-    if data.len() < 24 { return records; }
+    if data.len() < 24 {
+        return records;
+    }
 
     let version = u16::from_be_bytes([data[0], data[1]]);
-    if version != 5 { return records; }
+    if version != 5 {
+        return records;
+    }
 
     let count = u16::from_be_bytes([data[2], data[3]]) as usize;
     let sys_uptime = u32::from_be_bytes([data[4], data[5], data[6], data[7]]);
@@ -241,7 +279,9 @@ fn parse_netflow_v5(data: &[u8], source_ip: &str) -> Vec<NetFlowRecord> {
 
     for i in 0..count {
         let offset = header_len + i * record_len;
-        if offset + record_len > data.len() { break; }
+        if offset + record_len > data.len() {
+            break;
+        }
         let r = &data[offset..offset + record_len];
 
         let src_ip = format!("{}.{}.{}.{}", r[0], r[1], r[2], r[3]);
@@ -270,10 +310,22 @@ fn parse_netflow_v5(data: &[u8], source_ip: &str) -> Vec<NetFlowRecord> {
         records.push(NetFlowRecord {
             flow_id: Uuid::new_v4().to_string(),
             collector_ip: source_ip.to_string(),
-            src_ip, dst_ip, src_port, dst_port, protocol,
-            bytes, packets, tcp_flags, tos,
-            src_as, dst_as, input_interface: input_if, output_interface: output_if,
-            flow_start, flow_end, version: 5,
+            src_ip,
+            dst_ip,
+            src_port,
+            dst_port,
+            protocol,
+            bytes,
+            packets,
+            tcp_flags,
+            tos,
+            src_as,
+            dst_as,
+            input_interface: input_if,
+            output_interface: output_if,
+            flow_start,
+            flow_end,
+            version: 5,
         });
     }
     records
@@ -314,8 +366,14 @@ struct AppState {
 impl AppState {
     fn new() -> Self {
         Self {
-            db_url: env_or("DATABASE_URL", "postgresql://ndsep_user:ndsep_secure_2026@localhost:5432/ndsep_db"),
-            relay_url: env_or("WORKER_RELAY_URL", "http://localhost:3000/api/workers/event"),
+            db_url: env_or(
+                "DATABASE_URL",
+                "postgresql://ndsep_user:ndsep_secure_2026@localhost:5432/ndsep_db",
+            ),
+            relay_url: env_or(
+                "WORKER_RELAY_URL",
+                "http://localhost:3000/api/workers/event",
+            ),
             kafka_url: env_or("KAFKA_BROKERS", "localhost:9092"),
             redis_url: env_or("REDIS_URL", "redis://localhost:6379"),
             opensearch_url: env_or("OPENSEARCH_URL", "http://localhost:9200"),
@@ -337,7 +395,10 @@ impl AppState {
 async fn snmp_trap_listener(state: Arc<AppState>) {
     let bind_addr = format!("0.0.0.0:{SNMP_TRAP_PORT}");
     let socket = match UdpSocket::bind(&bind_addr).await {
-        Ok(s) => { info!("[SNMP] Listening on UDP {bind_addr}"); s }
+        Ok(s) => {
+            info!("[SNMP] Listening on UDP {bind_addr}");
+            s
+        }
         Err(e) => {
             warn!("[SNMP] Cannot bind {bind_addr}: {e} — running in simulation mode");
             run_snmp_simulation(state).await;
@@ -358,7 +419,9 @@ async fn snmp_trap_listener(state: Arc<AppState>) {
             }
             Err(e) => {
                 error!("[SNMP] recv error: {e}");
-                if let Ok(mut m) = state.metrics.write() { m.errors += 1; }
+                if let Ok(mut m) = state.metrics.write() {
+                    m.errors += 1;
+                }
             }
         }
     }
@@ -390,7 +453,9 @@ async fn process_snmp_trap(state: &AppState, data: &[u8], source_ip: &str) {
 
     if let Ok(mut traps) = state.recent_traps.write() {
         traps.push(trap.clone());
-        if traps.len() > 500 { traps.drain(0..100); }
+        if traps.len() > 500 {
+            traps.drain(0..100);
+        }
     }
 
     // Publish to Kafka topic noc.snmp
@@ -408,16 +473,24 @@ fn extract_oid_from_payload(payload: &str) -> Option<&str> {
     let bytes = payload.as_bytes();
     for i in 0..bytes.len().saturating_sub(10) {
         if bytes[i] == b'1' && bytes.get(i + 1) == Some(&b'.') && bytes.get(i + 2) == Some(&b'3') {
-            let end = payload[i..].find(|c: char| !c.is_ascii_digit() && c != '.').unwrap_or(payload.len() - i);
+            let end = payload[i..]
+                .find(|c: char| !c.is_ascii_digit() && c != '.')
+                .unwrap_or(payload.len() - i);
             let candidate = &payload[i..i + end];
-            if candidate.len() > 5 { return Some(candidate); }
+            if candidate.len() > 5 {
+                return Some(candidate);
+            }
         }
     }
     None
 }
 
 fn extract_value_from_payload(payload: &str) -> Option<&str> {
-    if payload.len() > 20 { Some(&payload[payload.len() - 20..]) } else { Some(payload) }
+    if payload.len() > 20 {
+        Some(&payload[payload.len() - 20..])
+    } else {
+        Some(payload)
+    }
 }
 
 // ── Syslog Receiver ──────────────────────────────────────────────────────────
@@ -425,7 +498,10 @@ fn extract_value_from_payload(payload: &str) -> Option<&str> {
 async fn syslog_listener(state: Arc<AppState>) {
     let bind_addr = format!("0.0.0.0:{SYSLOG_PORT}");
     let socket = match UdpSocket::bind(&bind_addr).await {
-        Ok(s) => { info!("[Syslog] Listening on UDP {bind_addr}"); s }
+        Ok(s) => {
+            info!("[Syslog] Listening on UDP {bind_addr}");
+            s
+        }
         Err(e) => {
             warn!("[Syslog] Cannot bind {bind_addr}: {e} — running in simulation mode");
             run_syslog_simulation(state).await;
@@ -446,7 +522,9 @@ async fn syslog_listener(state: Arc<AppState>) {
             }
             Err(e) => {
                 error!("[Syslog] recv error: {e}");
-                if let Ok(mut m) = state.metrics.write() { m.errors += 1; }
+                if let Ok(mut m) = state.metrics.write() {
+                    m.errors += 1;
+                }
             }
         }
     }
@@ -465,7 +543,9 @@ async fn process_syslog(state: &AppState, data: &[u8], source_ip: &str) {
 
     if let Ok(mut logs) = state.recent_syslog.write() {
         logs.push(msg.clone());
-        if logs.len() > 1000 { logs.drain(0..200); }
+        if logs.len() > 1000 {
+            logs.drain(0..200);
+        }
     }
 
     // Publish to Kafka
@@ -486,7 +566,10 @@ async fn process_syslog(state: &AppState, data: &[u8], source_ip: &str) {
 async fn netflow_listener(state: Arc<AppState>) {
     let bind_addr = format!("0.0.0.0:{NETFLOW_PORT}");
     let socket = match UdpSocket::bind(&bind_addr).await {
-        Ok(s) => { info!("[NetFlow] Listening on UDP {bind_addr}"); s }
+        Ok(s) => {
+            info!("[NetFlow] Listening on UDP {bind_addr}");
+            s
+        }
         Err(e) => {
             warn!("[NetFlow] Cannot bind {bind_addr}: {e} — running in simulation mode");
             run_netflow_simulation(state).await;
@@ -507,7 +590,9 @@ async fn netflow_listener(state: Arc<AppState>) {
             }
             Err(e) => {
                 error!("[NetFlow] recv error: {e}");
-                if let Ok(mut m) = state.metrics.write() { m.errors += 1; }
+                if let Ok(mut m) = state.metrics.write() {
+                    m.errors += 1;
+                }
             }
         }
     }
@@ -524,7 +609,9 @@ async fn process_netflow(state: &AppState, data: &[u8], source_ip: &str) {
 
     if let Ok(mut flows) = state.recent_flows.write() {
         flows.extend(records.iter().cloned());
-        if flows.len() > 2000 { flows.drain(0..500); }
+        if flows.len() > 2000 {
+            flows.drain(0..500);
+        }
     }
 
     // Publish batch to Kafka
@@ -541,13 +628,27 @@ async fn detect_bandwidth_anomalies(state: &AppState, records: &[NetFlowRecord])
     for record in records {
         if record.bytes > 100_000_000 {
             let alert_id = Uuid::new_v4().to_string();
-            if let Ok(mut m) = state.metrics.write() { m.alerts_generated += 1; }
-            info!("[NetFlow] Large flow detected: {} -> {} ({} bytes)",
-                record.src_ip, record.dst_ip, record.bytes);
-            let _ = persist_noc_alert(state, &alert_id, "netflow", "high",
-                "bandwidth_anomaly", &format!("Large flow: {} -> {} ({} bytes)",
-                record.src_ip, record.dst_ip, record.bytes),
-                Some(&record.src_ip), None).await;
+            if let Ok(mut m) = state.metrics.write() {
+                m.alerts_generated += 1;
+            }
+            info!(
+                "[NetFlow] Large flow detected: {} -> {} ({} bytes)",
+                record.src_ip, record.dst_ip, record.bytes
+            );
+            let _ = persist_noc_alert(
+                state,
+                &alert_id,
+                "netflow",
+                "high",
+                "bandwidth_anomaly",
+                &format!(
+                    "Large flow: {} -> {} ({} bytes)",
+                    record.src_ip, record.dst_ip, record.bytes
+                ),
+                Some(&record.src_ip),
+                None,
+            )
+            .await;
         }
     }
 }
@@ -557,10 +658,20 @@ async fn detect_bandwidth_anomalies(state: &AppState, records: &[NetFlowRecord])
 async fn run_snmp_simulation(state: Arc<AppState>) {
     info!("[SNMP] Simulation mode active — generating synthetic traps every 30s");
     let oids = [
-        "1.3.6.1.6.3.1.1.5.3", "1.3.6.1.6.3.1.1.5.4", "1.3.6.1.6.3.1.1.5.1",
-        "1.3.6.1.6.3.1.1.5.5", "1.3.6.1.2.1.2.2.1.8", "1.3.6.1.2.1.25.3.3.1.2",
+        "1.3.6.1.6.3.1.1.5.3",
+        "1.3.6.1.6.3.1.1.5.4",
+        "1.3.6.1.6.3.1.1.5.1",
+        "1.3.6.1.6.3.1.1.5.5",
+        "1.3.6.1.2.1.2.2.1.8",
+        "1.3.6.1.2.1.25.3.3.1.2",
     ];
-    let devices = ["core-router-01", "edge-switch-02", "fw-perimeter-01", "ap-floor3-01", "srv-db-primary"];
+    let devices = [
+        "core-router-01",
+        "edge-switch-02",
+        "fw-perimeter-01",
+        "ap-floor3-01",
+        "srv-db-primary",
+    ];
     loop {
         tokio::time::sleep(tokio::time::Duration::from_secs(30)).await;
         let idx = rand::random::<usize>();
@@ -586,7 +697,9 @@ async fn run_snmp_simulation(state: Arc<AppState>) {
         }
         if let Ok(mut traps) = state.recent_traps.write() {
             traps.push(trap.clone());
-            if traps.len() > 500 { traps.drain(0..100); }
+            if traps.len() > 500 {
+                traps.drain(0..100);
+            }
         }
         // Update device state
         update_device_state(&state, &ip, device, "router").await;
@@ -596,7 +709,16 @@ async fn run_snmp_simulation(state: Arc<AppState>) {
 
 async fn run_syslog_simulation(state: Arc<AppState>) {
     info!("[Syslog] Simulation mode active — generating synthetic messages every 15s");
-    let apps = ["sshd", "nginx", "iptables", "kernel", "systemd", "postgresql", "redis", "haproxy"];
+    let apps = [
+        "sshd",
+        "nginx",
+        "iptables",
+        "kernel",
+        "systemd",
+        "postgresql",
+        "redis",
+        "haproxy",
+    ];
     let messages = [
         "Connection refused from 192.168.1.100",
         "Certificate validation failed for upstream",
@@ -629,7 +751,9 @@ async fn run_syslog_simulation(state: Arc<AppState>) {
         }
         if let Ok(mut logs) = state.recent_syslog.write() {
             logs.push(msg.clone());
-            if logs.len() > 1000 { logs.drain(0..200); }
+            if logs.len() > 1000 {
+                logs.drain(0..200);
+            }
         }
         if severity <= 3 {
             persist_syslog_alert(&state, &msg).await;
@@ -654,7 +778,11 @@ async fn run_netflow_simulation(state: Arc<AppState>) {
             protocol: protocols[idx % protocols.len()],
             bytes: (rand::random::<u64>() % 10_000_000) + 100,
             packets: (rand::random::<u64>() % 10_000) + 1,
-            tcp_flags: if protocols[idx % protocols.len()] == 6 { 0x18 } else { 0 },
+            tcp_flags: if protocols[idx % protocols.len()] == 6 {
+                0x18
+            } else {
+                0
+            },
             tos: 0,
             src_as: (idx as u32 % 65000) + 1,
             dst_as: (idx as u32 % 65000) + 100,
@@ -671,7 +799,9 @@ async fn run_netflow_simulation(state: Arc<AppState>) {
         }
         if let Ok(mut flows) = state.recent_flows.write() {
             flows.push(record);
-            if flows.len() > 2000 { flows.drain(0..500); }
+            if flows.len() > 2000 {
+                flows.drain(0..500);
+            }
         }
     }
 }
@@ -701,17 +831,23 @@ async fn update_device_state(state: &AppState, ip: &str, hostname: &str, device_
         last_seen: Utc::now(),
         interfaces: vec![
             InterfaceState {
-                name: "eth0".to_string(), status: "up".to_string(),
-                speed_mbps: 1000, in_octets: rand::random::<u64>() % 1_000_000_000,
+                name: "eth0".to_string(),
+                status: "up".to_string(),
+                speed_mbps: 1000,
+                in_octets: rand::random::<u64>() % 1_000_000_000,
                 out_octets: rand::random::<u64>() % 1_000_000_000,
-                in_errors: rand::random::<u64>() % 100, out_errors: rand::random::<u64>() % 50,
+                in_errors: rand::random::<u64>() % 100,
+                out_errors: rand::random::<u64>() % 50,
                 utilization_pct: bw_in / 10.0,
             },
             InterfaceState {
-                name: "eth1".to_string(), status: "up".to_string(),
-                speed_mbps: 10000, in_octets: rand::random::<u64>() % 10_000_000_000,
+                name: "eth1".to_string(),
+                status: "up".to_string(),
+                speed_mbps: 10000,
+                in_octets: rand::random::<u64>() % 10_000_000_000,
                 out_octets: rand::random::<u64>() % 10_000_000_000,
-                in_errors: 0, out_errors: 0,
+                in_errors: 0,
+                out_errors: 0,
                 utilization_pct: bw_out / 100.0,
             },
         ],
@@ -720,7 +856,9 @@ async fn update_device_state(state: &AppState, ip: &str, hostname: &str, device_
     if let Ok(mut devices) = state.devices.write() {
         devices.insert(device_id, device);
     }
-    if let Ok(mut m) = state.metrics.write() { m.devices_discovered += 1; }
+    if let Ok(mut m) = state.metrics.write() {
+        m.devices_discovered += 1;
+    }
 }
 
 // ── Middleware Integration Helpers ────────────────────────────────────────────
@@ -728,7 +866,10 @@ async fn update_device_state(state: &AppState, ip: &str, hostname: &str, device_
 async fn publish_to_kafka<T: Serialize>(_broker: &str, topic: &str, data: &T) {
     let _payload = match serde_json::to_string(data) {
         Ok(p) => p,
-        Err(e) => { warn!("[Kafka] Serialize error for {topic}: {e}"); return; }
+        Err(e) => {
+            warn!("[Kafka] Serialize error for {topic}: {e}");
+            return;
+        }
     };
     // In production: use rdkafka producer to publish to Kafka broker
     // kafka_producer.send(FutureRecord::to(topic).payload(&payload).key(&uuid)).await
@@ -765,16 +906,21 @@ async fn publish_to_lakehouse<T: Serialize>(url: &str, table: &str, data: &T) {
         "table": table,
         "records": [data],
     });
-    match client.post(format!("{}/ingest", url))
+    match client
+        .post(format!("{}/ingest", url))
         .json(&payload)
         .timeout(std::time::Duration::from_secs(5))
-        .send().await
+        .send()
+        .await
     {
         Ok(resp) if resp.status().is_success() => {
             log::debug!("[Lakehouse] Written batch to {table}");
         }
         Ok(resp) => {
-            log::debug!("[Lakehouse] Ingest to {table} returned HTTP {}", resp.status());
+            log::debug!(
+                "[Lakehouse] Ingest to {table} returned HTTP {}",
+                resp.status()
+            );
         }
         Err(e) => {
             log::debug!("[Lakehouse] Ingest to {table} unavailable: {e}");
@@ -787,29 +933,67 @@ async fn publish_to_lakehouse<T: Serialize>(url: &str, table: &str, data: &T) {
 async fn get_db_client(db_url: &str) -> Option<tokio_postgres::Client> {
     match tokio_postgres::connect(db_url, tokio_postgres::NoTls).await {
         Ok((client, connection)) => {
-            tokio::spawn(async move { if let Err(e) = connection.await { error!("DB connection error: {e}"); } });
+            tokio::spawn(async move {
+                if let Err(e) = connection.await {
+                    error!("DB connection error: {e}");
+                }
+            });
             Some(client)
         }
-        Err(e) => { warn!("DB connect failed: {e}"); None }
+        Err(e) => {
+            warn!("DB connect failed: {e}");
+            None
+        }
     }
 }
 
 async fn persist_snmp_alert(state: &AppState, trap: &SnmpTrap) {
-    persist_noc_alert(state, &trap.trap_id, "snmp", &trap.severity,
-        &trap.oid_name, &format!("SNMP trap from {}: {} = {}", trap.source_ip, trap.oid_name, trap.value),
-        Some(&trap.source_ip), None).await;
+    persist_noc_alert(
+        state,
+        &trap.trap_id,
+        "snmp",
+        &trap.severity,
+        &trap.oid_name,
+        &format!(
+            "SNMP trap from {}: {} = {}",
+            trap.source_ip, trap.oid_name, trap.value
+        ),
+        Some(&trap.source_ip),
+        None,
+    )
+    .await;
 }
 
 async fn persist_syslog_alert(state: &AppState, msg: &SyslogMessage) {
     let severity = map_syslog_to_noc_severity(msg.severity);
-    persist_noc_alert(state, &msg.msg_id, "syslog", severity,
+    persist_noc_alert(
+        state,
+        &msg.msg_id,
+        "syslog",
+        severity,
         &format!("syslog_{}", facility_name(msg.facility)),
-        &format!("[{}] {}: {}", syslog_severity_name(msg.severity), msg.app_name, msg.message),
-        Some(&msg.source_ip), Some(&msg.hostname)).await;
+        &format!(
+            "[{}] {}: {}",
+            syslog_severity_name(msg.severity),
+            msg.app_name,
+            msg.message
+        ),
+        Some(&msg.source_ip),
+        Some(&msg.hostname),
+    )
+    .await;
 }
 
-async fn persist_noc_alert(state: &AppState, alert_id: &str, source: &str, severity: &str,
-    category: &str, description: &str, source_ip: Option<&str>, service: Option<&str>) {
+async fn persist_noc_alert(
+    state: &AppState,
+    alert_id: &str,
+    source: &str,
+    severity: &str,
+    category: &str,
+    description: &str,
+    source_ip: Option<&str>,
+    service: Option<&str>,
+) {
     let client = match get_db_client(&state.db_url).await {
         Some(c) => c,
         None => return,
@@ -820,10 +1004,22 @@ async fn persist_noc_alert(state: &AppState, alert_id: &str, source: &str, sever
         VALUES ($1, $2, $3, $4, $5, $6, $7::inet, $8)
         ON CONFLICT (alert_id) DO UPDATE SET last_seen = NOW(), repeat_count = noc_alerts.repeat_count + 1";
 
-    if let Err(e) = client.execute(sql, &[
-        &alert_id, &source, &severity, &category, &title, &description,
-        &source_ip, &service,
-    ]).await {
+    if let Err(e) = client
+        .execute(
+            sql,
+            &[
+                &alert_id,
+                &source,
+                &severity,
+                &category,
+                &title,
+                &description,
+                &source_ip,
+                &service,
+            ],
+        )
+        .await
+    {
         warn!("Failed to persist NOC alert: {e}");
     }
 }
@@ -942,10 +1138,21 @@ async fn register_device_handler(
         ON CONFLICT (device_id) DO UPDATE SET hostname = $2, updated_at = NOW()
         RETURNING device_id";
 
-    match client.query_one(sql, &[
-        &device_id, &input.hostname, &input.ip_address, &input.device_type,
-        &input.vendor, &input.model, &input.location,
-    ]).await {
+    match client
+        .query_one(
+            sql,
+            &[
+                &device_id,
+                &input.hostname,
+                &input.ip_address,
+                &input.device_type,
+                &input.vendor,
+                &input.model,
+                &input.location,
+            ],
+        )
+        .await
+    {
         Ok(row) => {
             let id: String = row.get(0);
             Json(serde_json::json!({"device_id": id, "status": "registered"}))
@@ -962,9 +1169,16 @@ async fn bandwidth_summary_handler(State(state): State<Arc<AppState>>) -> Json<s
     for f in flows.iter() {
         *protocol_bytes.entry(f.protocol).or_default() += f.bytes;
     }
-    let protocol_name = |p: u8| match p { 1 => "ICMP", 6 => "TCP", 17 => "UDP", _ => "Other" };
-    let by_protocol: HashMap<&str, u64> = protocol_bytes.iter()
-        .map(|(k, v)| (protocol_name(*k), *v)).collect();
+    let protocol_name = |p: u8| match p {
+        1 => "ICMP",
+        6 => "TCP",
+        17 => "UDP",
+        _ => "Other",
+    };
+    let by_protocol: HashMap<&str, u64> = protocol_bytes
+        .iter()
+        .map(|(k, v)| (protocol_name(*k), *v))
+        .collect();
 
     Json(serde_json::json!({
         "total_bytes": total_bytes,

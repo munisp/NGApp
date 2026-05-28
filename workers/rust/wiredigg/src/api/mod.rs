@@ -165,10 +165,7 @@ struct ThreatParams {
     severity: Option<String>,
 }
 
-async fn get_threats(
-    State(s): State<AppState>,
-    Query(params): Query<ThreatParams>,
-) -> Json<Value> {
+async fn get_threats(State(s): State<AppState>, Query(params): Query<ThreatParams>) -> Json<Value> {
     let limit = params.limit.unwrap_or(100);
     let mut threats = s.threat.get_threats(limit);
 
@@ -249,10 +246,7 @@ struct TopParams {
     limit: Option<usize>,
 }
 
-async fn top_sources(
-    State(s): State<AppState>,
-    Query(params): Query<TopParams>,
-) -> Json<Value> {
+async fn top_sources(State(s): State<AppState>, Query(params): Query<TopParams>) -> Json<Value> {
     let limit = params.limit.unwrap_or(20);
     let mut sources: Vec<(IpAddr, u64)> = s
         .capture
@@ -296,10 +290,7 @@ struct AddIpRequest {
     ip: String,
 }
 
-async fn add_malicious_ip(
-    State(s): State<AppState>,
-    Json(req): Json<AddIpRequest>,
-) -> Json<Value> {
+async fn add_malicious_ip(State(s): State<AppState>, Json(req): Json<AddIpRequest>) -> Json<Value> {
     match req.ip.parse::<IpAddr>() {
         Ok(ip) => {
             s.threat.add_malicious_ip(ip);

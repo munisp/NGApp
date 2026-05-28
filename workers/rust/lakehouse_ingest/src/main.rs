@@ -11,12 +11,15 @@ use axum::{
 };
 use chrono::Utc;
 use lazy_static::lazy_static;
-use prometheus::{Counter, Gauge, Registry, TextEncoder, Encoder};
+use prometheus::{Counter, Encoder, Gauge, Registry, TextEncoder};
 use serde::{Deserialize, Serialize};
 use std::{
     collections::VecDeque,
     env,
-    sync::{Arc, Mutex, atomic::{AtomicU64, Ordering}},
+    sync::{
+        atomic::{AtomicU64, Ordering},
+        Arc, Mutex,
+    },
     time::Instant,
 };
 use uuid::Uuid;
@@ -28,17 +31,16 @@ fn get_env(key: &str, fallback: &str) -> String {
 lazy_static! {
     static ref REGISTRY: Registry = Registry::new();
     static ref INGEST_COUNTER: Counter = Counter::new(
-        "ndsep_lakehouse_records_ingested_total", "Total records ingested"
-    ).unwrap();
-    static ref BATCH_COUNTER: Counter = Counter::new(
-        "ndsep_lakehouse_batches_total", "Total batches processed"
-    ).unwrap();
-    static ref ERROR_COUNTER: Counter = Counter::new(
-        "ndsep_lakehouse_errors_total", "Total ingest errors"
-    ).unwrap();
-    static ref QUEUE_GAUGE: Gauge = Gauge::new(
-        "ndsep_lakehouse_queue_depth", "Current ingest queue depth"
-    ).unwrap();
+        "ndsep_lakehouse_records_ingested_total",
+        "Total records ingested"
+    )
+    .unwrap();
+    static ref BATCH_COUNTER: Counter =
+        Counter::new("ndsep_lakehouse_batches_total", "Total batches processed").unwrap();
+    static ref ERROR_COUNTER: Counter =
+        Counter::new("ndsep_lakehouse_errors_total", "Total ingest errors").unwrap();
+    static ref QUEUE_GAUGE: Gauge =
+        Gauge::new("ndsep_lakehouse_queue_depth", "Current ingest queue depth").unwrap();
 }
 
 fn init_metrics() {
@@ -50,18 +52,66 @@ fn init_metrics() {
 
 // NDSEP Lakehouse table definitions
 const LAKEHOUSE_TABLES: &[(&str, &str, &str)] = &[
-    ("compliance_events",     "sector,event_date",  "Compliance events from all sectors"),
-    ("aml_cases",             "status,created_date", "AML case lifecycle events"),
-    ("kyc_records",           "nationality,created_date", "KYC verification records"),
-    ("fines_and_penalties",   "sector,status",       "Regulatory fines and penalties"),
-    ("accreditation_history", "state,sector",        "Accreditation state machine transitions"),
-    ("watchlist_hits",        "list_type,hit_date",  "Watchlist screening results"),
-    ("audit_trail",           "action,entity_type",  "Full platform audit trail"),
-    ("breach_notifications",  "severity,status",     "Data breach notification events"),
-    ("cross_agency_alerts",   "priority,sector",     "Cross-agency regulatory alerts"),
-    ("financial_transactions","transfer_type,date",  "TigerBeetle ledger transactions"),
-    ("sector_metrics",        "sector,metric_date",  "Sector compliance metrics"),
-    ("regulatory_reports",    "report_type,period",  "Generated regulatory reports"),
+    (
+        "compliance_events",
+        "sector,event_date",
+        "Compliance events from all sectors",
+    ),
+    (
+        "aml_cases",
+        "status,created_date",
+        "AML case lifecycle events",
+    ),
+    (
+        "kyc_records",
+        "nationality,created_date",
+        "KYC verification records",
+    ),
+    (
+        "fines_and_penalties",
+        "sector,status",
+        "Regulatory fines and penalties",
+    ),
+    (
+        "accreditation_history",
+        "state,sector",
+        "Accreditation state machine transitions",
+    ),
+    (
+        "watchlist_hits",
+        "list_type,hit_date",
+        "Watchlist screening results",
+    ),
+    (
+        "audit_trail",
+        "action,entity_type",
+        "Full platform audit trail",
+    ),
+    (
+        "breach_notifications",
+        "severity,status",
+        "Data breach notification events",
+    ),
+    (
+        "cross_agency_alerts",
+        "priority,sector",
+        "Cross-agency regulatory alerts",
+    ),
+    (
+        "financial_transactions",
+        "transfer_type,date",
+        "TigerBeetle ledger transactions",
+    ),
+    (
+        "sector_metrics",
+        "sector,metric_date",
+        "Sector compliance metrics",
+    ),
+    (
+        "regulatory_reports",
+        "report_type,period",
+        "Generated regulatory reports",
+    ),
 ];
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
@@ -107,11 +157,13 @@ async fn ingest_records(
     Json(req): Json<IngestRequest>,
 ) -> impl IntoResponse {
     let now = Utc::now().timestamp_millis();
-    let partition_key = req.partition_key.unwrap_or_else(|| {
-        Utc::now().format("%Y-%m-%d").to_string()
-    });
+    let partition_key = req
+        .partition_key
+        .unwrap_or_else(|| Utc::now().format("%Y-%m-%d").to_string());
     let schema_version = req.schema_version.unwrap_or_else(|| "1.0".to_string());
-    let source_system = req.source_system.unwrap_or_else(|| "ndsep-platform".to_string());
+    let source_system = req
+        .source_system
+        .unwrap_or_else(|| "ndsep-platform".to_string());
 
     let count = req.records.len();
     let mut buffer = state.buffer.lock().unwrap();
@@ -130,7 +182,9 @@ async fn ingest_records(
     }
 
     INGEST_COUNTER.inc_by(count as f64);
-    state.total_ingested.fetch_add(count as u64, Ordering::Relaxed);
+    state
+        .total_ingested
+        .fetch_add(count as u64, Ordering::Relaxed);
     QUEUE_GAUGE.set(buffer.len() as f64);
 
     Json(serde_json::json!({
@@ -155,9 +209,13 @@ async fn flush_buffer(State(state): State<AppState>) -> impl IntoResponse {
     };
 
     // Group by table for batch write to lakehouse analytics engine
-    let mut by_table: std::collections::HashMap<String, Vec<serde_json::Value>> = std::collections::HashMap::new();
+    let mut by_table: std::collections::HashMap<String, Vec<serde_json::Value>> =
+        std::collections::HashMap::new();
     for r in &records {
-        by_table.entry(r.table.clone()).or_default().push(r.data.clone());
+        by_table
+            .entry(r.table.clone())
+            .or_default()
+            .push(r.data.clone());
     }
 
     let lakehouse_url = state.lakehouse_url.clone();
@@ -170,12 +228,20 @@ async fn flush_buffer(State(state): State<AppState>) -> impl IntoResponse {
             "table": table,
             "records": data_records,
         });
-        let write_result = client.post(format!("{}/ingest", lakehouse_url))
+        let write_result = client
+            .post(format!("{}/ingest", lakehouse_url))
             .json(&payload)
             .timeout(std::time::Duration::from_secs(10))
-            .send().await;
+            .send()
+            .await;
         let status = match write_result {
-            Ok(resp) => if resp.status().is_success() { "written" } else { "http_error" },
+            Ok(resp) => {
+                if resp.status().is_success() {
+                    "written"
+                } else {
+                    "http_error"
+                }
+            }
             Err(_) => "connection_failed",
         };
         table_summary.push(serde_json::json!({
@@ -202,7 +268,8 @@ async fn query_table(
     let limit = req.limit.unwrap_or(20) as usize;
     let offset = req.offset.unwrap_or(0) as usize;
 
-    let results: Vec<&LakehouseRecord> = buffer.iter()
+    let results: Vec<&LakehouseRecord> = buffer
+        .iter()
         .filter(|r| r.table == req.table)
         .filter(|r| {
             if let Some(partition) = &req.partition {
@@ -258,7 +325,10 @@ async fn metrics() -> impl IntoResponse {
     let mut buffer = Vec::new();
     encoder.encode(&metric_families, &mut buffer).unwrap();
     (
-        [(axum::http::header::CONTENT_TYPE, "text/plain; version=0.0.4")],
+        [(
+            axum::http::header::CONTENT_TYPE,
+            "text/plain; version=0.0.4",
+        )],
         String::from_utf8(buffer).unwrap_or_default(),
     )
 }
@@ -291,7 +361,11 @@ async fn main() {
 
     let addr = format!("0.0.0.0:{}", port);
     tracing::info!("NDSEP Lakehouse Ingest Worker starting on {}", addr);
-    tracing::info!("Lakehouse URL: {} | S3 Bucket: {}", lakehouse_url, s3_bucket);
+    tracing::info!(
+        "Lakehouse URL: {} | S3 Bucket: {}",
+        lakehouse_url,
+        s3_bucket
+    );
 
     let listener = tokio::net::TcpListener::bind(&addr).await.unwrap();
     axum::serve(listener, app).await.unwrap();
