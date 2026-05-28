@@ -74,18 +74,18 @@ export default function WellTestsPage() {
   };
 
   return (
-    <div className="p-6 space-y-6">
-      <div className="flex items-center justify-between">
+    <div className="p-4 md:p-6 space-y-6">
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
         <div>
-          <h1 className="text-2xl font-bold flex items-center gap-2">
-            <FlaskConical className="w-6 h-6 text-purple-400" /> Well Test Scheduling
+          <h1 className="text-xl md:text-2xl font-bold flex items-center gap-2">
+            <FlaskConical className="w-5 h-5 md:w-6 md:h-6 text-purple-400" /> Well Test Scheduling
           </h1>
-          <p className="text-muted-foreground text-sm mt-1">
+          <p className="text-muted-foreground text-xs md:text-sm mt-1">
             Schedule, track, and record production, injection, and pressure transient tests
           </p>
         </div>
         <div className="flex gap-2">
-          <Button variant="outline" onClick={() => utils.wellTests.list.invalidate()}>
+          <Button variant="outline" size="sm" onClick={() => utils.wellTests.list.invalidate()}>
             <RefreshCw className="w-4 h-4 mr-2" />Refresh
           </Button>
           <Dialog open={dialogOpen} onOpenChange={setDialogOpen}>
@@ -141,7 +141,7 @@ export default function WellTestsPage() {
       </div>
 
       {/* KPI Row */}
-      <div className="grid grid-cols-3 gap-4">
+      <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
         {[
           { label: "Scheduled", count: statusCounts.SCHEDULED, icon: <Clock className="w-4 h-4 text-yellow-400" />, color: "text-yellow-400" },
           { label: "In Progress", count: statusCounts.IN_PROGRESS, icon: <FlaskConical className="w-4 h-4 text-blue-400" />, color: "text-blue-400" },
@@ -155,7 +155,7 @@ export default function WellTestsPage() {
       </div>
 
       {/* Filter */}
-      <div className="flex gap-2">
+      <div className="flex gap-2 overflow-x-auto">
         {["all", "SCHEDULED", "IN_PROGRESS", "COMPLETED", "CANCELLED"].map(s => (
           <Button
             key={s}
@@ -169,7 +169,7 @@ export default function WellTestsPage() {
       </div>
 
       {/* Tests Table */}
-      <div className="bg-card border border-border rounded-lg overflow-hidden">
+      <div className="bg-card border border-border rounded-lg overflow-hidden overflow-x-auto">
         <div className="px-4 py-3 border-b border-border font-semibold">Well Tests</div>
         {isLoading ? (
           <div className="p-8 text-center text-muted-foreground">Loading...</div>

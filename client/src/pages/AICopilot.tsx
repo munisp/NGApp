@@ -111,7 +111,7 @@ export default function AICopilot() {
   };
 
   return (
-    <div className="p-6 bg-slate-950 min-h-screen text-white flex flex-col" style={{ height: "calc(100vh - 64px)" }}>
+    <div className="p-4 md:p-6 bg-slate-950 min-h-screen text-white flex flex-col" style={{ height: "calc(100vh - 64px)" }}>
       {/* Header */}
       <div className="flex items-center justify-between mb-4 shrink-0">
         <div>

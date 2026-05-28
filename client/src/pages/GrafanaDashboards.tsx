@@ -62,7 +62,7 @@ export default function GrafanaDashboards() {
 
   if (healthLoading || dashLoading) {
     return (
-      <div className="p-6 space-y-4">
+      <div className="p-4 md:p-6 space-y-4">
         <div className="h-8 w-48 bg-muted animate-pulse rounded" />
         <div className="grid grid-cols-2 gap-4">
           {[1, 2, 3, 4].map((i) => (
@@ -74,7 +74,7 @@ export default function GrafanaDashboards() {
   }
 
   return (
-    <div className="p-6 space-y-6">
+    <div className="p-4 md:p-6 space-y-6">
       {/* Header */}
       <div className="flex items-center justify-between">
         <div>

@@ -34,7 +34,7 @@ function SummaryCards() {
   const { data } = trpc.mudManagement.summary.useQuery();
   if (!data) return null;
   return (
-    <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
+    <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
       <Card className="bg-slate-800/60 border-slate-700">
         <CardContent className="pt-4">
           <div className="text-2xl font-bold text-white">{data.totalItems}</div>

@@ -199,7 +199,7 @@ export default function DamageAssessmentNew() {
         </div>
       </div>
 
-      <div className="max-w-lg mx-auto px-4 pb-24">
+      <div className="max-w-lg mx-auto px-4 md:px-0 pb-24">
 
         {/* ── STEP 1: Capture ── */}
         {step === "capture" && (

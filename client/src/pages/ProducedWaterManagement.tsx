@@ -27,7 +27,7 @@ function SummaryCards() {
   const { data } = trpc.producedWater.summary.useQuery();
   if (!data) return null;
   return (
-    <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
+    <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
       <Card className="bg-slate-800/60 border-slate-700">
         <CardContent className="pt-4">
           <div className="text-2xl font-bold text-blue-400">{(data.totalProducedBbl ?? 0).toLocaleString()}</div>
@@ -260,7 +260,7 @@ function WaterTrendsTab() {
 
 export default function ProducedWaterManagementPage() {
   return (
-    <div className="p-6 space-y-6">
+    <div className="p-4 md:p-6 space-y-6">
       <div className="flex items-center justify-between">
         <div>
           <h1 className="text-2xl font-bold text-white flex items-center gap-2">

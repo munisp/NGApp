@@ -37,13 +37,13 @@ export default function WaterInjectionPage() {
   const fields = Array.from(new Set((injectionWells as any[]).map((w: any) => w.field).filter(Boolean)));
 
   return (
-    <div className="p-6 space-y-6">
-      <div className="flex items-center justify-between">
+    <div className="p-4 md:p-6 space-y-6">
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
         <div>
-          <h1 className="text-2xl font-bold flex items-center gap-2">
-            <Droplets className="w-6 h-6 text-blue-400" /> Water Injection Optimization
+          <h1 className="text-xl md:text-2xl font-bold flex items-center gap-2">
+            <Droplets className="w-5 h-5 md:w-6 md:h-6 text-blue-400" /> Water Injection Optimization
           </h1>
-          <p className="text-muted-foreground text-sm mt-1">
+          <p className="text-muted-foreground text-xs md:text-sm mt-1">
             Monitor injection wells, pattern efficiency, and voidage replacement ratio
           </p>
         </div>
@@ -107,7 +107,7 @@ export default function WaterInjectionPage() {
         </div>
       </div>
 
-      <div className="bg-card border border-border rounded-lg overflow-hidden">
+      <div className="bg-card border border-border rounded-lg overflow-hidden overflow-x-auto">
         <div className="px-4 py-3 border-b border-border font-semibold">Injection Wells</div>
         {isLoading ? (
           <div className="p-8 text-center text-muted-foreground">Loading...</div>

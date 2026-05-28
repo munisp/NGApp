@@ -1,6 +1,14 @@
 import { useAuth } from "@/_core/hooks/useAuth";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import {
+  Breadcrumb,
+  BreadcrumbItem,
+  BreadcrumbLink,
+  BreadcrumbList,
+  BreadcrumbPage,
+  BreadcrumbSeparator,
+} from "@/components/ui/breadcrumb";
+import {
   DropdownMenu,
   DropdownMenuContent,
   DropdownMenuItem,
@@ -19,24 +27,32 @@ import {
   SidebarTrigger,
   useSidebar,
 } from "@/components/ui/sidebar";
+import { CommandPalette } from "@/components/CommandPalette";
+import { MobileBottomNav } from "@/components/MobileBottomNav";
+import { PullToRefreshIndicator } from "@/components/PullToRefreshIndicator";
+import { useTheme } from "@/components/ThemeProvider";
 import { getLoginUrl } from "@/const";
 import { useIsMobile } from "@/hooks/useMobile";
+import { usePullToRefresh } from "@/hooks/usePullToRefresh";
+import { useSwipeGesture } from "@/hooks/useSwipeGesture";
 import {
   Activity, AlertTriangle, BarChart2, Bell, BookOpen, Brain,
   Calendar, CheckSquare, ChevronDown, ChevronRight,
   ClipboardList, Cloud, Container, CreditCard, Database, DollarSign,
   Drill, Droplet, Droplets, Eye, Factory, FileBarChart, FileCheck,
   FileText, FlaskConical, Gauge, GitBranch, Globe,
-  Layers, LayoutDashboard, Lock, LogOut, Map, Microscope, Monitor,
+  Layers, LayoutDashboard, Lock, LogOut, Map, Microscope, Monitor, Moon,
   Network, Package, PanelLeft, Radio, RefreshCw, Satellite, Search,
-  Server, Settings, Shield, ShieldAlert, Sliders, Target, TestTube,
+  Server, Settings, Shield, ShieldAlert, Sliders, Sun, Target, TestTube,
   Thermometer, TrendingUp, Users, Waves, Webhook, Wind, Wrench, Zap
 } from "lucide-react";
 import type { LucideIcon } from "lucide-react";
-import { CSSProperties, useEffect, useRef, useState } from "react";
+import { CSSProperties, useCallback, useEffect, useRef, useState } from "react";
 import { useLocation } from "wouter";
 import { DashboardLayoutSkeleton } from '../DashboardLayoutSkeleton';
+import { Badge } from "../ui/badge";
 import { Button } from "../ui/button";
+import { useNavBadges } from "@/hooks/useNavBadges";
 
 interface NavItem { icon: LucideIcon; label: string; path: string; }
 interface NavGroup { label: string; icon: LucideIcon; items: NavItem[]; }
@@ -288,18 +304,36 @@ type DashboardLayoutContentProps = {
   setSidebarWidth: (width: number) => void;
 };
 
+function ThemeToggle() {
+  const { theme, setTheme } = useTheme();
+  const isCollapsed = useSidebar().state === "collapsed";
+
+  return (
+    <button
+      onClick={() => setTheme(theme === "dark" ? "light" : "dark")}
+      className={`flex items-center gap-2 px-2 py-1.5 rounded-lg text-sm text-muted-foreground hover:text-foreground hover:bg-accent/50 transition-colors w-full ${isCollapsed ? "justify-center" : ""}`}
+      title={theme === "dark" ? "Switch to light mode" : "Switch to dark mode"}
+    >
+      {theme === "dark" ? <Sun className="h-4 w-4 shrink-0" /> : <Moon className="h-4 w-4 shrink-0" />}
+      {!isCollapsed && <span>{theme === "dark" ? "Light mode" : "Dark mode"}</span>}
+    </button>
+  );
+}
+
 function DashboardLayoutContent({
   children,
   setSidebarWidth,
 }: DashboardLayoutContentProps) {
   const { user, logout } = useAuth();
   const [location, setLocation] = useLocation();
-  const { state, toggleSidebar } = useSidebar();
+  const { state, toggleSidebar, setOpenMobile } = useSidebar();
   const isCollapsed = state === "collapsed";
   const [isResizing, setIsResizing] = useState(false);
   const sidebarRef = useRef<HTMLDivElement>(null);
   const activeMenuItem = allNavItems.find(item => item.path === location);
+  const activeGroup = navGroups.find(g => g.items.some(i => i.path === location));
   const isMobile = useIsMobile();
+  const badgeCounts = useNavBadges();
   const [expandedGroups, setExpandedGroups] = useState<Set<string>>(() => new Set(navGroups.map(g => g.label)));
   const toggleGroup = (label: string) => {
     setExpandedGroups(prev => {
@@ -308,6 +342,18 @@ function DashboardLayoutContent({
       return next;
     });
   };
+
+  // Pull-to-refresh on mobile
+  const handleRefresh = useCallback(async () => {
+    window.location.reload();
+  }, []);
+  const { pullDistance, isRefreshing, isReady } = usePullToRefresh({ onRefresh: handleRefresh });
+
+  // Swipe to open/close sidebar on mobile
+  useSwipeGesture({
+    onSwipeRight: useCallback(() => { if (isMobile) setOpenMobile(true); }, [isMobile, setOpenMobile]),
+    onSwipeLeft: useCallback(() => { if (isMobile) setOpenMobile(false); }, [isMobile, setOpenMobile]),
+  });
 
   useEffect(() => {
     if (isCollapsed) {
@@ -363,7 +409,7 @@ function DashboardLayoutContent({
                 <PanelLeft className="h-4 w-4 text-muted-foreground" />
               </button>
               {!isCollapsed ? (
-                <div className="flex items-center gap-2 min-w-0">
+                <div className="flex items-center gap-2 min-w-0 flex-1">
                   <span className="font-semibold tracking-tight truncate">
                     Navigation
                   </span>
@@ -371,6 +417,21 @@ function DashboardLayoutContent({
               ) : null}
             </div>
           </SidebarHeader>
+
+          {!isCollapsed && (
+            <div className="px-3 pb-2">
+              <button
+                onClick={() => document.dispatchEvent(new KeyboardEvent("keydown", { key: "k", metaKey: true }))}
+                className="flex items-center gap-2 w-full rounded-md border border-border/50 bg-muted/30 px-3 py-1.5 text-xs text-muted-foreground hover:bg-muted/50 transition-colors"
+              >
+                <Search className="h-3 w-3" />
+                <span className="flex-1 text-left">Search pages…</span>
+                <kbd className="hidden sm:inline-flex h-5 items-center gap-1 rounded border bg-muted px-1.5 font-mono text-[10px] text-muted-foreground">
+                  <span className="text-xs">⌘</span>K
+                </kbd>
+              </button>
+            </div>
+          )}
 
           <SidebarContent className="gap-0 overflow-y-auto">
             {navGroups.map(group => {
@@ -403,6 +464,11 @@ function DashboardLayoutContent({
                             >
                               <item.icon className={`h-4 w-4 shrink-0 ${isActive ? "text-primary" : ""}`} aria-hidden="true" />
                               <span className="truncate">{item.label}</span>
+                              {badgeCounts[item.path] > 0 && (
+                                <Badge variant="destructive" className="ml-auto h-5 min-w-[20px] px-1 text-[10px] font-mono">
+                                  {badgeCounts[item.path]}
+                                </Badge>
+                              )}
                             </SidebarMenuButton>
                           </SidebarMenuItem>
                         );
@@ -414,7 +480,8 @@ function DashboardLayoutContent({
             })}
           </SidebarContent>
 
-          <SidebarFooter className="p-3">
+          <SidebarFooter className="p-3 space-y-2">
+            <ThemeToggle />
             <DropdownMenu>
               <DropdownMenuTrigger asChild>
                 <button className="flex items-center gap-3 rounded-lg px-1 py-1 hover:bg-accent/50 transition-colors w-full text-left group-data-[collapsible=icon]:justify-center focus:outline-none focus-visible:ring-2 focus-visible:ring-ring">
@@ -468,9 +535,46 @@ function DashboardLayoutContent({
                 </div>
               </div>
             </div>
+            <button
+              onClick={() => document.dispatchEvent(new KeyboardEvent("keydown", { key: "k", metaKey: true }))}
+              className="text-xs text-muted-foreground px-2 py-1 rounded hover:bg-accent"
+              aria-label="Search pages"
+            >
+              <Search className="h-4 w-4" />
+            </button>
           </div>
         )}
-        <main className="flex-1 p-4">{children}</main>
+        {!isMobile && activeGroup && (
+          <div className="border-b px-4 py-2">
+            <Breadcrumb>
+              <BreadcrumbList>
+                <BreadcrumbItem>
+                  <BreadcrumbLink onClick={() => setLocation("/")} className="cursor-pointer">
+                    Home
+                  </BreadcrumbLink>
+                </BreadcrumbItem>
+                <BreadcrumbSeparator />
+                <BreadcrumbItem>
+                  <BreadcrumbLink className="cursor-default">
+                    {activeGroup.label}
+                  </BreadcrumbLink>
+                </BreadcrumbItem>
+                {activeMenuItem && activeMenuItem.label !== activeGroup.label && (
+                  <>
+                    <BreadcrumbSeparator />
+                    <BreadcrumbItem>
+                      <BreadcrumbPage>{activeMenuItem.label}</BreadcrumbPage>
+                    </BreadcrumbItem>
+                  </>
+                )}
+              </BreadcrumbList>
+            </Breadcrumb>
+          </div>
+        )}
+        <PullToRefreshIndicator pullDistance={pullDistance} isRefreshing={isRefreshing} isReady={isReady} />
+        <main className={`flex-1 p-4 ${isMobile ? "pb-20" : ""}`}>{children}</main>
+        <MobileBottomNav />
+        <CommandPalette />
       </SidebarInset>
     </>
   );

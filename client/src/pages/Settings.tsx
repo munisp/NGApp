@@ -60,7 +60,7 @@ export default function Settings() {
   };
 
   return (
-    <div className="container max-w-3xl py-8 space-y-6">
+    <div className="container max-w-3xl py-4 md:py-8 space-y-6 px-4 md:px-0">
       <div>
         <h1 className="text-2xl font-bold tracking-tight">Settings</h1>
         <p className="text-muted-foreground text-sm mt-1">
@@ -79,7 +79,7 @@ export default function Settings() {
         </CardHeader>
         <CardContent className="space-y-3">
           {isAuthenticated && user ? (
-            <div className="grid grid-cols-2 gap-4 text-sm">
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 text-sm">
               <div>
                 <p className="text-muted-foreground text-xs mb-1">Name</p>
                 <p className="font-medium">{user.name ?? "—"}</p>
