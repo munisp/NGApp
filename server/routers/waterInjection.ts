@@ -8,6 +8,7 @@
 import { z } from "zod";
 import { protectedProcedure, router } from "../_core/trpc";
 import { getDb, getPool } from "../db";
+import { withCache, cacheKey, TTL } from "../cache";
 import { producedWaterRecords } from "../../drizzle/schema";
 import { eq, desc, and, gte, lte, sql } from "drizzle-orm";
 
@@ -42,20 +43,23 @@ export const waterInjectionRouter = router({
       offset: z.number().min(0).default(0),
     }))
     .query(async ({ input }) => {
-      const db = await getDb();
-      if (!db) return { records: [], total: 0 };
-      const conditions: ReturnType<typeof eq>[] = [];
-      if (input.fieldId) conditions.push(eq(producedWaterRecords.fieldId, input.fieldId));
-      if (input.from) conditions.push(gte(producedWaterRecords.recordDate, input.from));
-      if (input.to) conditions.push(lte(producedWaterRecords.recordDate, input.to));
-      const where = conditions.length > 0 ? and(...conditions) : undefined;
-      const [records, countResult] = await Promise.all([
-        db.select().from(producedWaterRecords).where(where)
-          .orderBy(desc(producedWaterRecords.recordDate))
-          .limit(input.limit).offset(input.offset),
-        db.select({ count: sql<number>`count(*)::int` }).from(producedWaterRecords).where(where),
-      ]);
-      return { records, total: countResult[0]?.count ?? 0 };
+      const key = cacheKey("waterInjection", "list", { field: input.fieldId, from: input.from?.toISOString(), to: input.to?.toISOString(), limit: input.limit, offset: input.offset });
+      return withCache(key, TTL.WATER_INJECTION, async () => {
+        const db = await getDb();
+        if (!db) return { records: [], total: 0 };
+        const conditions: ReturnType<typeof eq>[] = [];
+        if (input.fieldId) conditions.push(eq(producedWaterRecords.fieldId, input.fieldId));
+        if (input.from) conditions.push(gte(producedWaterRecords.recordDate, input.from));
+        if (input.to) conditions.push(lte(producedWaterRecords.recordDate, input.to));
+        const where = conditions.length > 0 ? and(...conditions) : undefined;
+        const [records, countResult] = await Promise.all([
+          db.select().from(producedWaterRecords).where(where)
+            .orderBy(desc(producedWaterRecords.recordDate))
+            .limit(input.limit).offset(input.offset),
+          db.select({ count: sql<number>`count(*)::int` }).from(producedWaterRecords).where(where),
+        ]);
+        return { records, total: countResult[0]?.count ?? 0 };
+      });
     }),
 
   // ── GET BY ID ─────────────────────────────────────────────────────────────

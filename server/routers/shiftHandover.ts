@@ -3,6 +3,7 @@ import { z } from "zod";
 import { protectedProcedure, router } from "../_core/trpc";
 import nodemailer from "nodemailer";
 import { getDb, getPool } from "../db";
+import { withCache, cacheKey, TTL } from "../cache";
 import { shiftHandovers } from "../../drizzle/schema";
 import { isNull, desc, eq } from "drizzle-orm";
 
@@ -173,13 +174,16 @@ export const shiftHandoverRouter = router({
   list: protectedProcedure
     .input(z.object({ limit: z.number().default(20) }).optional())
     .query(async ({ input }) => {
-      const db = await getDb();
-      if (!db) return [];
-      return db
-        .select()
-        .from(shiftHandovers)
-        .orderBy(desc(shiftHandovers.createdAt))
-        .limit(input?.limit ?? 20);
+      const key = cacheKey("shiftHandover", "list", { limit: input?.limit });
+      return withCache(key, TTL.SHIFT_HANDOVER, async () => {
+        const db = await getDb();
+        if (!db) return [];
+        return db
+          .select()
+          .from(shiftHandovers)
+          .orderBy(desc(shiftHandovers.createdAt))
+          .limit(input?.limit ?? 20);
+      });
     }),
 
   // Get the most recent unsigned (in-progress) handover

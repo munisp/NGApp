@@ -12,6 +12,7 @@
 import { z } from "zod";
 import { protectedProcedure, router } from "../_core/trpc";
 import { TRPCError } from "@trpc/server";
+import { withCache, cacheKey, TTL } from "../cache";
 
 const RTDIP_URL = process.env.RTDIP_API_URL ?? "http://localhost:8000";
 
@@ -71,16 +72,19 @@ export const lakehouseRouter = router({
       })
     )
     .query(async ({ input }) => {
-      return rtdipFetch<{
-        tag: string;
-        twa: number;
-        unit: string;
-        startTime: string;
-        endTime: string;
-        source: string;
-      }>("/rtdip/twa", {
-        method: "POST",
-        body: JSON.stringify(input),
+      const key = cacheKey("lakehouse", "twa", { tag: input.tag, start: input.startTime, end: input.endTime });
+      return withCache(key, TTL.LAKEHOUSE, async () => {
+        return rtdipFetch<{
+          tag: string;
+          twa: number;
+          unit: string;
+          startTime: string;
+          endTime: string;
+          source: string;
+        }>("/rtdip/twa", {
+          method: "POST",
+          body: JSON.stringify(input),
+        });
       });
     }),
 

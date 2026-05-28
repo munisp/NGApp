@@ -10,6 +10,7 @@ import { protectedProcedure, router } from "../_core/trpc";
 import { getPool } from "../db";
 import { TRPCError } from "@trpc/server";
 import type { Pool } from "pg";
+import { withCache, cacheKey, cacheInvalidateRouter, TTL } from "../cache";
 
 async function pool(): Promise<Pool> {
   const p = await getPool();
@@ -28,20 +29,23 @@ const materialMasterRouter = router({
       offset: z.number().min(0).default(0),
     }))
     .query(async ({ input }) => {
-      const p = await pool();
-      const params: unknown[] = [];
-      let where = "WHERE 1=1";
-      let idx = 1;
-      if (input.itemGroup) { where += ` AND m.item_group = $${idx++}`; params.push(input.itemGroup); }
-      if (input.search) { where += ` AND (m.item_name ILIKE $${idx} OR m.item_code ILIKE $${idx})`; params.push(`%${input.search}%`); idx++; }
-      params.push(input.limit, input.offset);
-      const result = await p.query(
-        `SELECT m.*, s.supplier_name FROM material_master m
-         LEFT JOIN suppliers s ON m.supplier_id = s.id
-         ${where} ORDER BY m.item_name LIMIT $${idx++} OFFSET $${idx}`,
-        params
-      );
-      return result.rows;
+      const key = cacheKey("materials", "list", { group: input.itemGroup, search: input.search, limit: input.limit, offset: input.offset });
+      return withCache(key, TTL.MATERIALS, async () => {
+        const p = await pool();
+        const params: unknown[] = [];
+        let where = "WHERE 1=1";
+        let idx = 1;
+        if (input.itemGroup) { where += ` AND m.item_group = $${idx++}`; params.push(input.itemGroup); }
+        if (input.search) { where += ` AND (m.item_name ILIKE $${idx} OR m.item_code ILIKE $${idx})`; params.push(`%${input.search}%`); idx++; }
+        params.push(input.limit, input.offset);
+        const result = await p.query(
+          `SELECT m.*, s.supplier_name FROM material_master m
+           LEFT JOIN suppliers s ON m.supplier_id = s.id
+           ${where} ORDER BY m.item_name LIMIT $${idx++} OFFSET $${idx}`,
+          params
+        );
+        return result.rows;
+      });
     }),
 
   create: protectedProcedure

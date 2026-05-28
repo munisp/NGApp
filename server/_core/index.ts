@@ -289,6 +289,18 @@ async function startServer() {
   const exportLimiter = rateLimit({ windowMs: 60 * 1000, max: 10, standardHeaders: true, legacyHeaders: false, message: { error: "Export rate limit exceeded" } });
   app.use("/api/trpc/dataExport", exportLimiter);
 
+  // HTTP Cache-Control headers for tRPC
+  app.use("/api/trpc", (req, res, next) => {
+    if (req.method === "GET") {
+      // Query endpoints: allow short-lived browser caching
+      res.setHeader("Cache-Control", "public, max-age=30, stale-while-revalidate=60");
+    } else {
+      // Mutations: never cache
+      res.setHeader("Cache-Control", "no-store, no-cache, must-revalidate");
+    }
+    next();
+  });
+
   // tRPC API
   app.use(
     "/api/trpc",

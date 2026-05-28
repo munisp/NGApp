@@ -16,6 +16,7 @@ import { getPool } from "../db";
 import { invokeLLM } from "../_core/llm";
 import { TRPCError } from "@trpc/server";
 import type { Pool } from "pg";
+import { withCache, cacheKey, cacheInvalidateRouter, TTL } from "../cache";
 
 // ── DB helper ────────────────────────────────────────────────────────────────
 
@@ -128,35 +129,38 @@ export const damageAssessmentRouter = router({
       offset: z.number().min(0).default(0),
     }).optional())
     .query(async ({ input }) => {
-      const p = await pool();
-      const rows = await p.query(
-        `SELECT da.*,
-                COUNT(de.id)::int AS evidence_count,
-                COUNT(rt.id)::int AS ticket_count
-         FROM damage_assessments da
-         LEFT JOIN damage_evidence de ON de.assessment_id = da.id
-         LEFT JOIN repair_tickets rt ON rt.assessment_id = da.id
-         WHERE ($1::text IS NULL OR da.country = $1)
-           AND ($2::text IS NULL OR da.field_name ILIKE '%' || $2 || '%')
-           AND ($3::text IS NULL OR da.classification = $3)
-           AND ($4::text IS NULL OR da.repair_status = $4)
-           AND ($5::text IS NULL OR da.repair_priority = $5)
-           AND ($6::text IS NULL OR da.well_id = $6)
-         GROUP BY da.id
-         ORDER BY da.triage_score DESC NULLS LAST, da.created_at DESC
-         LIMIT $7 OFFSET $8`,
-        [
-          input?.country ?? null,
-          input?.fieldName ?? null,
-          input?.classification ?? null,
-          input?.repairStatus ?? null,
-          input?.priority ?? null,
-          input?.wellId ?? null,
-          input?.limit ?? 50,
-          input?.offset ?? 0,
-        ]
-      );
-      return rows.rows as Record<string, unknown>[];
+      const key = cacheKey("damageAssessment", "list", { country: input?.country, field: input?.fieldName, class: input?.classification, status: input?.repairStatus, pri: input?.priority, well: input?.wellId, limit: input?.limit, offset: input?.offset });
+      return withCache(key, TTL.DAMAGE_ASSESSMENT, async () => {
+        const p = await pool();
+        const rows = await p.query(
+          `SELECT da.*,
+                  COUNT(de.id)::int AS evidence_count,
+                  COUNT(rt.id)::int AS ticket_count
+           FROM damage_assessments da
+           LEFT JOIN damage_evidence de ON de.assessment_id = da.id
+           LEFT JOIN repair_tickets rt ON rt.assessment_id = da.id
+           WHERE ($1::text IS NULL OR da.country = $1)
+             AND ($2::text IS NULL OR da.field_name ILIKE '%' || $2 || '%')
+             AND ($3::text IS NULL OR da.classification = $3)
+             AND ($4::text IS NULL OR da.repair_status = $4)
+             AND ($5::text IS NULL OR da.repair_priority = $5)
+             AND ($6::text IS NULL OR da.well_id = $6)
+           GROUP BY da.id
+           ORDER BY da.triage_score DESC NULLS LAST, da.created_at DESC
+           LIMIT $7 OFFSET $8`,
+          [
+            input?.country ?? null,
+            input?.fieldName ?? null,
+            input?.classification ?? null,
+            input?.repairStatus ?? null,
+            input?.priority ?? null,
+            input?.wellId ?? null,
+            input?.limit ?? 50,
+            input?.offset ?? 0,
+          ]
+        );
+        return rows.rows as Record<string, unknown>[];
+      });
     }),
 
   /** Get a single assessment with evidence and repair tickets */

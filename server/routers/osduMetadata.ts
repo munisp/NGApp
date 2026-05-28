@@ -13,6 +13,7 @@
 
 import { z } from "zod";
 import { protectedProcedure, router } from "../_core/trpc";
+import { withCache, cacheKey, TTL } from "../cache";
 import { getPool } from "../db";
 import type { Pool } from "pg";
 
@@ -95,6 +96,8 @@ export const osduMetadataRouter = router({
   exportWell: protectedProcedure
     .input(z.object({ wellId: z.string() }))
     .query(async ({ input }) => {
+      const key = cacheKey("osdu", "exportWell", { well: input.wellId });
+      return withCache(key, TTL.OSDU_METADATA, async () => {
       const pool = await getPool();
       if (!pool) throw new Error("DB unavailable");
       const { rows } = await pool.query(
@@ -160,6 +163,7 @@ export const osduMetadataRouter = router({
         schemaVersion: "osdu:wks:master-data--Well:1.0.0",
         exportedAt: new Date().toISOString(),
       };
+      });
     }),
 
   // Bulk export all wells as OSDU records

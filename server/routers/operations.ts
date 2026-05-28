@@ -1,6 +1,7 @@
 import { z } from "zod";
 import { protectedProcedure, adminProcedure, router } from "../_core/trpc";
 import { getDb } from "../db";
+import { withCache, cacheKey, TTL } from "../cache";
 import {
   productionAllocationRules, wellAllocationFactors, allocatedProduction,
   reservoirSimulations, emissionSources, emissionRecords, carbonTargets,
@@ -19,13 +20,16 @@ export const operationsRouter = router({
   listAllocationRules: protectedProcedure
     .input(z.object({ fieldId: z.string().optional(), isActive: z.boolean().optional() }).optional())
     .query(async ({ input }) => {
-      const db = await getDb();
-      if (!db) return [];
-      const rows = await db.select().from(productionAllocationRules).orderBy(desc(productionAllocationRules.createdAt));
-      let filtered: ProductionAllocationRule[] = rows;
-      if (input?.fieldId) { const f = input.fieldId; filtered = filtered.filter((r: ProductionAllocationRule) => r.fieldId === f); }
-      if (input?.isActive !== undefined) { const a = input.isActive; filtered = filtered.filter((r: ProductionAllocationRule) => r.isActive === a); }
-      return filtered;
+      const key = cacheKey("operations", "allocationRules", { field: input?.fieldId, active: input?.isActive });
+      return withCache(key, TTL.OPERATIONS, async () => {
+        const db = await getDb();
+        if (!db) return [];
+        const rows = await db.select().from(productionAllocationRules).orderBy(desc(productionAllocationRules.createdAt));
+        let filtered: ProductionAllocationRule[] = rows;
+        if (input?.fieldId) { const f = input.fieldId; filtered = filtered.filter((r: ProductionAllocationRule) => r.fieldId === f); }
+        if (input?.isActive !== undefined) { const a = input.isActive; filtered = filtered.filter((r: ProductionAllocationRule) => r.isActive === a); }
+        return filtered;
+      });
     }),
 
   createAllocationRule: adminProcedure

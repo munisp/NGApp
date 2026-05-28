@@ -7,7 +7,7 @@ import { TRPCError } from "@trpc/server";
  */
 import { z } from "zod";
 import { protectedProcedure, router } from "../_core/trpc";
-import { getCacheStats, cacheDel } from "../cache";
+import { getCacheStats, cacheDel, getCacheMetrics, resetCacheMetrics, cacheInvalidateRouter } from "../cache";
 
 export const cacheRouter = router({
   /**
@@ -49,8 +49,9 @@ export const cacheRouter = router({
     if (ctx.user.role !== "admin") {
       throw new Error("Admin access required");
     }
+    const deleted = await cacheInvalidateRouter("wells");
     await cacheDel("wells:list", "wells:active");
-    return { status: "ok" };
+    return { status: "ok", deleted };
   }),
 
   /**
@@ -61,12 +62,44 @@ export const cacheRouter = router({
       if (ctx.user.role !== "admin") {
         throw new Error("Admin access required");
       }
+      const deleted = await cacheInvalidateRouter("alarms");
       await cacheDel("alarms:list", "alarms:active", "alarms:critical");
-      return { status: "ok" };
+      return { status: "ok", deleted };
     } catch (err: unknown) {
       if (err instanceof TRPCError) throw err;
       const msg = err instanceof Error ? err.message : String(err);
       throw new TRPCError({ code: "INTERNAL_SERVER_ERROR", message: msg });
     }
   }),
+
+  /**
+   * Get cache hit/miss metrics.
+   */
+  getMetrics: protectedProcedure.query(() => {
+    return getCacheMetrics();
+  }),
+
+  /**
+   * Reset cache metrics counters.
+   */
+  resetMetrics: protectedProcedure.mutation(async ({ ctx }) => {
+    if (ctx.user.role !== "admin") {
+      throw new Error("Admin access required");
+    }
+    resetCacheMetrics();
+    return { status: "ok" };
+  }),
+
+  /**
+   * Invalidate all cache entries for a specific router.
+   */
+  invalidateRouter: protectedProcedure
+    .input(z.object({ router: z.string().min(1) }))
+    .mutation(async ({ input, ctx }) => {
+      if (ctx.user.role !== "admin") {
+        throw new Error("Admin access required");
+      }
+      const deleted = await cacheInvalidateRouter(input.router);
+      return { status: "ok", router: input.router, deleted };
+    }),
 });

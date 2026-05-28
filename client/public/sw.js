@@ -20,6 +20,8 @@ const QUEUE_STORE = "mutation_queue";
 const SYNC_TAG = "og-rmm-offline-sync";
 
 const PRECACHE_URLS = ["/", "/alarms", "/permits", "/workovers", "/pwa-twin-physics", "/wells", "/manifest.json"];
+const API_CACHE_MAX_ENTRIES = 200;
+const API_CACHE_MAX_AGE_MS = 5 * 60 * 1000; // 5 minutes
 
 // API paths whose mutations should be queued when offline
 const QUEUEABLE_PATHS = [
@@ -161,6 +163,35 @@ self.addEventListener("activate", (event) => {
   );
 });
 
+// ─── API Cache Eviction ───────────────────────────────────────────────────────
+
+async function trimApiCache(cache) {
+  try {
+    const keys = await cache.keys();
+    // Evict entries over max count (FIFO — oldest first)
+    if (keys.length > API_CACHE_MAX_ENTRIES) {
+      const toDelete = keys.slice(0, keys.length - API_CACHE_MAX_ENTRIES);
+      await Promise.all(toDelete.map((k) => cache.delete(k)));
+    }
+    // Evict stale entries by checking the Date header
+    const now = Date.now();
+    for (const key of await cache.keys()) {
+      const response = await cache.match(key);
+      if (response) {
+        const dateHeader = response.headers.get("date");
+        if (dateHeader) {
+          const age = now - new Date(dateHeader).getTime();
+          if (age > API_CACHE_MAX_AGE_MS) {
+            await cache.delete(key);
+          }
+        }
+      }
+    }
+  } catch (e) {
+    console.warn("[SW] Cache trim error:", e);
+  }
+}
+
 // ─── Fetch ────────────────────────────────────────────────────────────────────
 
 self.addEventListener("fetch", (event) => {
@@ -205,11 +236,16 @@ self.addEventListener("fetch", (event) => {
     return;
   }
 
-  // API calls — network-first with cache fallback
+  // API calls — network-first with cache fallback + eviction
   if (url.pathname.startsWith("/api/")) {
     event.respondWith(
       fetch(request.clone()).then((res) => {
-        if (res.ok && request.method === "GET") caches.open(API_CACHE).then((c) => c.put(request, res.clone()));
+        if (res.ok && request.method === "GET") {
+          caches.open(API_CACHE).then((c) => {
+            c.put(request, res.clone());
+            trimApiCache(c);
+          });
+        }
         return res;
       }).catch(() =>
         caches.match(request).then((cached) =>

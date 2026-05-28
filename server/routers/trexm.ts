@@ -11,6 +11,7 @@
 import { z } from "zod";
 import { protectedProcedure, router } from "../_core/trpc";
 import { getDb } from "../db";
+import { withCache, cacheKey, TTL } from "../cache";
 import {
   geomechanicalModels,
   mudInventory,
@@ -76,14 +77,17 @@ export const geomechanicsRouter = router({
   list: protectedProcedure
     .input(z.object({ wellId: z.string().optional() }))
     .query(async ({ input }) => {
-      const db = await getDb();
-      if (!db) throw new Error("Database unavailable");
-      if (input.wellId) {
-        return db.select().from(geomechanicalModels)
-          .where(eq(geomechanicalModels.wellId, input.wellId))
-          .orderBy(desc(geomechanicalModels.createdAt));
-      }
-      return db.select().from(geomechanicalModels).orderBy(desc(geomechanicalModels.createdAt));
+      const key = cacheKey("trexm", "geomech_list", { well: input.wellId });
+      return withCache(key, TTL.TREXM, async () => {
+        const db = await getDb();
+        if (!db) throw new Error("Database unavailable");
+        if (input.wellId) {
+          return db.select().from(geomechanicalModels)
+            .where(eq(geomechanicalModels.wellId, input.wellId))
+            .orderBy(desc(geomechanicalModels.createdAt));
+        }
+        return db.select().from(geomechanicalModels).orderBy(desc(geomechanicalModels.createdAt));
+      });
     }),
 
   getById: protectedProcedure

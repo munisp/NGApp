@@ -7,6 +7,7 @@ import { z } from "zod";
 import { TRPCError } from "@trpc/server";
 import { router, protectedProcedure, adminProcedure } from "../_core/trpc";
 import { getDb } from "../db";
+import { withCache, cacheKey, cacheInvalidateRouter, TTL } from "../cache";
 import {
   calibrationRecords, fpsoVessels, hpuUnits, subseaTrees,
   siteConnectivity, actuatorCommands, hseIncidents, securityEvents,
@@ -26,24 +27,30 @@ export const calibrationRouter = router({
       limit: z.number().default(100),
     }))
     .query(async ({ input }) => {
-      const db = await getDb();
-      if (!db) return [];
-      const conds: any[] = [];
-      if (input.wellId) conds.push(eq(calibrationRecords.wellId, input.wellId));
-      if (input.status) conds.push(eq(calibrationRecords.status, input.status));
-      return db.select().from(calibrationRecords)
-        .where(conds.length ? and(...conds) : undefined)
-        .orderBy(desc(calibrationRecords.nextDueAt))
-        .limit(input.limit);
+      const key = cacheKey("domain", "calibration_list", { well: input.wellId, status: input.status, limit: input.limit });
+      return withCache(key, TTL.DOMAIN, async () => {
+        const db = await getDb();
+        if (!db) return [];
+        const conds: any[] = [];
+        if (input.wellId) conds.push(eq(calibrationRecords.wellId, input.wellId));
+        if (input.status) conds.push(eq(calibrationRecords.status, input.status));
+        return db.select().from(calibrationRecords)
+          .where(conds.length ? and(...conds) : undefined)
+          .orderBy(desc(calibrationRecords.nextDueAt))
+          .limit(input.limit);
+      });
     }),
 
   overdue: protectedProcedure.query(async () => {
-    const db = await getDb();
-    if (!db) return [];
-    return db.select().from(calibrationRecords)
-      .where(or(eq(calibrationRecords.status, "OVERDUE"), eq(calibrationRecords.status, "DUE_SOON")))
-      .orderBy(calibrationRecords.nextDueAt)
-      .limit(50);
+    const key = cacheKey("domain", "calibration_overdue");
+    return withCache(key, TTL.DOMAIN, async () => {
+      const db = await getDb();
+      if (!db) return [];
+      return db.select().from(calibrationRecords)
+        .where(or(eq(calibrationRecords.status, "OVERDUE"), eq(calibrationRecords.status, "DUE_SOON")))
+        .orderBy(calibrationRecords.nextDueAt)
+        .limit(50);
+    });
   }),
 
   create: protectedProcedure

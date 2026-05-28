@@ -20,6 +20,7 @@ import { protectedProcedure, router, adminProcedure } from "../_core/trpc";
 import { getDb } from "../db";
 import { devices, wells } from "../../drizzle/schema";
 import { TRPCError } from "@trpc/server";
+import { withCache, cacheKey, cacheInvalidateRouter, TTL } from "../cache";
 
 const PROVISIONING_TOKEN_TTL_HOURS = 24;
 
@@ -39,16 +40,19 @@ export const deviceManagementRouter = router({
       wellId: z.string().optional(),
     }).optional())
     .query(async ({ input }) => {
-      const db = await getDb();
-      if (!db) return [];
-      const conditions = [];
-      if (input?.deviceType) conditions.push(eq(devices.deviceType, input.deviceType));
-      if (input?.status) conditions.push(eq(devices.status, input.status));
-      if (input?.wellId) conditions.push(eq(devices.wellId, input.wellId));
-      const rows = conditions.length > 0
-        ? await db.select().from(devices).where(and(...conditions)).orderBy(desc(devices.createdAt))
-        : await db.select().from(devices).orderBy(desc(devices.createdAt));
-      return rows;
+      const key = cacheKey("devices", "list", { type: input?.deviceType, status: input?.status, well: input?.wellId });
+      return withCache(key, TTL.DEVICE_MANAGEMENT, async () => {
+        const db = await getDb();
+        if (!db) return [];
+        const conditions = [];
+        if (input?.deviceType) conditions.push(eq(devices.deviceType, input.deviceType));
+        if (input?.status) conditions.push(eq(devices.status, input.status));
+        if (input?.wellId) conditions.push(eq(devices.wellId, input.wellId));
+        const rows = conditions.length > 0
+          ? await db.select().from(devices).where(and(...conditions)).orderBy(desc(devices.createdAt))
+          : await db.select().from(devices).orderBy(desc(devices.createdAt));
+        return rows;
+      });
     }),
 
   // ── Get single device ────────────────────────────────────────────────────────
@@ -276,19 +280,22 @@ export const deviceManagementRouter = router({
   // ── Fleet statistics ─────────────────────────────────────────────────────────
   getStats: protectedProcedure.query(async () => {
     try {
-      const db = await getDb();
-      if (!db) return { total: 0, online: 0, offline: 0, provisioning: 0, maintenance: 0, error: 0 };
-      const rows = await db.select({
-        status: devices.status,
-        cnt: count(),
-      }).from(devices).groupBy(devices.status);
-  
-      const stats: Record<string, number> = { total: 0, online: 0, offline: 0, provisioning: 0, maintenance: 0, error: 0, decommissioned: 0 };
-      for (const row of rows) {
-        stats[row.status] = Number(row.cnt);
-        stats.total += Number(row.cnt);
-      }
-      return stats;
+      const key = cacheKey("devices", "stats");
+      return await withCache(key, TTL.DEVICE_MANAGEMENT, async () => {
+        const db = await getDb();
+        if (!db) return { total: 0, online: 0, offline: 0, provisioning: 0, maintenance: 0, error: 0 };
+        const rows = await db.select({
+          status: devices.status,
+          cnt: count(),
+        }).from(devices).groupBy(devices.status);
+    
+        const stats: Record<string, number> = { total: 0, online: 0, offline: 0, provisioning: 0, maintenance: 0, error: 0, decommissioned: 0 };
+        for (const row of rows) {
+          stats[row.status] = Number(row.cnt);
+          stats.total += Number(row.cnt);
+        }
+        return stats;
+      });
     } catch (err: unknown) {
       if (err instanceof TRPCError) throw err;
       const msg = err instanceof Error ? err.message : String(err);
