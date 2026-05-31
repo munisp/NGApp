@@ -35,7 +35,7 @@ export function RecurringRemittances() {
   const fetcher = useCallback(() =>
     lakehouseAPI.fetch<{ remittances: RecurringRemittance[] }>('/api/v1/remittances/recurring')
       .then(d => d.remittances)
-      .catch(() => sampleRemittances), []);
+      .catch((err: unknown) => { console.error("API fallback:", err); return sampleRemittances; }), []);
   const { data: apiRemittances } = useLakehouseData(fetcher, 30000);
   const activeRemittances = apiRemittances || sampleRemittances;
   const [search, setSearch] = useState('');

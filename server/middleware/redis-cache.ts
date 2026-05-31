@@ -343,7 +343,7 @@ export async function invalidateKey(key: string): Promise<void> {
   const fullKey = key.startsWith(REDIS_CONFIG.keyPrefix) ? key : `${REDIS_CONFIG.keyPrefix}${key}`;
   l1Cache.invalidate(fullKey);
   if (REDIS_CONFIG.enableL2) {
-    try { await redisClient.del(fullKey); } catch {}
+    try { await redisClient.del(fullKey); } catch (err) { console.error('Redis cache invalidate error:', err); }
   }
 }
 
@@ -378,7 +378,7 @@ export function httpCacheMiddleware(config?: CacheConfig) {
           res.setHeader('X-Cache', 'HIT-L2');
           return res.json(data);
         }
-      } catch {}
+      } catch (err) { console.error('Redis L2 cache read error:', err); }
     }
 
     // Cache miss — intercept response
@@ -389,7 +389,7 @@ export function httpCacheMiddleware(config?: CacheConfig) {
       if (res.statusCode === 200) {
         if (REDIS_CONFIG.enableL1) l1Cache.set(key, data, ttl);
         if (REDIS_CONFIG.enableL2 && !config?.l1Only) {
-          redisClient.setex(key, ttl, JSON.stringify(data)).catch(() => {});
+          redisClient.setex(key, ttl, JSON.stringify(data)).catch((err: unknown) => { console.error('Redis L2 cache write error:', err); });
         }
       }
       return originalJson(data);
@@ -423,6 +423,6 @@ export async function clearAll(): Promise<void> {
     try {
       const keys = await redisClient.keys(`${REDIS_CONFIG.keyPrefix}*`);
       if (keys.length > 0) await redisClient.del(...keys);
-    } catch {}
+    } catch (err) { console.error('Redis cache clear error:', err); }
   }
 }

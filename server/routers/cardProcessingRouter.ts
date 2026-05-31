@@ -117,6 +117,7 @@ export const cardProcessingRouter = router({
       return {
         cards,
         total: cards.length,
+        _source: 'SEED' as const,
         summary: {
           totalCards: seedCards.length,
           activeCards: seedCards.filter(c => c.status === 'active').length,
@@ -138,6 +139,7 @@ export const cardProcessingRouter = router({
       return {
         transactions: txns,
         total: txns.length,
+        _source: 'SEED' as const,
         summary: {
           totalTxns: seedTxns.length,
           approved: approved.length,
@@ -154,12 +156,14 @@ export const cardProcessingRouter = router({
     chargebacks: seedChargebacks,
     totalActive: seedChargebacks.filter(c => !['resolved', 'lost'].includes(c.status)).length,
     totalDisputeAmount: seedChargebacks.reduce((s, c) => s + c.disputeAmount, 0),
+    _source: 'SEED' as const,
   })),
 
   listTerminals: protectedProcedure.query(async () => ({
     terminals: seedTerminals,
     totalActive: seedTerminals.filter(t => t.status === 'active').length,
     totalDailyVolume: seedTerminals.reduce((s, t) => s + t.dailyVolume, 0),
+    _source: 'SEED' as const,
   })),
 
   blockCard: protectedProcedure

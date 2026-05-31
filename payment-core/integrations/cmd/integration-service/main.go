@@ -5,6 +5,7 @@ import (
 	"context"
 	"flag"
 	"fmt"
+	"net/http"
 	"os"
 	"os/signal"
 	"syscall"
@@ -110,6 +111,23 @@ func main() {
 		cancel()
 	}()
 
+	// Start HTTP health server
+	go func() {
+		mux := http.NewServeMux()
+		mux.HandleFunc("/health", func(w http.ResponseWriter, r *http.Request) {
+			w.Header().Set("Content-Type", "application/json")
+			w.WriteHeader(http.StatusOK)
+			fmt.Fprintf(w, `{"status":"healthy","service":"integration-service"}`)
+		})
+		mux.HandleFunc("/ready", func(w http.ResponseWriter, r *http.Request) {
+			w.Header().Set("Content-Type", "application/json")
+			w.WriteHeader(http.StatusOK)
+			fmt.Fprintf(w, `{"status":"ready","service":"integration-service"}`)
+		})
+		fmt.Printf("Health server on :%d\n", config.Server.Port)
+		http.ListenAndServe(fmt.Sprintf(":%d", config.Server.Port), mux)
+	}()
+
 	// Start the unified integration service
 	fmt.Printf("Starting Unified Integration Service on port %d\n", config.Server.Port)
 	fmt.Println("Integrations:")
@@ -119,8 +137,6 @@ func main() {
 	fmt.Printf("  - OpenSearch: %s\n", config.OpenSearch.URL)
 	fmt.Printf("  - Kubecost: %s\n", config.Kubecost.URL)
 
-	// In a real implementation, this would initialize and start the service
-	// For now, we'll just wait for the context to be cancelled
 	<-ctx.Done()
 	fmt.Println("Shutting down...")
 }

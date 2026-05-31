@@ -93,7 +93,7 @@ export function NOCDashboard() {
         const { lakehouseAPI } = await import('@/lib/api');
         const nocData = await lakehouseAPI.getNOCMetrics();
         if (nocData?.participant_health) setParticipants(nocData.participant_health as unknown as ParticipantHealth[]);
-      } catch { /* API unavailable — use mock data */ }
+      } catch (err) { console.error('NOC API unavailable, using mock data:', err); }
     })();
   }, []);
 

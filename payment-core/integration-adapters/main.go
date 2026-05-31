@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"log"
 	"net/http"
+	"os"
 
 	"github.com/gorilla/mux"
 )
@@ -23,12 +24,31 @@ func CIPSAdapter(w http.ResponseWriter, r *http.Request) {
 	fmt.Fprintf(w, "CIPS Adapter: Processing CIPS transaction")
 }
 
+func healthHandler(w http.ResponseWriter, r *http.Request) {
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(http.StatusOK)
+	fmt.Fprintf(w, `{"status":"healthy","service":"integration-adapters"}`)
+}
+
+func readyHandler(w http.ResponseWriter, r *http.Request) {
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(http.StatusOK)
+	fmt.Fprintf(w, `{"status":"ready","service":"integration-adapters"}`)
+}
+
 func main() {
 	router := mux.NewRouter()
 
+	router.HandleFunc("/health", healthHandler).Methods("GET")
+	router.HandleFunc("/ready", readyHandler).Methods("GET")
 	router.HandleFunc("/upi/payment", UPIAdapter).Methods("POST")
 	router.HandleFunc("/pix/payment", PixAdapter).Methods("POST")
 	router.HandleFunc("/cips/payment", CIPSAdapter).Methods("POST")
 
-	log.Fatal(http.ListenAndServe(":8080", router))
+	port := os.Getenv("PORT")
+	if port == "" {
+		port = "8080"
+	}
+	log.Printf("Integration adapters listening on :%s", port)
+	log.Fatal(http.ListenAndServe(":"+port, router))
 }

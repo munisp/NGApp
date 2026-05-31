@@ -27,7 +27,7 @@ export function MiddlewareDashboard() {
   const fetcher = useCallback(() =>
     lakehouseAPI.fetch<{ services: typeof middleware }>('/api/v1/infrastructure/middleware')
       .then(d => d.services)
-      .catch(() => middleware), []);
+      .catch((err: unknown) => { console.error("API fallback:", err); return middleware; }), []);
   const { data: services } = useLakehouseData(fetcher, 15000);
   const activeMiddleware = services || middleware;
   return (

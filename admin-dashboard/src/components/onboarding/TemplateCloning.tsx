@@ -129,7 +129,7 @@ export function TemplateCloning() {
   const tmplFetcher = useCallback(() =>
     lakehouseAPI.fetch<{ templates: OrganizationTemplate[] }>('/api/v1/onboarding/templates')
       .then(d => d.templates)
-      .catch(() => mockTemplates), []);
+      .catch((err: unknown) => { console.error("API fallback:", err); return mockTemplates; }), []);
   const { data: apiTemplates } = useLakehouseData(tmplFetcher, 30000);
   const [templates, setTemplates] = useState<OrganizationTemplate[]>(mockTemplates);
   useEffect(() => { if (apiTemplates) setTemplates(apiTemplates); }, [apiTemplates]);

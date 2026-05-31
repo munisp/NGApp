@@ -95,10 +95,10 @@ export default function DomesticPaymentsDashboard() {
   const [bulk, setBulk] = useState<BulkDisbursement[]>([]);
 
   useEffect(() => {
-    lakehouseAPI.fetch<{ payments: Payment[] }>('/api/domestic-payments/payments').then(d => setPayments(d.payments || [])).catch(() => setPayments(mockPayments));
-    lakehouseAPI.fetch<{ providers: BillProvider[] }>('/api/domestic-payments/bill-providers').then(d => setBillProviders(d.providers || [])).catch(() => setBillProviders(mockBillProviders));
-    lakehouseAPI.fetch<{ orders: StandingOrder[] }>('/api/domestic-payments/standing-orders').then(d => setStandingOrders(d.orders || [])).catch(() => setStandingOrders(mockStandingOrders));
-    lakehouseAPI.fetch<{ disbursements: BulkDisbursement[] }>('/api/domestic-payments/bulk').then(d => setBulk(d.disbursements || [])).catch(() => setBulk(mockBulk));
+    lakehouseAPI.fetch<{ payments: Payment[] }>('/api/domestic-payments/payments').then(d => setPayments(d.payments || [])).catch((err: unknown) => { console.error("API fallback:", err); setPayments(mockPayments); });
+    lakehouseAPI.fetch<{ providers: BillProvider[] }>('/api/domestic-payments/bill-providers').then(d => setBillProviders(d.providers || [])).catch((err: unknown) => { console.error("API fallback:", err); setBillProviders(mockBillProviders); });
+    lakehouseAPI.fetch<{ orders: StandingOrder[] }>('/api/domestic-payments/standing-orders').then(d => setStandingOrders(d.orders || [])).catch((err: unknown) => { console.error("API fallback:", err); setStandingOrders(mockStandingOrders); });
+    lakehouseAPI.fetch<{ disbursements: BulkDisbursement[] }>('/api/domestic-payments/bulk').then(d => setBulk(d.disbursements || [])).catch((err: unknown) => { console.error("API fallback:", err); setBulk(mockBulk); });
   }, []);
 
   const tabs: { id: Tab; label: string }[] = [

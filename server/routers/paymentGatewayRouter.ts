@@ -2,6 +2,7 @@ import { z } from 'zod';
 import { router, protectedProcedure } from '../_core/trpc';
 import { randomBytes } from 'crypto';
 import { createChildLogger } from '../lib/logger';
+import { getStore } from '../lib/persistentStore';
 
 const log = createChildLogger('paymentGateway');
 
@@ -33,9 +34,8 @@ type GatewayConfig = {
   feeStructure: { method: string; flat: number; percentage: number }[];
 };
 
-// In-memory stores
-const sessions: GatewaySession[] = [];
-let sessionCounter = 0;
+// Persistent store (PostgreSQL-backed with in-memory fallback)
+const sessionStore = getStore('gateway_sessions');
 
 // Supported payment methods with processing logic
 const paymentMethods = [
@@ -68,10 +68,10 @@ export const paymentGatewayRouter = router({
       callbackUrl: z.string().url().optional(),
       metadata: z.record(z.string(), z.string()).optional(),
     }))
-    .mutation(({ ctx, input }) => {
-      sessionCounter++;
+    .mutation(async ({ ctx, input }) => {
+      const id = `gw_${randomBytes(16).toString('hex')}`;
       const session: GatewaySession = {
-        id: `gw_${randomBytes(16).toString('hex')}`,
+        id,
         merchantId: `merchant_${ctx.user.id}`,
         amount: input.amount,
         currency: input.currency,
@@ -86,7 +86,7 @@ export const paymentGatewayRouter = router({
         completedAt: null,
         transactionRef: null,
       };
-      sessions.push(session);
+      await sessionStore.set(id, session as unknown as Record<string, unknown>, 30 * 60 * 1000);
       log.info({ id: session.id, amount: input.amount }, 'Gateway session created');
 
       return {
@@ -98,8 +98,8 @@ export const paymentGatewayRouter = router({
 
   getSession: protectedProcedure
     .input(z.object({ sessionId: z.string() }))
-    .query(({ input }) => {
-      return sessions.find(s => s.id === input.sessionId) || null;
+    .query(async ({ input }) => {
+      return await sessionStore.get<GatewaySession>(input.sessionId) || null;
     }),
 
   processPayment: protectedProcedure
@@ -109,11 +109,12 @@ export const paymentGatewayRouter = router({
       paymentDetails: z.record(z.string(), z.string()).optional(),
     }))
     .mutation(async ({ input }) => {
-      const session = sessions.find(s => s.id === input.sessionId);
+      const session = await sessionStore.get<GatewaySession>(input.sessionId);
       if (!session) return { success: false, error: 'Session not found' };
       if (session.status !== 'created') return { success: false, error: `Session is ${session.status}` };
       if (new Date(session.expiresAt) < new Date()) {
         session.status = 'expired';
+        await sessionStore.set(input.sessionId, session as unknown as Record<string, unknown>);
         return { success: false, error: 'Session expired' };
       }
 
@@ -129,6 +130,7 @@ export const paymentGatewayRouter = router({
       session.status = success ? 'completed' : 'failed';
       session.completedAt = new Date().toISOString();
       session.transactionRef = success ? `TXN-${randomBytes(8).toString('hex').toUpperCase()}` : null;
+      await sessionStore.set(input.sessionId, session as unknown as Record<string, unknown>);
 
       log.info({
         sessionId: input.sessionId,
@@ -174,8 +176,9 @@ export const paymentGatewayRouter = router({
       status: z.enum(['all', 'created', 'processing', 'completed', 'failed', 'expired']).optional().default('all'),
       limit: z.number().min(1).max(100).optional().default(20),
     }).optional())
-    .query(({ ctx, input }) => {
-      let filtered = sessions.filter(s => s.merchantId === `merchant_${ctx.user.id}`);
+    .query(async ({ ctx, input }) => {
+      const allSessions = await sessionStore.list<GatewaySession>();
+      let filtered = allSessions.filter(s => s.merchantId === `merchant_${ctx.user.id}`);
       if (input?.status && input.status !== 'all') {
         filtered = filtered.filter(s => s.status === input.status);
       }

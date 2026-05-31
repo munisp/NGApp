@@ -15,7 +15,7 @@ export function FeeManagement() {
   const feesFetcher = useCallback(() =>
     lakehouseAPI.fetch<{ fees: typeof feeConfigs }>('/api/v1/fees')
       .then(d => d.fees)
-      .catch(() => feeConfigs), []);
+      .catch((err: unknown) => { console.error("API fallback:", err); return feeConfigs; }), []);
   const { data: fees } = useLakehouseData(feesFetcher, 60000);
   const activeFees = fees || feeConfigs;
   const [calcAmount, setCalcAmount] = useState(100000);

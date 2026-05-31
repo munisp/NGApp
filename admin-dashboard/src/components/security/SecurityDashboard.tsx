@@ -24,7 +24,7 @@ export function SecurityDashboard() {
   const eventsFetcher = useCallback(() =>
     lakehouseAPI.fetch<{ events: typeof securityEvents }>('/api/v1/security/events')
       .then(d => d.events)
-      .catch(() => securityEvents), []);
+      .catch((err: unknown) => { console.error("API fallback:", err); return securityEvents; }), []);
   const { data: apiEvents } = useLakehouseData(eventsFetcher, 15000);
   const events = apiEvents || securityEvents;
   const [tab, setTab] = useState<'events' | 'pbac' | 'ip_blocklist' | 'rate_limits'>('events');

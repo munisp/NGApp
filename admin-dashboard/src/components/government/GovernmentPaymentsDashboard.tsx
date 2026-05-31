@@ -117,11 +117,11 @@ export default function GovernmentPaymentsDashboard() {
   const [reports, setReports] = useState<RegulatoryReport[]>([]);
 
   useEffect(() => {
-    lakehouseAPI.fetch<{ payments: GovernmentPayment[] }>('/api/government-payments/payments').then(d => setGovPayments(d.payments || [])).catch(() => setGovPayments(mockGovPayments));
-    lakehouseAPI.fetch<{ taxes: TaxPayment[] }>('/api/government-payments/taxes').then(d => setTaxes(d.taxes || [])).catch(() => setTaxes(mockTaxes));
-    lakehouseAPI.fetch<{ pensions: PensionRemittance[] }>('/api/government-payments/pensions').then(d => setPensions(d.pensions || [])).catch(() => setPensions(mockPensions));
-    lakehouseAPI.fetch<{ disbursements: SocialDisbursement[] }>('/api/government-payments/social').then(d => setSocial(d.disbursements || [])).catch(() => setSocial(mockSocial));
-    lakehouseAPI.fetch<{ reports: RegulatoryReport[] }>('/api/government-payments/reports').then(d => setReports(d.reports || [])).catch(() => setReports(mockReports));
+    lakehouseAPI.fetch<{ payments: GovernmentPayment[] }>('/api/government-payments/payments').then(d => setGovPayments(d.payments || [])).catch((err: unknown) => { console.error("API fallback:", err); setGovPayments(mockGovPayments); });
+    lakehouseAPI.fetch<{ taxes: TaxPayment[] }>('/api/government-payments/taxes').then(d => setTaxes(d.taxes || [])).catch((err: unknown) => { console.error("API fallback:", err); setTaxes(mockTaxes); });
+    lakehouseAPI.fetch<{ pensions: PensionRemittance[] }>('/api/government-payments/pensions').then(d => setPensions(d.pensions || [])).catch((err: unknown) => { console.error("API fallback:", err); setPensions(mockPensions); });
+    lakehouseAPI.fetch<{ disbursements: SocialDisbursement[] }>('/api/government-payments/social').then(d => setSocial(d.disbursements || [])).catch((err: unknown) => { console.error("API fallback:", err); setSocial(mockSocial); });
+    lakehouseAPI.fetch<{ reports: RegulatoryReport[] }>('/api/government-payments/reports').then(d => setReports(d.reports || [])).catch((err: unknown) => { console.error("API fallback:", err); setReports(mockReports); });
   }, []);
 
   const tabs: { id: Tab; label: string }[] = [

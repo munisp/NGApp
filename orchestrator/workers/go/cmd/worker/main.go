@@ -2,7 +2,9 @@ package main
 
 import (
 	"context"
+	"fmt"
 	"log"
+	"net/http"
 	"os"
 	"os/signal"
 	"syscall"
@@ -74,6 +76,27 @@ func main() {
 	w.RegisterActivity(activityHandler.CheckPermission)
 	w.RegisterActivity(activityHandler.CacheSet)
 	w.RegisterActivity(activityHandler.CacheGet)
+
+	// Start HTTP health server
+	healthPort := os.Getenv("HEALTH_PORT")
+	if healthPort == "" {
+		healthPort = "8090"
+	}
+	go func() {
+		mux := http.NewServeMux()
+		mux.HandleFunc("/health", func(rw http.ResponseWriter, r *http.Request) {
+			rw.Header().Set("Content-Type", "application/json")
+			rw.WriteHeader(http.StatusOK)
+			fmt.Fprintf(rw, `{"status":"healthy","service":"temporal-worker","taskQueue":"%s"}`, cfg.TaskQueue)
+		})
+		mux.HandleFunc("/ready", func(rw http.ResponseWriter, r *http.Request) {
+			rw.Header().Set("Content-Type", "application/json")
+			rw.WriteHeader(http.StatusOK)
+			fmt.Fprintf(rw, `{"status":"ready","service":"temporal-worker"}`)
+		})
+		log.Printf("Worker health server on :%s", healthPort)
+		http.ListenAndServe(":"+healthPort, mux)
+	}()
 
 	// Start worker
 	log.Printf("Starting Temporal worker on task queue: %s", cfg.TaskQueue)

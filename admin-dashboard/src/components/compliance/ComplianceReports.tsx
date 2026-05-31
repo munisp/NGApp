@@ -15,7 +15,7 @@ const statusColors: Record<string, string> = { submitted: 'bg-blue-100 text-blue
 const typeColors: Record<string, string> = { CTR: 'bg-purple-100 text-purple-800', SAR: 'bg-red-100 text-red-800', AML: 'bg-blue-100 text-blue-800', STR: 'bg-orange-100 text-orange-800', PEP: 'bg-yellow-100 text-yellow-800', Sanctions: 'bg-gray-100 text-gray-800' };
 
 export function ComplianceReports() {
-  const fetcher = useCallback(() => lakehouseAPI.fetch<{ reports: typeof fallbackReports }>('/api/v1/compliance/reports').catch(() => ({ reports: fallbackReports })), []);
+  const fetcher = useCallback(() => lakehouseAPI.fetch<{ reports: typeof fallbackReports }>('/api/v1/compliance/reports').catch((err: unknown) => { console.error("API fallback:", err); return { reports: fallbackReports }; }), []);
   const { data } = useLakehouseData(fetcher, 60000);
   const reports = data?.reports || fallbackReports;
 

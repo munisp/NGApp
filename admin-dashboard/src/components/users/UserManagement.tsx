@@ -178,7 +178,7 @@ export function UserManagement() {
   const fetcher = useCallback(() =>
     lakehouseAPI.fetch<{ users: User[] }>('/api/v1/users')
       .then(d => d.users)
-      .catch(() => mockUsers), []);
+      .catch((err: unknown) => { console.error("API fallback:", err); return mockUsers; }), []);
   const { data: apiUsers, loading } = useLakehouseData(fetcher, 30000);
   const [users, setUsers] = useState<User[]>(mockUsers);
   useEffect(() => { if (apiUsers) setUsers(apiUsers); }, [apiUsers]);

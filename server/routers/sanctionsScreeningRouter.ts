@@ -1,6 +1,8 @@
 import { z } from 'zod';
 import { router, protectedProcedure } from '../_core/trpc';
 import { createChildLogger } from '../lib/logger';
+import { getStore } from '../lib/persistentStore';
+import { randomBytes } from 'crypto';
 
 const log = createChildLogger('sanctionsScreening');
 
@@ -33,8 +35,7 @@ const sanctionsLists = [
   { id: 'interpol-rn', name: 'INTERPOL Red Notice', entries: 7891, lastUpdated: '2026-04-20', source: 'INTERPOL', region: 'Global' },
 ];
 
-// In-memory screening history (production would use DB)
-const screeningHistory: Array<{
+type ScreeningRecord = {
   id: string;
   name: string;
   bvn: string;
@@ -45,9 +46,9 @@ const screeningHistory: Array<{
   matchedList: string | null;
   timestamp: string;
   screenedBy: number;
-}> = [];
+};
 
-let screeningCounter = 0;
+const screeningStore = getStore('sanctions_screenings');
 
 export const sanctionsScreeningRouter = router({
   screen: protectedProcedure
@@ -72,8 +73,7 @@ export const sanctionsScreeningRouter = router({
       });
 
       const timeMs = Date.now() - startTime;
-      screeningCounter++;
-      const screeningId = `SCR-${String(screeningCounter).padStart(4, '0')}`;
+      const screeningId = `SCR-${randomBytes(6).toString('hex')}`;
 
       if (engineResult) {
         const record = {
@@ -88,7 +88,7 @@ export const sanctionsScreeningRouter = router({
           timestamp: new Date().toISOString(),
           screenedBy: ctx.user.id,
         };
-        screeningHistory.unshift(record);
+        await screeningStore.set(screeningId, record as unknown as Record<string, unknown>);
         return record;
       }
 
@@ -132,7 +132,7 @@ export const sanctionsScreeningRouter = router({
         timestamp: new Date().toISOString(),
         screenedBy: ctx.user.id,
       };
-      screeningHistory.unshift(record);
+      await screeningStore.set(screeningId, record as unknown as Record<string, unknown>);
 
       log.info({ id: screeningId, result, timeMs }, 'Screening completed');
       return record;
@@ -143,8 +143,9 @@ export const sanctionsScreeningRouter = router({
       limit: z.number().min(1).max(100).optional().default(50),
       result: z.enum(['CLEAR', 'POTENTIAL_MATCH', 'CONFIRMED_MATCH']).optional(),
     }).optional())
-    .query(({ input }) => {
-      let results = [...screeningHistory];
+    .query(async ({ input }) => {
+      const allResults = await screeningStore.list<ScreeningRecord>();
+      let results = allResults;
       if (input?.result) {
         results = results.filter(r => r.result === input.result);
       }
@@ -155,12 +156,13 @@ export const sanctionsScreeningRouter = router({
     return sanctionsLists;
   }),
 
-  getStats: protectedProcedure.query(() => {
-    const total = screeningHistory.length;
-    const clear = screeningHistory.filter(s => s.result === 'CLEAR').length;
-    const potential = screeningHistory.filter(s => s.result === 'POTENTIAL_MATCH').length;
-    const confirmed = screeningHistory.filter(s => s.result === 'CONFIRMED_MATCH').length;
-    const avgTimeMs = total > 0 ? Math.round(screeningHistory.reduce((a, s) => a + s.timeMs, 0) / total) : 0;
+  getStats: protectedProcedure.query(async () => {
+    const allScreenings = await screeningStore.list<ScreeningRecord>();
+    const total = allScreenings.length;
+    const clear = allScreenings.filter(s => s.result === 'CLEAR').length;
+    const potential = allScreenings.filter(s => s.result === 'POTENTIAL_MATCH').length;
+    const confirmed = allScreenings.filter(s => s.result === 'CONFIRMED_MATCH').length;
+    const avgTimeMs = total > 0 ? Math.round(allScreenings.reduce((a, s) => a + s.timeMs, 0) / total) : 0;
 
     return {
       totalScreenings: total,

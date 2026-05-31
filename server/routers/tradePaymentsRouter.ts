@@ -94,6 +94,7 @@ export const tradePaymentsRouter = router({
       return {
         lcs,
         total: lcs.length,
+        _source: 'SEED' as const,
         summary: {
           totalLCs: seedLCs.length,
           importLCs: seedLCs.filter(l => l.type === 'import').length,
@@ -108,11 +109,13 @@ export const tradePaymentsRouter = router({
     escrows: seedEscrows,
     totalActive: seedEscrows.filter(e => e.status === 'active').length,
     totalValueUSD: seedEscrows.reduce((s, e) => s + e.totalAmount, 0),
+    _source: 'SEED' as const,
   })),
 
   listCustomsDuties: protectedProcedure.query(async () => ({
     duties: seedCustomsDuties,
     totalPaid: seedCustomsDuties.filter(d => ['paid', 'cleared'].includes(d.status)).reduce((s, d) => s + d.totalAmount, 0),
+    _source: 'SEED' as const,
   })),
 
   createLC: protectedProcedure

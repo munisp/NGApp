@@ -106,7 +106,7 @@ export function DeveloperPortal() {
   const keyFetcher = useCallback(() =>
     lakehouseAPI.fetch<{ keys: APIKey[] }>('/api/v1/developer/keys')
       .then(d => d.keys)
-      .catch(() => mockAPIKeys), []);
+      .catch((err: unknown) => { console.error("API fallback:", err); return mockAPIKeys; }), []);
   const { data: apiKeys_ } = useLakehouseData(keyFetcher, 30000);
   const [apiKeys, setApiKeys] = useState<APIKey[]>(mockAPIKeys);
   const [webhooks, setWebhooks] = useState(mockWebhooks);

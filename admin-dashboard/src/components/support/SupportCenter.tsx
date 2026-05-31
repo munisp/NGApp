@@ -19,7 +19,7 @@ export function SupportCenter() {
   const ticketFetcher = useCallback(() =>
     lakehouseAPI.fetch<{ tickets: typeof tickets }>('/api/v1/support/tickets')
       .then(d => d.tickets)
-      .catch(() => tickets), []);
+      .catch((err: unknown) => { console.error("API fallback:", err); return tickets; }), []);
   const { data: apiTickets } = useLakehouseData(ticketFetcher, 15000);
   const activeTickets = apiTickets || tickets;
   const [search, setSearch] = useState('');

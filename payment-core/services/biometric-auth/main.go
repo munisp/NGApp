@@ -12,6 +12,8 @@ import (
 	"os"
 	"time"
 
+	"net/http"
+
 	"github.com/go-redis/redis/v8"
 	_ "github.com/lib/pq"
 	"google.golang.org/grpc"
@@ -1109,6 +1111,32 @@ func main() {
 
 	grpcServer := grpc.NewServer()
 	// RegisterBiometricAuthServiceServer(grpcServer, bioService)
+
+	// Start HTTP health server on separate port
+	healthPort := os.Getenv("HEALTH_PORT")
+	if healthPort == "" {
+		healthPort = "8082"
+	}
+	go func() {
+		mux := http.NewServeMux()
+		mux.HandleFunc("/health", func(w http.ResponseWriter, r *http.Request) {
+			w.Header().Set("Content-Type", "application/json")
+			w.WriteHeader(http.StatusOK)
+			fmt.Fprintf(w, `{"status":"healthy","service":"biometric-auth"}`)
+		})
+		mux.HandleFunc("/ready", func(w http.ResponseWriter, r *http.Request) {
+			w.Header().Set("Content-Type", "application/json")
+			if err := bioService.db.Ping(); err != nil {
+				w.WriteHeader(http.StatusServiceUnavailable)
+				fmt.Fprintf(w, `{"status":"not_ready","error":"%s"}`, err.Error())
+				return
+			}
+			w.WriteHeader(http.StatusOK)
+			fmt.Fprintf(w, `{"status":"ready","service":"biometric-auth"}`)
+		})
+		log.Printf("Biometric health server on :%s", healthPort)
+		http.ListenAndServe(":"+healthPort, mux)
+	}()
 
 	log.Printf("Biometric Auth Service starting on port %s", port)
 	if err := grpcServer.Serve(lis); err != nil {

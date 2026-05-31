@@ -107,6 +107,7 @@ export const openBankingRouter = router({
       return {
         tpps,
         total: tpps.length,
+        _source: 'SEED' as const,
         summary: {
           totalTPPs: seedTPPs.length,
           activeTPPs: seedTPPs.filter(t => t.status === 'ACTIVE').length,
@@ -128,6 +129,7 @@ export const openBankingRouter = router({
       return {
         consents,
         total: consents.length,
+        _source: 'SEED' as const,
         summary: {
           totalConsents: seedConsents.length,
           authorized: seedConsents.filter(c => c.status === 'AUTHORIZED').length,
@@ -140,10 +142,12 @@ export const openBankingRouter = router({
   listEndpoints: protectedProcedure.query(async () => ({
     endpoints: seedEndpoints,
     totalCalls24h: seedEndpoints.reduce((s, e) => s + e.callsLast24h, 0),
+    _source: 'SEED' as const,
   })),
 
   listSandboxes: protectedProcedure.query(async () => ({
     sandboxes: seedSandboxes,
+    _source: 'SEED' as const,
   })),
 
   registerTPP: protectedProcedure

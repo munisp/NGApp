@@ -126,6 +126,7 @@ export const governmentPaymentsRouter = router({
       return {
         payments,
         total: payments.length,
+        _source: 'SEED' as const,
         summary: {
           totalCollections: seedGovPayments.length,
           completed: seedGovPayments.filter(p => p.status === 'COMPLETED').length,
@@ -143,6 +144,7 @@ export const governmentPaymentsRouter = router({
       return {
         taxes,
         total: taxes.length,
+        _source: 'SEED' as const,
         totalPaidNGN: seedTaxPayments.filter(t => t.status === 'paid').reduce((s, t) => s + t.totalAmount, 0),
       };
     }),
@@ -151,18 +153,21 @@ export const governmentPaymentsRouter = router({
     pensions: seedPensions,
     totalContributions: seedPensions.reduce((s, p) => s + p.totalAmount, 0),
     totalEmployees: seedPensions.reduce((s, p) => s + p.employeeCount, 0),
+    _source: 'SEED' as const,
   })),
 
   listSocialDisbursements: protectedProcedure.query(async () => ({
     disbursements: seedSocialDisbursements,
     totalBeneficiaries: seedSocialDisbursements.reduce((s, d) => s + d.beneficiaryCount, 0),
     totalDisbursed: seedSocialDisbursements.reduce((s, d) => s + d.totalAmount, 0),
+    _source: 'SEED' as const,
   })),
 
   listRegulatoryReports: protectedProcedure.query(async () => ({
     reports: seedReports,
     totalSubmitted: seedReports.filter(r => r.status === 'submitted').length,
     pendingSubmission: seedReports.filter(r => ['draft', 'generated'].includes(r.status)).length,
+    _source: 'SEED' as const,
   })),
 
   generateReport: protectedProcedure

@@ -11,6 +11,8 @@ import (
 	"strings"
 	"time"
 
+	"net/http"
+
 	"github.com/go-redis/redis/v8"
 	_ "github.com/lib/pq"
 	"google.golang.org/grpc"
@@ -426,6 +428,32 @@ func main() {
 
 	grpcServer := grpc.NewServer()
 	// RegisterVPAServiceServer(grpcServer, vpaService)
+
+	// Start HTTP health server on separate port
+	healthPort := os.Getenv("HEALTH_PORT")
+	if healthPort == "" {
+		healthPort = "8081"
+	}
+	go func() {
+		mux := http.NewServeMux()
+		mux.HandleFunc("/health", func(w http.ResponseWriter, r *http.Request) {
+			w.Header().Set("Content-Type", "application/json")
+			w.WriteHeader(http.StatusOK)
+			fmt.Fprintf(w, `{"status":"healthy","service":"vpa-service"}`)
+		})
+		mux.HandleFunc("/ready", func(w http.ResponseWriter, r *http.Request) {
+			w.Header().Set("Content-Type", "application/json")
+			if err := vpaService.db.Ping(); err != nil {
+				w.WriteHeader(http.StatusServiceUnavailable)
+				fmt.Fprintf(w, `{"status":"not_ready","error":"%s"}`, err.Error())
+				return
+			}
+			w.WriteHeader(http.StatusOK)
+			fmt.Fprintf(w, `{"status":"ready","service":"vpa-service"}`)
+		})
+		log.Printf("VPA health server on :%s", healthPort)
+		http.ListenAndServe(":"+healthPort, mux)
+	}()
 
 	log.Printf("VPA Service starting on port %s", port)
 	if err := grpcServer.Serve(lis); err != nil {

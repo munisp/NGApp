@@ -12,7 +12,7 @@ export function RustServices() {
   const fetcher = useCallback(() =>
     lakehouseAPI.fetch<{ services: typeof rustServices }>('/api/v1/infrastructure/rust-services')
       .then(d => d.services)
-      .catch(() => rustServices), []);
+      .catch((err: unknown) => { console.error("API fallback:", err); return rustServices; }), []);
   const { data: services } = useLakehouseData(fetcher, 30000);
   const activeServices = services || rustServices;
   return (

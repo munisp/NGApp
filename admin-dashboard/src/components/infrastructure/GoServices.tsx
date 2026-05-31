@@ -17,7 +17,7 @@ export function GoServices() {
   const fetcher = useCallback(() =>
     lakehouseAPI.fetch<{ services: typeof goServices }>('/api/v1/infrastructure/go-services')
       .then(d => d.services)
-      .catch(() => goServices), []);
+      .catch((err: unknown) => { console.error("API fallback:", err); return goServices; }), []);
   const { data: services } = useLakehouseData(fetcher, 30000);
   const activeServices = services || goServices;
   return (

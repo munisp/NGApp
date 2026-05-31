@@ -14,7 +14,7 @@ export function TransactionLimits() {
   const fetcher = useCallback(() =>
     lakehouseAPI.fetch<{ limits: typeof limits }>('/api/v1/limits')
       .then(d => d.limits)
-      .catch(() => limits), []);
+      .catch((err: unknown) => { console.error("API fallback:", err); return limits; }), []);
   const { data: apiLimits } = useLakehouseData(fetcher, 60000);
   const activeLimits = apiLimits || limits;
   return (

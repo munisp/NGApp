@@ -95,10 +95,10 @@ export default function OpenBankingDashboard() {
   const [sandboxes, setSandboxes] = useState<SandboxEnv[]>([]);
 
   useEffect(() => {
-    lakehouseAPI.fetch<{ tpps: TPP[] }>('/api/open-banking/tpps').then(d => setTpps(d.tpps || [])).catch(() => setTpps(mockTPPs));
-    lakehouseAPI.fetch<{ consents: Consent[] }>('/api/open-banking/consents').then(d => setConsents(d.consents || [])).catch(() => setConsents(mockConsents));
-    lakehouseAPI.fetch<{ endpoints: APIEndpoint[] }>('/api/open-banking/endpoints').then(d => setEndpoints(d.endpoints || [])).catch(() => setEndpoints(mockEndpoints));
-    lakehouseAPI.fetch<{ sandboxes: SandboxEnv[] }>('/api/open-banking/sandboxes').then(d => setSandboxes(d.sandboxes || [])).catch(() => setSandboxes(mockSandboxes));
+    lakehouseAPI.fetch<{ tpps: TPP[] }>('/api/open-banking/tpps').then(d => setTpps(d.tpps || [])).catch((err: unknown) => { console.error("API fallback:", err); setTpps(mockTPPs); });
+    lakehouseAPI.fetch<{ consents: Consent[] }>('/api/open-banking/consents').then(d => setConsents(d.consents || [])).catch((err: unknown) => { console.error("API fallback:", err); setConsents(mockConsents); });
+    lakehouseAPI.fetch<{ endpoints: APIEndpoint[] }>('/api/open-banking/endpoints').then(d => setEndpoints(d.endpoints || [])).catch((err: unknown) => { console.error("API fallback:", err); setEndpoints(mockEndpoints); });
+    lakehouseAPI.fetch<{ sandboxes: SandboxEnv[] }>('/api/open-banking/sandboxes').then(d => setSandboxes(d.sandboxes || [])).catch((err: unknown) => { console.error("API fallback:", err); setSandboxes(mockSandboxes); });
   }, []);
 
   const tabs: { id: Tab; label: string }[] = [

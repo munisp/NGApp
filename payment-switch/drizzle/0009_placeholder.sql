@@ -1,1 +1,0 @@
--- Migration 0009: Already applied

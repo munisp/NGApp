@@ -178,7 +178,7 @@ export function IntegrationTestingPortal() {
   const scenarioFetcher = useCallback(() =>
     lakehouseAPI.fetch<{ scenarios: TestScenario[] }>('/api/v1/onboarding/test-scenarios')
       .then(d => d.scenarios)
-      .catch(() => defaultScenarios), []);
+      .catch((err: unknown) => { console.error("API fallback:", err); return defaultScenarios; }), []);
   const { data: apiScenarios } = useLakehouseData(scenarioFetcher, 60000);
   const [scenarios, setScenarios] = useState<TestScenario[]>(defaultScenarios);
   useEffect(() => { if (apiScenarios) setScenarios(apiScenarios); }, [apiScenarios]);

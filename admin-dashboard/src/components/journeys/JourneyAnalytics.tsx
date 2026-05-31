@@ -45,7 +45,7 @@ export default function JourneyAnalytics() {
   useEffect(() => {
     fetch('http://localhost:8080/api/v1/journeys/analytics')
       .then(r => r.json()).then(d => setApiMetrics(d.metrics))
-      .catch(() => setApiMetrics(defaultMetrics));
+      .catch((err: unknown) => { console.error("API fallback:", err); setApiMetrics(defaultMetrics); });
   }, []);
   const metrics = apiMetrics || defaultMetrics;
   const [timeRange, setTimeRange] = useState<'24h' | '7d' | '30d'>('7d');

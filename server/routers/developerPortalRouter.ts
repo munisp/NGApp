@@ -2,6 +2,7 @@ import { z } from 'zod';
 import { router, protectedProcedure } from '../_core/trpc';
 import { randomBytes, createHmac } from 'crypto';
 import { createChildLogger } from '../lib/logger';
+import { getStore } from '../lib/persistentStore';
 
 const log = createChildLogger('developerPortal');
 
@@ -43,14 +44,10 @@ type WebhookDelivery = {
   success: boolean;
 };
 
-// In-memory stores
-const apiKeys: ApiKey[] = [];
-const webhookEndpoints: WebhookEndpoint[] = [];
-const webhookDeliveries: WebhookDelivery[] = [];
-
-let keyCounter = 0;
-let endpointCounter = 0;
-let deliveryCounter = 0;
+// Persistent stores (PostgreSQL-backed with in-memory fallback)
+const apiKeyStore = getStore('developer_api_keys');
+const webhookStore = getStore('developer_webhooks');
+const deliveryStore = getStore('developer_webhook_deliveries');
 
 const AVAILABLE_SCOPES = [
   'payments:read', 'payments:write',
@@ -79,11 +76,11 @@ export const developerPortalRouter = router({
       environment: z.enum(['sandbox', 'production']),
       scopes: z.array(z.string()).min(1),
     }))
-    .mutation(({ ctx, input }) => {
-      keyCounter++;
+    .mutation(async ({ ctx, input }) => {
+      const id = `key-${randomBytes(8).toString('hex')}`;
       const prefix = input.environment === 'sandbox' ? 'sk_test' : 'sk_live';
       const key: ApiKey = {
-        id: `key-${String(keyCounter).padStart(4, '0')}`,
+        id,
         name: input.name,
         key: `${prefix}_${randomBytes(24).toString('hex')}`,
         secret: `sec_${randomBytes(32).toString('hex')}`,
@@ -96,13 +93,14 @@ export const developerPortalRouter = router({
         status: 'active',
         ownerId: ctx.user.id,
       };
-      apiKeys.push(key);
+      await apiKeyStore.set(id, key as unknown as Record<string, unknown>);
       log.info({ id: key.id, env: input.environment }, 'API key created');
       return { id: key.id, key: key.key, secret: key.secret };
     }),
 
-  listApiKeys: protectedProcedure.query(({ ctx }) => {
-    return apiKeys
+  listApiKeys: protectedProcedure.query(async ({ ctx }) => {
+    const all = await apiKeyStore.list<ApiKey>();
+    return all
       .filter(k => k.ownerId === ctx.user.id)
       .map(k => ({
         ...k,
@@ -113,10 +111,11 @@ export const developerPortalRouter = router({
 
   revokeApiKey: protectedProcedure
     .input(z.object({ id: z.string() }))
-    .mutation(({ ctx, input }) => {
-      const key = apiKeys.find(k => k.id === input.id && k.ownerId === ctx.user.id);
-      if (!key) return { success: false, error: 'Key not found' };
+    .mutation(async ({ ctx, input }) => {
+      const key = await apiKeyStore.get<ApiKey>(input.id);
+      if (!key || key.ownerId !== ctx.user.id) return { success: false, error: 'Key not found' };
       key.status = 'revoked';
+      await apiKeyStore.set(input.id, key as unknown as Record<string, unknown>);
       log.info({ id: input.id }, 'API key revoked');
       return { success: true };
     }),
@@ -130,10 +129,10 @@ export const developerPortalRouter = router({
       url: z.string().url(),
       events: z.array(z.string()).min(1),
     }))
-    .mutation(({ ctx, input }) => {
-      endpointCounter++;
+    .mutation(async ({ ctx, input }) => {
+      const id = `wh-${randomBytes(8).toString('hex')}`;
       const endpoint: WebhookEndpoint = {
-        id: `wh-${String(endpointCounter).padStart(4, '0')}`,
+        id,
         url: input.url,
         events: input.events,
         secret: `whsec_${randomBytes(32).toString('hex')}`,
@@ -143,20 +142,21 @@ export const developerPortalRouter = router({
         successRate: 100,
         ownerId: ctx.user.id,
       };
-      webhookEndpoints.push(endpoint);
+      await webhookStore.set(id, endpoint as unknown as Record<string, unknown>);
       log.info({ id: endpoint.id, url: input.url }, 'Webhook endpoint created');
       return { id: endpoint.id, secret: endpoint.secret };
     }),
 
-  listWebhookEndpoints: protectedProcedure.query(({ ctx }) => {
-    return webhookEndpoints.filter(e => e.ownerId === ctx.user.id);
+  listWebhookEndpoints: protectedProcedure.query(async ({ ctx }) => {
+    const all = await webhookStore.list<WebhookEndpoint>();
+    return all.filter(e => e.ownerId === ctx.user.id);
   }),
 
   testWebhook: protectedProcedure
     .input(z.object({ endpointId: z.string() }))
     .mutation(async ({ ctx, input }) => {
-      const endpoint = webhookEndpoints.find(e => e.id === input.endpointId && e.ownerId === ctx.user.id);
-      if (!endpoint) return { success: false, error: 'Endpoint not found' };
+      const endpoint = await webhookStore.get<WebhookEndpoint>(input.endpointId);
+      if (!endpoint || endpoint.ownerId !== ctx.user.id) return { success: false, error: 'Endpoint not found' };
 
       const testPayload = {
         id: `evt-test-${randomBytes(8).toString('hex')}`,
@@ -198,9 +198,9 @@ export const developerPortalRouter = router({
         success = false;
       }
 
-      deliveryCounter++;
+      const deliveryId = `del-${randomBytes(8).toString('hex')}`;
       const delivery: WebhookDelivery = {
-        id: `del-${String(deliveryCounter).padStart(4, '0')}`,
+        id: deliveryId,
         endpointId: input.endpointId,
         event: 'webhook.test',
         payload: testPayload,
@@ -209,8 +209,9 @@ export const developerPortalRouter = router({
         deliveredAt: new Date().toISOString(),
         success,
       };
-      webhookDeliveries.push(delivery);
+      await deliveryStore.set(deliveryId, delivery as unknown as Record<string, unknown>);
       endpoint.lastDeliveryAt = delivery.deliveredAt;
+      await webhookStore.set(input.endpointId, endpoint as unknown as Record<string, unknown>);
 
       log.info({ endpointId: input.endpointId, success, statusCode }, 'Webhook test sent');
       return { success, statusCode, responseTimeMs, deliveryId: delivery.id };
@@ -218,21 +219,25 @@ export const developerPortalRouter = router({
 
   getWebhookDeliveries: protectedProcedure
     .input(z.object({ endpointId: z.string() }))
-    .query(({ ctx, input }) => {
-      const endpoint = webhookEndpoints.find(e => e.id === input.endpointId && e.ownerId === ctx.user.id);
-      if (!endpoint) return [];
-      return webhookDeliveries.filter(d => d.endpointId === input.endpointId);
+    .query(async ({ ctx, input }) => {
+      const endpoint = await webhookStore.get<WebhookEndpoint>(input.endpointId);
+      if (!endpoint || endpoint.ownerId !== ctx.user.id) return [];
+      const all = await deliveryStore.list<WebhookDelivery>();
+      return all.filter(d => d.endpointId === input.endpointId);
     }),
 
   // API usage stats
-  getUsageStats: protectedProcedure.query(({ ctx }) => {
-    const userKeys = apiKeys.filter(k => k.ownerId === ctx.user.id);
+  getUsageStats: protectedProcedure.query(async ({ ctx }) => {
+    const allKeys = await apiKeyStore.list<ApiKey>();
+    const userKeys = allKeys.filter(k => k.ownerId === ctx.user.id);
+    const allEndpoints = await webhookStore.list<WebhookEndpoint>();
+    const deliveryCount = await deliveryStore.count();
     return {
       totalKeys: userKeys.length,
       activeKeys: userKeys.filter(k => k.status === 'active').length,
       totalRequests: userKeys.reduce((a, k) => a + k.requestCount, 0),
-      webhookEndpoints: webhookEndpoints.filter(e => e.ownerId === ctx.user.id).length,
-      totalDeliveries: webhookDeliveries.length,
+      webhookEndpoints: allEndpoints.filter(e => e.ownerId === ctx.user.id).length,
+      totalDeliveries: deliveryCount,
     };
   }),
 });

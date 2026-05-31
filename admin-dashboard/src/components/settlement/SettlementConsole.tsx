@@ -60,7 +60,7 @@ export function SettlementConsole() {
   const [approvalLoading, setApprovalLoading] = useState(false);
   const [dateRange, setDateRange] = useState('today');
 
-  const fetcher = useCallback(() => lakehouseAPI.fetch<{ windows: SettlementWindow[] }>('/api/v1/settlements/windows').catch(() => ({ windows: mockSettlementWindows })), []);
+  const fetcher = useCallback(() => lakehouseAPI.fetch<{ windows: SettlementWindow[] }>('/api/v1/settlements/windows').catch((err: unknown) => { console.error("API fallback:", err); return { windows: mockSettlementWindows }; }), []);
   const { data: apiData } = useLakehouseData(fetcher, 30000);
   const settlementWindows = apiData?.windows || mockSettlementWindows;
 
@@ -70,7 +70,7 @@ export function SettlementConsole() {
   const handleApprove = async () => {
     setApprovalLoading(true);
     if (selectedWindow) {
-      try { await lakehouseAPI.fetch(`/api/v1/settlements/${selectedWindow.id}/approve`, { method: 'POST' }); } catch {}
+      try { await lakehouseAPI.fetch(`/api/v1/settlements/${selectedWindow.id}/approve`, { method: 'POST' }); } catch (err) { console.error('Settlement approval error:', err); }
     }
     setApprovalLoading(false);
     setShowApprovalModal(false);

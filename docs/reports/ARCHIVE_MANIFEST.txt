@@ -1,0 +1,85 @@
+# Archive Manifest - Generated 2026-05-04T12:19:30Z
+# This file lists every directory that MUST be present in production archives.
+# Compare with: diff <(tar tzf archive.tar.gz | sed 's|/[^/]*$|/|' | sort -u) <(grep -v '^#' ARCHIVE_MANIFEST.txt | sort -u)
+
+./.github/ # 6 files, 64K
+./.manus/ # 33 files, 156K
+./admin-dashboard/ # 29944 files, 665M
+./client/ # 160 files, 2.4M
+./compliance/ # 3 files, 48K
+./config/ # 8 files, 80K
+./deploy/ # 15 files, 152K
+./dist/ # 153 files, 5.3M
+./docs/ # 95 files, 1.4M
+./drizzle/ # 84 files, 3.9M
+./infra/ # 1 files, 12K
+./k8s/ # 13 files, 120K
+./kubernetes/ # 3 files, 24K
+./load-testing/ # 6 files, 48K
+./load-tests/ # 6 files, 76K
+./middleware/ # 14 files, 200K
+./mobile/ # 23 files, 216K
+./mobile-app/ # 6 files, 68K
+./monitoring/ # 11 files, 108K
+./nginx/ # 3 files, 28K
+./node_modules/ # 62683 files, 709M
+./orchestrator/ # 36 files, 608K
+./patches/ # 1 files, 8.0K
+./payment-core/ # 3545 files, 810M
+./payment-switch/ # 94981 files, 1.7G
+./public/ # 1 files, 16K
+./scripts/ # 6 files, 56K
+./sdks/ # 19 files, 208K
+./security/ # 1 files, 20K
+./server/ # 147 files, 1.9M
+./shared/ # 3 files, 20K
+./tests/ # 1 files, 12K
+./.env
+./.env.example
+./.env.staging.example
+./.gitignore
+./.gitkeep
+./.prettierignore
+./.prettierrc
+./ARCHIVE_MANIFEST.txt
+./CODE_EXAMPLES.md
+./COMPREHENSIVE_AUDIT_REPORT.md
+./COMPREHENSIVE_PROGRESS_REPORT.md
+./CRITICAL_TASKS_REMAINING.md
+./CRITICAL_TASKS_REMAINING_UPDATED.md
+./DEPLOYMENT.md
+./DEPLOYMENT_AUDIT_REPORT.md
+./Dockerfile
+./FINAL_IMPLEMENTATION_SUMMARY.md
+./MERCHANT_DOCUMENTATION.md
+./MISSING_FEATURES_ANALYSIS.md
+./PROJECT_SUMMARY.md
+./QUICK_START.md
+./README.md
+./README_UNIFIED.md
+./VERIFICATION_CHECKLIST.md
+./apply_migration.mjs
+./check_users.mjs
+./components.json
+./docker-compose.dev.yaml
+./docker-compose.middleware.yml
+./docker-compose.staging.yml
+./docker-compose.unified.yml
+./docker-compose.yml
+./docker-swarm-stack.yml
+./drizzle.config.ts
+./init-templates.mjs
+./outbound-participant-dashboard.png
+./outbound-remittance-submitted.png
+./package.json
+./pnpm-lock.yaml
+./screenshot-cbn-fx-rates.png
+./screenshot-corridor-routing.png
+./screenshot-dfsp-registry.png
+./screenshot-fee-calculator.png
+./screenshot-payment-rails-status.png
+./screenshot-rails-crud.png
+./todo.md
+./tsconfig.json
+./vite.config.ts
+./vitest.config.ts

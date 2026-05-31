@@ -103,7 +103,8 @@ async function startServer() {
       } else {
         res.status(503).json({ status: "not_ready", db: "no_pool" });
       }
-    } catch {
+    } catch (err) {
+      console.error('Readiness check failed:', err);
       res.status(503).json({ status: "not_ready", db: "disconnected" });
     }
   });

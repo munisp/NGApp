@@ -1,1 +1,0 @@
-ALTER TABLE `alert_notifications` MODIFY COLUMN `notification_type` enum('email','in_app','webhook','slack') NOT NULL;

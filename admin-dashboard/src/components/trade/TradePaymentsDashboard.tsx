@@ -80,9 +80,9 @@ export default function TradePaymentsDashboard() {
   const [customs, setCustoms] = useState<CustomsDutyPayment[]>([]);
 
   useEffect(() => {
-    lakehouseAPI.fetch<{ lcs: LetterOfCredit[] }>('/api/trade-payments/lcs').then(d => setLcs(d.lcs || [])).catch(() => setLcs(mockLCs));
-    lakehouseAPI.fetch<{ escrows: EscrowPayment[] }>('/api/trade-payments/escrows').then(d => setEscrows(d.escrows || [])).catch(() => setEscrows(mockEscrows));
-    lakehouseAPI.fetch<{ duties: CustomsDutyPayment[] }>('/api/trade-payments/customs').then(d => setCustoms(d.duties || [])).catch(() => setCustoms(mockCustoms));
+    lakehouseAPI.fetch<{ lcs: LetterOfCredit[] }>('/api/trade-payments/lcs').then(d => setLcs(d.lcs || [])).catch((err: unknown) => { console.error("API fallback:", err); setLcs(mockLCs); });
+    lakehouseAPI.fetch<{ escrows: EscrowPayment[] }>('/api/trade-payments/escrows').then(d => setEscrows(d.escrows || [])).catch((err: unknown) => { console.error("API fallback:", err); setEscrows(mockEscrows); });
+    lakehouseAPI.fetch<{ duties: CustomsDutyPayment[] }>('/api/trade-payments/customs').then(d => setCustoms(d.duties || [])).catch((err: unknown) => { console.error("API fallback:", err); setCustoms(mockCustoms); });
   }, []);
 
   const tabs: { id: Tab; label: string }[] = [

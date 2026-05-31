@@ -16,7 +16,7 @@ export function MaintenanceDashboard() {
   const fetcher = useCallback(() =>
     lakehouseAPI.fetch<{ windows: typeof windows }>('/api/v1/maintenance/windows')
       .then(d => d.windows)
-      .catch(() => windows), []);
+      .catch((err: unknown) => { console.error("API fallback:", err); return windows; }), []);
   const { data: apiWindows } = useLakehouseData(fetcher, 30000);
   const activeWindows = apiWindows || windows;
   return (

@@ -93,7 +93,7 @@ export function ReportsInterface() {
   const reportsFetcher = useCallback(() =>
     lakehouseAPI.fetch<{ reports: Report[] }>('/api/v1/reports')
       .then(d => d.reports)
-      .catch(() => mockReports), []);
+      .catch((err: unknown) => { console.error("API fallback:", err); return mockReports; }), []);
   const { data: apiReports } = useLakehouseData(reportsFetcher, 30000);
   const [reports, setReports] = useState<Report[]>(mockReports);
   useEffect(() => { if (apiReports) setReports(apiReports); }, [apiReports]);

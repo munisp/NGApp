@@ -36,7 +36,7 @@ export function BatchTransfers() {
   const batchFetcher = useCallback(() =>
     lakehouseAPI.fetch<{ batches: BatchTransfer[] }>('/api/v1/batch/transfers')
       .then(d => d.batches)
-      .catch(() => sampleBatches), []);
+      .catch((err: unknown) => { console.error("API fallback:", err); return sampleBatches; }), []);
   const { data: batches } = useLakehouseData(batchFetcher, 15000);
   const activeBatches = batches || sampleBatches;
   const [search, setSearch] = useState('');

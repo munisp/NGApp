@@ -13,6 +13,7 @@
 
 import { Request, Response, NextFunction } from 'express';
 import crypto from 'crypto';
+import { getStore } from '../lib/persistentStore';
 
 interface IdempotencyRecord {
   requestHash: string;
@@ -25,8 +26,8 @@ interface IdempotencyRecord {
   expiresAt: Date;
 }
 
-// In-memory store (replace with Redis in production)
-const idempotencyStore = new Map<string, IdempotencyRecord>();
+// Persistent store (PostgreSQL-backed with in-memory fallback + TTL)
+const persistentIdempotencyStore = getStore('idempotency_keys');
 
 // Configuration
 const IDEMPOTENCY_KEY_HEADER = 'idempotency-key';
@@ -35,12 +36,7 @@ const CLEANUP_INTERVAL_MS = 60 * 60 * 1000; // 1 hour
 
 // Cleanup expired keys periodically
 setInterval(() => {
-  const now = new Date();
-  for (const [key, record] of idempotencyStore.entries()) {
-    if (record.expiresAt < now) {
-      idempotencyStore.delete(key);
-    }
-  }
+  persistentIdempotencyStore.cleanup().catch(() => {});
 }, CLEANUP_INTERVAL_MS);
 
 /**
@@ -120,7 +116,7 @@ export function idempotencyMiddleware(options: {
     const compositeKey = `${userId}:${idempotencyKey}`;
 
     // Check for existing record
-    const existingRecord = idempotencyStore.get(compositeKey);
+    const existingRecord = await persistentIdempotencyStore.get<IdempotencyRecord>(compositeKey);
 
     if (existingRecord) {
       // Validate request body matches original
@@ -175,7 +171,7 @@ export function idempotencyMiddleware(options: {
             expiresAt: new Date(Date.now() + IDEMPOTENCY_TTL_MS)
           };
 
-          idempotencyStore.set(compositeKey, record);
+          persistentIdempotencyStore.set(compositeKey, record as unknown as Record<string, unknown>, IDEMPOTENCY_TTL_MS).catch(() => {});
         }
       }
 

@@ -126,7 +126,7 @@ export function ReviewerAssignmentRules() {
   const fetcher = useCallback(() =>
     lakehouseAPI.fetch<{ rules: AssignmentRule[]; reviewers: Assignee[] }>('/api/v1/onboarding/assignment-rules')
       .then(d => ({ rules: d.rules, reviewers: d.reviewers }))
-      .catch(() => ({ rules: mockRules, reviewers: mockReviewers })), []);
+      .catch((err: unknown) => { console.error("API fallback:", err); return { rules: mockRules, reviewers: mockReviewers }; }), []);
   const { data: apiData } = useLakehouseData(fetcher, 30000);
   const [rules, setRules] = useState<AssignmentRule[]>(mockRules);
   const [reviewers] = useState<Assignee[]>(mockReviewers);

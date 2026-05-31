@@ -1,27 +1,14 @@
-# Build stage
-FROM golang:1.21-alpine AS builder
-
+FROM golang:1.22-alpine AS builder
 WORKDIR /app
-
-# Copy go mod files
 COPY go.mod go.sum ./
 RUN go mod download
-
-# Copy source code
 COPY . .
+RUN CGO_ENABLED=0 GOOS=linux go build -o /worker ./cmd/worker
 
-# Build the application
-RUN CGO_ENABLED=0 GOOS=linux go build -a -installsuffix cgo -o worker ./cmd/worker
-
-# Runtime stage
-FROM alpine:latest
-
+FROM alpine:3.19
 RUN apk --no-cache add ca-certificates
-
-WORKDIR /root/
-
-# Copy the binary from builder
-COPY --from=builder /app/worker .
-
-# Run the worker
-CMD ["./worker"]
+WORKDIR /app
+COPY --from=builder /worker .
+EXPOSE 8090
+HEALTHCHECK --interval=15s --timeout=5s --retries=3 CMD wget -qO- http://localhost:8090/health || exit 1
+ENTRYPOINT ["./worker"]

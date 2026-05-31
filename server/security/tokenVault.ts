@@ -1,4 +1,5 @@
 import crypto from 'crypto';
+import { getStore } from '../lib/persistentStore';
 
 export interface TokenizedData {
   token: string;
@@ -32,7 +33,9 @@ export interface KeyMetadata {
   status: 'active' | 'pending_rotation' | 'retired';
 }
 
-const tokenStore = new Map<string, { encryptedData: string; dataType: TokenDataType; metadata?: Record<string, string>; createdAt: Date; expiresAt?: Date }>();
+// Token store backed by persistent storage (PostgreSQL with in-memory fallback)
+const persistentTokenStore = getStore('token_vault_tokens');
+// Key store remains in-memory (keys should come from HSM/KMS in production)
 const keyStore = new Map<string, { key: Buffer; metadata: KeyMetadata }>();
 
 let masterKeyId = 'master-key-v1';
@@ -126,11 +129,11 @@ function getTokenPrefix(dataType: TokenDataType): string {
   return prefixes[dataType];
 }
 
-export function tokenize(
+export async function tokenize(
   sensitiveData: string,
   dataType: TokenDataType,
   options?: { expiresInSeconds?: number; metadata?: Record<string, string> }
-): TokenizedData {
+): Promise<TokenizedData> {
   const token = generateToken(dataType);
   const { ciphertext, iv, authTag } = encrypt(sensitiveData);
   const encryptedData = `${iv}:${authTag}:${ciphertext}`;
@@ -139,13 +142,14 @@ export function tokenize(
     ? new Date(Date.now() + options.expiresInSeconds * 1000)
     : undefined;
 
-  tokenStore.set(token, {
+  const ttlMs = options?.expiresInSeconds ? options.expiresInSeconds * 1000 : undefined;
+  await persistentTokenStore.set(token, {
     encryptedData,
     dataType,
     metadata: options?.metadata,
-    createdAt: new Date(),
-    expiresAt
-  });
+    createdAt: new Date().toISOString(),
+    expiresAt: expiresAt?.toISOString(),
+  }, ttlMs);
 
   logTokenOperation('tokenize', token, dataType, true);
 
@@ -158,16 +162,16 @@ export function tokenize(
   };
 }
 
-export function detokenize(token: string, purpose: string): DetokenizeResult {
-  const stored = tokenStore.get(token);
+export async function detokenize(token: string, purpose: string): Promise<DetokenizeResult> {
+  const stored = await persistentTokenStore.get<{ encryptedData: string; dataType: TokenDataType; expiresAt?: string }>(token);
   
   if (!stored) {
     logTokenOperation('detokenize', token, 'unknown' as TokenDataType, false, 'Token not found');
     return { success: false, error: 'Token not found' };
   }
 
-  if (stored.expiresAt && stored.expiresAt < new Date()) {
-    tokenStore.delete(token);
+  if (stored.expiresAt && new Date(stored.expiresAt) < new Date()) {
+    await persistentTokenStore.delete(token);
     logTokenOperation('detokenize', token, stored.dataType, false, 'Token expired');
     return { success: false, error: 'Token expired' };
   }
@@ -185,21 +189,20 @@ export function detokenize(token: string, purpose: string): DetokenizeResult {
   }
 }
 
-export function deleteToken(token: string): boolean {
-  const existed = tokenStore.has(token);
-  tokenStore.delete(token);
+export async function deleteToken(token: string): Promise<boolean> {
+  const existed = await persistentTokenStore.delete(token);
   logTokenOperation('delete', token, 'unknown' as TokenDataType, existed);
   return existed;
 }
 
-export function getTokenMetadata(token: string): Omit<TokenizedData, 'token'> | null {
-  const stored = tokenStore.get(token);
+export async function getTokenMetadata(token: string): Promise<Omit<TokenizedData, 'token'> | null> {
+  const stored = await persistentTokenStore.get<{ dataType: TokenDataType; createdAt: string; expiresAt?: string; metadata?: Record<string, string> }>(token);
   if (!stored) return null;
   
   return {
     dataType: stored.dataType,
-    createdAt: stored.createdAt,
-    expiresAt: stored.expiresAt,
+    createdAt: new Date(stored.createdAt),
+    expiresAt: stored.expiresAt ? new Date(stored.expiresAt) : undefined,
     metadata: stored.metadata
   };
 }

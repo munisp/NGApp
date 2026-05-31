@@ -45,7 +45,7 @@ export function DisputesDashboard() {
   const [search, setSearch] = useState('');
   const [statusFilter, setStatusFilter] = useState('all');
 
-  const fetcher = useCallback(() => lakehouseAPI.fetch<{ disputes: Dispute[] }>('/api/v1/disputes').catch(() => ({ disputes: fallbackDisputes })), []);
+  const fetcher = useCallback(() => lakehouseAPI.fetch<{ disputes: Dispute[] }>('/api/v1/disputes').catch((err: unknown) => { console.error("API fallback:", err); return { disputes: fallbackDisputes }; }), []);
   const { data, loading } = useLakehouseData(fetcher, 30000);
   const disputes = data?.disputes || fallbackDisputes;
 

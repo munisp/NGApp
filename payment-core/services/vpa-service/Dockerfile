@@ -1,26 +1,14 @@
-FROM python:3.11-slim
-
+FROM golang:1.22-alpine AS builder
 WORKDIR /app
-
-# Install system dependencies
-RUN apt-get update && apt-get install -y \
-    gcc \
-    curl \
-    && rm -rf /var/lib/apt/lists/*
-
-# Copy requirements
-COPY ../requirements.txt .
-RUN pip install --no-cache-dir -r requirements.txt
-
-# Copy service code
+COPY go.mod go.sum ./
+RUN go mod download
 COPY . .
+RUN CGO_ENABLED=0 GOOS=linux go build -o /vpa-service .
 
-# Expose port
-EXPOSE 8000
-
-# Health check
-HEALTHCHECK --interval=30s --timeout=10s --start-period=5s --retries=3 \
-    CMD curl -f http://localhost:8000/health || exit 1
-
-# Run service
-CMD ["python", "-m", "uvicorn", "main:app", "--host", "0.0.0.0", "--port", "8000"]
+FROM alpine:3.19
+RUN apk --no-cache add ca-certificates
+WORKDIR /app
+COPY --from=builder /vpa-service .
+EXPOSE 50051 8081
+HEALTHCHECK --interval=15s --timeout=5s --retries=3 CMD wget -qO- http://localhost:8081/health || exit 1
+ENTRYPOINT ["./vpa-service"]

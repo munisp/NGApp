@@ -105,10 +105,10 @@ export default function CardProcessingDashboard() {
   const [terminals, setTerminals] = useState<MerchantTerminal[]>([]);
 
   useEffect(() => {
-    lakehouseAPI.fetch<{ cards: IssuedCard[] }>('/api/card-processing/cards').then(d => setCards(d.cards || [])).catch(() => setCards(mockCards));
-    lakehouseAPI.fetch<{ transactions: CardTransaction[] }>('/api/card-processing/transactions').then(d => setTransactions(d.transactions || [])).catch(() => setTransactions(mockTransactions));
-    lakehouseAPI.fetch<{ chargebacks: Chargeback[] }>('/api/card-processing/chargebacks').then(d => setChargebacks(d.chargebacks || [])).catch(() => setChargebacks(mockChargebacks));
-    lakehouseAPI.fetch<{ terminals: MerchantTerminal[] }>('/api/card-processing/terminals').then(d => setTerminals(d.terminals || [])).catch(() => setTerminals(mockTerminals));
+    lakehouseAPI.fetch<{ cards: IssuedCard[] }>('/api/card-processing/cards').then(d => setCards(d.cards || [])).catch((err: unknown) => { console.error("API fallback:", err); setCards(mockCards); });
+    lakehouseAPI.fetch<{ transactions: CardTransaction[] }>('/api/card-processing/transactions').then(d => setTransactions(d.transactions || [])).catch((err: unknown) => { console.error("API fallback:", err); setTransactions(mockTransactions); });
+    lakehouseAPI.fetch<{ chargebacks: Chargeback[] }>('/api/card-processing/chargebacks').then(d => setChargebacks(d.chargebacks || [])).catch((err: unknown) => { console.error("API fallback:", err); setChargebacks(mockChargebacks); });
+    lakehouseAPI.fetch<{ terminals: MerchantTerminal[] }>('/api/card-processing/terminals').then(d => setTerminals(d.terminals || [])).catch((err: unknown) => { console.error("API fallback:", err); setTerminals(mockTerminals); });
   }, []);
 
   const tabs: { id: Tab; label: string }[] = [

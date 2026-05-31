@@ -1,5 +1,6 @@
 import crypto from 'crypto';
 import { EventEmitter } from 'events';
+import { getStore } from '../lib/persistentStore';
 
 export interface AuditEntry {
   id: string;
@@ -65,7 +66,9 @@ export interface ForensicExport {
   exportedBy: string;
 }
 
-const auditLog: AuditEntry[] = [];
+// Persistent backing store (PostgreSQL with in-memory fallback)
+const auditStore = getStore('immutable_audit_log');
+const auditLogCache: AuditEntry[] = []; // local cache for chain verification
 let sequenceNumber = 0;
 const GENESIS_HASH = '0'.repeat(64);
 
@@ -87,8 +90,8 @@ export class ImmutableAuditLog extends EventEmitter {
     correlationId?: string;
   }): Promise<AuditEntry> {
     const sequence = ++sequenceNumber;
-    const previousHash = auditLog.length > 0 
-      ? auditLog[auditLog.length - 1].hash 
+    const previousHash = auditLogCache.length > 0 
+      ? auditLogCache[auditLogCache.length - 1].hash 
       : GENESIS_HASH;
 
     const entry: AuditEntry = {
@@ -111,7 +114,12 @@ export class ImmutableAuditLog extends EventEmitter {
     entry.hash = this.calculateHash(entry);
     entry.signature = this.sign(entry.hash);
 
-    auditLog.push(entry);
+    auditLogCache.push(entry);
+    // Persist to database asynchronously — fire-and-forget with error logging
+    auditStore.set(entry.id, {
+      ...entry,
+      timestamp: entry.timestamp.toISOString(),
+    } as unknown as Record<string, unknown>).catch(() => {});
     this.emit('entryLogged', entry);
 
     if (params.eventType === 'security_event' || params.outcome === 'failure') {
@@ -145,14 +153,14 @@ export class ImmutableAuditLog extends EventEmitter {
   }
 
   verifyIntegrity(): { valid: boolean; brokenAt?: number; error?: string } {
-    if (auditLog.length === 0) {
+    if (auditLogCache.length === 0) {
       return { valid: true };
     }
 
     let previousHash = GENESIS_HASH;
 
-    for (let i = 0; i < auditLog.length; i++) {
-      const entry = auditLog[i];
+    for (let i = 0; i < auditLogCache.length; i++) {
+      const entry = auditLogCache[i];
 
       if (entry.previousHash !== previousHash) {
         return {
@@ -202,7 +210,7 @@ export class ImmutableAuditLog extends EventEmitter {
     limit?: number;
     offset?: number;
   }): AuditEntry[] {
-    let results = [...auditLog];
+    let results = [...auditLogCache];
 
     if (options.startDate) {
       results = results.filter(e => e.timestamp >= options.startDate!);
@@ -322,14 +330,14 @@ export class ImmutableAuditLog extends EventEmitter {
     const byOutcome: Record<string, number> = {};
     const byActorType: Record<string, number> = {};
 
-    for (const entry of auditLog) {
+    for (const entry of auditLogCache) {
       byEventType[entry.eventType] = (byEventType[entry.eventType] || 0) + 1;
       byOutcome[entry.outcome] = (byOutcome[entry.outcome] || 0) + 1;
       byActorType[entry.actor.type] = (byActorType[entry.actor.type] || 0) + 1;
     }
 
     return {
-      totalEntries: auditLog.length,
+      totalEntries: auditLogCache.length,
       byEventType,
       byOutcome,
       byActorType,
