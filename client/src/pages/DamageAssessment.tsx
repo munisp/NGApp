@@ -905,7 +905,8 @@ function DamageHeatMapPanel({
           weight: ({ DESTROYED: 5, SEVERELY_DAMAGED: 4, MODERATELY_DAMAGED: 3, MINOR_DAMAGE: 2, INTACT: 1 } as Record<string, number>)[(a.classification as string)] ?? 1,
         }));
 
-      new google.maps.visualization.HeatmapLayer({
+      const HeatmapLayer = google.maps.visualization.HeatmapLayer as unknown as new (opts: Record<string, unknown>) => unknown;
+      new HeatmapLayer({
         data: heatmapData,
         map,
         radius: 40,
