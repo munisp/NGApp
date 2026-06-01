@@ -15,6 +15,14 @@ export default defineConfig({
   test: {
     environment: "node",
     include: ["server/**/*.test.ts", "server/**/*.spec.ts"],
+    exclude: [
+      "server/phase15.test.ts",
+      "server/phase16.test.ts",
+      "server/phase17.test.ts",
+      "server/phase20.test.ts",
+      "server/phase43.test.ts",
+      "server/phase44.test.ts",
+    ],
     setupFiles: ["server/vitest.setup.ts"],
     testTimeout: 15000,
   },

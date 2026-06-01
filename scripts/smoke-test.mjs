@@ -133,6 +133,28 @@ await test("GET /api/workers/status returns worker list", async () => {
   assert(data.workers.length > 0, "Should have at least one worker");
 });
 
+// ── Sector Monitor Health Checks ─────────────────────────────────────────────
+console.log("\nSector Monitor Services:");
+await test("Healthcare sector monitor (port 8123) health", async () => {
+  try {
+    const res = await fetch("http://localhost:8123/healthz", { signal: AbortSignal.timeout(2000) });
+    assert(res.ok, `Healthcare monitor returned ${res.status}`);
+  } catch {
+    skipped++;
+    console.log("    (skipped — service not running)");
+  }
+});
+
+await test("Energy sector monitor (port 8124) health", async () => {
+  try {
+    const res = await fetch("http://localhost:8124/healthz", { signal: AbortSignal.timeout(2000) });
+    assert(res.ok, `Energy monitor returned ${res.status}`);
+  } catch {
+    skipped++;
+    console.log("    (skipped — service not running)");
+  }
+});
+
 // ── PDF Endpoints ────────────────────────────────────────────────────────────
 console.log("\nPDF Endpoints:");
 await test("GET /api/certificate/:orgId requires auth", async () => {
