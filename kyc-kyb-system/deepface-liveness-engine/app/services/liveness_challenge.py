@@ -2,12 +2,24 @@
 
 import base64
 import io
+import json
+import os
 import time
 from typing import Optional
 
 import numpy as np
 import structlog
 from PIL import Image
+
+try:
+    import redis
+    _redis_url = os.environ.get("REDIS_URL", "redis://localhost:6379/0")
+    _redis = redis.Redis.from_url(_redis_url, decode_responses=True)
+    _redis.ping()
+    _use_redis = True
+except Exception:
+    _redis = None
+    _use_redis = False
 
 logger = structlog.get_logger(__name__)
 
@@ -121,22 +133,74 @@ class ChallengeSession:
             return {"passed": True, "reason": "passive_liveness"}
 
 
-# In-memory session store (production would use Redis)
+_REDIS_PREFIX = "liveness:session:"
+_SESSION_TTL = 600  # 10 minutes
+
+# Fallback in-memory store when Redis is unavailable
 _sessions: dict[str, ChallengeSession] = {}
+
+
+def _serialize_session(session: ChallengeSession) -> str:
+    return json.dumps({
+        "session_id": session.session_id,
+        "challenge_type": session.challenge_type,
+        "frames": session.frames,
+        "started_at": session.started_at,
+    })
+
+
+def _deserialize_session(data: str) -> ChallengeSession:
+    d = json.loads(data)
+    s = ChallengeSession(d["session_id"], d["challenge_type"])
+    s.frames = d["frames"]
+    s.started_at = d["started_at"]
+    return s
 
 
 def create_challenge_session(session_id: str, challenge_type: str) -> ChallengeSession:
     session = ChallengeSession(session_id, challenge_type)
+    if _use_redis and _redis:
+        try:
+            _redis.setex(f"{_REDIS_PREFIX}{session_id}", _SESSION_TTL, _serialize_session(session))
+            return session
+        except Exception as e:
+            logger.warning("redis_store_failed", error=str(e), session_id=session_id)
     _sessions[session_id] = session
     return session
 
 
 def get_challenge_session(session_id: str) -> Optional[ChallengeSession]:
+    if _use_redis and _redis:
+        try:
+            data = _redis.get(f"{_REDIS_PREFIX}{session_id}")
+            if data:
+                return _deserialize_session(data)
+        except Exception as e:
+            logger.warning("redis_get_failed", error=str(e), session_id=session_id)
     return _sessions.get(session_id)
 
 
+def _save_session(session: ChallengeSession) -> None:
+    if _use_redis and _redis:
+        try:
+            _redis.setex(f"{_REDIS_PREFIX}{session.session_id}", _SESSION_TTL, _serialize_session(session))
+            return
+        except Exception as e:
+            logger.warning("redis_save_failed", error=str(e))
+    _sessions[session.session_id] = session
+
+
 def complete_challenge(session_id: str) -> Optional[dict]:
-    session = _sessions.pop(session_id, None)
+    session: Optional[ChallengeSession] = None
+    if _use_redis and _redis:
+        try:
+            data = _redis.getdel(f"{_REDIS_PREFIX}{session_id}")
+            if data:
+                session = _deserialize_session(data)
+        except Exception as e:
+            logger.warning("redis_delete_failed", error=str(e), session_id=session_id)
+    if session is None:
+        session = _sessions.pop(session_id, None)
     if session is None:
         return None
     return session.evaluate()

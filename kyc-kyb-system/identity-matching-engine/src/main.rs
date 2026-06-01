@@ -123,7 +123,10 @@ async fn store_embedding(
     data: web::Data<AppState>,
     req: web::Json<StoreEmbeddingRequest>,
 ) -> HttpResponse {
-    let mut store = data.embeddings_store.lock().unwrap();
+    let mut store = match data.embeddings_store.lock() {
+        Ok(s) => s,
+        Err(_) => return HttpResponse::InternalServerError().json(serde_json::json!({"error": "Internal state error"})),
+    };
     store.insert(req.identity_id.clone(), req.embedding.clone());
     HttpResponse::Ok().json(serde_json::json!({
         "stored": true,
@@ -138,7 +141,10 @@ async fn search_embedding(
     req: web::Json<SearchEmbeddingRequest>,
 ) -> HttpResponse {
     let start = Instant::now();
-    let store = data.embeddings_store.lock().unwrap();
+    let store = match data.embeddings_store.lock() {
+        Ok(s) => s,
+        Err(_) => return HttpResponse::InternalServerError().json(serde_json::json!({"error": "Internal state error"})),
+    };
     let threshold = req.threshold.unwrap_or(0.6);
     let top_k = req.top_k.unwrap_or(5);
 
@@ -186,7 +192,10 @@ async fn cross_reference(
     req: web::Json<CrossReferenceRequest>,
 ) -> HttpResponse {
     let start = Instant::now();
-    let store = data.embeddings_store.lock().unwrap();
+    let store = match data.embeddings_store.lock() {
+        Ok(s) => s,
+        Err(_) => return HttpResponse::InternalServerError().json(serde_json::json!({"error": "Internal state error"})),
+    };
 
     let duplicates: Vec<serde_json::Value> = store.iter()
         .filter(|(id, _)| **id != req.identity_id)
@@ -217,7 +226,10 @@ async fn duplicate_check(
     req: web::Json<DuplicateCheckRequest>,
 ) -> HttpResponse {
     let start = Instant::now();
-    let store = data.embeddings_store.lock().unwrap();
+    let store = match data.embeddings_store.lock() {
+        Ok(s) => s,
+        Err(_) => return HttpResponse::InternalServerError().json(serde_json::json!({"error": "Internal state error"})),
+    };
 
     let mut highest_match = 0.0_f64;
     let mut matched_id: Option<String> = None;

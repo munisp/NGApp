@@ -8,7 +8,7 @@ const plugins = [react(), tailwindcss()];
 export default defineConfig({
   plugins,
   define: {
-    'process.env': JSON.stringify({ NODE_ENV: 'development', DEMO_MODE: 'true' }),
+    'process.env': JSON.stringify({ NODE_ENV: 'development', DEMO_MODE: 'false' }),
   },
   resolve: {
     alias: {

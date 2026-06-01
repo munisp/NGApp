@@ -53,8 +53,12 @@ impl MojaloopClient {
 
     fn fspiop_headers(&self) -> reqwest::header::HeaderMap {
         let mut headers = reqwest::header::HeaderMap::new();
-        headers.insert("Content-Type", "application/vnd.interoperability.transfers+json;version=1.1".parse().unwrap());
-        headers.insert("FSPIOP-Source", self.fsp_id.parse().unwrap());
+        if let Ok(ct) = "application/vnd.interoperability.transfers+json;version=1.1".parse() {
+            headers.insert("Content-Type", ct);
+        }
+        if let Ok(src) = self.fsp_id.parse() {
+            headers.insert("FSPIOP-Source", src);
+        }
         headers
     }
 
@@ -72,7 +76,9 @@ impl MojaloopClient {
         }
         let mut headers = self.fspiop_headers();
         if let Some(key) = idempotency_key {
-            headers.insert("X-Idempotency-Key", key.parse().unwrap());
+            if let Ok(v) = key.parse() {
+                headers.insert("X-Idempotency-Key", v);
+            }
         }
         let body = serde_json::json!({
             "transferId": transfer_id, "payerFsp": payer_fsp, "payeeFsp": payee_fsp,

@@ -34,17 +34,19 @@ impl Metrics {
     }
 
     pub fn incr_counter_by(&self, name: &str, value: i64) {
-        let mut counters = self.counters.lock().unwrap();
-        *counters.entry(name.to_string()).or_insert(0) += value;
+        if let Ok(mut counters) = self.counters.lock() {
+            *counters.entry(name.to_string()).or_insert(0) += value;
+        }
     }
 
     pub fn set_gauge(&self, name: &str, value: f64) {
-        let mut gauges = self.gauges.lock().unwrap();
-        gauges.insert(name.to_string(), value);
+        if let Ok(mut gauges) = self.gauges.lock() {
+            gauges.insert(name.to_string(), value);
+        }
     }
 
     pub fn observe_latency(&self, name: &str, duration_ms: f64) {
-        let mut histograms = self.histograms.lock().unwrap();
+        let Ok(mut histograms) = self.histograms.lock() else { return };
         let h = histograms.entry(name.to_string()).or_insert(HistogramData {
             count: 0,
             sum: 0.0,
@@ -64,19 +66,21 @@ impl Metrics {
     pub fn prometheus_text(&self) -> String {
         let mut lines = Vec::new();
 
-        let counters = self.counters.lock().unwrap();
-        for (name, value) in counters.iter() {
-            lines.push(format!("# TYPE {}_{} counter", self.service_name, name));
-            lines.push(format!("{}_{} {}", self.service_name, name, value));
+        if let Ok(counters) = self.counters.lock() {
+            for (name, value) in counters.iter() {
+                lines.push(format!("# TYPE {}_{} counter", self.service_name, name));
+                lines.push(format!("{}_{} {}", self.service_name, name, value));
+            }
         }
 
-        let gauges = self.gauges.lock().unwrap();
-        for (name, value) in gauges.iter() {
-            lines.push(format!("# TYPE {}_{} gauge", self.service_name, name));
-            lines.push(format!("{}_{} {}", self.service_name, name, value));
+        if let Ok(gauges) = self.gauges.lock() {
+            for (name, value) in gauges.iter() {
+                lines.push(format!("# TYPE {}_{} gauge", self.service_name, name));
+                lines.push(format!("{}_{} {}", self.service_name, name, value));
+            }
         }
 
-        let histograms = self.histograms.lock().unwrap();
+        let Ok(histograms) = self.histograms.lock() else { return lines.join("\n") + "\n" };
         for (name, h) in histograms.iter() {
             lines.push(format!("# TYPE {}_{} summary", self.service_name, name));
             lines.push(format!("{}_{}_count {}", self.service_name, name, h.count));
@@ -97,9 +101,9 @@ impl Metrics {
     }
 
     pub fn json_snapshot(&self) -> serde_json::Value {
-        let counters = self.counters.lock().unwrap();
-        let gauges = self.gauges.lock().unwrap();
-        let histograms = self.histograms.lock().unwrap();
+        let Ok(counters) = self.counters.lock() else { return serde_json::json!({"error": "lock poisoned"}) };
+        let Ok(gauges) = self.gauges.lock() else { return serde_json::json!({"error": "lock poisoned"}) };
+        let Ok(histograms) = self.histograms.lock() else { return serde_json::json!({"error": "lock poisoned"}) };
 
         let mut latencies = serde_json::Map::new();
         for (name, h) in histograms.iter() {

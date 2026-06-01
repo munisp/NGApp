@@ -233,7 +233,7 @@ export const appRouter = router({
             timestamp: new Date().toISOString(),
             data: { claim_number: claimNumber, amount: input.amount, kyc_level: gate.level },
           });
-        } catch { /* stream service unavailable */ }
+        } catch (err) { console.error('[stream-service] publish event failed:', err instanceof Error ? err.message : err); }
 
         return await db.createClaim({
           userId: ctx.user.id,
@@ -281,7 +281,7 @@ export const appRouter = router({
             user_id: ctx.user.id, description: `Payment ${input.id} via ${input.paymentMethod}`,
             kyc_level: gate.level,
           });
-        } catch { /* ledger service unavailable */ }
+        } catch (err) { console.error('[kyc-ledger] create entry failed:', err instanceof Error ? err.message : err); }
         return await db.updatePayment(input.id, ctx.user.id, {
           status: "Completed",
           paidDate: new Date(),
@@ -953,29 +953,29 @@ export const appRouter = router({
     // Middleware integration endpoints
     middleware: router({
       ledgerStats: protectedProcedure.query(async () => {
-        try { return await kycLedgerService.getStats(); } catch { return { status: 'unavailable' }; }
+        try { return await kycLedgerService.getStats(); } catch (err) { console.error('[kyc-ledger] getStats failed:', err instanceof Error ? err.message : err); return { status: 'unavailable' }; }
       }),
       analyticsMetrics: protectedProcedure
         .input(z.object({ period: z.string().default('monthly') }))
         .query(async ({ input }) => {
-          try { return await kycAnalyticsService.getMetrics(input.period); } catch { return { status: 'unavailable' }; }
+          try { return await kycAnalyticsService.getMetrics(input.period); } catch (err) { console.error('[kyc-analytics] getMetrics failed:', err instanceof Error ? err.message : err); return { status: 'unavailable' }; }
         }),
       complianceReport: protectedProcedure
         .input(z.object({ period: z.string(), country: z.string().default('NG') }))
         .mutation(async ({ input }) => {
-          try { return await kycAnalyticsService.generateComplianceReport(input.period, input.country); } catch { return { status: 'unavailable' }; }
+          try { return await kycAnalyticsService.generateComplianceReport(input.period, input.country); } catch (err) { console.error('[kyc-analytics] generateComplianceReport failed:', err instanceof Error ? err.message : err); return { status: 'unavailable' }; }
         }),
       streamTopics: protectedProcedure.query(async () => {
-        try { return await kycStreamService.listTopics(); } catch { return { status: 'unavailable' }; }
+        try { return await kycStreamService.listTopics(); } catch (err) { console.error('[kyc-stream] listTopics failed:', err instanceof Error ? err.message : err); return { status: 'unavailable' }; }
       }),
       streamStats: protectedProcedure.query(async () => {
-        try { return await kycStreamService.getStats(); } catch { return { status: 'unavailable' }; }
+        try { return await kycStreamService.getStats(); } catch (err) { console.error('[kyc-stream] getStats failed:', err instanceof Error ? err.message : err); return { status: 'unavailable' }; }
       }),
       userLedger: protectedProcedure.query(async ({ ctx }) => {
-        try { return await kycLedgerService.getUserEntries(ctx.user.id); } catch { return { entries: [], status: 'unavailable' }; }
+        try { return await kycLedgerService.getUserEntries(ctx.user.id); } catch (err) { console.error('[kyc-ledger] getUserEntries failed:', err instanceof Error ? err.message : err); return { entries: [], status: 'unavailable' }; }
       }),
       ndprReport: protectedProcedure.query(async () => {
-        try { return await kycAnalyticsService.getNDPRReport(); } catch { return { status: 'unavailable' }; }
+        try { return await kycAnalyticsService.getNDPRReport(); } catch (err) { console.error('[kyc-analytics] getNDPRReport failed:', err instanceof Error ? err.message : err); return { status: 'unavailable' }; }
       }),
       transferLimits: protectedProcedure.query(async ({ ctx }) => {
         const gate = await checkKYCGate(ctx.user.id, 0);
@@ -1005,20 +1005,21 @@ export const appRouter = router({
             ctx.user.id, input.companyName, input.rcNumber, input.tin
           );
           return { sessionId: result?.session_id || `kyb-${Date.now().toString(36)}`, ...input, status: 'started', createdAt: new Date() };
-        } catch {
+        } catch (err) {
+          console.error('[kyc-orchestrator] startKYB failed:', err instanceof Error ? err.message : err);
           return { sessionId: `kyb-${Date.now().toString(36)}`, ...input, status: 'started', createdAt: new Date() };
         }
       }),
     verifyCAC: protectedProcedure
       .input(z.object({ sessionId: z.string() }))
       .mutation(async ({ input }) => {
-        try { await kycOrchestratorService.verifyCAC(input.sessionId); } catch { /* orchestrator unavailable */ }
+        try { await kycOrchestratorService.verifyCAC(input.sessionId); } catch (err) { console.error('[kyc-orchestrator] verifyCAC failed:', err instanceof Error ? err.message : err); }
         return { verified: true, companyStatus: 'active', registrationType: 'limited_liability', registrationDate: '2020-01-15' };
       }),
     verifyTIN: protectedProcedure
       .input(z.object({ sessionId: z.string() }))
       .mutation(async ({ input }) => {
-        try { await kycOrchestratorService.verifyTIN(input.sessionId); } catch { /* orchestrator unavailable */ }
+        try { await kycOrchestratorService.verifyTIN(input.sessionId); } catch (err) { console.error('[kyc-orchestrator] verifyTIN failed:', err instanceof Error ? err.message : err); }
         return { verified: true, taxStatus: 'compliant', lastFilingDate: '2025-12-31' };
       }),
     addDirector: protectedProcedure
@@ -1026,7 +1027,7 @@ export const appRouter = router({
       .mutation(async ({ input }) => {
         try {
           await kycOrchestratorService.addDirector(input.sessionId, input.name, input.nin, '', input.position);
-        } catch { /* orchestrator unavailable */ }
+        } catch (err) { console.error('[kyc-orchestrator] addDirector failed:', err instanceof Error ? err.message : err); }
         return { id: `dir-${Date.now().toString(36)}`, ...input, kycStatus: 'pending' };
       }),
     addUBO: protectedProcedure
@@ -1034,7 +1035,7 @@ export const appRouter = router({
       .mutation(async ({ input }) => {
         try {
           await kycOrchestratorService.addUBO(input.sessionId, input.name, input.ownershipPct, input.nin);
-        } catch { /* orchestrator unavailable */ }
+        } catch (err) { console.error('[kyc-orchestrator] addUBO failed:', err instanceof Error ? err.message : err); }
         return { id: `ubo-${Date.now().toString(36)}`, ...input, kycStatus: 'pending' };
       }),
     gate: protectedProcedure.query(async ({ ctx }) => {
@@ -1382,7 +1383,7 @@ export const appRouter = router({
             user_id: ctx.user.id, description: `Wallet top-up via ${input.paymentMethod}`,
             kyc_level: gate.level,
           });
-        } catch { /* ledger service unavailable */ }
+        } catch (err) { console.error('[kyc-ledger] wallet entry failed:', err instanceof Error ? err.message : err); }
         return await db.walletTopUp(ctx.user.id, input.amount, input.paymentMethod);
       }),
     topup: protectedProcedure
@@ -1406,7 +1407,7 @@ export const appRouter = router({
           if (validation && !validation.passed) {
             return { success: false, error: validation.reason, kyc_gate: gate };
           }
-        } catch { /* ledger validation unavailable */ }
+        } catch (err) { console.error('[kyc-ledger] validateTransfer failed:', err instanceof Error ? err.message : err); }
         return await db.walletWithdraw(ctx.user.id, input.amount, input.bankAccount);
       }),
     kycGate: protectedProcedure.query(async ({ ctx }) => {
@@ -1916,8 +1917,9 @@ export const appRouter = router({
               input.data?.documentType as string,
               'level_2'
             );
-          } catch {
-            // KYC service unavailable — proceed with onboarding, KYC can be completed later
+          } catch (err) {
+            console.error('[kyc-orchestrator] startVerification during onboarding failed:', err instanceof Error ? err.message : err);
+            // proceed with onboarding, KYC can be completed later
           }
         }
         return await db.completeOnboardingStep(ctx.user.id, input.step, input.data);
@@ -1933,7 +1935,8 @@ export const appRouter = router({
             input.targetLevel
           );
           return { started: true, session: result };
-        } catch {
+        } catch (err) {
+          console.error('[kyc-orchestrator] startKYC failed:', err instanceof Error ? err.message : err);
           return { started: false, session: null, message: 'KYC service unavailable, please try again later' };
         }
       }),
@@ -2002,7 +2005,7 @@ export const appRouter = router({
             application_id: input.applicationId, kyc_level: gate.level,
             timestamp: new Date().toISOString(),
           });
-        } catch { /* analytics service unavailable */ }
+        } catch (err) { console.error('[kyc-analytics] ingestData failed:', err instanceof Error ? err.message : err); }
         return await db.submitApplication(ctx.user.id, input.applicationId);
       }),
     list: protectedProcedure.query(async ({ ctx }) => {

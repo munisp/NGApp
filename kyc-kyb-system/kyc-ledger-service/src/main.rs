@@ -94,7 +94,10 @@ pub struct AppState {
 }
 
 async fn health(data: web::Data<AppState>) -> HttpResponse {
-    let entries = data.entries.lock().unwrap();
+    let entries = match data.entries.lock() {
+        Ok(e) => e,
+        Err(_) => return HttpResponse::InternalServerError().json(serde_json::json!({"error": "Internal state lock poisoned"})),
+    };
     HttpResponse::Ok().json(serde_json::json!({
         "status": "healthy",
         "service": "kyc-ledger-service",
@@ -189,8 +192,9 @@ async fn create_entry(
     // Publish event via Dapr pub/sub
     let _ = data.dapr.publish_event("kyc-events", "ledger.entry.created", &completed_entry).await;
 
-    let mut entries = data.entries.lock().unwrap();
-    entries.push(completed_entry.clone());
+    if let Ok(mut entries) = data.entries.lock() {
+        entries.push(completed_entry.clone());
+    }
 
     HttpResponse::Created().json(completed_entry)
 }
@@ -203,7 +207,10 @@ async fn get_entry(data: web::Data<AppState>, path: web::Path<String>) -> HttpRe
         return HttpResponse::Ok().json(entry);
     }
 
-    let entries = data.entries.lock().unwrap();
+    let entries = match data.entries.lock() {
+        Ok(e) => e,
+        Err(_) => return HttpResponse::InternalServerError().json(serde_json::json!({"error": "Internal state error"})),
+    };
     match entries.iter().find(|e| e.id == id) {
         Some(entry) => HttpResponse::Ok().json(entry),
         None => HttpResponse::NotFound().json(serde_json::json!({"error": "Entry not found"})),
@@ -212,7 +219,10 @@ async fn get_entry(data: web::Data<AppState>, path: web::Path<String>) -> HttpRe
 
 async fn get_user_entries(data: web::Data<AppState>, path: web::Path<String>) -> HttpResponse {
     let user_id = path.into_inner();
-    let entries = data.entries.lock().unwrap();
+    let entries = match data.entries.lock() {
+        Ok(e) => e,
+        Err(_) => return HttpResponse::InternalServerError().json(serde_json::json!({"error": "Internal state error"})),
+    };
     let user_entries: Vec<&LedgerEntry> = entries.iter().filter(|e| e.user_id == user_id).collect();
     HttpResponse::Ok().json(user_entries)
 }
@@ -225,7 +235,10 @@ async fn get_account_balance(data: web::Data<AppState>, path: web::Path<String>)
         return HttpResponse::Ok().json(balance);
     }
 
-    let entries = data.entries.lock().unwrap();
+    let entries = match data.entries.lock() {
+        Ok(e) => e,
+        Err(_) => return HttpResponse::InternalServerError().json(serde_json::json!({"error": "Internal state error"})),
+    };
     let mut debits: u64 = 0;
     let mut credits: u64 = 0;
 
@@ -281,7 +294,10 @@ async fn validate_kyc_transfer(
 }
 
 async fn get_ledger_stats(data: web::Data<AppState>) -> HttpResponse {
-    let entries = data.entries.lock().unwrap();
+    let entries = match data.entries.lock() {
+        Ok(e) => e,
+        Err(_) => return HttpResponse::InternalServerError().json(serde_json::json!({"error": "Internal state error"})),
+    };
 
     let total = entries.len();
     let completed = entries.iter().filter(|e| e.status == EntryStatus::Completed).count();

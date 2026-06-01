@@ -235,7 +235,7 @@ where
         }
     }
 
-    Err(last_error.unwrap())
+    Err(last_error.expect("retry loop must record at least one error"))
 }
 
 fn rand_f64() -> f64 {
