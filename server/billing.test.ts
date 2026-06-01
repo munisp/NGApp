@@ -2,6 +2,7 @@ import { describe, it, expect, beforeAll, afterAll } from "vitest";
 import pg from "pg";
 const { Pool } = pg;
 const TEST_PG_URL =
+  process.env.DATABASE_URL ??
   process.env.NDSEP_PG_URL ??
   "postgresql://ndsep_user:ndsep_secure_2026@localhost:5432/ndsep_db";
 let pool: InstanceType<typeof Pool> | null = null;
