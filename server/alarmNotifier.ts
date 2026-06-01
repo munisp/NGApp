@@ -9,36 +9,56 @@
  * ISA-18.2 compliance:
  *   - Severity 4 = "Critical" — immediate operator action required
  *   - Severity 3 = "High"     — email escalation after 15-minute delay
+ *
+ * State is now persisted to PostgreSQL (alarm_notification_state table) instead
+ * of ephemeral in-memory Maps to survive restarts.
  */
 import { getDb } from "./db";
-import { alarms } from "../drizzle/schema";
+import { alarms, alarmNotificationState } from "../drizzle/schema";
 import { and, eq, lte, gte } from "drizzle-orm";
 import { notifyOwner } from "./_core/notification";
 import { escalateAlarm } from "./alarmEscalation";
 import { broadcastPush } from "./pushNotifications";
-
-// Track alarms we've already notified about to prevent spam
-const notifiedAlarmIds = new Set<number>();
+import logger from "./_core/logger";
 
 // How long an alarm must be unacknowledged before we notify (5 minutes)
 const NOTIFY_THRESHOLD_MS = 5 * 60 * 1000;
 
 // Minimum interval between re-notifications for the same alarm (30 minutes)
 const RE_NOTIFY_INTERVAL_MS = 30 * 60 * 1000;
-const lastNotifiedAt = new Map<number, number>();
-const lastEscalatedAt = new Map<number, number>();
 
 // Email/SMS escalation delay for severity-3 alarms (15 minutes)
 const HIGH_SEVERITY_ESCALATION_MS = 15 * 60 * 1000;
 
+async function getNotificationState(db: NonNullable<Awaited<ReturnType<typeof getDb>>>, alarmId: number) {
+  const [state] = await db.select().from(alarmNotificationState).where(eq(alarmNotificationState.alarmId, alarmId)).limit(1);
+  return state ?? null;
+}
+
+async function updateNotificationTimestamp(db: NonNullable<Awaited<ReturnType<typeof getDb>>>, alarmId: number, field: "lastNotifiedAt" | "lastEscalatedAt") {
+  const existing = await getNotificationState(db, alarmId);
+  if (existing) {
+    await db.update(alarmNotificationState).set({
+      [field]: new Date(),
+      notificationCount: (existing.notificationCount ?? 0) + 1,
+      updatedAt: new Date(),
+    }).where(eq(alarmNotificationState.alarmId, alarmId));
+  } else {
+    await db.insert(alarmNotificationState).values({
+      alarmId,
+      [field]: new Date(),
+      notificationCount: 1,
+    });
+  }
+}
+
 async function checkCriticalAlarms() {
   const db = await getDb();
-  if (!db) return; // DB not available, skip
+  if (!db) return;
 
   try {
     const fiveMinutesAgo = new Date(Date.now() - NOTIFY_THRESHOLD_MS);
 
-    // Find severity 3-4 UNACKNOWLEDGED alarms older than 5 minutes
     const criticalAlarms = await db
       .select()
       .from(alarms)
@@ -53,11 +73,12 @@ async function checkCriticalAlarms() {
 
     for (const alarm of criticalAlarms) {
       const now = Date.now();
-      const lastNotified = lastNotifiedAt.get(alarm.id) ?? 0;
-      const lastEscalated = lastEscalatedAt.get(alarm.id) ?? 0;
+      const state = await getNotificationState(db, alarm.id);
+      const lastNotified = state?.lastNotifiedAt ? new Date(state.lastNotifiedAt).getTime() : 0;
+      const lastEscalated = state?.lastEscalatedAt ? new Date(state.lastEscalatedAt).getTime() : 0;
       const minutesUnacked = Math.round((now - new Date(alarm.createdAt).getTime()) / 60000);
 
-      // ── In-app push notification (severity 4 only, rate-limited) ──────────
+      // In-app push notification (severity 4, rate-limited)
       if (alarm.severity === 4 && now - lastNotified >= RE_NOTIFY_INTERVAL_MS) {
         const title = `🚨 CRITICAL ALARM — ${alarm.wellId}: ${alarm.tag}`;
         const content = [
@@ -74,7 +95,6 @@ async function checkCriticalAlarms() {
         ].filter(Boolean).join("\n");
 
         const success = await notifyOwner({ title, content });
-        // Also send PWA browser push notification to all subscribed operators
         const pushSent = await broadcastPush({
           title: `🚨 CRITICAL: ${alarm.wellId} — ${alarm.tag}`,
           body: `${alarm.description} | Unacked ${minutesUnacked} min`,
@@ -83,14 +103,12 @@ async function checkCriticalAlarms() {
           urgency: "high",
         });
         if (success || pushSent > 0) {
-          lastNotifiedAt.set(alarm.id, now);
-          console.log(`[AlarmNotifier] Push sent: ${alarm.alarmId} (${alarm.wellId} — ${minutesUnacked}min unacked, ${pushSent} PWA subscribers)`);
+          await updateNotificationTimestamp(db, alarm.id, "lastNotifiedAt");
+          logger.info({ alarmId: alarm.alarmId, wellId: alarm.wellId, minutesUnacked, pushSent }, "Alarm push sent");
         }
       }
 
-      // ── Email + SMS escalation ─────────────────────────────────────────────
-      // Severity 4: escalate immediately (after 5-min threshold)
-      // Severity 3: escalate after 15-minute delay
+      // Email + SMS escalation
       const escalationThreshold = alarm.severity === 4
         ? NOTIFY_THRESHOLD_MS
         : HIGH_SEVERITY_ESCALATION_MS;
@@ -114,15 +132,13 @@ async function checkCriticalAlarms() {
         });
 
         if (result.email || result.sms) {
-          lastEscalatedAt.set(alarm.id, now);
-          console.log(
-            `[AlarmNotifier] Escalated ${alarm.alarmId}: email=${result.email} sms=${result.sms} (${minutesUnacked}min unacked)`
-          );
+          await updateNotificationTimestamp(db, alarm.id, "lastEscalatedAt");
+          logger.info({ alarmId: alarm.alarmId, email: result.email, sms: result.sms, minutesUnacked }, "Alarm escalated");
         }
       }
     }
   } catch (err) {
-    console.warn("[AlarmNotifier] Check failed:", err instanceof Error ? err.message : err);
+    logger.warn({ err }, "AlarmNotifier check failed");
   }
 }
 
@@ -131,9 +147,8 @@ async function checkCriticalAlarms() {
  * Runs immediately on startup, then every 60 seconds.
  */
 export function startAlarmNotifier() {
-  console.log("[AlarmNotifier] Started — checking critical alarms every 60s");
+  logger.info("AlarmNotifier started — checking critical alarms every 60s");
 
-  // Initial check after 30 seconds (allow DB to connect first)
   setTimeout(() => {
     checkCriticalAlarms();
     setInterval(checkCriticalAlarms, 60_000);

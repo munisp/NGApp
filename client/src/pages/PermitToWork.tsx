@@ -31,8 +31,8 @@ import type { LucideIcon } from "lucide-react";
 
 // ─── Types ────────────────────────────────────────────────────────────────────
 
-type PermitType = "HOT_WORK" | "CONFINED_SPACE" | "ELECTRICAL_ISOLATION" | "COLD_WORK" | "EXCAVATION" | "WORKING_AT_HEIGHT" | "RADIATION";
-type PermitStatus = "DRAFT" | "PENDING_APPROVAL" | "APPROVED" | "ACTIVE" | "SUSPENDED" | "CLOSED" | "CANCELLED";
+type PermitType = "HOT_WORK" | "CONFINED_SPACE" | "ELECTRICAL" | "COLD_WORK" | "EXCAVATION" | "WORKING_AT_HEIGHT" | "RADIATION";
+type PermitStatus = "DRAFT" | "PENDING" | "APPROVED" | "ACTIVE" | "EXPIRED" | "CLOSED" | "CANCELLED";
 type RiskLevel = "LOW" | "MEDIUM" | "HIGH" | "CRITICAL";
 
 // ─── Config maps ──────────────────────────────────────────────────────────────
@@ -40,7 +40,7 @@ type RiskLevel = "LOW" | "MEDIUM" | "HIGH" | "CRITICAL";
 const TYPE_CONFIG: Record<PermitType, { label: string; icon: LucideIcon; color: string }> = {
   HOT_WORK:             { label: "Hot Work",             icon: Flame,       color: "text-red-400" },
   CONFINED_SPACE:       { label: "Confined Space",       icon: Wind,        color: "text-orange-400" },
-  ELECTRICAL_ISOLATION: { label: "Electrical Isolation", icon: Zap,         color: "text-yellow-400" },
+  ELECTRICAL:           { label: "Electrical Isolation", icon: Zap,         color: "text-yellow-400" },
   COLD_WORK:            { label: "Cold Work",            icon: Shield,      color: "text-blue-400" },
   EXCAVATION:           { label: "Excavation",           icon: AlertTriangle, color: "text-amber-400" },
   WORKING_AT_HEIGHT:    { label: "Working at Height",    icon: AlertTriangle, color: "text-purple-400" },
@@ -49,10 +49,10 @@ const TYPE_CONFIG: Record<PermitType, { label: string; icon: LucideIcon; color: 
 
 const STATUS_CONFIG: Record<PermitStatus, { label: string; color: string; bg: string }> = {
   DRAFT:            { label: "Draft",            color: "text-gray-400",   bg: "bg-gray-400/10" },
-  PENDING_APPROVAL: { label: "Pending Approval", color: "text-yellow-400", bg: "bg-yellow-400/10" },
+  PENDING:          { label: "Pending Approval", color: "text-yellow-400", bg: "bg-yellow-400/10" },
   APPROVED:         { label: "Approved",         color: "text-blue-400",   bg: "bg-blue-400/10" },
   ACTIVE:           { label: "Active",           color: "text-green-400",  bg: "bg-green-400/10" },
-  SUSPENDED:        { label: "Suspended",        color: "text-orange-400", bg: "bg-orange-400/10" },
+  EXPIRED:          { label: "Expired",          color: "text-orange-400", bg: "bg-orange-400/10" },
   CLOSED:           { label: "Closed",           color: "text-gray-500",   bg: "bg-gray-500/10" },
   CANCELLED:        { label: "Cancelled",        color: "text-red-400",    bg: "bg-red-400/10" },
 };
@@ -335,10 +335,10 @@ function PermitDetail({ permit, onClose }: { permit: any; onClose: () => void })
       )}
 
       {/* Actions */}
-      {["PENDING_APPROVAL", "ACTIVE", "APPROVED"].includes(permit.status) && (
+      {["PENDING", "ACTIVE", "APPROVED"].includes(permit.status) && (
         <div className="border-t border-gray-700 pt-4 space-y-3">
           <div className="flex gap-2">
-            {permit.status === "PENDING_APPROVAL" && (
+            {permit.status === "PENDING" && (
               <Button
                 size="sm"
                 className="bg-green-700 hover:bg-green-600 text-white"
@@ -601,7 +601,7 @@ export default function PermitToWorkPage() {
         {/* Permit list */}
         <div className="lg:col-span-2 space-y-4">
           <div className="flex items-center gap-2 flex-wrap">
-            {["ALL", "ACTIVE", "PENDING_APPROVAL", "APPROVED", "CLOSED"].map((s) => (
+            {["ALL", "ACTIVE", "PENDING", "APPROVED", "CLOSED"].map((s) => (
               <button
                 key={s}
                 onClick={() => setStatusFilter(s)}
@@ -614,7 +614,7 @@ export default function PermitToWorkPage() {
                 {s === "ALL" ? "All" : STATUS_CONFIG[s as PermitStatus]?.label ?? s}
                 {s !== "ALL" && stats && (
                   <span className="ml-1 opacity-70">
-                    ({s === "ACTIVE" ? stats.active : s === "PENDING_APPROVAL" ? stats.pendingApproval : s === "APPROVED" ? stats.approved : stats.closed})
+                    ({s === "ACTIVE" ? stats.active : s === "PENDING" ? stats.pendingApproval : s === "APPROVED" ? stats.approved : stats.closed})
                   </span>
                 )}
               </button>

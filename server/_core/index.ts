@@ -2,6 +2,7 @@ import "dotenv/config";
 import express from "express";
 import { createServer } from "http";
 import net from "net";
+import { sql } from "drizzle-orm";
 import { createExpressMiddleware } from "@trpc/server/adapters/express";
 import { registerOAuthRoutes } from "./oauth";
 import { appRouter } from "../routers";
@@ -77,30 +78,94 @@ async function startServer() {
   // ── Idempotency keys for mutation safety ───────────────────────────────────
   app.use(idempotencyMiddleware);
 
-  // ── Health endpoint (used by load balancers and monitoring) ─────────────────
-  app.get("/health", (_req, res) => {
+  // ── Liveness probe (shallow — always returns 200 if process is alive) ────────
+  app.get("/health/live", (_req, res) => {
+    res.json({ status: "ok", uptime: Math.floor(process.uptime()) });
+  });
+
+  // ── Readiness probe (deep — checks DB + Redis connectivity) ─────────────────
+  app.get("/health/ready", async (_req, res) => {
+    const checks: Record<string, { status: string; latencyMs?: number; error?: string }> = {};
+    let allHealthy = true;
+
+    // Check PostgreSQL
+    const dbStart = Date.now();
+    try {
+      const { getDb } = await import("../db");
+      const db = await getDb();
+      if (db) {
+        await db.execute(sql`SELECT 1`);
+        checks.postgres = { status: "ok", latencyMs: Date.now() - dbStart };
+      } else {
+        checks.postgres = { status: "degraded", error: "Connection pool unavailable" };
+        allHealthy = false;
+      }
+    } catch (err: any) {
+      checks.postgres = { status: "down", latencyMs: Date.now() - dbStart, error: err.message };
+      allHealthy = false;
+    }
+
+    // Check Redis
+    const redisStart = Date.now();
+    try {
+      const { cacheGet } = await import("../cache");
+      await cacheGet<string>("__health_probe__");
+      checks.redis = { status: "ok", latencyMs: Date.now() - redisStart };
+    } catch (err: any) {
+      checks.redis = { status: "degraded", latencyMs: Date.now() - redisStart, error: err.message };
+    }
+
+    const statusCode = allHealthy ? 200 : 503;
+    res.status(statusCode).json({
+      status: allHealthy ? "ok" : "degraded",
+      version: "v55.0",
+      uptime: Math.floor(process.uptime()),
+      timestamp: new Date().toISOString(),
+      checks,
+    });
+  });
+
+  // ── Combined health endpoint (backward-compatible) ──────────────────────────
+  app.get("/health", async (_req, res) => {
+    const checks: Record<string, string> = {};
+    let overallStatus = "ok";
+
+    try {
+      const { getDb } = await import("../db");
+      const db = await getDb();
+      if (db) {
+        await db.execute(sql`SELECT 1`);
+        checks.postgres = "ok";
+      } else {
+        checks.postgres = "unavailable";
+        overallStatus = "degraded";
+      }
+    } catch {
+      checks.postgres = "down";
+      overallStatus = "degraded";
+    }
+
+    try {
+      const { cacheGet } = await import("../cache");
+      await cacheGet<string>("__health_probe__");
+      checks.redis = "ok";
+    } catch {
+      checks.redis = "unavailable";
+    }
+
     res.json({
-      status: "ok",
+      status: overallStatus,
       version: "v55.0",
       uptime: Math.floor(process.uptime()),
       timestamp: new Date().toISOString(),
       platform: "OG-RMM Platform — Production-Ready",
+      checks,
       services: {
         physicsEngine: process.env.PHYSICS_URL ?? "http://localhost:4001",
         mlService:     process.env.ML_URL      ?? "http://localhost:4003",
         influxdb:      process.env.INFLUXDB_URL ?? "http://localhost:8086",
         grafana:       process.env.GRAFANA_URL  ?? "http://localhost:3001",
       },
-      features: [
-        "coupled-multi-physics-solver",
-        "pinn-surrogate-mc-uncertainty",
-        "gltf-3d-equipment-viewer",
-        "iec62443-compliance",
-        "soc2-compliance",
-        "arabic-rtl-ui",
-        "real-time-sse-telemetry",
-        "pwa-offline-capable",
-      ],
     });
   });
 

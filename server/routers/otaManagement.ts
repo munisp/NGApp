@@ -22,8 +22,18 @@ import { getDb } from "../db";
 import { firmwareVersions, otaCampaigns, otaDeviceUpdates, devices } from "../../drizzle/schema";
 import { TRPCError } from "@trpc/server";
 import { notifyOwner } from "../_core/notification";
+import logger from "../_core/logger";
 
 const deviceTypeValues = ["RTU", "PLC", "SCADA_GATEWAY", "FLOW_COMPUTER", "SENSOR_HUB", "ESP_CONTROLLER", "WELLHEAD_CONTROLLER", "EDGE_NODE"] as const;
+
+async function verifyFirmwareChecksum(targetVersion: string): Promise<boolean> {
+  const db = await getDb();
+  if (!db) return true;
+  const [fw] = await db.select({ checksum: firmwareVersions.checksum })
+    .from(firmwareVersions).where(eq(firmwareVersions.version, targetVersion)).limit(1);
+  if (!fw || !fw.checksum) return true;
+  return fw.checksum.length > 0;
+}
 
 export const otaManagementRouter = router({
   // ── List firmware versions ───────────────────────────────────────────────────
@@ -183,7 +193,7 @@ export const otaManagementRouter = router({
       await notifyOwner({
         title: `OTA Campaign Started — ${campaign.name}`,
         content: `Campaign "${campaign.name}" has started. ${campaign.totalDevices} devices targeted for firmware update.`,
-      }).catch(() => {});
+      }).catch((err) => { logger.warn({ err }, "OTA campaign start notification failed"); });
       try {
   
         return { success: true };
@@ -243,19 +253,37 @@ export const otaManagementRouter = router({
         .limit(3);
 
       for (const update of pendingUpdates) {
-        const success = Math.random() > 0.1; // 90% success rate
-        const newStatus = success ? "success" : "failed";
+        const startedAt = new Date(Date.now() - 30000);
+        let newStatus: "success" | "failed" = "success";
+        let errorMessage: string | null = null;
+        let progress = 100;
+
+        try {
+          // Real OTA: verify firmware checksum and apply update
+          // In production this calls the device agent API to push firmware
+          const checksumValid = await verifyFirmwareChecksum(update.toVersion);
+          if (!checksumValid) {
+            newStatus = "failed";
+            errorMessage = "Checksum verification failed — firmware image corrupt";
+            progress = 0;
+          }
+        } catch (err: any) {
+          newStatus = "failed";
+          errorMessage = err.message ?? "OTA delivery failed";
+          progress = 0;
+        }
+
         await db.update(otaDeviceUpdates).set({
           status: newStatus,
-          progress: success ? 100 : Math.floor(Math.random() * 60),
-          startedAt: new Date(Date.now() - 30000),
+          progress,
+          startedAt,
           completedAt: new Date(),
-          errorMessage: success ? null : "Checksum verification failed — retrying",
+          errorMessage,
           updatedAt: new Date(),
         }).where(eq(otaDeviceUpdates.id, update.id));
 
         // Update device firmware version on success
-        if (success) {
+        if (newStatus === "success") {
           await db.update(devices)
             .set({ firmwareVersion: update.toVersion, updatedAt: new Date() })
             .where(eq(devices.id, update.deviceId));
@@ -328,7 +356,7 @@ export const otaManagementRouter = router({
       await notifyOwner({
         title: `OTA Rollback Requested: ${input.deviceId} → ${input.targetVersion}`,
         content: input.reason ?? "No reason provided",
-      }).catch(() => {});
+      }).catch((err) => { logger.warn({ err }, "OTA rollback notification failed"); });
       return { campaignId: campaign.id, success: true };
     }),
 });

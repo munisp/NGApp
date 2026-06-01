@@ -22,6 +22,7 @@ import { users, userInvitations } from "../../drizzle/schema";
 import { TRPCError } from "@trpc/server";
 import { notifyOwner } from "../_core/notification";
 import { sendInvitationEmail } from "../email";
+import logger from "../_core/logger";
 
 // Admin guard
 const adminProcedure = protectedProcedure.use(({ ctx, next }) => {
@@ -145,7 +146,7 @@ export const userOnboardingRouter = router({
         await notifyOwner({
           title: `New User Invitation — ${input.email}`,
           content: `${inviterName} invited ${input.email} as ${input.role}.\n\nInvite URL: ${inviteUrl}\nExpires: ${expiresAt.toISOString()}\nEmail sent: ${emailSent}`,
-        }).catch(() => {});
+        }).catch((err) => { logger.warn({ err }, "User invitation notification failed"); });
 
         return {
           id: invitation.id,

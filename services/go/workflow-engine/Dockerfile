@@ -3,14 +3,10 @@ WORKDIR /app
 COPY go.mod go.sum ./
 RUN go mod download
 COPY . .
-RUN CGO_ENABLED=0 GOOS=linux go build -ldflags="-w -s" -o /service ./cmd/main.go 2>/dev/null || \
-    (echo 'Building stub binary' && echo 'package main; import "fmt"; func main() { fmt.Println("workflow-engine running") }' > /tmp/stub.go && go build -o /service /tmp/stub.go)
+RUN CGO_ENABLED=0 GOOS=linux go build -o /workflow-engine ./cmd/main.go
 
 FROM alpine:3.19
-RUN apk --no-cache add ca-certificates wget tzdata
-WORKDIR /app
-COPY --from=builder /service .
-EXPOSE 8001
-HEALTHCHECK --interval=15s --timeout=5s --start-period=10s --retries=3 \
-    CMD wget -qO- http://localhost:8001/health || exit 1
-CMD ["./service"]
+RUN apk add --no-cache ca-certificates
+COPY --from=builder /workflow-engine /usr/local/bin/workflow-engine
+EXPOSE 8109
+ENTRYPOINT ["workflow-engine"]

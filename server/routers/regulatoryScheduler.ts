@@ -13,25 +13,26 @@
  */
 
 import { z } from "zod";
+import { TRPCError } from "@trpc/server";
 import { protectedProcedure, router } from "../_core/trpc";
 import { getRegulatorySchedulerStatus, triggerRegulatoryExport, updateRegulatorySchedulerConfig, getRegulatoryExportHistory } from "../regulatoryScheduler";
+import logger from "../_core/logger";
 
 export const regulatorySchedulerRouter = router({
-  /**
-   * Get current scheduler configuration.
-   */
-  getConfig: protectedProcedure.query(() => {
-    return getRegulatorySchedulerStatus();
+  getConfig: protectedProcedure.query(async () => {
+    try {
+      return getRegulatorySchedulerStatus();
+    } catch (err) {
+      logger.error({ err }, "regulatoryScheduler.getConfig failed");
+      throw new TRPCError({ code: "INTERNAL_SERVER_ERROR", message: "Failed to get scheduler config" });
+    }
   }),
 
-  /**
-   * Update scheduler configuration (cron expression, recipients, standards).
-   */
   updateConfig: protectedProcedure
     .input(
       z.object({
         enabled: z.boolean().optional(),
-        cronExpression: z.string().optional(), // e.g. "0 0 1 * *" = 1st of each month
+        cronExpression: z.string().optional(),
         recipients: z.array(z.string().email()).optional(),
         standards: z.array(
           z.enum(["IEC_61511", "HSE_OSD", "ADNOC", "KOC", "ARAMCO", "BSEE", "EPA"])
@@ -41,13 +42,15 @@ export const regulatorySchedulerRouter = router({
         includeComplianceStatus: z.boolean().optional(),
       })
     )
-    .mutation(({ input }) => {
-      return updateRegulatorySchedulerConfig(input);
+    .mutation(async ({ input }) => {
+      try {
+        return updateRegulatorySchedulerConfig(input);
+      } catch (err) {
+        logger.error({ err }, "regulatoryScheduler.updateConfig failed");
+        throw new TRPCError({ code: "INTERNAL_SERVER_ERROR", message: "Failed to update scheduler config" });
+      }
     }),
 
-  /**
-   * Manually trigger an export run immediately.
-   */
   triggerNow: protectedProcedure
     .input(
       z.object({
@@ -58,26 +61,35 @@ export const regulatorySchedulerRouter = router({
       }).optional()
     )
     .mutation(async ({ input }) => {
-      return triggerRegulatoryExport(input ?? {});
+      try {
+        return await triggerRegulatoryExport(input ?? {});
+      } catch (err) {
+        logger.error({ err }, "regulatoryScheduler.triggerNow failed");
+        throw new TRPCError({ code: "INTERNAL_SERVER_ERROR", message: "Failed to trigger regulatory export" });
+      }
     }),
 
-  /**
-   * List past export runs (last 50).
-   */
   history: protectedProcedure
     .input(
       z.object({
         limit: z.number().min(1).max(100).default(50),
       }).optional()
     )
-    .query(({ input }) => {
-      return getRegulatoryExportHistory(input?.limit ?? 50);
+    .query(async ({ input }) => {
+      try {
+        return getRegulatoryExportHistory(input?.limit ?? 50);
+      } catch (err) {
+        logger.error({ err }, "regulatoryScheduler.history failed");
+        throw new TRPCError({ code: "INTERNAL_SERVER_ERROR", message: "Failed to get export history" });
+      }
     }),
 
-  /**
-   * Get scheduler health and next scheduled run time.
-   */
-  status: protectedProcedure.query(() => {
-    return getRegulatorySchedulerStatus();
+  status: protectedProcedure.query(async () => {
+    try {
+      return getRegulatorySchedulerStatus();
+    } catch (err) {
+      logger.error({ err }, "regulatoryScheduler.status failed");
+      throw new TRPCError({ code: "INTERNAL_SERVER_ERROR", message: "Failed to get scheduler status" });
+    }
   }),
 });

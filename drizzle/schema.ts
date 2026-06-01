@@ -2396,3 +2396,48 @@ export const dataQualityViolations = pgTable("data_quality_violations", {
 });
 export type DataQualityViolation = typeof dataQualityViolations.$inferSelect;
 export type InsertDataQualityViolation = typeof dataQualityViolations.$inferInsert;
+
+// -------------------------------------------
+// BENCHMARK RUNS (persists scheduler history)
+// -------------------------------------------
+export const benchmarkRuns = pgTable("benchmark_runs", {
+  id: serial("id").primaryKey(),
+  runId: varchar("run_id", { length: 64 }).notNull().unique(),
+  status: varchar("status", { length: 16 }).notNull().default("completed"),
+  startedAt: timestamp("started_at").notNull(),
+  completedAt: timestamp("completed_at"),
+  durationMs: integer("duration_ms"),
+  metrics: json("metrics"),
+  createdAt: timestamp("created_at").defaultNow().notNull(),
+});
+export type BenchmarkRun = typeof benchmarkRuns.$inferSelect;
+
+// -------------------------------------------
+// ALARM NOTIFICATION STATE (persists throttle timestamps)
+// -------------------------------------------
+export const alarmNotificationState = pgTable("alarm_notification_state", {
+  id: serial("id").primaryKey(),
+  alarmId: integer("alarm_id").notNull().unique(),
+  lastNotifiedAt: timestamp("last_notified_at"),
+  lastEscalatedAt: timestamp("last_escalated_at"),
+  notificationCount: integer("notification_count").notNull().default(0),
+  updatedAt: timestamp("updated_at").defaultNow().notNull(),
+});
+export type AlarmNotificationState = typeof alarmNotificationState.$inferSelect;
+
+// -------------------------------------------
+// REGULATORY EXPORT HISTORY (persists scheduler runs)
+// -------------------------------------------
+export const regulatoryExportRuns = pgTable("regulatory_export_runs", {
+  id: serial("id").primaryKey(),
+  runId: varchar("run_id", { length: 64 }).notNull().unique(),
+  status: varchar("status", { length: 16 }).notNull().default("completed"),
+  standards: json("standards"),
+  recipients: json("recipients"),
+  s3Url: text("s3_url"),
+  startedAt: timestamp("started_at").notNull(),
+  completedAt: timestamp("completed_at"),
+  errorMessage: text("error_message"),
+  createdAt: timestamp("created_at").defaultNow().notNull(),
+});
+export type RegulatoryExportRun = typeof regulatoryExportRuns.$inferSelect;

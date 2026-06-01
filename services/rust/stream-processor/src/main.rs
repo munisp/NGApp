@@ -283,8 +283,27 @@ impl StreamProcessor {
     }
 }
 
+use axum::{routing::get, Json, Router};
+use std::sync::atomic::{AtomicU64, Ordering};
+
+static READING_COUNT: AtomicU64 = AtomicU64::new(0);
+static START_TIME: std::sync::OnceLock<std::time::Instant> = std::sync::OnceLock::new();
+
+async fn health_handler() -> Json<serde_json::Value> {
+    let uptime = START_TIME.get().map(|s| s.elapsed().as_secs()).unwrap_or(0);
+    Json(serde_json::json!({
+        "status": "ok",
+        "service": "stream-processor",
+        "uptime_s": uptime,
+        "readings_processed": READING_COUNT.load(Ordering::Relaxed),
+        "timestamp": Utc::now().to_rfc3339()
+    }))
+}
+
 #[tokio::main]
 async fn main() -> anyhow::Result<()> {
+    START_TIME.get_or_init(std::time::Instant::now);
+
     tracing_subscriber::fmt()
         .json()
         .with_env_filter(
@@ -299,24 +318,32 @@ async fn main() -> anyhow::Result<()> {
         .unwrap_or_else(|_| "kafka:9092".to_string());
     let alarm_url = std::env::var("ALARM_SERVICE_URL")
         .unwrap_or_else(|_| "http://alarm-manager:8084".to_string());
+    let health_port = std::env::var("HEALTH_PORT").unwrap_or_else(|_| "8111".to_string());
 
     info!(kafka = %kafka_brokers, alarm_url = %alarm_url, "configuration loaded");
 
+    // Start health endpoint
+    let health_app = Router::new().route("/health", get(health_handler));
+    let health_addr = format!("0.0.0.0:{}", health_port);
+    let listener = tokio::net::TcpListener::bind(&health_addr).await?;
+    tokio::spawn(async move {
+        info!("Health endpoint listening on {}", health_addr);
+        axum::serve(listener, health_app).await.ok();
+    });
+
     let mut processor = StreamProcessor::new();
     let mut interval = time::interval(Duration::from_millis(100));
-    let mut reading_count: u64 = 0;
 
     loop {
         interval.tick().await;
-        reading_count += 1;
+        let count = READING_COUNT.fetch_add(1, Ordering::Relaxed) + 1;
 
-        // Simulate a reading for demonstration
         // In production: consume from Kafka og.field.telemetry.raw
         let reading = SensorReading {
             well_id: "well-001".to_string(),
             sensor_id: "tp-001".to_string(),
             sensor_type: "TUBING_PRESSURE".to_string(),
-            value: 1300.0 + 50.0 * (reading_count as f64 * 0.05).sin(),
+            value: 1300.0 + 50.0 * (count as f64 * 0.05).sin(),
             unit: "PSI".to_string(),
             quality: 95,
             timestamp: Utc::now(),
@@ -333,8 +360,8 @@ async fn main() -> anyhow::Result<()> {
             );
         }
 
-        if reading_count % 1000 == 0 {
-            info!("processed {} readings", reading_count);
+        if count % 1000 == 0 {
+            info!("processed {} readings", count);
         }
     }
 }

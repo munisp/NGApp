@@ -288,5 +288,8 @@ def build_job():
 
 
 if __name__ == "__main__":
+    from health import start_health_server
+    start_health_server()
+    logger.info("Health endpoint started on port %s", os.getenv("HEALTH_PORT", "8112"))
     env = build_job()
     env.execute("OG-RMM Telemetry Rolling Average ETL")

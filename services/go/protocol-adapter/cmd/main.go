@@ -555,7 +555,8 @@ func main() {
 	go func() {
 		log.Printf("[Main] HTTP server listening on %s", cfg.ListenAddr)
 		if err := srv.ListenAndServe(); err != nil && err != http.ErrServerClosed {
-			log.Fatalf("[Main] HTTP server error: %v", err)
+			log.Printf("[Main] HTTP server error: %v", err)
+			os.Exit(1)
 		}
 	}()
 

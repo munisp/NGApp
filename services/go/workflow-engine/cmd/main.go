@@ -5,14 +5,19 @@ package main
 
 import (
 	"context"
+	"encoding/json"
 	"log/slog"
+	"net/http"
 	"os"
 	"os/signal"
 	"syscall"
+	"time"
 
 	"github.com/joho/godotenv"
 	"github.com/og-rmm/workflow-engine/internal/security"
 )
+
+var startTime = time.Now()
 
 func main() {
 	// Load .env for local development
@@ -32,6 +37,7 @@ func main() {
 	k8sToken := getEnv("K8S_SERVICE_ACCOUNT_TOKEN", "")
 	platformAPIURL := getEnv("PLATFORM_API_URL", "http://og-rmm-platform:3000")
 	platformAPIKey := getEnv("PLATFORM_API_KEY", "")
+	healthPort := getEnv("HEALTH_PORT", "8109")
 
 	slog.Info("Starting OG-RMM Workflow Engine",
 		"temporal", temporalHostPort,
@@ -57,15 +63,36 @@ func main() {
 	}
 	slog.Info("Security workflow worker started", "taskQueue", security.TaskQueue)
 
+	// Health endpoint for k8s probes
+	mux := http.NewServeMux()
+	mux.HandleFunc("GET /health", func(wr http.ResponseWriter, r *http.Request) {
+		wr.Header().Set("Content-Type", "application/json")
+		json.NewEncoder(wr).Encode(map[string]interface{}{
+			"status":    "ok",
+			"service":   "workflow-engine",
+			"uptime_s":  int(time.Since(startTime).Seconds()),
+			"temporal":  temporalHostPort,
+			"timestamp": time.Now().UTC().Format(time.RFC3339),
+		})
+	})
+
+	srv := &http.Server{Addr: ":" + healthPort, Handler: mux}
+	go func() {
+		slog.Info("Health endpoint listening", "port", healthPort)
+		if err := srv.ListenAndServe(); err != nil && err != http.ErrServerClosed {
+			slog.Error("Health server error", "err", err)
+		}
+	}()
+
 	// Graceful shutdown
 	quit := make(chan os.Signal, 1)
 	signal.Notify(quit, syscall.SIGINT, syscall.SIGTERM)
 	<-quit
 
 	slog.Info("Shutting down workflow engine...")
-	ctx, cancel := context.WithTimeout(context.Background(), 30*1000000000) // 30s
+	ctx, cancel := context.WithTimeout(context.Background(), 30*time.Second)
 	defer cancel()
-	_ = ctx
+	_ = srv.Shutdown(ctx)
 	w.Stop()
 	slog.Info("Workflow engine stopped")
 }

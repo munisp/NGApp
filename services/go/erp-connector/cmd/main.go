@@ -16,6 +16,8 @@ import (
 	"log"
 	"net/http"
 	"os"
+	"os/signal"
+	"syscall"
 	"time"
 
 	"og-rmm-platform/services/go/erp-connector/internal/oracle"
@@ -74,9 +76,24 @@ func main() {
 	log.Printf("[ERP-Connector] SAP: %s | Oracle: %s",
 		os.Getenv("SAP_BASE_URL"), os.Getenv("ORACLE_BASE_URL"))
 
-	if err := server.ListenAndServe(); err != nil {
-		log.Fatalf("[ERP-Connector] Fatal: %v", err)
+	// Graceful shutdown on SIGINT/SIGTERM
+	go func() {
+		if err := server.ListenAndServe(); err != nil && err != http.ErrServerClosed {
+			log.Printf("[ERP-Connector] Server error: %v", err)
+			os.Exit(1)
+		}
+	}()
+
+	quit := make(chan os.Signal, 1)
+	signal.Notify(quit, syscall.SIGINT, syscall.SIGTERM)
+	<-quit
+	log.Println("[ERP-Connector] Shutting down...")
+	ctx, cancel := context.WithTimeout(context.Background(), 30*time.Second)
+	defer cancel()
+	if err := server.Shutdown(ctx); err != nil {
+		log.Printf("[ERP-Connector] Shutdown error: %v", err)
 	}
+	log.Println("[ERP-Connector] Stopped")
 }
 
 func loggingMiddleware(next http.Handler) http.Handler {

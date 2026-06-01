@@ -40,12 +40,12 @@ export const featureFlagsRouter = router({
         const tenants = flag.tenantIds.split(",").map((t) => t.trim());
         if (!tenants.includes(input.tenantId)) return { enabled: false, reason: "tenant_not_targeted" };
       }
-      // Percentage rollout
+      // Percentage rollout (deterministic hash based on tenantId + flagKey)
       if (flag.percentage !== null && flag.percentage < 100) {
-        const hash = input.tenantId
-          ? input.tenantId.split("").reduce((a, c) => a + c.charCodeAt(0), 0) % 100
-          : Math.floor(Math.random() * 100);
-        if (hash >= flag.percentage) return { enabled: false, reason: "percentage_excluded" };
+        const seed = `${input.tenantId ?? "anonymous"}:${flag.flagKey}`;
+        const hash = seed.split("").reduce((a, c) => ((a << 5) - a + c.charCodeAt(0)) | 0, 0);
+        const bucket = Math.abs(hash) % 100;
+        if (bucket >= flag.percentage) return { enabled: false, reason: "percentage_excluded" };
       }
       return { enabled: true, reason: "active" };
     }),

@@ -364,6 +364,35 @@ async fn main() -> Result<()> {
         }
     }
 
+    // Health endpoint for k8s probes
+    {
+        let health_port = std::env::var("HEALTH_PORT").unwrap_or_else(|_| "8110".to_string());
+        let well_id = cfg.well_id.clone();
+        tasks.push(tokio::spawn(async move {
+            use std::net::SocketAddr;
+            let addr: SocketAddr = format!("0.0.0.0:{}", health_port).parse().unwrap();
+            let listener = match tokio::net::TcpListener::bind(addr).await {
+                Ok(l) => l,
+                Err(e) => { error!("Health server bind failed: {}", e); return; }
+            };
+            info!("Health endpoint listening on {}", addr);
+            loop {
+                if let Ok((mut stream, _)) = listener.accept().await {
+                    use tokio::io::AsyncWriteExt;
+                    let body = format!(
+                        r#"{{"status":"ok","service":"edge-agent","well_id":"{}","timestamp":"{}"}}"#,
+                        well_id, chrono::Utc::now().to_rfc3339()
+                    );
+                    let resp = format!(
+                        "HTTP/1.1 200 OK\r\nContent-Type: application/json\r\nContent-Length: {}\r\n\r\n{}",
+                        body.len(), body
+                    );
+                    let _ = stream.write_all(resp.as_bytes()).await;
+                }
+            }
+        }));
+    }
+
     tokio::select! {
         _ = tokio::signal::ctrl_c() => info!("Shutdown signal received"),
     }

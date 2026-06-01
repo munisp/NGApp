@@ -8,42 +8,50 @@
  *
  * Schedule: 02:00 UTC daily (configurable via BENCHMARK_CRON_HOUR env var)
  * Alert threshold: 70% (configurable via BENCHMARK_ALERT_THRESHOLD env var)
+ *
+ * History is persisted to PostgreSQL (benchmark_runs table) to survive restarts.
  */
 
 import { runBenchmarkSuite, type BenchmarkRun } from "./influxBenchmark";
 import { notifyOwner } from "./_core/notification";
+import { getDb } from "./db";
+import { benchmarkRuns } from "../drizzle/schema";
+import { desc } from "drizzle-orm";
+import { nanoid } from "nanoid";
+import logger from "./_core/logger";
 
 // ─── CONFIG ───────────────────────────────────────────────────────────────────
 
 const ALERT_THRESHOLD = parseInt(process.env.BENCHMARK_ALERT_THRESHOLD ?? "70", 10);
-const CRON_HOUR_UTC = parseInt(process.env.BENCHMARK_CRON_HOUR ?? "2", 10); // 02:00 UTC
-
-// In-memory store for the last 30 nightly runs (no DB dependency)
-const nightlyHistory: BenchmarkRun[] = [];
-const MAX_HISTORY = 30;
+const CRON_HOUR_UTC = parseInt(process.env.BENCHMARK_CRON_HOUR ?? "2", 10);
 
 // ─── BENCHMARK RUNNER ─────────────────────────────────────────────────────────
 
-async function runNightlyBenchmark() {
-  const startedAt = new Date().toISOString();
-  console.log(`[BenchmarkScheduler] Starting nightly benchmark run at ${startedAt}`);
+async function runNightlyBenchmark(): Promise<BenchmarkRun | null> {
+  const startedAt = new Date();
+  logger.info({ startedAt: startedAt.toISOString() }, "Starting nightly benchmark run");
 
   try {
     const result = await runBenchmarkSuite();
 
-    // Persist to in-memory history
-    nightlyHistory.unshift(result);
-    if (nightlyHistory.length > MAX_HISTORY) nightlyHistory.pop();
+    // Persist to PostgreSQL
+    const db = await getDb();
+    if (db) {
+      await db.insert(benchmarkRuns).values({
+        runId: `BENCH-${nanoid(8)}`,
+        status: "completed",
+        startedAt,
+        completedAt: new Date(),
+        durationMs: Date.now() - startedAt.getTime(),
+        metrics: result.summary as any,
+      }).onConflictDoNothing();
+    }
 
     const score = result.summary.overallScore;
     const backend = result.backend;
 
-    console.log(
-      `[BenchmarkScheduler] Nightly run complete — score: ${score}% | backend: ${backend} | ` +
-      `exceeds: ${result.summary.exceeds} | meets: ${result.summary.meets} | below: ${result.summary.below}`
-    );
+    logger.info({ score, backend, exceeds: result.summary.exceeds, meets: result.summary.meets, below: result.summary.below }, "Nightly benchmark complete");
 
-    // ── Alert owner if score drops below threshold ─────────────────────────
     if (score < ALERT_THRESHOLD) {
       const belowTargetTests = result.results
         .filter(r => r.status === "below")
@@ -78,38 +86,40 @@ async function runNightlyBenchmark() {
       ].join("\n");
 
       try {
-        const sent = await notifyOwner({ title, content });
-        if (sent) {
-          console.log(`[BenchmarkScheduler] Owner alert sent — score ${score}% below ${ALERT_THRESHOLD}% threshold`);
-        } else {
-          console.warn(`[BenchmarkScheduler] Owner alert failed to send (notification service unavailable)`);
-        }
+        await notifyOwner({ title, content });
+        logger.info({ score, threshold: ALERT_THRESHOLD }, "Owner alert sent — benchmark below threshold");
       } catch (notifyErr) {
-        // Don't let notification failure crash the scheduler
-        console.warn(`[BenchmarkScheduler] Owner alert error:`, notifyErr instanceof Error ? notifyErr.message : notifyErr);
+        logger.warn({ err: notifyErr }, "Owner alert failed to send");
       }
-    } else {
-      console.log(`[BenchmarkScheduler] Score ${score}% is above threshold ${ALERT_THRESHOLD}% — no alert needed`);
     }
 
     return result;
   } catch (err) {
-    console.error(`[BenchmarkScheduler] Nightly benchmark failed:`, err instanceof Error ? err.message : err);
+    logger.error({ err }, "Nightly benchmark failed");
+
+    const db = await getDb();
+    if (db) {
+      await db.insert(benchmarkRuns).values({
+        runId: `BENCH-${nanoid(8)}`,
+        status: "failed",
+        startedAt,
+        completedAt: new Date(),
+        durationMs: Date.now() - startedAt.getTime(),
+        metrics: { error: err instanceof Error ? err.message : String(err) },
+      }).onConflictDoNothing();
+    }
+
     return null;
   }
 }
 
 // ─── SCHEDULER ────────────────────────────────────────────────────────────────
 
-/**
- * Calculate milliseconds until the next scheduled run at CRON_HOUR_UTC:00 UTC.
- */
 function msUntilNextRun(): number {
   const now = new Date();
   const next = new Date(now);
   next.setUTCHours(CRON_HOUR_UTC, 0, 0, 0);
 
-  // If the target time has already passed today, schedule for tomorrow
   if (next.getTime() <= now.getTime()) {
     next.setUTCDate(next.getUTCDate() + 1);
   }
@@ -122,52 +132,37 @@ let schedulerTimer: ReturnType<typeof setTimeout> | null = null;
 function scheduleNextRun() {
   const delay = msUntilNextRun();
   const nextRunAt = new Date(Date.now() + delay).toISOString();
-  console.log(`[BenchmarkScheduler] Next nightly run scheduled at ${nextRunAt} (in ${Math.round(delay / 60000)} minutes)`);
+  logger.info({ nextRunAt, delayMin: Math.round(delay / 60000) }, "Next nightly benchmark scheduled");
 
   schedulerTimer = setTimeout(async () => {
     await runNightlyBenchmark();
-    scheduleNextRun(); // Re-schedule for the next day
+    scheduleNextRun();
   }, delay);
 
-  // Prevent the timer from blocking process exit
   if (schedulerTimer.unref) schedulerTimer.unref();
 }
 
 // ─── PUBLIC API ───────────────────────────────────────────────────────────────
 
-/**
- * Start the nightly benchmark scheduler.
- * Called once from server/_core/index.ts on startup.
- */
 export function startBenchmarkScheduler() {
-  console.log(
-    `[BenchmarkScheduler] Started — nightly runs at ${CRON_HOUR_UTC.toString().padStart(2, "0")}:00 UTC | ` +
-    `alert threshold: ${ALERT_THRESHOLD}%`
-  );
+  logger.info({ cronHourUtc: CRON_HOUR_UTC, alertThreshold: ALERT_THRESHOLD }, "BenchmarkScheduler started");
   scheduleNextRun();
 }
 
-/**
- * Stop the scheduler (useful for graceful shutdown or tests).
- */
 export function stopBenchmarkScheduler() {
   if (schedulerTimer) {
     clearTimeout(schedulerTimer);
     schedulerTimer = null;
-    console.log("[BenchmarkScheduler] Stopped");
+    logger.info("BenchmarkScheduler stopped");
   }
 }
 
-/**
- * Get the in-memory nightly benchmark history.
- */
-export function getNightlyBenchmarkHistory(limit = 10): BenchmarkRun[] {
-  return nightlyHistory.slice(0, limit);
+export async function getNightlyBenchmarkHistory(limit = 10) {
+  const db = await getDb();
+  if (!db) return [];
+  return db.select().from(benchmarkRuns).orderBy(desc(benchmarkRuns.createdAt)).limit(limit);
 }
 
-/**
- * Trigger a benchmark run immediately (for testing or manual trigger from UI).
- */
 export async function triggerBenchmarkNow(): Promise<BenchmarkRun | null> {
   return runNightlyBenchmark();
 }
