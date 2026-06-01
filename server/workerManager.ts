@@ -21,7 +21,7 @@
  *   - Is auto-restarted on crash (with exponential backoff)
  */
 
-import { spawn, ChildProcess } from "child_process";
+import { spawn, execSync, ChildProcess } from "child_process";
 import path from "path";
 import { fileURLToPath } from "url";
 import { getDatabaseUrl } from "./config";
@@ -1544,7 +1544,7 @@ function spawnWorker(def: WorkerDef, restartCount = 0) {
 function bootstrapPythonDeps() {
   const requirementsPath = path.join(PYTHON_DIR, "requirements.txt");
   try {
-    const { execSync } = require("child_process");
+    // execSync imported at module top level
     const baseEnv: Record<string, string> = {};
     for (const [k, v] of Object.entries(process.env)) {
       if (v !== undefined && k !== "PYTHONHOME" && k !== "PYTHONPATH") baseEnv[k] = v;
@@ -1552,7 +1552,7 @@ function bootstrapPythonDeps() {
     execSync(`pip3 install -r "${requirementsPath}" --quiet 2>&1`, { env: baseEnv, stdio: "pipe" });
     logger.info("[Workers] Python dependencies installed from requirements.txt");
   } catch (e: unknown) {
-    const msg = e instanceof Error ? (e instanceof Error ? e.message : String(e)) : String(e);
+    const msg = e instanceof Error ? e.message : String(e);
     logger.warn({ err: msg.slice(0, 200) }, "[Workers] pip install warning (non-fatal)");
   }
 }

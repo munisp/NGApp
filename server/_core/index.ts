@@ -13,7 +13,7 @@ const otelSdk = new NodeSDK({
   }),
   instrumentations: [getNodeAutoInstrumentations({ "@opentelemetry/instrumentation-fs": { enabled: false } })],
 });
-try { otelSdk.start(); } catch (e) { /* non-fatal: tracing unavailable */ }
+try { otelSdk.start(); } catch (e) { console.warn("[OTel] Tracing unavailable:", e instanceof Error ? e.message : String(e)); }
 
 import express from "express";
 import { createServer } from "http";
@@ -103,29 +103,29 @@ async function findAvailablePort(startPort: number = 3000): Promise<number> {
 
 /// IPv6-safe IP key helper
 const safeIpKey = (req: import("express").Request) => ipKeyGenerator(req.ip ?? req.socket.remoteAddress ?? "unknown");
-/** General API rate limit: 200 requests per minute per IP */
+/** General API rate limit: configurable per IP */
 const apiLimiter = rateLimit({
-  windowMs: 60 * 1000,
-  max: 200,
+  windowMs: parseInt(process.env.RATE_LIMIT_API_WINDOW_MS ?? "60000", 10),
+  max: parseInt(process.env.RATE_LIMIT_API_MAX ?? "200", 10),
   standardHeaders: "draft-7",
   legacyHeaders: false,
   message: { error: "Too many requests — please slow down." },
   keyGenerator: safeIpKey,
   skip: (req) => process.env.NODE_ENV === "development" && req.ip === "::1",
 });
-/** Strict auth rate limit: 20 requests per 15 minutes per IP (brute-force protection) */
+/** Strict auth rate limit: configurable per IP (brute-force protection) */
 const authLimiter = rateLimit({
-  windowMs: 15 * 60 * 1000,
-  max: 20,
+  windowMs: parseInt(process.env.RATE_LIMIT_AUTH_WINDOW_MS ?? "900000", 10),
+  max: parseInt(process.env.RATE_LIMIT_AUTH_MAX ?? "20", 10),
   standardHeaders: "draft-7",
   legacyHeaders: false,
   message: { error: "Too many authentication attempts — please try again later." },
   keyGenerator: safeIpKey,
 });
-/** Worker event relay: 500 requests per minute (internal workers) */
+/** Worker event relay: configurable per minute (internal workers) */
 const workerLimiter = rateLimit({
-  windowMs: 60 * 1000,
-  max: 500,
+  windowMs: parseInt(process.env.RATE_LIMIT_WORKER_WINDOW_MS ?? "60000", 10),
+  max: parseInt(process.env.RATE_LIMIT_WORKER_MAX ?? "500", 10),
   standardHeaders: "draft-7",
   legacyHeaders: false,
   keyGenerator: safeIpKey,
@@ -260,15 +260,42 @@ async function startServer() {
   app.use(ransomwareProtection);              // Bulk-export / ransomware detection
 
   // ── Health & Readiness Probes ─────────────────────────────────────────────
-  // /api/health — liveness probe (always returns 200 if process is alive)
-  app.get("/api/health", (_req, res) => {
+  // /api/health — deep liveness probe (checks DB, Redis, workers)
+  app.get("/api/health", async (_req, res) => {
+    const uptimeSec = Math.floor((Date.now() - STARTUP_TIME) / 1000);
+    let dbOk = false;
+    try {
+      const pool = getPool();
+      if (pool) { await pool.query("SELECT 1"); dbOk = true; }
+    } catch (e) { logger.debug({ err: e instanceof Error ? e.message : String(e) }, "[Health] DB check failed"); }
+
+    const workers = getWorkerStatuses() as Array<{ status: string; [key: string]: unknown }>;
+    const runningWorkers = workers.filter(w => w.status === "running").length;
+
     res.json({
-      status: "ok",
+      status: dbOk ? "ok" : "degraded",
       service: "ndsep-api",
       version: process.env.npm_package_version ?? "3.0.0",
-      uptime: Math.floor((Date.now() - STARTUP_TIME) / 1000),
+      uptime: uptimeSec,
+      checks: {
+        database: dbOk ? "ok" : "unavailable",
+        workers: `${runningWorkers}/${workers.length} running`,
+      },
       timestamp: new Date().toISOString(),
     });
+  });
+
+  // /api/startup — startup probe (returns 200 only when DB is connected)
+  app.get("/api/startup", async (_req, res) => {
+    try {
+      const pool = getPool();
+      if (!pool) { res.status(503).json({ status: "starting", reason: "DB pool not initialized" }); return; }
+      await pool.query("SELECT 1");
+      res.json({ status: "started", timestamp: new Date().toISOString() });
+    } catch (e) {
+      logger.debug({ err: e instanceof Error ? e.message : String(e) }, "[Startup] Not ready yet");
+      res.status(503).json({ status: "starting", reason: "DB not reachable" });
+    }
   });
 
   // /api/grpc/health — gRPC service health (all 4 proto services)
@@ -359,7 +386,7 @@ async function startServer() {
         await pool.query("SELECT 1");
         dbOk = true;
       }
-    } catch { /* db not ready */ }
+    } catch (e) { logger.debug({ err: e instanceof Error ? e.message : String(e) }, "[Ready] DB health check failed"); }
 
     let redisOk = false;
     try {
@@ -375,7 +402,7 @@ async function startServer() {
         const val = await redis.cacheGet(testKey);
         redisOk = val === "1";
       }
-    } catch { /* redis genuinely not available */ }
+    } catch (e) { logger.debug({ err: e instanceof Error ? e.message : String(e) }, "[Ready] Redis health check failed"); }
 
     const workers = getWorkerStatuses() as Array<{ status: string; [key: string]: unknown }>;
     const runningWorkers = workers.filter(w => w.status === "running").length;
@@ -418,7 +445,7 @@ async function startServer() {
         "# TYPE ndsep_circuit_breaker_failures gauge",
         ...cbStates.map(cb => `ndsep_circuit_breaker_failures{service="${cb.name}"} ${cb.failures}`),
       ];
-    } catch { /* circuit breakers not yet initialized */ }
+    } catch (e) { logger.debug({ err: e instanceof Error ? e.message : String(e) }, "[Metrics] Circuit breaker metrics unavailable"); }
 
     const mem = process.memoryUsage();
     const lines = [
@@ -479,7 +506,7 @@ async function startServer() {
         "# TYPE ndsep_grpc_circuit_trips_total counter",
         `ndsep_grpc_circuit_trips_total ${grpc.circuitBreakerTrips}`,
       );
-    } catch { /* gRPC module not yet loaded */ }
+    } catch (e) { logger.debug({ err: e instanceof Error ? e.message : String(e) }, "[Metrics] gRPC metrics unavailable"); }
 
     res.setHeader("Content-Type", "text/plain; version=0.0.4");
     res.send(lines.join("\n") + "\n");
@@ -715,7 +742,7 @@ async function startServer() {
         if (!payload) throw new Error("Invalid session");
         const rows = await pool.query("SELECT id FROM users WHERE open_id = $1", [payload.openId]);
         userId = rows.rows[0]?.id ?? null;
-      } catch { return res.status(401).json({ error: "Invalid session" }); }
+      } catch (e) { logger.debug({ err: e instanceof Error ? e.message : String(e) }, "[evidence-upload] Session verification failed"); return res.status(401).json({ error: "Invalid session" }); }
       if (!userId) return res.status(401).json({ error: "User not found" });
       const file = req.file;
       if (!file) return res.status(400).json({ error: "No file provided" });
@@ -754,23 +781,15 @@ async function startServer() {
         } else {
           res.write(`: heartbeat ${Date.now()}\n\n`);
         }
-      } catch { res.write(`: error\n\n`); }
+      } catch (e) { logger.debug({ err: e instanceof Error ? e.message : String(e) }, "[BGP] SSE update failed"); res.write(`: error\n\n`); }
     };
     const interval = setInterval(sendUpdate, 5000);
     sendUpdate();
     req.on("close", () => clearInterval(interval));
   });
 
-  // ── Middleware Health Dashboard ────────────────────────────────────────────
-  app.get("/api/middleware/health", requireAdmin, async (_req, res) => {
-    try {
-      const { getAllMiddlewareHealth } = await import("../middleware/healthIntegration");
-      const health = await getAllMiddlewareHealth();
-      res.json(health);
-    } catch (err: unknown) {
-      res.status(500).json({ error: (err instanceof Error ? err.message : String(err)) ?? "Health check failed" });
-    }
-  });
+  // NOTE: /api/middleware/health already registered above (~line 288) with requireSession.
+  // Duplicate registration removed to avoid route shadowing.
 
   // ── Security Dashboard ───────────────────────────────────────────────────
   app.get("/api/security/status", requireAdmin, async (_req, res) => {
@@ -1346,6 +1365,7 @@ async function startServer() {
     stopInvoiceOverdueScheduler();
     stopNationalReportScheduler();
     stopSlaBreachScheduler();
+    try { const { stopSessionCleanup } = await import("../security/sessionHardening"); stopSessionCleanup(); } catch { /* ok */ }
     logger.info("[Shutdown] All schedulers and workers stopped");
 
     // 3. Disconnect Kafka (flush pending messages)
@@ -1353,14 +1373,14 @@ async function startServer() {
       const { disconnectKafka } = await import("../kafka");
       await disconnectKafka();
       logger.info("[Shutdown] Kafka producer disconnected");
-    } catch { /* kafka not available */ }
+    } catch (e) { logger.debug({ err: e instanceof Error ? e.message : String(e) }, "[Shutdown] Kafka disconnect skipped"); }
 
     // 4. Close read replica pool
     await closeReadReplica();
     logger.info("[Shutdown] Read replica pool closed");
 
     // 5. Shutdown OTel SDK (flush pending spans)
-    try { await otelSdk.shutdown(); logger.info("[Shutdown] OTel SDK shut down"); } catch { /* non-fatal */ }
+    try { await otelSdk.shutdown(); logger.info("[Shutdown] OTel SDK shut down"); } catch (e) { logger.debug({ err: e instanceof Error ? e.message : String(e) }, "[Shutdown] OTel shutdown skipped"); }
 
     // 6. Close DB pool last (after all in-flight queries complete)
     await closeDb();

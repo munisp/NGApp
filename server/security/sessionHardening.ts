@@ -19,7 +19,7 @@ const logger = pino({ name: "ndsep-session" });
 // ── CSRF Protection (Redis-backed with in-memory fallback) ─────────────────
 
 const csrfMemory = new Map<string, { token: string; createdAt: number }>();
-const CSRF_TOKEN_TTL = 3600_000; // 1 hour
+const CSRF_TOKEN_TTL = parseInt(process.env.CSRF_TOKEN_TTL_MS ?? "3600000", 10); // default 1 hour
 const CSRF_REDIS_PREFIX = "ndsep:csrf:";
 
 export function generateCsrfToken(sessionId: string): string {
@@ -27,7 +27,7 @@ export function generateCsrfToken(sessionId: string): string {
   const data = { token, createdAt: Date.now() };
   csrfMemory.set(sessionId, data);
   if (redisConnected) {
-    cacheSet(`${CSRF_REDIS_PREFIX}${sessionId}`, JSON.stringify(data), Math.ceil(CSRF_TOKEN_TTL / 1000)).catch(() => {});
+    cacheSet(`${CSRF_REDIS_PREFIX}${sessionId}`, JSON.stringify(data), Math.ceil(CSRF_TOKEN_TTL / 1000)).catch((e) => logger.debug({ err: e instanceof Error ? e.message : String(e) }, "[CSRF] Redis write failed"));
   }
   return token;
 }
@@ -70,7 +70,7 @@ export async function csrfProtection(req: Request, res: Response, next: NextFunc
     try {
       const raw = await cacheGet(`${CSRF_REDIS_PREFIX}${sessionId}`);
       if (raw) stored = JSON.parse(raw);
-    } catch { /* fallback to memory */ }
+    } catch (e) { logger.debug({ err: e instanceof Error ? e.message : String(e) }, "[CSRF] Redis read failed — using memory fallback"); }
   }
   if (!stored || stored.token !== csrfToken || Date.now() - stored.createdAt > CSRF_TOKEN_TTL) {
     res.status(403).json({ error: "Invalid or expired CSRF token" });
@@ -83,7 +83,7 @@ export async function csrfProtection(req: Request, res: Response, next: NextFunc
 // ── Session Idle Timeout (Redis-backed with in-memory fallback) ────────────
 
 const sessionActivityMemory = new Map<string, number>();
-const SESSION_IDLE_TIMEOUT_MS = 30 * 60_000; // 30 minutes
+const SESSION_IDLE_TIMEOUT_MS = parseInt(process.env.SESSION_IDLE_TIMEOUT_MS ?? "1800000", 10); // default 30 minutes
 const SESSION_REDIS_PREFIX = "ndsep:session_activity:";
 
 export function sessionIdleCheck(req: Request, res: Response, next: NextFunction): void {
@@ -97,8 +97,8 @@ export function sessionIdleCheck(req: Request, res: Response, next: NextFunction
     sessionActivityMemory.delete(sessionId);
     csrfMemory.delete(sessionId);
     if (redisConnected) {
-      cacheDel(`${SESSION_REDIS_PREFIX}${sessionId}`).catch(() => {});
-      cacheDel(`${CSRF_REDIS_PREFIX}${sessionId}`).catch(() => {});
+      cacheDel(`${SESSION_REDIS_PREFIX}${sessionId}`).catch((e) => logger.debug({ err: e instanceof Error ? e.message : String(e) }, "[Session] Redis cleanup failed"));
+      cacheDel(`${CSRF_REDIS_PREFIX}${sessionId}`).catch((e) => logger.debug({ err: e instanceof Error ? e.message : String(e) }, "[Session] Redis cleanup failed"));
     }
     res.clearCookie("ndsep_session");
     res.status(401).json({ error: "Session expired due to inactivity" });
@@ -107,7 +107,7 @@ export function sessionIdleCheck(req: Request, res: Response, next: NextFunction
 
   sessionActivityMemory.set(sessionId, now);
   if (redisConnected) {
-    cacheSet(`${SESSION_REDIS_PREFIX}${sessionId}`, String(now), Math.ceil(SESSION_IDLE_TIMEOUT_MS / 1000)).catch(() => {});
+    cacheSet(`${SESSION_REDIS_PREFIX}${sessionId}`, String(now), Math.ceil(SESSION_IDLE_TIMEOUT_MS / 1000)).catch((e) => logger.debug({ err: e instanceof Error ? e.message : String(e) }, "[Session] Redis activity write failed"));
   }
   next();
 }
@@ -115,7 +115,7 @@ export function sessionIdleCheck(req: Request, res: Response, next: NextFunction
 // ── Concurrent Session Limiter (in-memory — bounded per-instance) ──────────
 
 const userSessions = new Map<number, Set<string>>();
-const MAX_CONCURRENT_SESSIONS = 5;
+const MAX_CONCURRENT_SESSIONS = parseInt(process.env.MAX_CONCURRENT_SESSIONS ?? "5", 10);
 
 export function trackSession(userId: number, sessionId: string): { allowed: boolean; activeSessions: number } {
   const sessions = userSessions.get(userId) ?? new Set();
@@ -145,8 +145,8 @@ export function removeSession(userId: number, sessionId: string): void {
   sessionActivityMemory.delete(sessionId);
   csrfMemory.delete(sessionId);
   if (redisConnected) {
-    cacheDel(`${SESSION_REDIS_PREFIX}${sessionId}`).catch(() => {});
-    cacheDel(`${CSRF_REDIS_PREFIX}${sessionId}`).catch(() => {});
+    cacheDel(`${SESSION_REDIS_PREFIX}${sessionId}`).catch((e) => logger.debug({ err: e instanceof Error ? e.message : String(e) }, "[Session] Redis cleanup failed"));
+    cacheDel(`${CSRF_REDIS_PREFIX}${sessionId}`).catch((e) => logger.debug({ err: e instanceof Error ? e.message : String(e) }, "[Session] Redis cleanup failed"));
   }
 }
 
@@ -172,12 +172,26 @@ export function enforceCookieSecurity(_req: Request, res: Response, next: NextFu
 
 // ── Periodic cleanup ───────────────────────────────────────────────────────
 
-setInterval(() => {
+let cleanupInterval: ReturnType<typeof setInterval> | null = setInterval(() => {
   const now = Date.now();
+  let csrfPurged = 0;
+  let sessionPurged = 0;
   Array.from(csrfMemory.entries()).forEach(([id, data]) => {
-    if (now - data.createdAt > CSRF_TOKEN_TTL * 2) csrfMemory.delete(id);
+    if (now - data.createdAt > CSRF_TOKEN_TTL * 2) { csrfMemory.delete(id); csrfPurged++; }
   });
   Array.from(sessionActivityMemory.entries()).forEach(([id, lastActivity]) => {
-    if (now - lastActivity > SESSION_IDLE_TIMEOUT_MS * 2) sessionActivityMemory.delete(id);
+    if (now - lastActivity > SESSION_IDLE_TIMEOUT_MS * 2) { sessionActivityMemory.delete(id); sessionPurged++; }
   });
+  if (csrfPurged > 0 || sessionPurged > 0) {
+    logger.debug({ csrfPurged, sessionPurged }, "[Session] Periodic cleanup completed");
+  }
 }, 300_000); // Every 5 minutes
+
+/** Stop the periodic cleanup interval (call on graceful shutdown) */
+export function stopSessionCleanup(): void {
+  if (cleanupInterval) {
+    clearInterval(cleanupInterval);
+    cleanupInterval = null;
+    logger.info("[Session] Periodic cleanup stopped");
+  }
+}

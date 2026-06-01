@@ -271,8 +271,8 @@ export function requestIdMiddleware(req: Request, res: Response, next: NextFunct
  * Closes security finding SEC-026: "No Real-Time Alerting for Repeated Auth Failures".
  */
 const authFailureStore = new Map<string, { count: number; firstSeen: number; alerted: boolean }>();
-const AUTH_FAILURE_WINDOW_MS = 5 * 60 * 1000; // 5 minutes
-const AUTH_FAILURE_THRESHOLD = 10;
+const AUTH_FAILURE_WINDOW_MS = parseInt(process.env.AUTH_FAILURE_WINDOW_MS ?? "300000", 10); // default 5 minutes
+const AUTH_FAILURE_THRESHOLD = parseInt(process.env.AUTH_FAILURE_THRESHOLD ?? "10", 10);
 
 export function authFailureTracker(req: Request, res: Response, next: NextFunction): void {
   res.on("finish", () => {

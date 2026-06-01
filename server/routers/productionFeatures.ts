@@ -362,7 +362,10 @@ export const crossSectorSharingRouter = router({
   getSharedData: protectedProcedure
     .input(z.object({ sourceSector: z.string(), targetSector: z.string(), dataType: z.string(), limit: z.number().int().min(1).max(100).default(20) }))
     .query(async ({ input }) => {
-      const rows = await exec(`SELECT csd.*, o.name as org_name, o.sector FROM cross_sector_data_shares csd LEFT JOIN organizations o ON csd.organization_id = o.id WHERE csd.source_sector = '${input.sourceSector}' AND csd.target_sector = '${input.targetSector}' AND csd.data_type = '${input.dataType}' ORDER BY csd.requested_at DESC LIMIT ${input.limit}`);
+      const rows = await exec(
+        `SELECT csd.*, o.name as org_name, o.sector FROM cross_sector_data_shares csd LEFT JOIN organizations o ON csd.organization_id = o.id WHERE csd.source_sector = $1 AND csd.target_sector = $2 AND csd.data_type = $3 ORDER BY csd.requested_at DESC LIMIT $4`,
+        [input.sourceSector, input.targetSector, input.dataType, input.limit]
+      );
       return rows;
     }),
 
@@ -370,8 +373,11 @@ export const crossSectorSharingRouter = router({
     .input(z.object({ orgId: z.number(), sourceSector: z.string(), targetSector: z.string(), dataType: z.string(), justification: z.string(), dataElements: z.array(z.string()) }))
     .mutation(async ({ input, ctx }) => {
       const shareId = `XSD-${Date.now()}-${input.orgId}`;
-      const elementsJson = JSON.stringify(input.dataElements).replace(/'/g, "''");
-      await exec(`INSERT INTO cross_sector_data_shares (share_id, organization_id, source_sector, target_sector, data_type, justification, data_elements, requested_by, requested_at, status) VALUES ('${shareId}', ${input.orgId}, '${input.sourceSector}', '${input.targetSector}', '${input.dataType}', '${input.justification}', '${elementsJson}', ${ctx.user.id}, NOW(), 'pending')`);
+      const elementsJson = JSON.stringify(input.dataElements);
+      await exec(
+        `INSERT INTO cross_sector_data_shares (share_id, organization_id, source_sector, target_sector, data_type, justification, data_elements, requested_by, requested_at, status) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, NOW(), 'pending')`,
+        [shareId, input.orgId, input.sourceSector, input.targetSector, input.dataType, input.justification, elementsJson, ctx.user.id]
+      );
       emitMutationEvent("ndsep.compliance.mutation", { action: "productionFeatures", ts: new Date().toISOString() }).catch((e: unknown) => logger.debug({ err: e instanceof Error ? e.message : String(e) }, "fire-and-forget failed"));
       return { shareId, status: "pending" };
     }),

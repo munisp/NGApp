@@ -308,7 +308,7 @@ export const appRouter = router({
               await blacklistToken(session.jti, session.exp);
             }
           }
-        } catch { /* non-fatal — cookie still cleared */ }
+        } catch (e) { logger.debug({ err: e instanceof Error ? e.message : String(e) }, "[Auth] Token blacklist on logout failed (non-fatal)"); }
       }
       ctx.res.clearCookie(COOKIE_NAME, { ...cookieOptions, maxAge: -1 });
       return { success: true } as const;
@@ -1543,7 +1543,7 @@ export const appRouter = router({
         const res = await fetch("http://localhost:8130/health", { signal: AbortSignal.timeout(2000) });
         if (!res.ok) return { status: "unreachable", routes: 0 };
         return await res.json();
-      } catch { return { status: "unreachable", routes: 0 }; }
+      } catch (e) { logger.debug({ err: e instanceof Error ? e.message : String(e) }, "[Health] API Gateway unreachable"); return { status: "unreachable", routes: 0 }; }
     }),
     apiGatewaySync: adminProcedure.mutation(async () => {
       try {
@@ -1557,7 +1557,7 @@ export const appRouter = router({
         const res = await fetch("http://localhost:8160/health", { signal: AbortSignal.timeout(2000) });
         if (!res.ok) return { status: "unreachable", kafka: false, fluvio: false };
         return await res.json();
-      } catch { return { status: "unreachable", kafka: false, fluvio: false }; }
+      } catch (e) { logger.debug({ err: e instanceof Error ? e.message : String(e) }, "[Health] Event Bus unreachable"); return { status: "unreachable", kafka: false, fluvio: false }; }
     }),
     eventBusPublish: protectedProcedure
       .input(z.object({ topic: z.string().min(1), event: z.record(z.string(), z.unknown()) }))
@@ -1578,7 +1578,7 @@ export const appRouter = router({
         const res = await fetch("http://localhost:8150/health", { signal: AbortSignal.timeout(2000) });
         if (!res.ok) return { status: "unreachable", keycloak: false, permify: false };
         return await res.json();
-      } catch { return { status: "unreachable", keycloak: false, permify: false }; }
+      } catch (e) { logger.debug({ err: e instanceof Error ? e.message : String(e) }, "[Health] IAM Service unreachable"); return { status: "unreachable", keycloak: false, permify: false }; }
     }),
     iamValidateToken: protectedProcedure
       .input(z.object({ token: z.string().min(10) }))
@@ -1599,7 +1599,7 @@ export const appRouter = router({
         const res = await fetch("http://localhost:8240/health", { signal: AbortSignal.timeout(2000) });
         if (!res.ok) return { status: "unreachable", entryCount: 0 };
         return await res.json();
-      } catch { return { status: "unreachable", entryCount: 0 }; }
+      } catch (e) { logger.debug({ err: e instanceof Error ? e.message : String(e) }, "[Health] TigerBeetle unreachable"); return { status: "unreachable", entryCount: 0 }; }
     }),
     tigerbeetleBalance: protectedProcedure
       .input(z.object({ orgId: z.string().min(1) }))
@@ -1625,14 +1625,14 @@ export const appRouter = router({
         const res = await fetch("http://localhost:8170/health", { signal: AbortSignal.timeout(2000) });
         if (!res.ok) return { status: "unreachable", connected: false };
         return await res.json();
-      } catch { return { status: "unreachable", connected: false }; }
+      } catch (e) { logger.debug({ err: e instanceof Error ? e.message : String(e) }, "[Health] Workflow Engine unreachable"); return { status: "unreachable", connected: false }; }
     }),
     daprBindingsStatus: protectedProcedure.query(async () => {
       try {
         const res = await fetch("http://localhost:8120/health", { signal: AbortSignal.timeout(2000) });
         if (!res.ok) return { status: "unreachable", pubsub: false, stateStore: false };
         return await res.json();
-      } catch { return { status: "unreachable", pubsub: false, stateStore: false }; }
+      } catch (e) { logger.debug({ err: e instanceof Error ? e.message : String(e) }, "[Health] Dapr Bindings unreachable"); return { status: "unreachable", pubsub: false, stateStore: false }; }
     }),
     lakehouseStatus: protectedProcedure.query(async () => {
       const health = await lakehouseHealth();
@@ -1673,7 +1673,7 @@ export const appRouter = router({
         const res = await fetch("http://localhost:8125/health", { signal: AbortSignal.timeout(2000) });
         if (!res.ok) return { status: "unreachable", modelVersion: null };
         return await res.json();
-      } catch { return { status: "unreachable", modelVersion: null }; }
+      } catch (e) { logger.debug({ err: e instanceof Error ? e.message : String(e) }, "[Health] ML Pipeline unreachable"); return { status: "unreachable", modelVersion: null }; }
     }),
     /** Keycloak SSO: verify a JWT using the native keycloak.ts helper */
     keycloakVerifyToken: adminProcedure

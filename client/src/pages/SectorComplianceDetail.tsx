@@ -27,7 +27,9 @@ import {
 } from "lucide-react";
 
 // Rendered inside DashboardLayout via App.tsx router
-// ─── Sector compliance baseline scores (last audit) ──────────────────────────
+// ─── Sector compliance baseline scores (last audit cycle) ────────────────────
+// TODO: migrate to DB-driven config (e.g. /api/trpc/sectorConfig.baselines)
+// so scores update per audit cycle without redeploying.
 const BASELINE_SCORES: Record<string, number> = {
   fintech: 87,
   healthcare: 92,
