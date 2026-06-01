@@ -1254,8 +1254,8 @@ async function startServer() {
   }
 
   try {
-    const { initMultiTenancy } = await import("../multitenancy");
-    await initMultiTenancy();
+    const { enableRowLevelSecurity } = await import("../multiTenancy");
+    await enableRowLevelSecurity();
   } catch (err) {
     logger.warn({ err }, "[Startup] Multi-tenancy init skipped");
   }
