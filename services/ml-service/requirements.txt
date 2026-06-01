@@ -1,0 +1,17 @@
+fastapi==0.115.6
+uvicorn[standard]==0.32.1
+httpx==0.28.1
+numpy==2.2.1
+pydantic==2.10.4
+
+# Anomaly detection (optional — falls back to Z-score if absent)
+scikit-learn==1.6.0
+
+# Demand forecasting (optional — falls back to simulation if absent)
+# openstef==3.4.17
+
+# Arps curve fitting (optional — uses grid search if absent)
+scipy==1.14.1
+# PINN Surrogate — Physics-Informed Neural Network
+--extra-index-url https://download.pytorch.org/whl/cpu
+torch==2.5.1+cpu

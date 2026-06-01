@@ -1,0 +1,319 @@
+---
+# OG-RMM Platform — Kubernetes Deployments for Polyglot Services
+# Services: Go Protocol Adapter, Rust Physics Engine, Python ML Service, Node App
+# Namespace: og-rmm
+# Reference: IEC 62443 security zoning, API RP 17C telemetry standards
+
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: protocol-adapter
+  namespace: og-rmm
+  labels:
+    app: protocol-adapter
+    tier: edge
+    version: "1.0.0"
+spec:
+  replicas: 2
+  selector:
+    matchLabels:
+      app: protocol-adapter
+  strategy:
+    type: RollingUpdate
+    rollingUpdate:
+      maxSurge: 1
+      maxUnavailable: 0
+  template:
+    metadata:
+      labels:
+        app: protocol-adapter
+        tier: edge
+      annotations:
+        prometheus.io/scrape: "true"
+        prometheus.io/port: "8090"
+        prometheus.io/path: "/metrics"
+    spec:
+      serviceAccountName: og-rmm-sa
+      securityContext:
+        runAsNonRoot: true
+        runAsUser: 65534
+        fsGroup: 65534
+      containers:
+        - name: protocol-adapter
+          image: og-rmm/protocol-adapter:1.0.0
+          imagePullPolicy: IfNotPresent
+          ports:
+            - containerPort: 8090
+              name: http
+              protocol: TCP
+          env:
+            - name: LISTEN_ADDR
+              value: ":8090"
+            - name: MQTT_BROKER_URL
+              valueFrom:
+                configMapKeyRef:
+                  name: protocol-adapter-config
+                  key: mqtt_broker_url
+            - name: PLATFORM_API_URL
+              valueFrom:
+                configMapKeyRef:
+                  name: protocol-adapter-config
+                  key: platform_api_url
+            - name: POLL_INTERVAL_SEC
+              value: "30"
+            - name: BATCH_SIZE
+              value: "100"
+          resources:
+            requests:
+              cpu: "100m"
+              memory: "128Mi"
+            limits:
+              cpu: "500m"
+              memory: "256Mi"
+          livenessProbe:
+            httpGet:
+              path: /health
+              port: 8090
+            initialDelaySeconds: 10
+            periodSeconds: 15
+            failureThreshold: 3
+          readinessProbe:
+            httpGet:
+              path: /ready
+              port: 8090
+            initialDelaySeconds: 5
+            periodSeconds: 10
+          securityContext:
+            allowPrivilegeEscalation: false
+            readOnlyRootFilesystem: true
+            capabilities:
+              drop: ["ALL"]
+      terminationGracePeriodSeconds: 30
+
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: physics-engine
+  namespace: og-rmm
+  labels:
+    app: physics-engine
+    tier: compute
+    version: "1.0.0"
+spec:
+  replicas: 2
+  selector:
+    matchLabels:
+      app: physics-engine
+  strategy:
+    type: RollingUpdate
+    rollingUpdate:
+      maxSurge: 1
+      maxUnavailable: 0
+  template:
+    metadata:
+      labels:
+        app: physics-engine
+        tier: compute
+      annotations:
+        prometheus.io/scrape: "true"
+        prometheus.io/port: "8080"
+        prometheus.io/path: "/metrics"
+    spec:
+      serviceAccountName: og-rmm-sa
+      securityContext:
+        runAsNonRoot: true
+        runAsUser: 65534
+      containers:
+        - name: physics-engine
+          image: og-rmm/physics-engine:1.0.0
+          imagePullPolicy: IfNotPresent
+          ports:
+            - containerPort: 8080
+              name: http
+          env:
+            - name: RUST_LOG
+              value: "info"
+            - name: PORT
+              value: "8080"
+            - name: ML_SERVICE_URL
+              value: "http://ml-service:8000"
+          resources:
+            requests:
+              cpu: "500m"
+              memory: "512Mi"
+            limits:
+              cpu: "2000m"
+              memory: "2Gi"
+          livenessProbe:
+            httpGet:
+              path: /health
+              port: 8080
+            initialDelaySeconds: 15
+            periodSeconds: 20
+            failureThreshold: 3
+          readinessProbe:
+            httpGet:
+              path: /health
+              port: 8080
+            initialDelaySeconds: 10
+            periodSeconds: 10
+          securityContext:
+            allowPrivilegeEscalation: false
+            readOnlyRootFilesystem: true
+            capabilities:
+              drop: ["ALL"]
+
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: ml-service
+  namespace: og-rmm
+  labels:
+    app: ml-service
+    tier: ai
+    version: "1.0.0"
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: ml-service
+  strategy:
+    type: RollingUpdate
+    rollingUpdate:
+      maxSurge: 1
+      maxUnavailable: 0
+  template:
+    metadata:
+      labels:
+        app: ml-service
+        tier: ai
+    spec:
+      serviceAccountName: og-rmm-sa
+      securityContext:
+        runAsNonRoot: true
+        runAsUser: 1000
+      containers:
+        - name: ml-service
+          image: og-rmm/ml-service:1.0.0
+          imagePullPolicy: IfNotPresent
+          ports:
+            - containerPort: 8000
+              name: http
+          env:
+            - name: PORT
+              value: "8000"
+            - name: LOG_LEVEL
+              value: "info"
+            - name: MODEL_CACHE_DIR
+              value: "/tmp/models"
+          resources:
+            requests:
+              cpu: "500m"
+              memory: "1Gi"
+            limits:
+              cpu: "4000m"
+              memory: "8Gi"
+          livenessProbe:
+            httpGet:
+              path: /health
+              port: 8000
+            initialDelaySeconds: 30
+            periodSeconds: 30
+            failureThreshold: 3
+          readinessProbe:
+            httpGet:
+              path: /health
+              port: 8000
+            initialDelaySeconds: 20
+            periodSeconds: 15
+          volumeMounts:
+            - name: model-cache
+              mountPath: /tmp/models
+          securityContext:
+            allowPrivilegeEscalation: false
+            capabilities:
+              drop: ["ALL"]
+      volumes:
+        - name: model-cache
+          emptyDir:
+            sizeLimit: 5Gi
+
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: og-rmm-app
+  namespace: og-rmm
+  labels:
+    app: og-rmm-app
+    tier: web
+    version: "55.0.0"
+spec:
+  replicas: 3
+  selector:
+    matchLabels:
+      app: og-rmm-app
+  strategy:
+    type: RollingUpdate
+    rollingUpdate:
+      maxSurge: 1
+      maxUnavailable: 1
+  template:
+    metadata:
+      labels:
+        app: og-rmm-app
+        tier: web
+    spec:
+      serviceAccountName: og-rmm-sa
+      containers:
+        - name: og-rmm-app
+          image: og-rmm/app:55.0.0
+          imagePullPolicy: IfNotPresent
+          ports:
+            - containerPort: 3000
+              name: http
+          env:
+            - name: NODE_ENV
+              value: "production"
+            - name: POSTGRES_URL
+              valueFrom:
+                secretKeyRef:
+                  name: og-rmm-secrets
+                  key: postgres_url
+            - name: REDIS_URL
+              valueFrom:
+                secretKeyRef:
+                  name: og-rmm-secrets
+                  key: redis_url
+            - name: JWT_SECRET
+              valueFrom:
+                secretKeyRef:
+                  name: og-rmm-secrets
+                  key: jwt_secret
+            - name: PHYSICS_ENGINE_URL
+              value: "http://physics-engine:8080"
+            - name: ML_SERVICE_URL
+              value: "http://ml-service:8000"
+            - name: PROTOCOL_ADAPTER_URL
+              value: "http://protocol-adapter:8090"
+          resources:
+            requests:
+              cpu: "250m"
+              memory: "512Mi"
+            limits:
+              cpu: "1000m"
+              memory: "1Gi"
+          livenessProbe:
+            httpGet:
+              path: /api/health
+              port: 3000
+            initialDelaySeconds: 20
+            periodSeconds: 15
+          readinessProbe:
+            httpGet:
+              path: /api/health
+              port: 3000
+            initialDelaySeconds: 10
+            periodSeconds: 10

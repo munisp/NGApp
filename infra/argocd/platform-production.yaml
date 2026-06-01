@@ -1,0 +1,95 @@
+---
+# ArgoCD Application — OG-RMM Platform Production
+# Spec: IEC 62443 §23.2 — GitOps-driven production deployment
+#
+# Prerequisites:
+#   1. ArgoCD installed in the argocd namespace:
+#      kubectl create namespace argocd
+#      kubectl apply -n argocd -f https://raw.githubusercontent.com/argoproj/argo-cd/stable/manifests/install.yaml
+#
+#   2. This repository added as an ArgoCD source:
+#      argocd repo add https://github.com/og-rmm/og-rmm-platform.git
+#
+#   3. Apply this manifest:
+#      kubectl apply -f infra/argocd/platform-production.yaml
+#
+# GitOps behaviour:
+#   - prune: true  → resources removed from git are deleted from the cluster
+#   - selfHeal: true → drift from desired state is auto-corrected every 3 minutes
+#   - automated sync → every push to main triggers a deployment
+apiVersion: argoproj.io/v1alpha1
+kind: Application
+metadata:
+  name: og-rmm-platform
+  namespace: argocd
+  labels:
+    app.kubernetes.io/name: og-rmm-platform
+    app.kubernetes.io/managed-by: argocd
+    og-rmm/environment: production
+    og-rmm/compliance: iec-62443
+  annotations:
+    # Notify Slack #platform-deploys on sync events
+    notifications.argoproj.io/subscribe.on-sync-succeeded.slack: platform-deploys
+    notifications.argoproj.io/subscribe.on-sync-failed.slack: platform-alerts
+    notifications.argoproj.io/subscribe.on-health-degraded.slack: platform-alerts
+spec:
+  project: default
+
+  # ── Source: Helm chart in this repository ──────────────────────────────────
+  source:
+    repoURL: https://github.com/og-rmm/og-rmm-platform.git
+    targetRevision: HEAD  # Always track the latest commit on main
+    path: infra/helm/og-rmm-platform
+    helm:
+      releaseName: og-rmm
+      valueFiles:
+        - values.yaml
+        # Override with region-specific values (uncomment for Kuwait/UAE):
+        # - ../../profiles/kuwait/values.yaml
+        # - ../../profiles/uae/values.yaml
+      parameters:
+        - name: global.imageRegistry
+          value: registry.og-rmm.internal
+        - name: global.tls.enabled
+          value: "true"
+        - name: global.networkPolicies.enabled
+          value: "true"
+
+  # ── Destination: platform-core namespace ───────────────────────────────────
+  destination:
+    server: https://kubernetes.default.svc
+    namespace: platform-core
+
+  # ── Sync policy: automated GitOps with self-healing ───────────────────────
+  syncPolicy:
+    automated:
+      prune: true       # Delete resources removed from git
+      selfHeal: true    # Auto-correct drift every 3 minutes
+      allowEmpty: false # Prevent accidental empty-state sync
+    syncOptions:
+      - CreateNamespace=true
+      - PrunePropagationPolicy=foreground
+      - PruneLast=true
+      - ApplyOutOfSyncOnly=true
+      - ServerSideApply=true
+    retry:
+      limit: 5
+      backoff:
+        duration: 5s
+        factor: 2
+        maxDuration: 3m
+
+  # ── Health checks ──────────────────────────────────────────────────────────
+  ignoreDifferences:
+    # Ignore auto-generated fields that change on every apply
+    - group: apps
+      kind: Deployment
+      jsonPointers:
+        - /spec/template/metadata/annotations/kubectl.kubernetes.io~1last-applied-configuration
+    - group: ""
+      kind: Secret
+      jsonPointers:
+        - /data  # Secrets managed by external-secrets-operator
+
+  # ── Revision history ───────────────────────────────────────────────────────
+  revisionHistoryLimit: 10

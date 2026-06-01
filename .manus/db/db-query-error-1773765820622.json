@@ -1,0 +1,8 @@
+{
+  "query": "CREATE TABLE IF NOT EXISTS push_log (\n  id SERIAL PRIMARY KEY,\n  user_id TEXT,\n  title TEXT NOT NULL,\n  body TEXT NOT NULL,\n  tag TEXT,\n  sent_at TIMESTAMP DEFAULT NOW() NOT NULL,\n  well_id TEXT,\n  alarm_id TEXT,\n  channel TEXT DEFAULT 'push'\n);",
+  "command": "mysql --batch --raw --column-names --default-character-set=utf8mb4 --host gateway04.us-east-1.prod.aws.tidbcloud.com --port 4000 --user 2t5rixfHAYLQmtB.033db82f385c --database KDV4VuP2aAGuW7WLgvDFQk --execute CREATE TABLE IF NOT EXISTS push_log (\n  id SERIAL PRIMARY KEY,\n  user_id TEXT,\n  title TEXT NOT NULL,\n  body TEXT NOT NULL,\n  tag TEXT,\n  sent_at TIMESTAMP DEFAULT NOW() NOT NULL,\n  well_id TEXT,\n  alarm_id TEXT,\n  channel TEXT DEFAULT 'push'\n);",
+  "returncode": 1,
+  "logs": [
+    "ERROR 1101 (42000) at line 1: BLOB/TEXT/JSON column 'channel' can't have a default value"
+  ]
+}

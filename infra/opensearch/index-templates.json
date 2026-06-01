@@ -1,0 +1,76 @@
+{
+  "og_telemetry_template": {
+    "index_patterns": ["og-telemetry-*"],
+    "template": {
+      "settings": {
+        "number_of_shards": 3,
+        "number_of_replicas": 1,
+        "index.lifecycle.name": "og-telemetry-ilm",
+        "index.lifecycle.rollover_alias": "og-telemetry",
+        "index.codec": "best_compression",
+        "index.refresh_interval": "5s"
+      },
+      "mappings": {
+        "properties": {
+          "@timestamp": { "type": "date" },
+          "well_id": { "type": "keyword" },
+          "sensor_id": { "type": "keyword" },
+          "sensor_type": { "type": "keyword" },
+          "value": { "type": "double" },
+          "unit": { "type": "keyword" },
+          "quality": { "type": "keyword" },
+          "field": { "type": "keyword" },
+          "source": { "type": "keyword" }
+        }
+      }
+    }
+  },
+  "og_audit_template": {
+    "index_patterns": ["og-audit-*"],
+    "template": {
+      "settings": {
+        "number_of_shards": 1,
+        "number_of_replicas": 1,
+        "index.lifecycle.name": "og-audit-ilm",
+        "index.lifecycle.rollover_alias": "og-audit"
+      },
+      "mappings": {
+        "properties": {
+          "@timestamp": { "type": "date" },
+          "user_id": { "type": "keyword" },
+          "action": { "type": "keyword" },
+          "resource": { "type": "keyword" },
+          "resource_id": { "type": "keyword" },
+          "ip_address": { "type": "ip" },
+          "result": { "type": "keyword" },
+          "details": { "type": "text" },
+          "session_id": { "type": "keyword" }
+        }
+      }
+    }
+  },
+  "og_alarms_template": {
+    "index_patterns": ["og-alarms-*"],
+    "template": {
+      "settings": {
+        "number_of_shards": 2,
+        "number_of_replicas": 1
+      },
+      "mappings": {
+        "properties": {
+          "@timestamp": { "type": "date" },
+          "alarm_id": { "type": "keyword" },
+          "well_id": { "type": "keyword" },
+          "alarm_type": { "type": "keyword" },
+          "severity": { "type": "keyword" },
+          "message": { "type": "text" },
+          "value": { "type": "double" },
+          "threshold": { "type": "double" },
+          "acknowledged": { "type": "boolean" },
+          "acknowledged_by": { "type": "keyword" },
+          "resolved_at": { "type": "date" }
+        }
+      }
+    }
+  }
+}
