@@ -26,6 +26,16 @@ import {
   Activity, RefreshCw, ChevronRight, Flag, FileDown, X,
 } from "lucide-react";
 
+// Rendered inside DashboardLayout via App.tsx router
+// ─── Sector compliance baseline scores (last audit) ──────────────────────────
+const BASELINE_SCORES: Record<string, number> = {
+  fintech: 87,
+  healthcare: 92,
+  energy: 78,
+  insurance: 85,
+  telecom: 81,
+};
+
 // ─── Sector metadata ──────────────────────────────────────────────────────────
 const SECTOR_META: Record<string, {
   name: string;
@@ -359,6 +369,9 @@ export default function SectorComplianceDetail() {
               <div className="text-xs text-muted-foreground mb-1">Compliance Score</div>
               <div className="text-3xl font-bold text-foreground">{score}%</div>
               <Progress value={score} className="mt-2 h-1.5" />
+              {BASELINE_SCORES[sector] && (
+                <div className="text-xs text-muted-foreground mt-1">Baseline: {BASELINE_SCORES[sector]}%</div>
+              )}
             </CardContent>
           </Card>
           <Card className="border-border">

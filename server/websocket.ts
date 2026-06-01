@@ -28,10 +28,24 @@ const clients = new Map<string, ConnectedClient>();
 
 let _wss: any | null = null;
 
+const ALLOWED_ORIGINS = (process.env.ALLOWED_ORIGINS ?? "http://localhost:3000,http://localhost:5000,http://localhost:5001")
+  .split(",")
+  .map((o) => o.trim())
+  .filter(Boolean);
+
+function isOriginAllowed(origin: string | undefined): boolean {
+  if (!origin) return true; // same-origin or non-browser clients
+  return ALLOWED_ORIGINS.some((allowed) => origin === allowed);
+}
+
 export async function initWebSocketServer(server: HttpServer): Promise<void> {
   try {
     const { WebSocketServer } = await (import("ws") as any);
-    _wss = new WebSocketServer({ server, path: "/ws" });
+    _wss = new WebSocketServer({
+      server,
+      path: "/ws",
+      verifyClient: (info: { origin: string }) => isOriginAllowed(info.origin),
+    });
   } catch {
     logger.warn("[WS] ws package not available — WebSocket disabled");
     return;
