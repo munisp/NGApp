@@ -96,97 +96,97 @@ export default function Dashboard() {
   ].sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime()).slice(0, 3);
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-blue-50 to-slate-100">
-      <nav className="bg-white border-b">
-        <div className="container mx-auto px-6 py-4 flex justify-between items-center">
+    <div className="min-h-screen bg-gradient-to-br from-blue-50 to-slate-100 dark:from-slate-900 dark:to-slate-800">
+      <nav className="bg-white dark:bg-slate-900 border-b">
+        <div className="container mx-auto px-3 sm:px-6 py-3 sm:py-4 flex justify-between items-center">
           <div className="flex items-center gap-2">
-            <Shield className="h-8 w-8 text-blue-600" />
-            <span className="text-xl font-bold">InsurePortal</span>
+            <Shield className="h-7 w-7 sm:h-8 sm:w-8 text-blue-600" />
+            <span className="text-lg sm:text-xl font-bold">InsurePortal</span>
           </div>
-          <div className="flex gap-4">
-            <Link href="/profile"><Button variant="ghost">Profile</Button></Link>
-            <Button variant="outline" onClick={() => logoutMutation.mutate()}>
+          <div className="flex gap-2 sm:gap-4">
+            <Link href="/profile"><Button variant="ghost" size="sm" className="hidden sm:inline-flex">Profile</Button></Link>
+            <Button variant="outline" size="sm" onClick={() => logoutMutation.mutate()}>
               {logoutMutation.isPending ? <Loader2 className="h-4 w-4 animate-spin" /> : "Logout"}
             </Button>
           </div>
         </div>
       </nav>
 
-      <main className="container mx-auto px-6 py-12">
-        <h1 className="text-4xl font-bold mb-2">Welcome back, {user?.name || "User"}</h1>
-        <p className="text-muted-foreground mb-12">Manage your insurance policies and claims</p>
+      <main className="container mx-auto px-3 sm:px-6 py-4 sm:py-8 lg:py-12">
+        <h1 className="text-2xl sm:text-3xl lg:text-4xl font-bold mb-1 sm:mb-2">Welcome back, {user?.name || "User"}</h1>
+        <p className="text-muted-foreground text-sm sm:text-base mb-6 sm:mb-8 lg:mb-12">Manage your insurance policies and claims</p>
 
-        <div className="grid md:grid-cols-2 lg:grid-cols-4 gap-6 mb-12">
+        <div className="grid grid-cols-2 md:grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4 lg:gap-6 mb-6 sm:mb-8 lg:mb-12">
           <Card className="hover:shadow-lg transition-shadow">
-            <CardHeader>
-              <CardTitle className="flex items-center gap-2 text-blue-600">
-                <Shield className="h-5 w-5" />
+            <CardHeader className="p-3 sm:p-6 pb-2 sm:pb-2">
+              <CardTitle className="flex items-center gap-1.5 sm:gap-2 text-blue-600 text-sm sm:text-base">
+                <Shield className="h-4 w-4 sm:h-5 sm:w-5" />
                 My Policies
               </CardTitle>
             </CardHeader>
-            <CardContent>
+            <CardContent className="p-3 sm:p-6 pt-0 sm:pt-0">
               {policiesLoading ? (
                 <Loader2 className="h-6 w-6 animate-spin" />
               ) : (
                 <>
-                  <p className="text-3xl font-bold mb-2">{activePolicies.length}</p>
-                  <p className="text-sm text-muted-foreground">Active policies</p>
-                  <Link href="/policies"><Button className="mt-4 w-full">View All</Button></Link>
+                  <p className="text-2xl sm:text-3xl font-bold mb-1 sm:mb-2">{activePolicies.length}</p>
+                  <p className="text-xs sm:text-sm text-muted-foreground">Active policies</p>
+                  <Link href="/policies"><Button className="mt-3 sm:mt-4 w-full" size="sm">View All</Button></Link>
                 </>
               )}
             </CardContent>
           </Card>
 
           <Card className="hover:shadow-lg transition-shadow">
-            <CardHeader>
-              <CardTitle className="flex items-center gap-2 text-green-600">
-                <FileText className="h-5 w-5" />
+            <CardHeader className="p-3 sm:p-6 pb-2 sm:pb-2">
+              <CardTitle className="flex items-center gap-1.5 sm:gap-2 text-green-600 text-sm sm:text-base">
+                <FileText className="h-4 w-4 sm:h-5 sm:w-5" />
                 Claims
               </CardTitle>
             </CardHeader>
-            <CardContent>
+            <CardContent className="p-3 sm:p-6 pt-0 sm:pt-0">
               {claimsLoading ? (
                 <Loader2 className="h-6 w-6 animate-spin" />
               ) : (
                 <>
-                  <p className="text-3xl font-bold mb-2">{pendingClaims.length}</p>
-                  <p className="text-sm text-muted-foreground">Pending claims</p>
-                  <Link href="/claims"><Button className="mt-4 w-full" variant="outline">Manage</Button></Link>
+                  <p className="text-2xl sm:text-3xl font-bold mb-1 sm:mb-2">{pendingClaims.length}</p>
+                  <p className="text-xs sm:text-sm text-muted-foreground">Pending claims</p>
+                  <Link href="/claims"><Button className="mt-3 sm:mt-4 w-full" variant="outline" size="sm">Manage</Button></Link>
                 </>
               )}
             </CardContent>
           </Card>
 
           <Card className="hover:shadow-lg transition-shadow">
-            <CardHeader>
-              <CardTitle className="flex items-center gap-2 text-purple-600">
-                <CreditCard className="h-5 w-5" />
+            <CardHeader className="p-3 sm:p-6 pb-2 sm:pb-2">
+              <CardTitle className="flex items-center gap-1.5 sm:gap-2 text-purple-600 text-sm sm:text-base">
+                <CreditCard className="h-4 w-4 sm:h-5 sm:w-5" />
                 Payments
               </CardTitle>
             </CardHeader>
-            <CardContent>
+            <CardContent className="p-3 sm:p-6 pt-0 sm:pt-0">
               {paymentsLoading ? (
                 <Loader2 className="h-6 w-6 animate-spin" />
               ) : (
                 <>
-                  <p className="text-3xl font-bold mb-2">₦{totalDue.toLocaleString()}</p>
-                  <p className="text-sm text-muted-foreground">Due this month</p>
-                  <Link href="/payments"><Button className="mt-4 w-full" variant="outline">Pay Now</Button></Link>
+                  <p className="text-2xl sm:text-3xl font-bold mb-1 sm:mb-2">₦{totalDue.toLocaleString()}</p>
+                  <p className="text-xs sm:text-sm text-muted-foreground">Due this month</p>
+                  <Link href="/payments"><Button className="mt-3 sm:mt-4 w-full" variant="outline" size="sm">Pay Now</Button></Link>
                 </>
               )}
             </CardContent>
           </Card>
 
           <Card className="hover:shadow-lg transition-shadow">
-            <CardHeader>
-              <CardTitle className="flex items-center gap-2 text-orange-600">
-                <User className="h-5 w-5" />
+            <CardHeader className="p-3 sm:p-6 pb-2 sm:pb-2">
+              <CardTitle className="flex items-center gap-1.5 sm:gap-2 text-orange-600 text-sm sm:text-base">
+                <User className="h-4 w-4 sm:h-5 sm:w-5" />
                 Profile
               </CardTitle>
             </CardHeader>
-            <CardContent>
-              <p className="text-sm mb-4">Update your information</p>
-              <Link href="/profile"><Button className="mt-4 w-full" variant="outline">Edit Profile</Button></Link>
+            <CardContent className="p-3 sm:p-6 pt-0 sm:pt-0">
+              <p className="text-xs sm:text-sm mb-3 sm:mb-4">Update your information</p>
+              <Link href="/profile"><Button className="mt-2 sm:mt-4 w-full" variant="outline" size="sm">Edit Profile</Button></Link>
             </CardContent>
           </Card>
         </div>
@@ -199,9 +199,9 @@ export default function Dashboard() {
             {recentActivity.length === 0 ? (
               <p className="text-muted-foreground text-center py-8">No recent activity</p>
             ) : (
-              <div className="space-y-4">
+              <div className="space-y-3 sm:space-y-4">
                 {recentActivity.map((activity, idx) => (
-                  <div key={idx} className="flex justify-between items-center p-4 bg-slate-50 rounded-lg">
+                  <div key={idx} className="flex justify-between items-center p-3 sm:p-4 bg-slate-50 dark:bg-slate-800 rounded-lg">
                     <div>
                       <p className="font-medium">{activity.title}</p>
                       <p className="text-sm text-muted-foreground">

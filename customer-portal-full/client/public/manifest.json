@@ -80,6 +80,33 @@
       "description": "View your policies",
       "url": "/policies",
       "icons": [{ "src": "/icons/icon-96x96.png", "sizes": "96x96" }]
+    },
+    {
+      "name": "Emergency SOS",
+      "short_name": "SOS",
+      "description": "Emergency assistance",
+      "url": "/emergency-sos",
+      "icons": [{ "src": "/icons/icon-96x96.png", "sizes": "96x96" }]
+    },
+    {
+      "name": "Payments",
+      "short_name": "Pay",
+      "description": "Manage payments",
+      "url": "/payments",
+      "icons": [{ "src": "/icons/icon-96x96.png", "sizes": "96x96" }]
     }
-  ]
+  ],
+  "share_target": {
+    "action": "/claims",
+    "method": "GET",
+    "params": {
+      "title": "title",
+      "text": "text",
+      "url": "url"
+    }
+  },
+  "handle_links": "preferred",
+  "launch_handler": {
+    "client_mode": "navigate-existing"
+  }
 }
