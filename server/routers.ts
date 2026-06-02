@@ -664,7 +664,7 @@ export const appRouter = router({
           }
         } catch (webhookError) {
           // Log webhook error but don't fail the payment
-          log.error('[Payment] Webhook delivery failed:', webhookError);
+          log.error({ err: webhookError }, '[Payment] Webhook delivery failed');
         }
 
         return {

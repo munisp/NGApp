@@ -447,7 +447,7 @@ async function sendWebhook(
   event: string,
   data: Record<string, any>
 ): Promise<void> {
-  log.info(`[Webhook] ${event} for ${remittanceId}:`, data);
+  log.info({ data }, `[Webhook] ${event} for ${remittanceId}`);
   
   // In production, send to registered webhook URL
   // Store in database for tracking and retry

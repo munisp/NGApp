@@ -14,7 +14,7 @@ function validateEnv() {
   }
   
   if (warnings.length > 0 && process.env.NODE_ENV === "production") {
-    log.error("[ENV] Configuration warnings:", warnings.join("; "));
+    log.error({ warnings: warnings.join("; ") }, "[ENV] Configuration warnings");
   }
 }
 
@@ -41,5 +41,9 @@ export const ENV = {
   permifyUrl: process.env.PERMIFY_URL ?? "http://permify:3476",
   // OpenAppSec Configuration
   openappsecUrl: process.env.OPENAPPSEC_URL ?? "http://openappsec:8080",
+  // Forge Configuration (image generation, LLM, voice transcription, maps)
+  forgeApiUrl: process.env.FORGE_API_URL ?? "http://localhost:8090",
+  forgeApiKey: process.env.FORGE_API_KEY ?? "",
+  ownerOpenId: process.env.OWNER_OPEN_ID ?? "",
   isProduction: process.env.NODE_ENV === "production",
 };

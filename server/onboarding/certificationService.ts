@@ -32,16 +32,16 @@ export async function submitForCertification(credentialId: number) {
 
   // Create certification record
   const certData: InsertCertificationResult = {
+    applicationId: 0,
     credentialId,
     status: "in_progress",
-    submittedAt: new Date(),
-    totalRequiredTests: testSummary.requiredTests,
-    requiredTestsPassed: testSummary.requiredPassed,
-    optionalTestsPassed: testSummary.optionalPassed,
+    totalTests: testSummary.requiredTests,
+    passedTests: testSummary.requiredPassed,
+    failedTests: testSummary.requiredTests - testSummary.requiredPassed,
   };
 
-  const [result] = await db.insert(certificationResults).values(certData);
-  const certificationId = result.insertId;
+  const [certInserted] = await db.insert(certificationResults).values(certData).returning({ id: certificationResults.id });
+  const certificationId = certInserted.id;
 
   // Run compliance checks
   await runComplianceChecks(certificationId);
@@ -65,9 +65,8 @@ export async function submitForCertification(credentialId: number) {
     .update(certificationResults)
     .set({
       status: passed ? "passed" : "failed",
-      completedAt: new Date(),
+      certifiedAt: passed ? new Date() : null,
       score,
-      securityAuditPassed: securityPassed ? 1 : 0,
       certificateId: passed ? `CERT-${Date.now()}-${credentialId}` : null,
     })
     .where(eq(certificationResults.id, certificationId));
@@ -143,7 +142,7 @@ async function runComplianceChecks(certificationId: number) {
   await db
     .update(certificationResults)
     .set({
-      complianceChecksPassed: passedCount,
+      passedTests: passedCount,
     })
     .where(eq(certificationResults.id, certificationId));
 

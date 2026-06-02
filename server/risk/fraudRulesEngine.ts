@@ -444,7 +444,7 @@ export class FraudRulesEngine extends EventEmitter {
   }
 
   getDecisionByTransaction(transactionId: string): RiskDecision | null {
-    for (const decision of decisions.values()) {
+    for (const decision of Array.from(decisions.values())) {
       if (decision.transactionId === transactionId) {
         return decision;
       }

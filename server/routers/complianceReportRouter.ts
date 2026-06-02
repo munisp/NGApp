@@ -32,7 +32,7 @@ export const complianceReportRouter = router({
         },
       });
       const parsed = JSON.parse(reportData);
-      const [report] = await db.getDb().insert(complianceReports).values({
+      const [report] = await (await db.requireDb()).insert(complianceReports).values({
         reportType: input.reportType,
         title: input.title,
         periodStart: new Date(input.periodStart),
@@ -64,11 +64,11 @@ export const complianceReportRouter = router({
         conditions.push(sql`${complianceReports.reportType} = ${input.reportType}`);
       }
       const whereClause = conditions.length > 0 ? and(...conditions) : undefined;
-      const items = await db.getDb().select().from(complianceReports)
+      const items = await (await db.requireDb()).select().from(complianceReports)
         .where(whereClause)
         .orderBy(desc(complianceReports.createdAt))
         .limit(limit).offset(offset);
-      const [{ count }] = await db.getDb().select({ count: sql<number>`count(*)` })
+      const [{ count }] = await (await db.requireDb()).select({ count: sql<number>`count(*)` })
         .from(complianceReports).where(whereClause);
       return { items, total: Number(count), page, limit };
     }),
@@ -79,7 +79,7 @@ export const complianceReportRouter = router({
       if (ctx.user.role !== "admin") {
         throw new TRPCError({ code: "FORBIDDEN", message: "Admin access required" });
       }
-      const [report] = await db.getDb().select().from(complianceReports)
+      const [report] = await (await db.requireDb()).select().from(complianceReports)
         .where(eq(complianceReports.id, input.id));
       if (!report) throw new TRPCError({ code: "NOT_FOUND", message: "Report not found" });
       return report;
@@ -91,7 +91,7 @@ export const complianceReportRouter = router({
       if (ctx.user.role !== "admin") {
         throw new TRPCError({ code: "FORBIDDEN", message: "Admin access required" });
       }
-      const [updated] = await db.getDb().update(complianceReports)
+      const [updated] = await (await db.requireDb()).update(complianceReports)
         .set({ status: "approved", approvedBy: ctx.user.id, updatedAt: new Date() })
         .where(eq(complianceReports.id, input.id))
         .returning();
@@ -104,7 +104,7 @@ export const complianceReportRouter = router({
       if (ctx.user.role !== "admin") {
         throw new TRPCError({ code: "FORBIDDEN", message: "Admin access required" });
       }
-      const [updated] = await db.getDb().update(complianceReports)
+      const [updated] = await (await db.requireDb()).update(complianceReports)
         .set({ status: "submitted", submittedAt: new Date(), updatedAt: new Date() })
         .where(eq(complianceReports.id, input.id))
         .returning();
