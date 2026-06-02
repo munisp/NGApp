@@ -1905,3 +1905,191 @@ export const participantBilling = pgTable("participant_billing", {
 
 export type ParticipantBilling = typeof participantBilling.$inferSelect;
 export type InsertParticipantBilling = typeof participantBilling.$inferInsert;
+
+// ============================================================
+// OUTBOUND REMITTANCE MODULE - Additional Tables
+// ============================================================
+
+export const disputeTypeEnum = pgEnum("dispute_type", ["failed_delivery", "wrong_amount", "duplicate_charge", "unauthorized", "other"]);
+export const outboundDisputeStatusEnum = pgEnum("outbound_dispute_status", ["open", "under_review", "resolved", "rejected", "escalated"]);
+export const disputePriorityEnum = pgEnum("dispute_priority", ["low", "medium", "high", "critical"]);
+export const fundingMethodEnum = pgEnum("funding_method", ["RTGS", "NIP", "Wire"]);
+export const fundingStatusEnum = pgEnum("funding_status", ["pending_approval", "approved", "completed", "rejected"]);
+export const tierUpgradeStatusEnum = pgEnum("tier_upgrade_status", ["pending_review", "approved", "rejected"]);
+export const approvalStatusEnum = pgEnum("approval_status_enum", ["pending", "approved", "rejected"]);
+export const enforcementTypeEnum = pgEnum("enforcement_type", ["suspension", "corridor_restriction", "limit_override", "compliance_directive", "license_revocation", "warning", "show_cause"]);
+export const enforcementStatusEnum = pgEnum("enforcement_status", ["active", "resolved", "expired", "pending_review"]);
+export const triggerOperatorEnum = pgEnum("trigger_operator", ["gt", "lt", "gte", "lte"]);
+export const triggerActionEnum = pgEnum("trigger_action", ["suspend", "restrict_corridors", "reduce_limit", "warning"]);
+export const webhookEventStatusEnum = pgEnum("webhook_event_status", ["pending", "delivered", "failed", "retrying"]);
+
+/**
+ * Outbound Disputes - Transfer dispute tracking
+ */
+export const outboundDisputes = pgTable("outbound_disputes", {
+  id: serial("id").primaryKey(),
+  transferId: integer("transfer_id").notNull(),
+  participantId: integer("participant_id").notNull(),
+  disputeRef: varchar("dispute_ref", { length: 64 }).notNull().unique(),
+  type: disputeTypeEnum("type").notNull(),
+  reason: text("reason").notNull(),
+  amount: decimal("amount", { precision: 20, scale: 2 }).notNull(),
+  status: outboundDisputeStatusEnum("status").default("open").notNull(),
+  priority: disputePriorityEnum("priority").default("medium").notNull(),
+  assignedTo: integer("assigned_to"),
+  resolution: text("resolution"),
+  resolvedAt: timestamp("resolved_at"),
+  createdAt: timestamp("created_at").defaultNow().notNull(),
+});
+
+export type OutboundDispute = typeof outboundDisputes.$inferSelect;
+export type InsertOutboundDispute = typeof outboundDisputes.$inferInsert;
+
+/**
+ * Funding Requests - Participant prefund top-up requests
+ */
+export const fundingRequests = pgTable("funding_requests", {
+  id: serial("id").primaryKey(),
+  participantId: integer("participant_id").notNull(),
+  requestRef: varchar("request_ref", { length: 128 }).notNull().unique(),
+  amount: decimal("amount", { precision: 20, scale: 2 }).notNull(),
+  sourceBank: varchar("source_bank", { length: 128 }).notNull(),
+  sourceAccount: varchar("source_account", { length: 32 }).notNull(),
+  method: fundingMethodEnum("method").notNull(),
+  status: fundingStatusEnum("status").default("pending_approval").notNull(),
+  approvedBy: integer("approved_by"),
+  approvedAt: timestamp("approved_at"),
+  settledAt: timestamp("settled_at"),
+  createdAt: timestamp("created_at").defaultNow().notNull(),
+});
+
+export type FundingRequest = typeof fundingRequests.$inferSelect;
+export type InsertFundingRequest = typeof fundingRequests.$inferInsert;
+
+/**
+ * Tier Upgrade Requests - Participant tier promotion requests
+ */
+export const tierUpgrades = pgTable("tier_upgrades", {
+  id: serial("id").primaryKey(),
+  participantId: integer("participant_id").notNull(),
+  currentTier: varchar("current_tier", { length: 32 }).notNull(),
+  requestedTier: varchar("requested_tier", { length: 32 }).notNull(),
+  justification: text("justification").notNull(),
+  monthlyVolume: decimal("monthly_volume", { precision: 20, scale: 2 }).notNull(),
+  status: tierUpgradeStatusEnum("status").default("pending_review").notNull(),
+  reviewedBy: integer("reviewed_by"),
+  reviewedAt: timestamp("reviewed_at"),
+  createdAt: timestamp("created_at").defaultNow().notNull(),
+});
+
+export type TierUpgrade = typeof tierUpgrades.$inferSelect;
+export type InsertTierUpgrade = typeof tierUpgrades.$inferInsert;
+
+/**
+ * Approval Queue - CBN/Admin approval items
+ */
+export const approvalQueue = pgTable("approval_queue", {
+  id: serial("id").primaryKey(),
+  entityType: varchar("entity_type", { length: 32 }).notNull(),
+  entityId: integer("entity_id").notNull(),
+  action: varchar("action", { length: 64 }).notNull(),
+  requestedBy: integer("requested_by").notNull(),
+  requestedByName: varchar("requested_by_name", { length: 256 }).notNull(),
+  reason: text("reason").notNull(),
+  status: approvalStatusEnum("status").default("pending").notNull(),
+  approvedBy: integer("approved_by"),
+  approvedAt: timestamp("approved_at"),
+  createdAt: timestamp("created_at").defaultNow().notNull(),
+});
+
+export type Approval = typeof approvalQueue.$inferSelect;
+export type InsertApproval = typeof approvalQueue.$inferInsert;
+
+/**
+ * CBN Enforcement Actions - Regulatory enforcement against participants
+ */
+export const enforcementActions = pgTable("enforcement_actions", {
+  id: serial("id").primaryKey(),
+  participantId: integer("participant_id").notNull(),
+  participantName: varchar("participant_name", { length: 256 }).notNull(),
+  type: enforcementTypeEnum("type").notNull(),
+  status: enforcementStatusEnum("status").default("active").notNull(),
+  reason: text("reason").notNull(),
+  cbnReference: varchar("cbn_reference", { length: 128 }).notNull(),
+  issuedBy: varchar("issued_by", { length: 256 }).notNull(),
+  issuedAt: timestamp("issued_at").notNull(),
+  effectiveAt: timestamp("effective_at").notNull(),
+  expiresAt: timestamp("expires_at"),
+  resolvedAt: timestamp("resolved_at"),
+  resolvedBy: varchar("resolved_by", { length: 256 }),
+  resolutionNote: text("resolution_note"),
+  details: text("details"),
+  createdAt: timestamp("created_at").defaultNow().notNull(),
+});
+
+export type EnforcementAction = typeof enforcementActions.$inferSelect;
+export type InsertEnforcementAction = typeof enforcementActions.$inferInsert;
+
+/**
+ * Auto-Suspension Triggers - Automated enforcement rules
+ */
+export const autoTriggers = pgTable("auto_triggers", {
+  id: serial("id").primaryKey(),
+  name: varchar("name", { length: 128 }).notNull(),
+  description: text("description").notNull(),
+  metric: varchar("metric", { length: 64 }).notNull(),
+  operator: triggerOperatorEnum("operator").notNull(),
+  threshold: decimal("threshold", { precision: 16, scale: 4 }).notNull(),
+  unit: varchar("unit", { length: 16 }).notNull(),
+  windowDays: integer("window_days").notNull(),
+  action: triggerActionEnum("action").notNull(),
+  isActive: boolean("is_active").default(true).notNull(),
+  lastTriggered: timestamp("last_triggered"),
+  triggeredCount: integer("triggered_count").default(0).notNull(),
+  createdBy: varchar("created_by", { length: 128 }).notNull(),
+  createdAt: timestamp("created_at").defaultNow().notNull(),
+});
+
+export type AutoTrigger = typeof autoTriggers.$inferSelect;
+export type InsertAutoTrigger = typeof autoTriggers.$inferInsert;
+
+/**
+ * Webhook Events - Outbound webhook delivery tracking
+ */
+export const outboundWebhookEvents = pgTable("outbound_webhook_events", {
+  id: serial("id").primaryKey(),
+  participantId: integer("participant_id").notNull(),
+  eventType: varchar("event_type", { length: 64 }).notNull(),
+  transferId: integer("transfer_id"),
+  payload: text("payload").notNull(),
+  targetUrl: varchar("target_url", { length: 512 }).notNull(),
+  status: webhookEventStatusEnum("status").default("pending").notNull(),
+  attempts: integer("attempts").default(0).notNull(),
+  lastAttemptAt: timestamp("last_attempt_at"),
+  deliveredAt: timestamp("delivered_at"),
+  responseStatus: integer("response_status"),
+  responseBody: text("response_body"),
+  createdAt: timestamp("created_at").defaultNow().notNull(),
+});
+
+export type OutboundWebhookEvent = typeof outboundWebhookEvents.$inferSelect;
+export type InsertOutboundWebhookEvent = typeof outboundWebhookEvents.$inferInsert;
+
+/**
+ * Transfer Lifecycle Events - Audit trail for transfer state transitions
+ */
+export const transferLifecycleEvents = pgTable("transfer_lifecycle_events", {
+  id: serial("id").primaryKey(),
+  transferId: integer("transfer_id").notNull(),
+  fromStep: varchar("from_step", { length: 32 }).notNull(),
+  toStep: varchar("to_step", { length: 32 }).notNull(),
+  fromStatus: varchar("from_status", { length: 32 }).notNull(),
+  toStatus: varchar("to_status", { length: 32 }).notNull(),
+  details: text("details"),
+  triggeredBy: varchar("triggered_by", { length: 128 }),
+  durationMs: integer("duration_ms"),
+  createdAt: timestamp("created_at").defaultNow().notNull(),
+});
+
+export type TransferLifecycleEvent = typeof transferLifecycleEvents.$inferSelect;
+export type InsertTransferLifecycleEvent = typeof transferLifecycleEvents.$inferInsert;
