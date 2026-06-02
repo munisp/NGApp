@@ -5,7 +5,7 @@ import { toast } from 'sonner';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Loader2 } from 'lucide-react';
 
-const DEMO_MODE = process.env.NODE_ENV === 'development'; // Or any other condition for demo mode
+const DEMO_MODE = process.env.DEMO_MODE === 'true';
 
 const DEMO_CUSTOMER_PROFILE = {
   id: 'cust_12345',

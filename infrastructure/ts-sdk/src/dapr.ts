@@ -178,7 +178,7 @@ export class DaprClient {
         const value = await loader();
         await this.cacheSet(key, value, ttl);
         loaded++;
-      } catch { /* skip failed entries */ }
+      } catch (err) { console.error('[dapr] cache warmup entry failed:', err instanceof Error ? err.message : err); }
     }
     return loaded;
   }

@@ -603,3 +603,216 @@ export const documents = pgTable("documents", {
   updatedAt: timestamp("updatedAt").defaultNow().notNull(),
 });
 export type Document = typeof documents.$inferSelect;
+
+// ── Emergency SOS ─────────────────────────────────────────────────────────────
+export const emergencyIncidents = pgTable("emergency_incidents", {
+  id: serial("id").primaryKey(),
+  userId: serial("userId").notNull(),
+  incidentType: varchar("incidentType", { length: 64 }).notNull(),
+  latitude: numeric("latitude", { precision: 10, scale: 7 }),
+  longitude: numeric("longitude", { precision: 10, scale: 7 }),
+  description: text("description"),
+  status: varchar("status", { length: 32 }).default("Dispatched"),
+  emergencyServices: text("emergencyServices").array(),
+  resolvedAt: timestamp("resolvedAt"),
+  createdAt: timestamp("createdAt").defaultNow().notNull(),
+});
+export type EmergencyIncident = typeof emergencyIncidents.$inferSelect;
+
+// ── P2P Insurance Pools ───────────────────────────────────────────────────────
+export const p2pPools = pgTable("p2p_pools", {
+  id: serial("id").primaryKey(),
+  poolName: varchar("poolName", { length: 255 }).notNull(),
+  totalFund: numeric("totalFund", { precision: 15, scale: 2 }).default("0"),
+  coveragePerMember: numeric("coveragePerMember", { precision: 15, scale: 2 }),
+  monthlyContribution: numeric("monthlyContribution", { precision: 10, scale: 2 }),
+  memberCount: integer("memberCount").default(0),
+  status: varchar("status", { length: 32 }).default("Active"),
+  createdAt: timestamp("createdAt").defaultNow().notNull(),
+  updatedAt: timestamp("updatedAt").defaultNow().notNull(),
+});
+export const p2pMemberships = pgTable("p2p_memberships", {
+  id: serial("id").primaryKey(),
+  userId: serial("userId").notNull(),
+  poolId: serial("poolId").notNull(),
+  contribution: numeric("contribution", { precision: 10, scale: 2 }),
+  status: varchar("status", { length: 32 }).default("Active"),
+  joinedAt: timestamp("joinedAt").defaultNow().notNull(),
+});
+export type P2PPool = typeof p2pPools.$inferSelect;
+export type P2PMembership = typeof p2pMemberships.$inferSelect;
+
+// ── Microinsurance ────────────────────────────────────────────────────────────
+export const microinsurancePolicies = pgTable("microinsurance_policies", {
+  id: serial("id").primaryKey(),
+  userId: serial("userId").notNull(),
+  productId: varchar("productId", { length: 64 }).notNull(),
+  productName: varchar("productName", { length: 255 }),
+  premium: numeric("premium", { precision: 10, scale: 2 }),
+  coverage: numeric("coverage", { precision: 15, scale: 2 }),
+  duration: integer("duration").notNull(),
+  status: varchar("status", { length: 32 }).default("Active"),
+  expiresAt: timestamp("expiresAt"),
+  createdAt: timestamp("createdAt").defaultNow().notNull(),
+});
+export type MicroinsurancePolicy = typeof microinsurancePolicies.$inferSelect;
+
+// ── Gig Economy Coverage ──────────────────────────────────────────────────────
+export const gigCoveragePolicies = pgTable("gig_coverage_policies", {
+  id: serial("id").primaryKey(),
+  userId: serial("userId").notNull(),
+  planId: varchar("planId", { length: 64 }).notNull(),
+  planName: varchar("planName", { length: 255 }),
+  platform: varchar("platform", { length: 64 }),
+  premium: numeric("premium", { precision: 10, scale: 2 }),
+  coverage: numeric("coverage", { precision: 15, scale: 2 }),
+  status: varchar("status", { length: 32 }).default("Active"),
+  activatedAt: timestamp("activatedAt").defaultNow().notNull(),
+  expiresAt: timestamp("expiresAt"),
+  createdAt: timestamp("createdAt").defaultNow().notNull(),
+});
+export type GigCoveragePolicy = typeof gigCoveragePolicies.$inferSelect;
+
+// ── SME Policies ──────────────────────────────────────────────────────────────
+export const smePolicies = pgTable("sme_policies", {
+  id: serial("id").primaryKey(),
+  userId: serial("userId").notNull(),
+  productId: varchar("productId", { length: 64 }).notNull(),
+  businessName: varchar("businessName", { length: 255 }),
+  businessType: varchar("businessType", { length: 64 }),
+  annualPremium: numeric("annualPremium", { precision: 10, scale: 2 }),
+  coverageAmount: numeric("coverageAmount", { precision: 15, scale: 2 }),
+  status: varchar("status", { length: 32 }).default("Active"),
+  createdAt: timestamp("createdAt").defaultNow().notNull(),
+  updatedAt: timestamp("updatedAt").defaultNow().notNull(),
+});
+export type SMEPolicy = typeof smePolicies.$inferSelect;
+
+// ── Dynamic Pricing History ───────────────────────────────────────────────────
+export const dynamicPricingHistory = pgTable("dynamic_pricing_history", {
+  id: serial("id").primaryKey(),
+  userId: serial("userId").notNull(),
+  productType: varchar("productType", { length: 64 }).notNull(),
+  basePremium: numeric("basePremium", { precision: 10, scale: 2 }),
+  adjustedPremium: numeric("adjustedPremium", { precision: 10, scale: 2 }),
+  riskScore: integer("riskScore"),
+  quoteId: varchar("quoteId", { length: 128 }),
+  createdAt: timestamp("createdAt").defaultNow().notNull(),
+});
+export type DynamicPricingRecord = typeof dynamicPricingHistory.$inferSelect;
+
+// ── Savings Accounts ──────────────────────────────────────────────────────────
+export const savingsAccounts = pgTable("savings_accounts", {
+  id: serial("id").primaryKey(),
+  userId: serial("userId").notNull(),
+  planId: varchar("planId", { length: 64 }).notNull(),
+  planName: varchar("planName", { length: 255 }),
+  balance: numeric("balance", { precision: 15, scale: 2 }).default("0"),
+  targetAmount: numeric("targetAmount", { precision: 15, scale: 2 }),
+  interestRate: numeric("interestRate", { precision: 5, scale: 4 }),
+  status: varchar("status", { length: 32 }).default("Active"),
+  maturityDate: timestamp("maturityDate"),
+  createdAt: timestamp("createdAt").defaultNow().notNull(),
+  updatedAt: timestamp("updatedAt").defaultNow().notNull(),
+});
+export type SavingsAccount = typeof savingsAccounts.$inferSelect;
+
+// ── MCMC Simulation Results ───────────────────────────────────────────────────
+export const mcmcResults = pgTable("mcmc_results", {
+  id: serial("id").primaryKey(),
+  userId: serial("userId").notNull(),
+  simulationId: varchar("simulationId", { length: 128 }).notNull(),
+  iterations: integer("iterations"),
+  meanLoss: numeric("meanLoss", { precision: 15, scale: 2 }),
+  stdDev: numeric("stdDev", { precision: 15, scale: 2 }),
+  var95: numeric("var95", { precision: 15, scale: 2 }),
+  var99: numeric("var99", { precision: 15, scale: 2 }),
+  processingTime: numeric("processingTime", { precision: 8, scale: 2 }),
+  status: varchar("status", { length: 32 }).default("Completed"),
+  createdAt: timestamp("createdAt").defaultNow().notNull(),
+});
+export type MCMCResult = typeof mcmcResults.$inferSelect;
+
+// ── Family Members ────────────────────────────────────────────────────────────
+export const familyMembers = pgTable("family_members", {
+  id: serial("id").primaryKey(),
+  userId: serial("userId").notNull(),
+  memberName: varchar("memberName", { length: 255 }).notNull(),
+  relationship: varchar("relationship", { length: 64 }).notNull(),
+  dateOfBirth: timestamp("dateOfBirth"),
+  gender: varchar("gender", { length: 16 }),
+  coveredPolicyId: integer("coveredPolicyId"),
+  status: varchar("status", { length: 32 }).default("Active"),
+  createdAt: timestamp("createdAt").defaultNow().notNull(),
+});
+export type FamilyMember = typeof familyMembers.$inferSelect;
+
+// ── Claim Evidence ────────────────────────────────────────────────────────────
+export const claimEvidence = pgTable("claim_evidence", {
+  id: serial("id").primaryKey(),
+  userId: serial("userId").notNull(),
+  claimId: integer("claimId").notNull(),
+  evidenceType: varchar("evidenceType", { length: 64 }).notNull(),
+  fileName: varchar("fileName", { length: 255 }),
+  fileUrl: text("fileUrl"),
+  description: text("description"),
+  status: varchar("status", { length: 32 }).default("Uploaded"),
+  createdAt: timestamp("createdAt").defaultNow().notNull(),
+});
+export type ClaimEvidenceRecord = typeof claimEvidence.$inferSelect;
+
+// ── WhatsApp Messages ─────────────────────────────────────────────────────────
+export const whatsappMessages = pgTable("whatsapp_messages", {
+  id: serial("id").primaryKey(),
+  userId: serial("userId").notNull(),
+  phoneNumber: varchar("phoneNumber", { length: 20 }),
+  direction: varchar("direction", { length: 16 }).notNull(),
+  messageType: varchar("messageType", { length: 32 }).default("text"),
+  content: text("content"),
+  status: varchar("status", { length: 32 }).default("sent"),
+  createdAt: timestamp("createdAt").defaultNow().notNull(),
+});
+export type WhatsAppMessage = typeof whatsappMessages.$inferSelect;
+
+// ── Voice Sessions ────────────────────────────────────────────────────────────
+export const voiceSessions = pgTable("voice_sessions", {
+  id: serial("id").primaryKey(),
+  userId: serial("userId").notNull(),
+  language: varchar("language", { length: 8 }).default("en"),
+  transcription: text("transcription"),
+  confidence: numeric("confidence", { precision: 5, scale: 4 }),
+  intent: varchar("intent", { length: 128 }),
+  status: varchar("status", { length: 32 }).default("Completed"),
+  createdAt: timestamp("createdAt").defaultNow().notNull(),
+});
+export type VoiceSession = typeof voiceSessions.$inferSelect;
+
+// ── Insurance Applications ────────────────────────────────────────────────────
+export const insuranceApplications = pgTable("insurance_applications", {
+  id: serial("id").primaryKey(),
+  userId: serial("userId").notNull(),
+  applicationId: varchar("applicationId", { length: 128 }).notNull(),
+  productType: varchar("productType", { length: 64 }),
+  status: varchar("status", { length: 32 }).default("Draft"),
+  currentStep: varchar("currentStep", { length: 64 }),
+  totalSteps: integer("totalSteps").default(5),
+  submittedAt: timestamp("submittedAt"),
+  createdAt: timestamp("createdAt").defaultNow().notNull(),
+  updatedAt: timestamp("updatedAt").defaultNow().notNull(),
+});
+export type InsuranceApplication = typeof insuranceApplications.$inferSelect;
+
+// ── Customer Feedback ─────────────────────────────────────────────────────────
+export const customerFeedback = pgTable("customer_feedback", {
+  id: serial("id").primaryKey(),
+  userId: serial("userId").notNull(),
+  feedbackType: varchar("feedbackType", { length: 64 }),
+  subject: varchar("subject", { length: 255 }),
+  message: text("message"),
+  rating: integer("rating"),
+  status: varchar("status", { length: 32 }).default("Open"),
+  ticketId: varchar("ticketId", { length: 128 }),
+  createdAt: timestamp("createdAt").defaultNow().notNull(),
+  updatedAt: timestamp("updatedAt").defaultNow().notNull(),
+});
+export type CustomerFeedbackRecord = typeof customerFeedback.$inferSelect;

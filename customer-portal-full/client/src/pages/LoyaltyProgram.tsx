@@ -47,7 +47,7 @@ interface Reward {
   description: string;
 }
 
-const DEMO_MODE = process.env.NODE_ENV === 'development'; // Or based on a feature flag
+const DEMO_MODE = process.env.DEMO_MODE === 'true';
 
 const demoLoyaltyPoints: LoyaltyPoint[] = [
   { id: 'lp001', customerName: 'Aisha Bello', points: 1500, lastActivity: '2024-02-28' },

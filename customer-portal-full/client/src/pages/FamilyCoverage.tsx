@@ -17,7 +17,7 @@ interface FamilyMember {
   dateOfBirth: string;
 }
 
-const DEMO_MODE = process.env.NODE_ENV === 'development';
+const DEMO_MODE = process.env.DEMO_MODE === 'true';
 
 const demoFamilyMembers: FamilyMember[] = [
   { id: '1', name: 'Aisha Musa', relationship: 'Spouse', dateOfBirth: '1988-05-10' },

@@ -18,7 +18,7 @@ interface Reward {
   description: string;
 }
 
-const DEMO_MODE = process.env.NODE_ENV === 'development';
+const DEMO_MODE = process.env.DEMO_MODE === 'true';
 
 const demoRewards: Reward[] = [
   { id: '1', name: 'N500 Airtime', pointsRequired: 500, description: 'Redeem 500 loyalty points for N500 airtime.' },

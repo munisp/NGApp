@@ -36,7 +36,7 @@ interface ABTest {
   conversionRateB: number;
 }
 
-const DEMO_MODE = process.env.NEXT_PUBLIC_DEMO_MODE === 'true';
+const DEMO_MODE = process.env.DEMO_MODE === 'true';
 
 const DEMO_AB_TESTS: ABTest[] = [
   {

@@ -9,7 +9,7 @@ import { Loader2 } from 'lucide-react';
 import { toast } from 'sonner';
 
 // Define a DEMO_MODE constant
-const DEMO_MODE = process.env.NEXT_PUBLIC_DEMO_MODE === 'true';
+const DEMO_MODE = process.env.DEMO_MODE === 'true';
 
 interface RiskData {
   id: string;

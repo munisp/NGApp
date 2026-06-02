@@ -15,7 +15,7 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
 
-const DEMO_MODE = process.env.NEXT_PUBLIC_DEMO_MODE === 'true';
+const DEMO_MODE = process.env.DEMO_MODE === 'true';
 
 const AIAdvisor: React.FC = () => {
   const { isAuthenticated, isLoading: authLoading } = useAuth();

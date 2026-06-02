@@ -18,7 +18,7 @@ interface Transaction {
   description: string;
 }
 
-const DEMO_MODE = process.env.NODE_ENV === 'development';
+const DEMO_MODE = process.env.DEMO_MODE === 'true';
 
 const DigitalWallet: React.FC = () => {
   const { isAuthenticated, isLoading: authLoading } = useAuth();

@@ -10,7 +10,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Badge } from "@/components/ui/badge";
 
-const DEMO_MODE = false; // Set to true to enable demo data
+const DEMO_MODE = process.env.DEMO_MODE === 'true';
 
 interface QuoteFactors {
   age: number;

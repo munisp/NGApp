@@ -19,7 +19,7 @@ interface ComplianceRecord {
   details: string;
 }
 
-const DEMO_MODE = process.env.NODE_ENV === 'development';
+const DEMO_MODE = process.env.DEMO_MODE === 'true';
 
 const DEMO_COMPLIANCE_DATA: ComplianceRecord[] = [
   {

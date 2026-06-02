@@ -98,7 +98,7 @@ const DEMO_PRODUCTS: SMEProduct[] = [
 
 const SMEBusiness: React.FC = () => {
   const { isAuthenticated, isLoading: authLoading } = useAuth();
-  const [DEMO_MODE, setDEMO_MODE] = useState(true); // Start in demo mode as per requirement
+  const DEMO_MODE = process.env.DEMO_MODE === 'true';
   const [searchQuery, setSearchQuery] = useState('');
   const [filterStatus, setFilterStatus] = useState<'all' | 'active' | 'inactive'>('all');
   const [page, setPage] = useState(1);
@@ -198,14 +198,6 @@ const SMEBusiness: React.FC = () => {
         </CardHeader>
         <CardContent>
           <div className="flex justify-end mb-4">
-            <div className="flex items-center space-x-2">
-              <Switch
-                id="demo-mode"
-                checked={DEMO_MODE}
-                onCheckedChange={setDEMO_MODE}
-              />
-              <Label htmlFor="demo-mode">DEMO MODE</Label>
-            </div>
           </div>
 
           <div className="flex justify-between items-center mb-4">

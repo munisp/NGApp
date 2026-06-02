@@ -9,7 +9,7 @@ import { useEffect, useState } from "react";
 import { useNotifications } from "@/hooks/useNotifications";
 
 // Demo mode data for demonstration purposes
-const DEMO_MODE = true;
+const DEMO_MODE = process.env.DEMO_MODE === 'true';
 const DEMO_USER = { name: "Demo User", email: "demo@insureportal.ng" };
 const DEMO_POLICIES = [
   { id: 1, policyNumber: "POL-2026-001", name: "Comprehensive Health Plan", type: "Health", premium: "150000", status: "Active", startDate: "2025-01-15", expiryDate: "2026-01-15" },

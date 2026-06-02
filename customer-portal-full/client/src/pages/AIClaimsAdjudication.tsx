@@ -53,7 +53,7 @@ const DEMO_ADJUDICATION_RESULTS: AdjudicationResult[] = [
   { claimId: 'CLAIM004', adjudicationStatus: 'Approved', reason: 'All documents verified', recommendedAction: 'Process payment' },
 ];
 
-const DEMO_MODE = process.env.NODE_ENV === 'development' || !process.env.NEXT_PUBLIC_TRPC_URL;
+const DEMO_MODE = process.env.DEMO_MODE === 'true';
 
 export default function AIClaimsAdjudication() {
   const { isAuthenticated, isLoading: authLoading } = useAuth();

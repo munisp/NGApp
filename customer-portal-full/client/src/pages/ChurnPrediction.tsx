@@ -23,11 +23,9 @@ import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 
-interface ChurnPredictionProps {
-  DEMO_MODE?: boolean;
-}
+const DEMO_MODE = process.env.DEMO_MODE === 'true';
 
-const ChurnPrediction: React.FC<ChurnPredictionProps> = ({ DEMO_MODE = false }) => {
+const ChurnPrediction: React.FC = () => {
   const { isAuthenticated, isLoading: authLoading } = useAuth();
 
   const [searchTerm, setSearchTerm] = useState('');

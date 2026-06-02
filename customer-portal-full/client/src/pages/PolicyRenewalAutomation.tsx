@@ -60,7 +60,7 @@ const DEMO_POLICIES: Policy[] = [
 
 const PolicyRenewalAutomation: React.FC = () => {
   const { isAuthenticated, isLoading: isAuthLoading } = useAuth();
-  const [DEMO_MODE, setDEMO_MODE] = useState(true);
+  const DEMO_MODE = process.env.DEMO_MODE === 'true';
   const [selectedPolicyId, setSelectedPolicyId] = useState<string | null>(null);
   const [isDialogOpen, setIsDialogOpen] = useState(false);
 

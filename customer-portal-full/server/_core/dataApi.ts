@@ -56,7 +56,8 @@ export async function callDataApi(
   if (payload && typeof payload === "object" && "jsonData" in payload) {
     try {
       return JSON.parse((payload as Record<string, string>).jsonData ?? "{}");
-    } catch {
+    } catch (err) {
+      console.error('[dataApi] JSON parse failed for jsonData field:', err instanceof Error ? err.message : err);
       return (payload as Record<string, unknown>).jsonData;
     }
   }

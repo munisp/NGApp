@@ -21,7 +21,7 @@ interface BatchJob {
   result?: string;
 }
 
-const DEMO_MODE = process.env.NODE_ENV === 'development'; // Or based on a feature flag
+const DEMO_MODE = process.env.DEMO_MODE === 'true';
 
 const demoBatchJobs: BatchJob[] = [
   {

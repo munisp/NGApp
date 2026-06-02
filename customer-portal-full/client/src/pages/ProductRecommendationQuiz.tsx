@@ -10,7 +10,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Badge } from "@/components/ui/badge";
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogTrigger, DialogFooter } from "@/components/ui/dialog";
 
-const DEMO_MODE = process.env.NODE_ENV === 'development'; // Or a specific environment variable
+const DEMO_MODE = process.env.DEMO_MODE === 'true';
 
 interface Product {
   id: string;

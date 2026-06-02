@@ -436,7 +436,8 @@ export async function checkServiceHealth(serviceName: keyof typeof SERVICE_URLS)
       signal: AbortSignal.timeout(5000),
     });
     return response.ok;
-  } catch {
+  } catch (err) {
+    console.error(`[api-clients] health check failed for ${serviceName}:`, err instanceof Error ? err.message : err);
     return false;
   }
 }
@@ -818,7 +819,8 @@ export async function checkKYCGate(userId: string, requiredLevel: number = 1): P
         ? `KYC Level ${result.level} meets minimum ${requiredLevel}`
         : `KYC Level ${result.level || 0} below required ${requiredLevel}`,
     };
-  } catch {
+  } catch (err) {
+    console.error('[api-clients] KYC gate check failed:', err instanceof Error ? err.message : err);
     return { allowed: false, level: 0, reason: 'KYC gate check unavailable' };
   }
 }

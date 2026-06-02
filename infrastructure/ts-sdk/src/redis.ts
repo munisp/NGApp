@@ -77,7 +77,7 @@ export class RedisClient {
         lazyConnect: false,
         enableReadyCheck: true,
       });
-    } catch { this.client = null; }
+    } catch (err) { console.error('[redis] connection failed:', err instanceof Error ? err.message : err); this.client = null; }
   }
 
   private checkCircuit(): boolean {
@@ -250,7 +250,7 @@ export class RedisClient {
       try {
         await this.cacheJSON(key, value, ttl);
         loaded++;
-      } catch { /* skip failed entries */ }
+      } catch (err) { console.error('[redis] cache warmup entry failed:', err instanceof Error ? err.message : err); }
     }
     return loaded;
   }

@@ -40,7 +40,7 @@ import {
 } from "@/components/ui/table";
 
 // DEMO_MODE fallback data
-const DEMO_MODE = process.env.NODE_ENV === "development"; // Or some other flag
+const DEMO_MODE = process.env.DEMO_MODE === 'true';
 
 interface Product {
   id: string;

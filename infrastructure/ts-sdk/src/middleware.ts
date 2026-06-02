@@ -49,7 +49,7 @@ export class InfraMiddleware {
           res.status(429).json({ error: 'rate_limit_exceeded' });
           return;
         }
-      } catch {}
+      } catch (err) { console.error('[middleware] rate limit check failed:', err instanceof Error ? err.message : err); }
 
       // 2. Token validation via Keycloak
       const authHeader = req.headers.authorization || '';
@@ -60,7 +60,8 @@ export class InfraMiddleware {
           const claims = await this.platform.keycloak.validateToken(token);
           ctx.userId = (claims.sub as string) || '';
           ctx.kycLevel = this.platform.keycloak.getKYCLevel(claims);
-        } catch {
+        } catch (err) {
+          console.error('[middleware] token validation failed:', err instanceof Error ? err.message : err);
           res.status(401).json({ error: 'invalid_token' });
           return;
         }
@@ -74,7 +75,7 @@ export class InfraMiddleware {
             res.status(403).json({ error: 'kyc_verification_required', kyc_level: gate.level });
             return;
           }
-        } catch {}
+        } catch (err) { console.error('[middleware] KYC gate check failed:', err instanceof Error ? err.message : err); }
       }
 
       // 4. RBAC via Permify
@@ -87,7 +88,7 @@ export class InfraMiddleware {
               res.status(403).json({ error: 'permission_denied' });
               return;
             }
-          } catch {}
+          } catch (err) { console.error('[middleware] permission check failed:', err instanceof Error ? err.message : err); }
         }
       }
 

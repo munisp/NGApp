@@ -45,7 +45,7 @@ const DEMO_API_KEYS = [
   },
 ];
 
-const DEMO_MODE = process.env.NODE_ENV === 'development'; // Or a specific environment variable
+const DEMO_MODE = process.env.DEMO_MODE === 'true';
 
 export default function BrokerAPIManagement() {
   const { user, isAuthenticated, isLoading: isAuthLoading } = useAuth();

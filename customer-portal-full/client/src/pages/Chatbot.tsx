@@ -22,7 +22,7 @@ interface Message {
   timestamp: Date;
 }
 
-const DEMO_MODE = process.env.NODE_ENV === 'development';
+const DEMO_MODE = process.env.DEMO_MODE === 'true';
 
 const Chatbot: React.FC = () => {
   const { isAuthenticated, isLoading: authLoading } = useAuth();

@@ -7,7 +7,7 @@ import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Loader2 } from "lucide-react";
 
-const DEMO_MODE = false; // Set to true to use demo data
+const DEMO_MODE = process.env.DEMO_MODE === 'true';
 
 interface OnboardingStep {
   id: string;

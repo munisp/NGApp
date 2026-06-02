@@ -105,7 +105,8 @@ export class Platform {
         try {
           await client.ping();
           results[name] = true;
-        } catch {
+        } catch (err) {
+          console.error(`[platform] health check failed for ${name}:`, err instanceof Error ? err.message : err);
           results[name] = false;
         }
       })

@@ -48,9 +48,9 @@ export class KeycloakClient {
               }
             }
           }
-        } catch { /* ignore parse errors */ }
+        } catch (err) { console.error('[keycloak] token invalidation parse error:', err instanceof Error ? err.message : err); }
       });
-    } catch { /* Redis not available for subscription */ }
+    } catch (err) { console.error('[keycloak] Redis subscription unavailable:', err instanceof Error ? err.message : err); }
   }
 
   async ping(): Promise<void> {

@@ -10,7 +10,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { Badge } from '@/components/ui/badge';
 
-const DEMO_MODE = process.env.NODE_ENV === 'development'; // Or a more robust check
+const DEMO_MODE = process.env.DEMO_MODE === 'true';
 
 interface ScanResult {
   id: string;

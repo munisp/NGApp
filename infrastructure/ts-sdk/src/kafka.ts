@@ -28,7 +28,7 @@ export class KafkaClient {
       await this.sendMessage(topic, key, data);
     } catch (err) {
       // Send to DLQ on failure
-      try { await this.sendMessage(`${topic}.dlq`, key, data); } catch {}
+      try { await this.sendMessage(`${topic}.dlq`, key, data); } catch (dlqErr) { console.error('[kafka] DLQ send failed:', dlqErr instanceof Error ? dlqErr.message : dlqErr); }
       throw err;
     }
   }

@@ -11,6 +11,13 @@ import {
   knowledgeGraphNodes, knowledgeGraphEdges,
   telcoCreditScores, InsertTelcoCreditScore,
   kycVerifications,
+  bancassuranceOffers, groupLifeSchemes, groupLifeMembers,
+  nmidVerifications, pfaAnnuityQuotes, reinsuranceTreaties, reinsuranceCessions,
+  documents, emergencyIncidents, p2pPools, p2pMemberships,
+  microinsurancePolicies, gigCoveragePolicies, smePolicies,
+  dynamicPricingHistory, savingsAccounts, mcmcResults,
+  familyMembers, claimEvidence, whatsappMessages, voiceSessions,
+  insuranceApplications, customerFeedback,
 } from "../drizzle/schema";
 import { ENV } from './_core/env';
 
@@ -556,20 +563,36 @@ export async function getBancassurancePartners() {
 export async function createBancassuranceOffer(userId: number, input: any) {
   return { id: Date.now(), userId, ...input, status: 'Generated', offerCode: `BANC-${Date.now()}`, premium: Math.round((input.loanAmount || 500000) * 0.015), createdAt: new Date() };
 }
-export async function getUserBancassuranceOffers(userId: number) { return []; }
+export async function getUserBancassuranceOffers(userId: number) {
+  const db = await getDb();
+  if (!db) return [];
+  return await db.select().from(bancassuranceOffers).where(eq(bancassuranceOffers.userId, userId)).orderBy(desc(bancassuranceOffers.createdAt));
+}
 
 // ─── Group Life ────────────────────────────────────────────────────────────────
-export async function getGroupLifeSchemes(userId: number) { return []; }
+export async function getGroupLifeSchemes(userId: number) {
+  const db = await getDb();
+  if (!db) return [];
+  return await db.select().from(groupLifeSchemes).where(eq(groupLifeSchemes.userId, userId)).orderBy(desc(groupLifeSchemes.createdAt));
+}
 export async function createGroupLifeScheme(userId: number, input: any) {
   return { id: Date.now(), userId, ...input, schemeNumber: `GLS-${Date.now()}`, status: 'Active', createdAt: new Date() };
 }
-export async function getGroupLifeMembers(schemeId: number) { return []; }
+export async function getGroupLifeMembers(schemeId: number) {
+  const db = await getDb();
+  if (!db) return [];
+  return await db.select().from(groupLifeMembers).where(eq(groupLifeMembers.schemeId, schemeId));
+}
 
 // ─── NMID Integration ─────────────────────────────────────────────────────────
 export async function createNMIDVerification(userId: number, input: any) {
   return { id: Date.now(), userId, ...input, verificationStatus: 'Verified', nmidReference: `NMID-${Date.now()}`, vehicleDetails: { make: 'Toyota', model: 'Camry', year: 2020 }, createdAt: new Date() };
 }
-export async function getNMIDVerifications(userId: number) { return []; }
+export async function getNMIDVerifications(userId: number) {
+  const db = await getDb();
+  if (!db) return [];
+  return await db.select().from(nmidVerifications).where(eq(nmidVerifications.userId, userId)).orderBy(desc(nmidVerifications.createdAt));
+}
 
 // ─── PFA Integration ──────────────────────────────────────────────────────────
 export async function getPFAPartners() {
@@ -584,17 +607,29 @@ export async function createPFAAnnuityQuote(userId: number, input: any) {
   const monthlyAnnuity = Math.round(input.accumulatedFund * 0.005);
   return { id: Date.now(), userId, ...input, monthlyAnnuity, annualAnnuity: monthlyAnnuity * 12, quoteReference: `PFA-${Date.now()}`, createdAt: new Date() };
 }
-export async function getUserPFAQuotes(userId: number) { return []; }
+export async function getUserPFAQuotes(userId: number) {
+  const db = await getDb();
+  if (!db) return [];
+  return await db.select().from(pfaAnnuityQuotes).where(eq(pfaAnnuityQuotes.userId, userId)).orderBy(desc(pfaAnnuityQuotes.createdAt));
+}
 
 // ─── Reinsurance ──────────────────────────────────────────────────────────────
-export async function getReinsuranceTreaties(userId: number) { return []; }
+export async function getReinsuranceTreaties(userId: number) {
+  const db = await getDb();
+  if (!db) return [];
+  return await db.select().from(reinsuranceTreaties).where(eq(reinsuranceTreaties.userId, userId)).orderBy(desc(reinsuranceTreaties.createdAt));
+}
 export async function createReinsuranceTreaty(userId: number, data: { name: string; type: string; cessionRate: number; limit: number }) {
   return { id: `RE-${Date.now().toString(36)}`, userId, ...data, treatyNumber: `TRT-${Date.now()}`, status: 'pending_approval', counterparty: 'African Re', effectiveDate: new Date(Date.now() + 2592000000), createdAt: new Date() };
 }
 export async function createReinsuranceCession(input: any) {
   return { id: Date.now(), ...input, cessionAmount: Math.round(input.sumAssured * 0.4), retentionAmount: Math.round(input.sumAssured * 0.6), createdAt: new Date() };
 }
-export async function getReinsuranceCessions(userId: number) { return []; }
+export async function getReinsuranceCessions(userId: number) {
+  const db = await getDb();
+  if (!db) return [];
+  return await db.select().from(reinsuranceCessions).orderBy(desc(reinsuranceCessions.createdAt));
+}
 
 // ─── Agent Management ─────────────────────────────────────────────────────────
 export async function getAgentProfile(userId: number) {
@@ -691,7 +726,17 @@ export async function getUSSDStats() {
 }
 
 // ─── Document Management ──────────────────────────────────────────────────────
-export async function getDocuments(userId: number, entityType?: string, entityId?: number) { return []; }
+export async function getDocuments(userId: number, entityType?: string, entityId?: number) {
+  const db = await getDb();
+  if (!db) return [];
+  if (entityType && entityId) {
+    return await db.select().from(documents).where(and(eq(documents.userId, userId), eq(documents.entityType, entityType), eq(documents.entityId, entityId))).orderBy(desc(documents.createdAt));
+  }
+  if (entityType) {
+    return await db.select().from(documents).where(and(eq(documents.userId, userId), eq(documents.entityType, entityType))).orderBy(desc(documents.createdAt));
+  }
+  return await db.select().from(documents).where(eq(documents.userId, userId)).orderBy(desc(documents.createdAt));
+}
 export async function createDocument(userId: number, input: any) {
   return { id: Date.now(), userId, ...input, uploadedAt: new Date(), status: 'Active' };
 }
@@ -841,7 +886,11 @@ export async function getTelematicsScore(userId: number) {
 export async function triggerEmergencySOS(userId: number, input: any) {
   return { id: Date.now(), userId, ...input, incidentId: `SOS-${Date.now()}`, status: 'Dispatched', emergencyServices: ['Police', 'Ambulance'], estimatedArrival: '8-12 minutes', triggeredAt: new Date() };
 }
-export async function getEmergencyHistory(userId: number) { return []; }
+export async function getEmergencyHistory(userId: number) {
+  const db = await getDb();
+  if (!db) return [];
+  return await db.select().from(emergencyIncidents).where(eq(emergencyIncidents.userId, userId)).orderBy(desc(emergencyIncidents.createdAt));
+}
 
 // ─── Digital Wallet ───────────────────────────────────────────────────────────
 export async function getWalletBalance(userId: number) {
@@ -897,7 +946,11 @@ export async function getP2PPools() {
 export async function joinP2PPool(userId: number, poolId: string, contribution: number) {
   return { success: true, userId, poolId, contribution, membershipId: `MBR-${Date.now()}`, joinedAt: new Date() };
 }
-export async function getUserP2PPools(userId: number) { return []; }
+export async function getUserP2PPools(userId: number) {
+  const db = await getDb();
+  if (!db) return [];
+  return await db.select().from(p2pMemberships).where(eq(p2pMemberships.userId, userId)).orderBy(desc(p2pMemberships.joinedAt));
+}
 
 // ─── Microinsurance ───────────────────────────────────────────────────────────
 export async function getMicroinsuranceProducts() {
@@ -910,7 +963,11 @@ export async function getMicroinsuranceProducts() {
 export async function purchaseMicroinsurance(userId: number, productId: string, duration: number) {
   return { id: Date.now(), userId, productId, duration, policyNumber: `MIC-${Date.now()}`, status: 'Active', expiresAt: new Date(Date.now() + duration * 86400000), purchasedAt: new Date() };
 }
-export async function getActiveMicroinsurance(userId: number) { return []; }
+export async function getActiveMicroinsurance(userId: number) {
+  const db = await getDb();
+  if (!db) return [];
+  return await db.select().from(microinsurancePolicies).where(and(eq(microinsurancePolicies.userId, userId), eq(microinsurancePolicies.status, 'Active'))).orderBy(desc(microinsurancePolicies.createdAt));
+}
 
 // ─── Gig Economy ──────────────────────────────────────────────────────────────
 export async function getGigEconomyPlans() {
@@ -923,7 +980,11 @@ export async function getGigEconomyPlans() {
 export async function activateGigPlan(userId: number, planId: string, platform: string) {
   return { success: true, userId, planId, platform, policyNumber: `GIG-${Date.now()}`, status: 'Active', activatedAt: new Date() };
 }
-export async function getGigCoverage(userId: number) { return []; }
+export async function getGigCoverage(userId: number) {
+  const db = await getDb();
+  if (!db) return [];
+  return await db.select().from(gigCoveragePolicies).where(eq(gigCoveragePolicies.userId, userId)).orderBy(desc(gigCoveragePolicies.createdAt));
+}
 
 // ─── SME Business ─────────────────────────────────────────────────────────────
 export async function getSMEProducts() {
@@ -937,7 +998,11 @@ export async function getSMEQuote(userId: number, input: any) {
   const basePremium = input.employees * 5000 + (input.annualRevenue * 0.001);
   return { userId, ...input, quotedPremium: Math.round(basePremium), quoteReference: `SME-${Date.now()}`, validUntil: new Date(Date.now() + 30 * 86400000) };
 }
-export async function getSMEPolicies(userId: number) { return []; }
+export async function getSMEPolicies(userId: number) {
+  const db = await getDb();
+  if (!db) return [];
+  return await db.select().from(smePolicies).where(eq(smePolicies.userId, userId)).orderBy(desc(smePolicies.createdAt));
+}
 
 // ─── Embedded Insurance ───────────────────────────────────────────────────────
 export async function getEmbeddedPartners() {
@@ -974,7 +1039,11 @@ export async function getDynamicPricingQuote(userId: number, productType: string
   const riskMultiplier = 1 + (Object.keys(riskFactors).length * 0.05);
   return { userId, productType, riskFactors, basePremium: 50000, adjustedPremium: Math.round(50000 * riskMultiplier), riskScore: 65, validFor: '48 hours', quoteId: `DYN-${Date.now()}` };
 }
-export async function getDynamicPricingHistory(userId: number) { return []; }
+export async function getDynamicPricingHistory(userId: number) {
+  const db = await getDb();
+  if (!db) return [];
+  return await db.select().from(dynamicPricingHistory).where(eq(dynamicPricingHistory.userId, userId)).orderBy(desc(dynamicPricingHistory.createdAt));
+}
 
 // ─── Financial Wellness ───────────────────────────────────────────────────────
 export async function getFinancialWellnessScore(userId: number) {
@@ -995,7 +1064,11 @@ export async function getSavingsPlans() {
     { id: 'SAV003', name: 'Retirement Fund', description: 'Build your retirement nest egg', interestRate: 0.15, minAmount: 20000, term: 120 },
   ];
 }
-export async function getUserSavingsAccounts(userId: number) { return []; }
+export async function getUserSavingsAccounts(userId: number) {
+  const db = await getDb();
+  if (!db) return [];
+  return await db.select().from(savingsAccounts).where(eq(savingsAccounts.userId, userId)).orderBy(desc(savingsAccounts.createdAt));
+}
 export async function contributeSavings(userId: number, accountId: string, amount: number) {
   return { success: true, userId, accountId, amount, transactionId: `SAV-TXN-${Date.now()}`, newBalance: amount, contributedAt: new Date() };
 }
@@ -1033,7 +1106,11 @@ export async function getModelAuditLog() {
 export async function runMCMCSimulation(userId: number, input: any) {
   return { simulationId: `MCMC-${Date.now()}`, iterations: input.iterations, status: 'Completed', results: { meanLoss: 125000, stdDev: 45000, var95: 210000, var99: 285000 }, processingTime: 2.8, completedAt: new Date() };
 }
-export async function getMCMCResults(userId: number) { return []; }
+export async function getMCMCResults(userId: number) {
+  const db = await getDb();
+  if (!db) return [];
+  return await db.select().from(mcmcResults).where(eq(mcmcResults.userId, userId)).orderBy(desc(mcmcResults.createdAt));
+}
 
 // ─── Insurance Literacy Hub ───────────────────────────────────────────────────
 export async function getLiteracyArticles(category?: string, language: string = 'en') {
@@ -1064,7 +1141,11 @@ export async function getAgriculturalQuote(userId: number, input: any) {
   const coverage = input.farmSize * 50000;
   return { userId, ...input, coverage, annualPremium: Math.round(coverage * premiumRate), quoteReference: `AGR-${Date.now()}` };
 }
-export async function getAgriculturalPolicies(userId: number) { return []; }
+export async function getAgriculturalPolicies(userId: number) {
+  const db = await getDb();
+  if (!db) return [];
+  return await db.select().from(policies).where(and(eq(policies.userId, userId), eq(policies.type, 'Agricultural'))).orderBy(desc(policies.createdAt));
+}
 
 // ─── Performance Monitoring ───────────────────────────────────────────────────
 export async function getPerformanceMetrics() {
@@ -1098,7 +1179,11 @@ export async function getABResults(experimentId: string) {
 }
 
 // ─── Family Coverage ──────────────────────────────────────────────────────────
-export async function getFamilyMembers(userId: number) { return []; }
+export async function getFamilyMembers(userId: number) {
+  const db = await getDb();
+  if (!db) return [];
+  return await db.select().from(familyMembers).where(eq(familyMembers.userId, userId)).orderBy(desc(familyMembers.createdAt));
+}
 export async function addFamilyMember(userId: number, input: any) {
   return { id: Date.now(), userId, ...input, status: 'Active', addedAt: new Date() };
 }
@@ -1110,7 +1195,11 @@ export async function getFamilyCoveragePlans() {
 }
 
 // ─── Claims Evidence ──────────────────────────────────────────────────────────
-export async function getClaimEvidence(userId: number, claimId: number) { return []; }
+export async function getClaimEvidence(userId: number, claimId: number) {
+  const db = await getDb();
+  if (!db) return [];
+  return await db.select().from(claimEvidence).where(and(eq(claimEvidence.userId, userId), eq(claimEvidence.claimId, claimId))).orderBy(desc(claimEvidence.createdAt));
+}
 export async function uploadClaimEvidence(userId: number, input: any) {
   return { id: Date.now(), userId, ...input, status: 'Uploaded', uploadedAt: new Date() };
 }
@@ -1145,13 +1234,21 @@ export async function getWhatsAppStatus(userId: number) {
 export async function connectWhatsApp(userId: number, phoneNumber: string) {
   return { success: true, userId, phoneNumber, status: 'Connected', connectedAt: new Date() };
 }
-export async function getWhatsAppMessages(userId: number, limit: number = 20) { return []; }
+export async function getWhatsAppMessages(userId: number, limit: number = 20) {
+  const db = await getDb();
+  if (!db) return [];
+  return await db.select().from(whatsappMessages).where(eq(whatsappMessages.userId, userId)).orderBy(desc(whatsappMessages.createdAt)).limit(limit);
+}
 
 // ─── Voice Assistant ──────────────────────────────────────────────────────────
 export async function transcribeVoice(userId: number, audioUrl: string, language: string) {
   return { userId, audioUrl, language, transcription: 'Voice transcription would appear here', confidence: 0.95, transcribedAt: new Date() };
 }
-export async function getVoiceSessions(userId: number) { return []; }
+export async function getVoiceSessions(userId: number) {
+  const db = await getDb();
+  if (!db) return [];
+  return await db.select().from(voiceSessions).where(eq(voiceSessions.userId, userId)).orderBy(desc(voiceSessions.createdAt));
+}
 
 // ─── Onboarding ───────────────────────────────────────────────────────────────
 export async function getOnboardingStatus(userId: number) {
@@ -1171,13 +1268,21 @@ export async function saveApplicationStep(userId: number, input: any) {
 export async function submitApplication(userId: number, applicationId: string) {
   return { success: true, applicationId, status: 'Submitted', submittedAt: new Date(), estimatedProcessingTime: '24-48 hours', referenceNumber: `REF-${Date.now()}` };
 }
-export async function getUserApplications(userId: number) { return []; }
+export async function getUserApplications(userId: number) {
+  const db = await getDb();
+  if (!db) return [];
+  return await db.select().from(insuranceApplications).where(eq(insuranceApplications.userId, userId)).orderBy(desc(insuranceApplications.createdAt));
+}
 
 // ─── Customer Feedback ────────────────────────────────────────────────────────
 export async function submitFeedback(userId: number, input: any) {
   return { id: Date.now(), userId, ...input, submittedAt: new Date(), ticketId: `FBK-${Date.now()}` };
 }
-export async function getFeedback(userId: number) { return []; }
+export async function getFeedback(userId: number) {
+  const db = await getDb();
+  if (!db) return [];
+  return await db.select().from(customerFeedback).where(eq(customerFeedback.userId, userId)).orderBy(desc(customerFeedback.createdAt));
+}
 
 // ─── PostgreSQL Scaling ───────────────────────────────────────────────────────
 export async function getDBScalingMetrics() {

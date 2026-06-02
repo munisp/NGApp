@@ -20,7 +20,7 @@ import {
   TableRow,
 } from '@/components/ui/table';
 
-const DEMO_MODE = process.env.NEXT_PUBLIC_DEMO_MODE === 'true';
+const DEMO_MODE = process.env.DEMO_MODE === 'true';
 
 const demoMetrics = [
   { metric: 'CPU Usage', value: '75%', threshold: '80%' },

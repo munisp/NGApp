@@ -49,7 +49,8 @@ export class PermifyClient {
       if (!resp.ok) return false; // Default-deny
       const data = await resp.json() as Record<string, unknown>;
       return data.can === 'CHECK_RESULT_ALLOWED';
-    } catch {
+    } catch (err) {
+      console.error('[permify] permission check failed:', err instanceof Error ? err.message : err);
       return false; // Default-deny on error
     }
   }

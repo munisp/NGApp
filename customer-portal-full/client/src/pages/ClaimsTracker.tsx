@@ -33,7 +33,7 @@ interface Claim {
   description: string;
 }
 
-const DEMO_MODE = process.env.NODE_ENV === 'development' || process.env.NEXT_PUBLIC_DEMO_MODE === 'true';
+const DEMO_MODE = process.env.DEMO_MODE === 'true';
 
 const demoClaims: Claim[] = [
   {

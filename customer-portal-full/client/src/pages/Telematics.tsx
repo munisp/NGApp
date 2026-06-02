@@ -65,7 +65,7 @@ const DEMO_TELEMATICS_DATA: TelematicsData[] = [
   },
 ];
 
-const DEMO_MODE = process.env.NEXT_PUBLIC_DEMO_MODE === 'true';
+const DEMO_MODE = process.env.DEMO_MODE === 'true';
 
 const Telematics: React.FC = () => {
   const { isAuthenticated, isLoading: isAuthLoading } = useAuth();

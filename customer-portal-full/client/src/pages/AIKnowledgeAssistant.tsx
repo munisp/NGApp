@@ -21,7 +21,7 @@ interface Message {
   timestamp: Date;
 }
 
-const DEMO_MODE = process.env.NEXT_PUBLIC_DEMO_MODE === 'true';
+const DEMO_MODE = process.env.DEMO_MODE === 'true';
 
 const AIKnowledgeAssistant: React.FC = () => {
   const { isAuthenticated, isLoading: authLoading } = useAuth();

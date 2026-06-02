@@ -9,7 +9,7 @@ import { toast } from "sonner";
 
 interface AnalyticsDashboardProps {}
 
-const DEMO_MODE = process.env.NODE_ENV === 'development';
+const DEMO_MODE = process.env.DEMO_MODE === 'true';
 
 const Analytics: React.FC<AnalyticsDashboardProps> = () => {
   const { isAuthenticated, isLoading: authLoading } = useAuth();
