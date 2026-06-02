@@ -4,7 +4,7 @@ import { serial, integer, pgEnum, pgTable, text, timestamp, varchar, decimal, bo
 // Note: In PostgreSQL, enums must be defined separately before use in tables
 
 export const roleEnum = pgEnum("role", ["user", "admin", "merchant", "participant", "cbn"]);
-export const outboundTransferStatusEnum = pgEnum("outbound_transfer_status", ["admitted", "workflow", "compliance", "pricing", "routing", "settlement", "audit", "completed", "failed", "manual_review"]);
+export const outboundTransferStatusEnum = pgEnum("outbound_transfer_status", ["admitted", "workflow", "compliance", "pricing", "routing", "settlement", "audit", "completed", "failed", "manual_review", "blocked"]);
 export const participantStatusEnum = pgEnum("participant_status", ["pending", "onboarding", "sandbox", "active", "suspended"]);
 export const participantTierEnum = pgEnum("participant_tier", ["starter", "growth", "enterprise", "premium"]);
 export const twoFactorEnabledEnum = pgEnum("two_factor_enabled", ["true", "false"]);
