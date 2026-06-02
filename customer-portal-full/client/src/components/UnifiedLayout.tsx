@@ -127,6 +127,13 @@ import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/component
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
 import { CSSProperties, ReactNode, useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { useLocation } from "wouter";
+import { useTheme } from "@/contexts/ThemeContext";
+import { Moon, Sun } from "lucide-react";
+import MobileBottomNav from "@/components/MobileBottomNav";
+import PWAInstallPrompt from "@/components/PWAInstallPrompt";
+import OfflineIndicator from "@/components/OfflineIndicator";
+import PullToRefresh from "@/components/PullToRefresh";
+import FloatingActionButton from "@/components/FloatingActionButton";
 
 interface MenuItem {
   icon: React.ElementType;
@@ -498,6 +505,24 @@ function NavItemButton({
   );
 }
 
+function ThemeToggle() {
+  const { theme, toggleTheme, switchable } = useTheme();
+  if (!switchable || !toggleTheme) return null;
+  return (
+    <button
+      onClick={toggleTheme}
+      className="h-8 w-8 flex items-center justify-center rounded-lg hover:bg-accent transition-colors"
+      aria-label={`Switch to ${theme === 'light' ? 'dark' : 'light'} mode`}
+    >
+      {theme === 'light' ? (
+        <Moon className="h-4 w-4 text-muted-foreground" />
+      ) : (
+        <Sun className="h-4 w-4 text-muted-foreground" />
+      )}
+    </button>
+  );
+}
+
 export default function UnifiedLayout({ children }: { children: ReactNode }) {
   return (
     <SidebarProvider
@@ -570,6 +595,9 @@ function UnifiedLayoutContent({ children }: { children: ReactNode }) {
   const activeMenuItem = menuGroups
     .flatMap((g) => g.items)
     .find((item) => item.path === location);
+
+  const activeMenuGroup = menuGroups
+    .find((g) => g.items.some((item) => item.path === location))?.label;
 
   const handleNavigate = useCallback((path: string) => {
     addRecent(path);
@@ -819,23 +847,42 @@ function UnifiedLayoutContent({ children }: { children: ReactNode }) {
       </Sidebar>
 
       <SidebarInset>
-        <header className="flex h-14 items-center justify-between border-b bg-background/95 px-4 backdrop-blur supports-[backdrop-filter]:backdrop-blur sticky top-0 z-40">
-          <div className="flex items-center gap-3">
-            <SidebarTrigger className="h-8 w-8 rounded-lg" />
-            <div className="flex items-center gap-2">
-              <h1 className="text-lg font-semibold">
+        <header className="flex h-14 items-center justify-between border-b bg-background/95 px-2 sm:px-4 backdrop-blur supports-[backdrop-filter]:backdrop-blur sticky top-0 z-40">
+          <div className="flex items-center gap-2 sm:gap-3 min-w-0">
+            <SidebarTrigger className="h-8 w-8 rounded-lg shrink-0" />
+            <div className="flex items-center gap-1.5 min-w-0">
+              {!isMobile && activeMenuGroup && (
+                <>
+                  <span className="text-xs text-muted-foreground truncate hidden sm:inline">
+                    {activeMenuGroup}
+                  </span>
+                  <ChevronRight className="h-3 w-3 text-muted-foreground shrink-0 hidden sm:block" />
+                </>
+              )}
+              <h1 className="text-base sm:text-lg font-semibold truncate">
                 {activeMenuItem?.label ?? "Dashboard"}
               </h1>
             </div>
           </div>
-          <div className="flex items-center gap-2">
-            <Badge className={`${roleColors[role]}`}>
+          <div className="flex items-center gap-1.5 sm:gap-2 shrink-0">
+            <ThemeToggle />
+            <Badge className={`${roleColors[role]} text-[10px] sm:text-xs`}>
               {roleLabels[role]}
             </Badge>
           </div>
         </header>
-        <main className="flex-1 p-6 overflow-auto">{children}</main>
+        <PullToRefresh>
+          <main className={`flex-1 p-3 sm:p-4 md:p-6 overflow-auto ${isMobile ? 'pb-24' : ''}`}>{children}</main>
+        </PullToRefresh>
       </SidebarInset>
+
+      <MobileBottomNav onMorePress={() => {
+        const trigger = document.querySelector('[data-sidebar="trigger"]') as HTMLButtonElement;
+        trigger?.click();
+      }} />
+      <FloatingActionButton />
+      <PWAInstallPrompt />
+      <OfflineIndicator />
     </>
   );
 }
