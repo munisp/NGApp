@@ -67,6 +67,8 @@ const DEMO_CLAIMS: Claim[] = [
 
 const DEMO_QUEUE: string[] = ['CLM001', 'CLM005'];
 
+const DEMO_MODE = process.env.DEMO_MODE === 'true';
+
 const ClaimsAdjudicationEngine: React.FC = () => {
   const { isAuthenticated, isLoading: authLoading } = useAuth();
   const [searchQuery, setSearchQuery] = useState('');
@@ -74,15 +76,13 @@ const ClaimsAdjudicationEngine: React.FC = () => {
   const [currentPage, setCurrentPage] = useState(1);
   const itemsPerPage = 5;
 
-  const isDemoMode = !isAuthenticated;
-
   // tRPC Queries
   const { data: claimsData, isLoading: claimsLoading, error: claimsError } = trpc.claims.list.useQuery(undefined, {
-    enabled: !isDemoMode,
+    enabled: !DEMO_MODE,
   });
 
   const { data: queueData, isLoading: queueLoading, error: queueError } = trpc.claimRouting.queue.useQuery(undefined, {
-    enabled: !isDemoMode,
+    enabled: !DEMO_MODE,
   });
 
   // tRPC Mutations
@@ -98,8 +98,8 @@ const ClaimsAdjudicationEngine: React.FC = () => {
     }
   }, [claimsError, queueError]);
 
-  const claims = isDemoMode ? DEMO_CLAIMS : (claimsData || []);
-  const claimQueue = isDemoMode ? DEMO_QUEUE : (queueData || []);
+  const claims = DEMO_MODE ? DEMO_CLAIMS : (claimsData || []);
+  const claimQueue = DEMO_MODE ? DEMO_QUEUE : (queueData || []);
 
   const filteredClaims = claims.filter(claim => {
     const matchesSearch = claim.id.toLowerCase().includes(searchQuery.toLowerCase()) ||
@@ -116,7 +116,7 @@ const ClaimsAdjudicationEngine: React.FC = () => {
   );
 
   const handleProcessClaim = async (claimId: string) => {
-    if (isDemoMode) {
+    if (DEMO_MODE) {
       toast.info(`DEMO MODE: Processing claim ${claimId}`);
       // Simulate processing
       const updatedClaims = DEMO_CLAIMS.map(claim =>
@@ -194,7 +194,7 @@ const ClaimsAdjudicationEngine: React.FC = () => {
             </Select>
           </div>
 
-          {(claimsLoading || queueLoading) && !isDemoMode ? (
+          {(claimsLoading || queueLoading) && !DEMO_MODE ? (
             <div className="flex justify-center items-center h-40">
               <Loader2 className="h-8 w-8 animate-spin" />
             </div>
@@ -266,7 +266,7 @@ const ClaimsAdjudicationEngine: React.FC = () => {
 
           <div className="mt-8">
             <h3 className="text-xl font-semibold mb-4">Claims in Routing Queue</h3>
-            {(claimsLoading || queueLoading) && !isDemoMode ? (
+            {(claimsLoading || queueLoading) && !DEMO_MODE ? (
               <div className="flex justify-center items-center h-20">
                 <Loader2 className="h-6 w-6 animate-spin" />
               </div>

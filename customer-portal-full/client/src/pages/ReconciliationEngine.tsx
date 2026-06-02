@@ -52,6 +52,8 @@ const DEMO_RECONCILIATION_DATA: ReconciliationSummary[] = [
   { id: 'rec-005', period: '2024-05', status: 'Pending', discrepancies: 0, lastRun: '2024-06-01' },
 ];
 
+const DEMO_MODE = process.env.DEMO_MODE === 'true';
+
 const ReconciliationEngine: React.FC = () => {
   const { isAuthenticated, isLoading: authLoading } = useAuth();
   const [selectedPeriod, setSelectedPeriod] = useState<string>('2024-06');
@@ -85,7 +87,7 @@ const ReconciliationEngine: React.FC = () => {
     }
   };
 
-  const filteredSummaries = (summaryData || DEMO_RECONCILIATION_DATA).filter(summary =>
+  const filteredSummaries = (DEMO_MODE ? DEMO_RECONCILIATION_DATA : (summaryData || [])).filter(summary =>
     summary.period.toLowerCase().includes(searchQuery.toLowerCase()) ||
     summary.status.toLowerCase().includes(searchQuery.toLowerCase())
   );

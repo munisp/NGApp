@@ -96,6 +96,8 @@ const DEMO_AGENTS: Agent[] = [
   },
 ];
 
+const DEMO_MODE = process.env.DEMO_MODE === 'true';
+
 const AgentPortal: React.FC = () => {
   const { user } = useAuth();
   const [searchTerm, setSearchTerm] = useState('');
@@ -113,10 +115,9 @@ const AgentPortal: React.FC = () => {
   const updateAgentMutation = trpc.agents.update.useMutation();
   const trpcUtils = trpc.useUtils();
 
-  // DEMO_MODE fallback
-  const agents = agentsData || DEMO_AGENTS;
-  const performanceMetrics = performanceData || {}; // Assuming performanceData is an object
-  const commissions = commissionsData || {}; // Assuming commissionsData is an object
+  const agents = DEMO_MODE ? DEMO_AGENTS : (agentsData || []);
+  const performanceMetrics = performanceData || {};
+  const commissions = commissionsData || {};
 
   // Error handling
   if (agentsError) {

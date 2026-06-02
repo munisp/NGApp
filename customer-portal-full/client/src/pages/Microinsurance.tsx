@@ -60,9 +60,10 @@ const DEMO_PRODUCTS: MicroinsuranceProduct[] = [
   },
 ];
 
+const DEMO_MODE = process.env.DEMO_MODE === 'true';
+
 const MicroinsurancePage: React.FC = () => {
   const { user, isLoading: isAuthLoading } = useAuth();
-  const [isDemoMode, setIsDemoMode] = useState(false);
   const [searchTerm, setSearchTerm] = useState('');
   const [selectedProduct, setSelectedProduct] = useState<MicroinsuranceProduct | null>(null);
 
@@ -106,10 +107,9 @@ const MicroinsurancePage: React.FC = () => {
 
   if (isError) {
     toast.error(`Failed to load products: ${error?.message}`);
-    setIsDemoMode(true);
   }
 
-  const displayedProducts = isDemoMode ? DEMO_PRODUCTS : (products || []);
+  const displayedProducts = DEMO_MODE ? DEMO_PRODUCTS : (products || []);
 
   const filteredProducts = displayedProducts.filter(product =>
     product.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
@@ -117,7 +117,7 @@ const MicroinsurancePage: React.FC = () => {
   );
 
   const handleEnroll = (productId: string) => {
-    if (isDemoMode) {
+    if (DEMO_MODE) {
       toast.info('Enrollment is in DEMO MODE. No actual enrollment will occur.');
       toast.success(`Successfully simulated enrollment for product ID: ${productId}`);
       return;
@@ -136,12 +136,9 @@ const MicroinsurancePage: React.FC = () => {
           onChange={(e) => setSearchTerm(e.target.value)}
           className="max-w-sm"
         />
-        <Button onClick={() => setIsDemoMode(!isDemoMode)} variant="outline">
-          {isDemoMode ? 'Exit Demo Mode' : 'Enter Demo Mode'}
-        </Button>
       </div>
 
-      {isDemoMode && (
+      {DEMO_MODE && (
         <Badge variant="destructive" className="mb-4">DEMO MODE ACTIVE: Displaying sample data.</Badge>
       )}
 

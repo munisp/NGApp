@@ -55,10 +55,11 @@ const DEMO_EMERGENCIES: Emergency[] = [
   },
 ];
 
+const DEMO_MODE = process.env.DEMO_MODE === 'true';
+
 const EmergencySOS: React.FC = () => {
   const { user, isLoading: isAuthLoading } = useAuth();
   const [searchQuery, setSearchQuery] = useState('');
-  const [isDemoMode, setIsDemoMode] = useState(true);
   const [newEmergencyDetails, setNewEmergencyDetails] = useState({
     type: '',
     location: '',
@@ -69,7 +70,7 @@ const EmergencySOS: React.FC = () => {
   const trpcUtils = trpc.useUtils();
 
   const { data: emergencies, isLoading, isError, error } = trpc.emergency.list.useQuery(undefined, {
-    enabled: !isDemoMode && !!user,
+    enabled: !DEMO_MODE && !!user,
   });
 
   const createEmergencyMutation = trpc.emergency.create.useMutation({
@@ -100,14 +101,14 @@ const EmergencySOS: React.FC = () => {
     );
   }
 
-  if (isError && !isDemoMode) {
+  if (isError && !DEMO_MODE) {
     toast.error(`Error fetching emergencies: ${error?.message}`);
     // Optionally, switch to demo mode if real data fails
-    // setIsDemoMode(true);
+
   }
 
   const filteredEmergencies = useMemo(() => {
-    const sourceData = isDemoMode ? DEMO_EMERGENCIES : (emergencies || []);
+    const sourceData = DEMO_MODE ? DEMO_EMERGENCIES : (emergencies || []);
     if (!searchQuery) {
       return sourceData;
     }
@@ -117,7 +118,7 @@ const EmergencySOS: React.FC = () => {
         emergency.location.toLowerCase().includes(searchQuery.toLowerCase()) ||
         emergency.status.toLowerCase().includes(searchQuery.toLowerCase())
     );
-  }, [searchQuery, emergencies, isDemoMode]);
+  }, [searchQuery, emergencies]);
 
   const handleCreateEmergency = () => {
     if (!newEmergencyDetails.type || !newEmergencyDetails.location || !newEmergencyDetails.contact) {
@@ -125,7 +126,7 @@ const EmergencySOS: React.FC = () => {
       return;
     }
 
-    if (isDemoMode) {
+    if (DEMO_MODE) {
       // Simulate creation in demo mode
       const newId = (DEMO_EMERGENCIES.length + 1).toString();
       const newDemoEmergency: Emergency = {
@@ -153,12 +154,9 @@ const EmergencySOS: React.FC = () => {
         <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
           <CardTitle className="text-2xl font-bold">Emergency SOS</CardTitle>
           <div className="flex items-center space-x-2">
-            <Badge variant={isDemoMode ? 'destructive' : 'default'}>
-              {isDemoMode ? 'DEMO MODE' : 'LIVE DATA'}
+            <Badge variant={DEMO_MODE ? 'destructive' : 'default'}>
+              {DEMO_MODE ? 'DEMO MODE' : 'LIVE DATA'}
             </Badge>
-            <Button onClick={() => setIsDemoMode(!isDemoMode)} variant="outline" size="sm">
-              Switch to {isDemoMode ? 'Live' : 'Demo'} Mode
-            </Button>
             <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
               <DialogTrigger asChild>
                 <Button>Report New Emergency</Button>
@@ -230,7 +228,7 @@ const EmergencySOS: React.FC = () => {
               className="max-w-sm"
             />
           </div>
-          {isLoading && !isDemoMode ? (
+          {isLoading && !DEMO_MODE ? (
             <div className="flex justify-center items-center h-40">
               <Loader2 className="h-8 w-8 animate-spin" />
             </div>

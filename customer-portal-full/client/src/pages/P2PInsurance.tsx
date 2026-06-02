@@ -64,6 +64,8 @@ const DEMO_P2P_POOLS = [
   },
 ];
 
+const DEMO_MODE = process.env.DEMO_MODE === 'true';
+
 const P2PInsurance: React.FC = () => {
   const { user, isAuthenticated, isLoading: authLoading } = useAuth();
   const [searchQuery, setSearchQuery] = useState('');
@@ -99,32 +101,13 @@ const P2PInsurance: React.FC = () => {
 
   if (isError) {
     toast.error(`Error loading P2P pools: ${error?.message || 'Unknown error'}`);
-    // Fallback to DEMO_MODE
-    return (
-      <P2PInsuranceContent
-        pools={DEMO_P2P_POOLS}
-        searchQuery={searchQuery}
-        setSearchQuery={setSearchQuery}
-        filterStatus={filterStatus}
-        setFilterStatus={setFilterStatus}
-        setIsJoinDialogOpen={setIsJoinDialogOpen}
-        setIsContributeDialogOpen={setIsContributeDialogOpen}
-        setSelectedPoolId={setSelectedPoolId}
-        joinPoolMutation={joinPoolMutation}
-        contributeMutation={contributeMutation}
-        contributionAmount={contributionAmount}
-        setContributionAmount={setContributionAmount}
-        isJoinDialogOpen={isJoinDialogOpen}
-        isContributeDialogOpen={isContributeDialogOpen}
-        selectedPoolId={selectedPoolId}
-        refetchPools={refetch}
-      />
-    );
   }
+
+  const displayPools = DEMO_MODE ? DEMO_P2P_POOLS : (pools || []);
 
   return (
     <P2PInsuranceContent
-      pools={pools || []}
+      pools={displayPools}
       searchQuery={searchQuery}
       setSearchQuery={setSearchQuery}
       filterStatus={filterStatus}

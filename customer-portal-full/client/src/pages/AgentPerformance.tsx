@@ -68,6 +68,8 @@ const DEMO_AGENTS: Agent[] = [
   },
 ];
 
+const DEMO_MODE = process.env.DEMO_MODE === 'true';
+
 const AgentPerformance: React.FC = () => {
   const { isAuthenticated } = useAuth();
   const [searchTerm, setSearchTerm] = useState('');
@@ -102,10 +104,9 @@ const AgentPerformance: React.FC = () => {
     );
   }
 
-  // DEMO_MODE fallback
-  const agents = agentsData || DEMO_AGENTS;
-  const performanceMetrics = performanceData || { totalAgents: 5, averageScore: 86, totalPoliciesSold: 495 };
-  const totalCommissions = commissionsData?.totalCommissions || 530000;
+  const agents = DEMO_MODE ? DEMO_AGENTS : (agentsData || []);
+  const performanceMetrics = DEMO_MODE ? { totalAgents: 5, averageScore: 86, totalPoliciesSold: 495 } : (performanceData || { totalAgents: 0, averageScore: 0, totalPoliciesSold: 0 });
+  const totalCommissions = DEMO_MODE ? 530000 : (commissionsData?.totalCommissions || 0);
 
   const filteredAgents = agents.filter(agent => {
     const matchesSearch = agent.name.toLowerCase().includes(searchTerm.toLowerCase()) ||

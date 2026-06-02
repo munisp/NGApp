@@ -76,6 +76,8 @@ const DEMO_HEALTH_DATA: HealthData[] = [
   },
 ];
 
+const DEMO_MODE = process.env.DEMO_MODE === 'true';
+
 const HealthWellness: React.FC = () => {
   const { isAuthenticated, isLoading: authLoading } = useAuth();
   const [searchQuery, setSearchQuery] = useState('');
@@ -135,7 +137,7 @@ const HealthWellness: React.FC = () => {
     );
   }
 
-  const healthData = data || DEMO_HEALTH_DATA;
+  const healthData = DEMO_MODE ? DEMO_HEALTH_DATA : (data || []);
 
   const filteredData = healthData.filter((item) => {
     const matchesSearch = item.metric.toLowerCase().includes(searchQuery.toLowerCase());

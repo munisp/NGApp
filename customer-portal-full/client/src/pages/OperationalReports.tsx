@@ -62,9 +62,10 @@ const DEMO_REPORTS: Report[] = [
   },
 ];
 
+const DEMO_MODE = process.env.DEMO_MODE === 'true';
+
 const OperationalReports: React.FC = () => {
   const { isAuthenticated, isLoading: authLoading } = useAuth();
-  const [isDemoMode, setIsDemoMode] = useState(false);
   const [page, setPage] = useState(1);
   const [pageSize, setPageSize] = useState(10);
   const [reportType, setReportType] = useState('');
@@ -77,7 +78,7 @@ const OperationalReports: React.FC = () => {
 
   const { data: reportsData, isLoading: isLoadingReports, isError: isErrorReports, error: reportsError } = trpc.reports.list.useQuery(
     { page, pageSize, searchTerm },
-    { enabled: isAuthenticated && !isDemoMode }
+    { enabled: isAuthenticated && !DEMO_MODE }
   );
 
   const generateReportMutation = trpc.reports.generate.useMutation({
@@ -94,17 +95,7 @@ const OperationalReports: React.FC = () => {
   });
 
   useEffect(() => {
-    if (!isAuthenticated && !authLoading) {
-      setIsDemoMode(true);
-      setFilteredReports(DEMO_REPORTS);
-    } else if (isAuthenticated && reportsData?.reports) {
-      setFilteredReports(reportsData.reports);
-    }
-  }, [isAuthenticated, authLoading, reportsData, isDemoMode]);
-
-  // Handle search filtering for demo mode
-  useEffect(() => {
-    if (isDemoMode) {
+    if (DEMO_MODE) {
       setFilteredReports(
         DEMO_REPORTS.filter(
           (report) =>
@@ -112,8 +103,10 @@ const OperationalReports: React.FC = () => {
             report.period.toLowerCase().includes(searchTerm.toLowerCase())
         )
       );
+    } else if (isAuthenticated && reportsData?.reports) {
+      setFilteredReports(reportsData.reports);
     }
-  }, [searchTerm, isDemoMode]);
+  }, [isAuthenticated, authLoading, reportsData, searchTerm]);
 
   if (authLoading || (isAuthenticated && isLoadingReports)) {
     return (
@@ -132,7 +125,7 @@ const OperationalReports: React.FC = () => {
     );
   }
 
-  if (!isAuthenticated && !isDemoMode) {
+  if (!isAuthenticated && !DEMO_MODE) {
     return (
       <div className="flex items-center justify-center h-screen text-lg font-semibold">
         Please log in to view operational reports.
@@ -200,7 +193,7 @@ const OperationalReports: React.FC = () => {
                       return;
                     }
                     // Handle report generation in demo mode or with tRPC
-                    if (isDemoMode) {
+                    if (DEMO_MODE) {
                       const newReport: Report = {
                         id: `RPT${DEMO_REPORTS.length + 1}`,
                         type: reportType || 'Custom Report',
@@ -249,7 +242,7 @@ const OperationalReports: React.FC = () => {
             </TableBody>
           </Table>
           {/* Pagination Controls */}
-          {!isDemoMode && reportsData && reportsData.totalPages > 1 && (
+          {!DEMO_MODE && reportsData && reportsData.totalPages > 1 && (
             <div className="flex justify-end space-x-2 mt-4">
               <Button
                 variant="outline"
