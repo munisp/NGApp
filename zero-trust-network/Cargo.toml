@@ -1,0 +1,19 @@
+[package]
+name = "zero-trust-network"
+version = "1.0.0"
+edition = "2021"
+description = "Zero-Trust Network Policy Enforcement - mTLS, APISIX integration, Permify authorization"
+
+[dependencies]
+actix-web = "4"
+actix-rt = "2"
+serde = { version = "1", features = ["derive"] }
+serde_json = "1"
+tokio = { version = "1", features = ["full"] }
+chrono = { version = "0.4", features = ["serde"] }
+uuid = { version = "1", features = ["v4"] }
+redis = { version = "0.25", features = ["tokio-comp"] }
+reqwest = { version = "0.12", features = ["json"] }
+tracing = "0.1"
+tracing-subscriber = "0.3"
+anyhow = "1"
