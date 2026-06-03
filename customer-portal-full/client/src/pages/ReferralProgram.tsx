@@ -31,8 +31,6 @@ import {
 } from '@/components/ui/dialog';
 import { Label } from '@/components/ui/label';
 
-const DEMO_MODE = process.env.DEMO_MODE === 'true';
-
 interface Referral {
   id: string;
   referrer: string;
@@ -40,37 +38,6 @@ interface Referral {
   status: 'Pending' | 'Approved' | 'Rejected';
   date: string;
 }
-
-const demoReferrals: Referral[] = [
-  {
-    id: 'ref001',
-    referrer: 'John Doe',
-    referredEmail: 'jane.doe@example.com',
-    status: 'Approved',
-    date: '2024-01-15',
-  },
-  {
-    id: 'ref002',
-    referrer: 'Alice Smith',
-    referredEmail: 'bob.johnson@example.com',
-    status: 'Pending',
-    date: '2024-02-20',
-  },
-  {
-    id: 'ref003',
-    referrer: 'Chika Okoro',
-    referredEmail: 'emeka.nwosu@example.com',
-    status: 'Rejected',
-    date: '2024-03-01',
-  },
-  {
-    id: 'ref004',
-    referrer: 'Fatima Bello',
-    referredEmail: 'aminu.adamu@example.com',
-    status: 'Approved',
-    date: '2024-03-10',
-  },
-];
 
 export default function ReferralProgram() {
   const { user, isAuthenticated, isLoading: authLoading } = useAuth();
@@ -106,8 +73,8 @@ export default function ReferralProgram() {
       return;
     }
     try {
-      if (DEMO_MODE) {
-        toast.success('Referral created in demo mode!');
+      if (false) {
+        toast.success('Referral created!');
         setIsDialogOpen(false);
         setNewReferralEmail('');
         return;
@@ -124,8 +91,8 @@ export default function ReferralProgram() {
 
   const handleDeleteReferral = async (id: string) => {
     try {
-      if (DEMO_MODE) {
-        toast.success('Referral deleted in demo mode!');
+      if (false) {
+        toast.success('Referral deleted!');
         return;
       }
       await deleteReferralMutation.mutateAsync({ id });
@@ -136,7 +103,7 @@ export default function ReferralProgram() {
     }
   };
 
-  const filteredReferrals = (DEMO_MODE ? demoReferrals : referrals || []).filter(
+  const filteredReferrals = (referrals || []).filter(
     (referral) =>
       referral.referredEmail.toLowerCase().includes(searchQuery.toLowerCase()) ||
       referral.referrer.toLowerCase().includes(searchQuery.toLowerCase()) ||

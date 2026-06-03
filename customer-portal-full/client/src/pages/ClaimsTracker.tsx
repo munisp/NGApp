@@ -33,56 +33,6 @@ interface Claim {
   description: string;
 }
 
-const DEMO_MODE = process.env.DEMO_MODE === 'true';
-
-const demoClaims: Claim[] = [
-  {
-    id: 'CLM001',
-    policyId: 'POL001',
-    claimantName: 'Aisha Bello',
-    claimDate: '2023-01-15',
-    status: 'Approved',
-    amount: 150000,
-    description: 'Car accident claim for a damaged bumper.'
-  },
-  {
-    id: 'CLM002',
-    policyId: 'POL002',
-    claimantName: 'Chidi Okoro',
-    claimDate: '2023-02-20',
-    status: 'Pending',
-    amount: 50000,
-    description: 'Medical claim for a minor surgery.'
-  },
-  {
-    id: 'CLM003',
-    policyId: 'POL003',
-    claimantName: 'Fatima Musa',
-    claimDate: '2023-03-10',
-    status: 'Rejected',
-    amount: 25000,
-    description: 'Travel insurance claim for lost luggage.'
-  },
-  {
-    id: 'CLM004',
-    policyId: 'POL004',
-    claimantName: 'Kunle Adebayo',
-    claimDate: '2023-04-05',
-    status: 'Processing',
-    amount: 300000,
-    description: 'Fire damage claim for a residential property.'
-  },
-  {
-    id: 'CLM005',
-    policyId: 'POL005',
-    claimantName: 'Ngozi Eze',
-    claimDate: '2023-05-12',
-    status: 'Approved',
-    amount: 75000,
-    description: 'Theft claim for a stolen phone.'
-  },
-];
-
 export default function ClaimsTracker() {
   const { isAuthenticated, isLoading: authLoading } = useAuth();
   const [searchTerm, setSearchTerm] = useState('');
@@ -109,13 +59,13 @@ export default function ClaimsTracker() {
   // Fetch claims
   const { data: claimsData, isLoading: isClaimsLoading, isError: isClaimsError } = trpc.claims.list.useQuery(
     { page, limit: pageSize, searchTerm, status: filterStatus === 'All' ? undefined : filterStatus },
-    { enabled: isAuthenticated && !DEMO_MODE }
+    { enabled: isAuthenticated }
   );
 
   // Fetch single claim for editing/viewing
   const { data: singleClaimData, isLoading: isSingleClaimLoading, isError: isSingleClaimError } = trpc.claims.getById.useQuery(
     { id: selectedClaimId! },
-    { enabled: isAuthenticated && !DEMO_MODE && !!selectedClaimId }
+    { enabled: isAuthenticated && !!selectedClaimId }
   );
 
   useEffect(() => {
@@ -204,14 +154,9 @@ export default function ClaimsTracker() {
     }
   };
 
-  const displayClaims = DEMO_MODE
-    ? demoClaims.filter(claim =>
-        claim.claimantName.toLowerCase().includes(searchTerm.toLowerCase()) &&
-        (filterStatus === 'All' || claim.status === filterStatus)
-      )
-    : claimsData?.items || [];
+  const displayClaims = claimsData?.items || [];
 
-  const totalClaims = DEMO_MODE ? displayClaims.length : claimsData?.totalCount || 0;
+  const totalClaims = claimsData?.totalCount || 0;
   const totalPages = Math.ceil(totalClaims / pageSize);
 
   if (authLoading) {
@@ -319,12 +264,12 @@ export default function ClaimsTracker() {
             </Dialog>
           </div>
 
-          {(isClaimsLoading && !DEMO_MODE) ? (
+          {(isClaimsLoading && true) ? (
             <div className="flex justify-center items-center h-40">
               <Loader2 className="h-8 w-8 animate-spin" />
               <p className="ml-2">Loading claims...</p>
             </div>
-          ) : isClaimsError && !DEMO_MODE ? (
+          ) : isClaimsError && true ? (
             <div className="text-center text-red-500">Failed to load claims.</div>
           ) : (
             <Table>
@@ -399,12 +344,12 @@ export default function ClaimsTracker() {
             <DialogTitle>Edit Claim</DialogTitle>
             <DialogDescription>Edit the details of the selected claim.</DialogDescription>
           </DialogHeader>
-          {(isSingleClaimLoading && !DEMO_MODE) ? (
+          {(isSingleClaimLoading && true) ? (
             <div className="flex justify-center items-center h-20">
               <Loader2 className="h-6 w-6 animate-spin" />
               <p className="ml-2">Loading claim details...</p>
             </div>
-          ) : isSingleClaimError && !DEMO_MODE ? (
+          ) : isSingleClaimError && true ? (
             <div className="text-center text-red-500">Failed to load claim details.</div>
           ) : editingClaim ? (
             <div className="grid gap-4 py-4">

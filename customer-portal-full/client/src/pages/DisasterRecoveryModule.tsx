@@ -8,8 +8,6 @@ import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, D
 import { trpc } from '@/lib/trpc';
 import { useAuth } from '@/_core/hooks/useAuth';
 
-const DEMO_MODE = process.env.DEMO_MODE === 'true';
-
 interface DisasterRecoveryStatus {
   status: 'Operational' | 'Degraded' | 'Failed';
   lastTest: string;
@@ -19,15 +17,6 @@ interface DisasterRecoveryStatus {
   notes: string;
 }
 
-const DEMO_DISASTER_RECOVERY_STATUS: DisasterRecoveryStatus = {
-  status: 'Operational',
-  lastTest: '2024-02-28T10:00:00Z',
-  nextScheduledTest: '2024-03-28T10:00:00Z',
-  recoveryPointObjective: '4 hours',
-  recoveryTimeObjective: '24 hours',
-  notes: 'All systems are currently operational. Last test successful.',
-};
-
 const DisasterRecoveryModule: React.FC = () => {
   const { isAuthenticated, isLoading: authLoading } = useAuth();
   const [isTestDialogOpen, setIsTestDialogOpen] = useState(false);
@@ -35,7 +24,7 @@ const DisasterRecoveryModule: React.FC = () => {
   const utils = trpc.useUtils();
 
   const { data: statusData, isLoading: isStatusLoading, error: statusError } = trpc.disasterRecovery.status.useQuery(undefined, {
-    enabled: !DEMO_MODE && isAuthenticated,
+    enabled: isAuthenticated,
   });
 
   const testMutation = trpc.disasterRecovery.test.useMutation({
@@ -49,7 +38,7 @@ const DisasterRecoveryModule: React.FC = () => {
     },
   });
 
-  const currentStatus = DEMO_MODE ? DEMO_DISASTER_RECOVERY_STATUS : statusData;
+  const currentStatus = statusData;
 
   if (authLoading) {
     return (
@@ -72,7 +61,7 @@ const DisasterRecoveryModule: React.FC = () => {
     );
   }
 
-  if (isStatusLoading && !DEMO_MODE) {
+  if (isStatusLoading && true) {
     return (
       <div className="flex items-center justify-center h-full">
         <Loader2 className="h-8 w-8 animate-spin" />
@@ -81,7 +70,7 @@ const DisasterRecoveryModule: React.FC = () => {
     );
   }
 
-  if (statusError && !DEMO_MODE) {
+  if (statusError && true) {
     toast.error(`Error loading status: ${statusError.message}`);
     return (
       <Card className="w-full max-w-2xl mx-auto">

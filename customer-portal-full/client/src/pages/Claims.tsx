@@ -12,22 +12,8 @@ import { useAuth } from "@/_core/hooks/useAuth";
 import { getLoginUrl } from "@/const";
 import { toast } from "sonner";
 
-// Demo mode data
-const DEMO_MODE = process.env.DEMO_MODE === 'true';
-const DEMO_CLAIMS = [
-  { id: 1, claimNumber: "CLM-2026-001", policyId: 1, amount: "45000", status: "Under Review", incidentDate: new Date("2026-01-10"), description: "Medical expenses for hospital visit and prescribed medications following an accident.", createdAt: new Date("2026-01-12"), updatedAt: new Date() },
-  { id: 2, claimNumber: "CLM-2025-002", policyId: 2, amount: "120000", status: "Approved", incidentDate: new Date("2025-11-20"), description: "Vehicle repair costs after minor collision at intersection.", createdAt: new Date("2025-11-22"), updatedAt: new Date() },
-  { id: 3, claimNumber: "CLM-2025-003", policyId: 1, amount: "25000", status: "Paid", incidentDate: new Date("2025-09-15"), description: "Dental procedure covered under health plan.", createdAt: new Date("2025-09-17"), updatedAt: new Date() },
-];
-const DEMO_POLICIES = [
-  { id: 1, policyNumber: "POL-2026-001", name: "Comprehensive Health Plan", type: "Health" },
-  { id: 2, policyNumber: "POL-2026-002", name: "Auto Protection Plus", type: "Auto" },
-  { id: 3, policyNumber: "POL-2025-003", name: "Home Shield", type: "Property" },
-];
-
 export default function Claims() {
   const { isAuthenticated, loading: authLoading } = useAuth();
-  const [demoMode] = useState(DEMO_MODE);
   const [showForm, setShowForm] = useState(false);
   const [formData, setFormData] = useState({
     policyId: "",
@@ -37,17 +23,17 @@ export default function Claims() {
   });
 
   const { data: realClaims, isLoading } = trpc.claims.list.useQuery(undefined, {
-    enabled: isAuthenticated && !demoMode,
+    enabled: isAuthenticated,
   });
 
   const { data: realPolicies } = trpc.policies.list.useQuery(undefined, {
-    enabled: isAuthenticated && !demoMode,
+    enabled: isAuthenticated,
   });
 
   const { data: kycGate } = trpc.kyc.gate.useQuery(undefined, { enabled: isAuthenticated });
 
-  const claims = demoMode ? DEMO_CLAIMS : realClaims;
-  const policies = demoMode ? DEMO_POLICIES : realPolicies;
+  const claims = realClaims;
+  const policies = realPolicies;
 
   const createClaimMutation = trpc.claims.create.useMutation({
     onSuccess: () => {
@@ -66,12 +52,12 @@ export default function Claims() {
   });
 
   useEffect(() => {
-    if (!demoMode && !authLoading && !isAuthenticated) {
+    if (!authLoading && !isAuthenticated) {
       window.location.href = getLoginUrl();
     }
-  }, [authLoading, isAuthenticated, demoMode]);
+  }, [authLoading, isAuthenticated]);
 
-  if (!demoMode && (authLoading || !isAuthenticated)) {
+  if ((authLoading || !isAuthenticated)) {
     return (
       <div className="min-h-screen flex items-center justify-center">
         <Loader2 className="h-8 w-8 animate-spin text-blue-600" />

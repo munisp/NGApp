@@ -11,19 +11,8 @@ import { useAuth } from "@/_core/hooks/useAuth";
 import { getLoginUrl } from "@/const";
 import { toast } from "sonner";
 
-// Demo mode data
-const DEMO_MODE = process.env.DEMO_MODE === 'true';
-const DEMO_PAYMENTS = [
-  { id: 1, policyId: 1, amount: "12500", status: "Pending", dueDate: new Date("2026-02-15"), paidDate: null, paymentMethod: null, createdAt: new Date(), updatedAt: new Date() },
-  { id: 2, policyId: 2, amount: "7083", status: "Completed", dueDate: new Date("2026-01-01"), paidDate: new Date("2025-12-28"), paymentMethod: "Card ending in 4242", createdAt: new Date(), updatedAt: new Date() },
-  { id: 3, policyId: 1, amount: "12500", status: "Completed", dueDate: new Date("2026-01-15"), paidDate: new Date("2026-01-14"), paymentMethod: "Bank Transfer", createdAt: new Date(), updatedAt: new Date() },
-  { id: 4, policyId: 4, amount: "29166", status: "Pending", dueDate: new Date("2026-02-01"), paidDate: null, paymentMethod: null, createdAt: new Date(), updatedAt: new Date() },
-  { id: 5, policyId: 2, amount: "7083", status: "Completed", dueDate: new Date("2025-12-01"), paidDate: new Date("2025-11-30"), paymentMethod: "Card ending in 4242", createdAt: new Date(), updatedAt: new Date() },
-];
-
 export default function Payments() {
   const { isAuthenticated, loading: authLoading } = useAuth();
-  const [demoMode] = useState(DEMO_MODE);
   const [paymentMethod, setPaymentMethod] = useState({
     cardNumber: "",
     expiry: "",
@@ -31,10 +20,10 @@ export default function Payments() {
   });
 
   const { data: realPayments, isLoading } = trpc.payments.list.useQuery(undefined, {
-    enabled: isAuthenticated && !demoMode,
+    enabled: isAuthenticated,
   });
 
-  const payments = demoMode ? DEMO_PAYMENTS : realPayments;
+  const payments = realPayments;
 
   const processPaymentMutation = trpc.payments.process.useMutation({
     onSuccess: () => {
@@ -51,12 +40,12 @@ export default function Payments() {
   });
 
   useEffect(() => {
-    if (!demoMode && !authLoading && !isAuthenticated) {
+    if (!authLoading && !isAuthenticated) {
       window.location.href = getLoginUrl();
     }
-  }, [authLoading, isAuthenticated, demoMode]);
+  }, [authLoading, isAuthenticated]);
 
-  if (!demoMode && (authLoading || !isAuthenticated)) {
+  if ((authLoading || !isAuthenticated)) {
     return (
       <div className="min-h-screen flex items-center justify-center">
         <Loader2 className="h-8 w-8 animate-spin text-blue-600" />

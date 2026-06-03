@@ -20,56 +20,6 @@ interface Agent {
   status: 'active' | 'inactive' | 'on-leave';
 }
 
-const DEMO_AGENTS: Agent[] = [
-  {
-    id: 'agent-1',
-    name: 'Aisha Bello',
-    email: 'aisha.bello@example.com',
-    performanceScore: 92,
-    commissionEarned: 150000,
-    policiesSold: 120,
-    status: 'active',
-  },
-  {
-    id: 'agent-2',
-    name: 'Chinedu Okoro',
-    email: 'chinedu.okoro@example.com',
-    performanceScore: 88,
-    commissionEarned: 120000,
-    policiesSold: 95,
-    status: 'active',
-  },
-  {
-    id: 'agent-3',
-    name: 'Fatima Musa',
-    email: 'fatima.musa@example.com',
-    performanceScore: 75,
-    commissionEarned: 80000,
-    policiesSold: 60,
-    status: 'on-leave',
-  },
-  {
-    id: 'agent-4',
-    name: 'Kunle Adeyemi',
-    email: 'kunle.adeyemi@example.com',
-    performanceScore: 95,
-    commissionEarned: 180000,
-    policiesSold: 150,
-    status: 'active',
-  },
-  {
-    id: 'agent-5',
-    name: 'Ngozi Eze',
-    email: 'ngozi.eze@example.com',
-    performanceScore: 80,
-    commissionEarned: 100000,
-    policiesSold: 70,
-    status: 'inactive',
-  },
-];
-
-const DEMO_MODE = process.env.DEMO_MODE === 'true';
-
 const AgentPerformance: React.FC = () => {
   const { isAuthenticated } = useAuth();
   const [searchTerm, setSearchTerm] = useState('');
@@ -104,9 +54,9 @@ const AgentPerformance: React.FC = () => {
     );
   }
 
-  const agents = DEMO_MODE ? DEMO_AGENTS : (agentsData || []);
-  const performanceMetrics = DEMO_MODE ? { totalAgents: 5, averageScore: 86, totalPoliciesSold: 495 } : (performanceData || { totalAgents: 0, averageScore: 0, totalPoliciesSold: 0 });
-  const totalCommissions = DEMO_MODE ? 530000 : (commissionsData?.totalCommissions || 0);
+  const agents = agentsData || [];
+  const performanceMetrics = performanceData || { totalAgents: 0, averageScore: 0, totalPoliciesSold: 0 };
+  const totalCommissions = commissionsData?.totalCommissions || 0;
 
   const filteredAgents = agents.filter(agent => {
     const matchesSearch = agent.name.toLowerCase().includes(searchTerm.toLowerCase()) ||

@@ -22,8 +22,6 @@ import {
   Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogTrigger, DialogFooter
 } from '@/components/ui/dialog';
 
-const DEMO_MODE = process.env.DEMO_MODE === 'true';
-
 interface BancassuranceProduct {
   id: string;
   name: string;
@@ -32,33 +30,6 @@ interface BancassuranceProduct {
   interestRate: number;
   minDeposit: number;
 }
-
-const demoProducts: BancassuranceProduct[] = [
-  {
-    id: 'prod_001',
-    name: 'BankAssure Savings Plan',
-    bankPartner: 'FirstBank Nigeria',
-    description: 'A savings plan linked with insurance benefits.',
-    interestRate: 0.05,
-    minDeposit: 50000,
-  },
-  {
-    id: 'prod_002',
-    name: 'WealthGuard Investment',
-    bankPartner: 'Zenith Bank Plc',
-    description: 'Investment product with life insurance coverage.',
-    interestRate: 0.08,
-    minDeposit: 100000,
-  },
-  {
-    id: 'prod_003',
-    name: 'FutureSecure Education Plan',
-    bankPartner: 'GTBank',
-    description: 'Education savings with critical illness cover.',
-    interestRate: 0.06,
-    minDeposit: 75000,
-  },
-];
 
 const Bancassurance: React.FC = () => {
   const { isAuthenticated, isLoading: authLoading } = useAuth();
@@ -111,7 +82,7 @@ const Bancassurance: React.FC = () => {
     return <p className="text-center text-red-500">Error loading bancassurance products.</p>;
   }
 
-  const availableProducts = DEMO_MODE ? demoProducts : (products || []);
+  const availableProducts = products || [];
 
   const filteredProducts = availableProducts.filter(product => {
     const matchesSearch = searchTerm === '' ||

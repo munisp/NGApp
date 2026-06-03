@@ -8,47 +8,26 @@ import { getLoginUrl } from "@/const";
 import { useEffect, useState } from "react";
 import { useNotifications } from "@/hooks/useNotifications";
 
-// Demo mode data for demonstration purposes
-const DEMO_MODE = process.env.DEMO_MODE === 'true';
-const DEMO_USER = { name: "Demo User", email: "demo@insureportal.ng" };
-const DEMO_POLICIES = [
-  { id: 1, policyNumber: "POL-2026-001", name: "Comprehensive Health Plan", type: "Health", premium: "150000", status: "Active", startDate: "2025-01-15", expiryDate: "2026-01-15" },
-  { id: 2, policyNumber: "POL-2026-002", name: "Auto Protection Plus", type: "Auto", premium: "85000", status: "Active", startDate: "2025-03-01", expiryDate: "2026-03-01" },
-  { id: 3, policyNumber: "POL-2025-003", name: "Home Shield", type: "Property", premium: "200000", status: "Expired", startDate: "2024-06-01", expiryDate: "2025-06-01" },
-];
-const DEMO_CLAIMS = [
-  { id: 1, claimNumber: "CLM-2026-001", policyId: 1, amount: "45000", status: "Under Review", incidentDate: "2026-01-10", description: "Medical expenses", createdAt: "2026-01-12" },
-  { id: 2, claimNumber: "CLM-2025-002", policyId: 2, amount: "120000", status: "Approved", incidentDate: "2025-11-20", description: "Vehicle repair", createdAt: "2025-11-22" },
-];
-const DEMO_PAYMENTS = [
-  { id: 1, policyId: 1, amount: "12500", status: "Pending", dueDate: "2026-02-15", paidDate: null, paymentMethod: null },
-  { id: 2, policyId: 2, amount: "7083", status: "Completed", dueDate: "2026-01-01", paidDate: "2025-12-28", paymentMethod: "Card" },
-  { id: 3, policyId: 1, amount: "12500", status: "Completed", dueDate: "2026-01-15", paidDate: "2026-01-14", paymentMethod: "Bank Transfer" },
-];
-
 export default function Dashboard() {
   const { user: authUser, loading: authLoading, isAuthenticated, logout } = useAuth();
   const [, setLocation] = useLocation();
-  const [demoMode] = useState(DEMO_MODE);
-  
-  // Use demo data or real data based on mode
-  const user = demoMode ? DEMO_USER : authUser;
+  const user = authUser;
   
   const { data: realPolicies, isLoading: policiesLoading } = trpc.policies.list.useQuery(undefined, {
-    enabled: isAuthenticated && !demoMode,
+    enabled: isAuthenticated,
   });
   
   const { data: realClaims, isLoading: claimsLoading } = trpc.claims.list.useQuery(undefined, {
-    enabled: isAuthenticated && !demoMode,
+    enabled: isAuthenticated,
   });
   
   const { data: realPayments, isLoading: paymentsLoading } = trpc.payments.list.useQuery(undefined, {
-    enabled: isAuthenticated && !demoMode,
+    enabled: isAuthenticated,
   });
 
-  const policies = demoMode ? DEMO_POLICIES : realPolicies;
-  const claims = demoMode ? DEMO_CLAIMS : realClaims;
-  const payments = demoMode ? DEMO_PAYMENTS : realPayments;
+  const policies = realPolicies;
+  const claims = realClaims;
+  const payments = realPayments;
 
   const logoutMutation = trpc.auth.logout.useMutation({
     onSuccess: () => {
@@ -57,15 +36,15 @@ export default function Dashboard() {
   });
 
   // Enable real-time notifications
-  const { connected: notificationsConnected } = useNotifications(isAuthenticated || demoMode);
+  const { connected: notificationsConnected } = useNotifications(isAuthenticated);
 
   useEffect(() => {
-    if (!demoMode && !authLoading && !isAuthenticated) {
+    if (!authLoading && !isAuthenticated) {
       window.location.href = getLoginUrl();
     }
-  }, [authLoading, isAuthenticated, demoMode]);
+  }, [authLoading, isAuthenticated]);
 
-  if (!demoMode && (authLoading || !isAuthenticated)) {
+  if ((authLoading || !isAuthenticated)) {
     return (
       <div className="min-h-screen flex items-center justify-center">
         <Loader2 className="h-8 w-8 animate-spin text-blue-600" />

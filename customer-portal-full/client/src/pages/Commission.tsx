@@ -18,51 +18,6 @@ interface Commission {
   date: string;
 }
 
-const DEMO_COMMISSIONS: Commission[] = [
-  {
-    id: 'comm1',
-    agentName: 'Aisha Bello',
-    policyNumber: 'POL001',
-    commissionAmount: 15000.00,
-    status: 'Paid',
-    date: '2024-01-15',
-  },
-  {
-    id: 'comm2',
-    agentName: 'Chidi Okoro',
-    policyNumber: 'POL002',
-    commissionAmount: 22000.50,
-    status: 'Pending',
-    date: '2024-01-20',
-  },
-  {
-    id: 'comm3',
-    agentName: 'Fatima Musa',
-    policyNumber: 'POL003',
-    commissionAmount: 18000.00,
-    status: 'Paid',
-    date: '2024-02-01',
-  },
-  {
-    id: 'comm4',
-    agentName: 'Kunle Adebayo',
-    policyNumber: 'POL004',
-    commissionAmount: 9500.75,
-    status: 'Cancelled',
-    date: '2024-02-10',
-  },
-  {
-    id: 'comm5',
-    agentName: 'Ngozi Eze',
-    policyNumber: 'POL005',
-    commissionAmount: 30000.00,
-    status: 'Pending',
-    date: '2024-02-15',
-  },
-];
-
-const DEMO_MODE = process.env.DEMO_MODE === 'true';
-
 export default function CommissionPage() {
   const { isAuthenticated, isLoading: authLoading } = useAuth();
   const [searchTerm, setSearchTerm] = useState('');
@@ -71,10 +26,10 @@ export default function CommissionPage() {
 
   const { data, isLoading, isError, error } = trpc.agents.commissions.useQuery(
     undefined, // No input needed for this query based on the schema
-    { enabled: isAuthenticated && !DEMO_MODE }
+    { enabled: isAuthenticated }
   );
 
-  const commissions = DEMO_MODE ? DEMO_COMMISSIONS : data || [];
+  const commissions = data || [];
 
   if (authLoading) {
     return (
@@ -92,7 +47,7 @@ export default function CommissionPage() {
     );
   }
 
-  if (isError && !DEMO_MODE) {
+  if (isError && true) {
     toast.error(`Error fetching commissions: ${error?.message || 'Unknown error'}`);
     return (
       <div className="flex items-center justify-center h-screen text-lg font-semibold text-red-500">
@@ -136,7 +91,7 @@ export default function CommissionPage() {
             />
           </div>
 
-          {isLoading && !DEMO_MODE ? (
+          {isLoading ? (
             <div className="flex items-center justify-center h-48">
               <Loader2 className="h-8 w-8 animate-spin" />
             </div>

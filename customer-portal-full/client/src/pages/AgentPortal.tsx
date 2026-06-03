@@ -48,56 +48,6 @@ interface Agent {
   totalCommission: number;
 }
 
-const DEMO_AGENTS: Agent[] = [
-  {
-    id: 'agent1',
-    name: 'Aisha Bello',
-    email: 'aisha.bello@example.com',
-    status: 'Active',
-    region: 'Lagos',
-    performanceScore: 85,
-    totalCommission: 150000,
-  },
-  {
-    id: 'agent2',
-    name: 'Chinedu Okoro',
-    email: 'chinedu.okoro@example.com',
-    status: 'Inactive',
-    region: 'Abuja',
-    performanceScore: 60,
-    totalCommission: 75000,
-  },
-  {
-    id: 'agent3',
-    name: 'Fatima Musa',
-    email: 'fatima.musa@example.com',
-    status: 'Active',
-    region: 'Kano',
-    performanceScore: 92,
-    totalCommission: 210000,
-  },
-  {
-    id: 'agent4',
-    name: 'Kunle Adeyemi',
-    email: 'kunle.adeyemi@example.com',
-    status: 'Pending',
-    region: 'Oyo',
-    performanceScore: 70,
-    totalCommission: 90000,
-  },
-  {
-    id: 'agent5',
-    name: 'Ngozi Eze',
-    email: 'ngozi.eze@example.com',
-    status: 'Active',
-    region: 'Rivers',
-    performanceScore: 88,
-    totalCommission: 180000,
-  },
-];
-
-const DEMO_MODE = process.env.DEMO_MODE === 'true';
-
 const AgentPortal: React.FC = () => {
   const { user } = useAuth();
   const [searchTerm, setSearchTerm] = useState('');
@@ -115,7 +65,7 @@ const AgentPortal: React.FC = () => {
   const updateAgentMutation = trpc.agents.update.useMutation();
   const trpcUtils = trpc.useUtils();
 
-  const agents = DEMO_MODE ? DEMO_AGENTS : (agentsData || []);
+  const agents = agentsData || [];
   const performanceMetrics = performanceData || {};
   const commissions = commissionsData || {};
 

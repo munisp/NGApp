@@ -10,8 +10,6 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@
 import { Badge } from '@/components/ui/badge';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 
-const DEMO_MODE = process.env.DEMO_MODE === 'true';
-
 interface NMIDHistoryEntry {
   id: string;
   vehicleId: string;
@@ -19,44 +17,6 @@ interface NMIDHistoryEntry {
   status: 'Verified' | 'Failed';
   details: string;
 }
-
-const demoNMIDHistory: NMIDHistoryEntry[] = [
-  {
-    id: '1',
-    vehicleId: 'ABC-123-XYZ',
-    verificationDate: '2024-01-15',
-    status: 'Verified',
-    details: 'Vehicle details matched with national database.',
-  },
-  {
-    id: '2',
-    vehicleId: 'DEF-456-UVW',
-    verificationDate: '2024-02-20',
-    status: 'Failed',
-    details: 'Vehicle ID not found in national database.',
-  },
-  {
-    id: '3',
-    vehicleId: 'GHI-789-RST',
-    verificationDate: '2024-03-10',
-    status: 'Verified',
-    details: 'Successful verification, valid insurance.',
-  },
-  {
-    id: '4',
-    vehicleId: 'JKL-012-PQR',
-    verificationDate: '2024-04-05',
-    status: 'Verified',
-    details: 'Vehicle details matched with national database.',
-  },
-  {
-    id: '5',
-    vehicleId: 'MNO-345-KLM',
-    verificationDate: '2024-05-22',
-    status: 'Failed',
-    details: 'Expired insurance policy.',
-  },
-];
 
 const NMIDIntegration: React.FC = () => {
   const { isAuthenticated, isLoading: authLoading } = useAuth();
@@ -69,7 +29,7 @@ const NMIDIntegration: React.FC = () => {
 
   const { data: historyData, isLoading: isHistoryLoading, error: historyError } = trpc.nmid.history.useQuery(
     undefined,
-    { enabled: isAuthenticated && !DEMO_MODE }
+    { enabled: isAuthenticated }
   );
 
   const { mutate: verifyNMID, isLoading: isVerifying, error: verifyError } = trpc.nmid.verify.useMutation({
@@ -124,9 +84,7 @@ const NMIDIntegration: React.FC = () => {
     verifyNMID({ vehicleId: vehicleIdToVerify });
   };
 
-  const displayHistory = DEMO_MODE
-    ? demoNMIDHistory
-    : historyData || [];
+  const displayHistory = historyData || [];
 
   const filteredHistory = displayHistory.filter(
     (entry) =>
@@ -198,7 +156,7 @@ const NMIDIntegration: React.FC = () => {
             </Select>
           </div>
 
-          {isHistoryLoading && !DEMO_MODE ? (
+          {isHistoryLoading && true ? (
             <div className="flex justify-center items-center h-40">
               <Loader2 className="h-8 w-8 animate-spin" />
             </div>

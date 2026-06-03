@@ -8,8 +8,6 @@ import { Label } from "@/components/ui/label";
 import { Loader2 } from "lucide-react";
 import { toast } from "sonner";
 
-const DEMO_MODE = process.env.DEMO_MODE === 'true';
-
 interface UserProfile {
   name: string;
   email: string;
@@ -17,19 +15,12 @@ interface UserProfile {
   address: string;
 }
 
-const demoProfile: UserProfile = {
-  name: "Aisha Bello",
-  email: "aisha.bello@example.com",
-  phone: "+2348012345678",
-  address: "123 Lagos Street, Victoria Island, Lagos, Nigeria",
-};
-
 export default function SystemSettings() {
   const { isAuthenticated, user } = useAuth();
   const utils = trpc.useUtils();
 
   const { data: profileData, isLoading: isProfileLoading, error: profileError } = trpc.profile.get.useQuery(undefined, {
-    enabled: isAuthenticated && !DEMO_MODE,
+    enabled: isAuthenticated,
   });
 
   const updateProfileMutation = trpc.profile.update.useMutation({
@@ -48,11 +39,11 @@ export default function SystemSettings() {
   const [address, setAddress] = useState('');
 
   useEffect(() => {
-    if (DEMO_MODE) {
-      setName(demoProfile.name);
-      setEmail(demoProfile.email);
-      setPhone(demoProfile.phone);
-      setAddress(demoProfile.address);
+    if (false) {
+      setName("");
+      setEmail("");
+      setPhone("");
+      setAddress("");
     } else if (profileData) {
       setName(profileData.name || '');
       setEmail(profileData.email || '');
@@ -69,7 +60,7 @@ export default function SystemSettings() {
     );
   }
 
-  if (isProfileLoading && !DEMO_MODE) {
+  if (isProfileLoading && true) {
     return (
       <div className="flex items-center justify-center h-screen">
         <Loader2 className="h-8 w-8 animate-spin" />
@@ -78,7 +69,7 @@ export default function SystemSettings() {
     );
   }
 
-  if (profileError && !DEMO_MODE) {
+  if (profileError && true) {
     return (
       <div className="flex items-center justify-center h-screen">
         <p className="text-red-500">Error loading settings: {profileError.message}</p>
@@ -88,7 +79,7 @@ export default function SystemSettings() {
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
-    if (DEMO_MODE) {
+    if (false) {
       toast.success("Profile updated successfully in DEMO MODE!");
       console.log("DEMO MODE: Updated profile", { name, email, phone, address });
       return;

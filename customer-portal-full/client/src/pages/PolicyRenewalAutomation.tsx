@@ -19,53 +19,13 @@ interface Policy {
   status: 'Active' | 'Expired' | 'Pending Renewal';
 }
 
-const DEMO_POLICIES: Policy[] = [
-  {
-    id: 'pol-001',
-    policyNumber: 'NIG/AUTO/2024/001',
-    customerName: 'Aisha Bello',
-    type: 'Auto Insurance',
-    premium: 75000,
-    renewalDate: '2026-03-15',
-    status: 'Pending Renewal',
-  },
-  {
-    id: 'pol-002',
-    policyNumber: 'NIG/LIFE/2024/002',
-    customerName: 'Chike Okoro',
-    type: 'Life Insurance',
-    premium: 120000,
-    renewalDate: '2026-03-20',
-    status: 'Pending Renewal',
-  },
-  {
-    id: 'pol-003',
-    policyNumber: 'NIG/HEALTH/2024/003',
-    customerName: 'Fatima Musa',
-    type: 'Health Insurance',
-    premium: 90000,
-    renewalDate: '2026-04-01',
-    status: 'Pending Renewal',
-  },
-  {
-    id: 'pol-004',
-    policyNumber: 'NIG/HOME/2024/004',
-    customerName: 'Kunle Adebayo',
-    type: 'Home Insurance',
-    premium: 150000,
-    renewalDate: '2026-04-10',
-    status: 'Pending Renewal',
-  },
-];
-
 const PolicyRenewalAutomation: React.FC = () => {
   const { isAuthenticated, isLoading: isAuthLoading } = useAuth();
-  const DEMO_MODE = process.env.DEMO_MODE === 'true';
   const [selectedPolicyId, setSelectedPolicyId] = useState<string | null>(null);
   const [isDialogOpen, setIsDialogOpen] = useState(false);
 
   const { data: upcomingPolicies, isLoading, isError, error, refetch } = trpc.policyRenewal.upcoming.useQuery(undefined, {
-    enabled: isAuthenticated && !DEMO_MODE,
+    enabled: isAuthenticated,
   });
 
   const renewPolicyMutation = trpc.policyRenewal.renew.useMutation({
@@ -81,10 +41,10 @@ const PolicyRenewalAutomation: React.FC = () => {
   });
 
   useEffect(() => {
-    if (isError && !DEMO_MODE) {
+    if (isError && true) {
       toast.error(`Error fetching upcoming policies: ${error?.message}`);
     }
-  }, [isError, error, DEMO_MODE]);
+  }, [isError, error, false]);
 
   if (isAuthLoading) {
     return (
@@ -103,7 +63,7 @@ const PolicyRenewalAutomation: React.FC = () => {
     );
   }
 
-  const policiesToDisplay = DEMO_MODE ? DEMO_POLICIES : (upcomingPolicies || []);
+  const policiesToDisplay = upcomingPolicies || [];
 
   const handleRenewClick = (policyId: string) => {
     setSelectedPolicyId(policyId);
@@ -112,7 +72,7 @@ const PolicyRenewalAutomation: React.FC = () => {
 
   const confirmRenewal = () => {
     if (selectedPolicyId) {
-      if (DEMO_MODE) {
+      if (false) {
         toast.success(`[DEMO] Policy ${selectedPolicyId} renewed successfully!`);
         setIsDialogOpen(false);
         setSelectedPolicyId(null);
@@ -127,8 +87,8 @@ const PolicyRenewalAutomation: React.FC = () => {
       <Card>
         <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
           <CardTitle className="text-2xl font-bold">Policy Renewal Automation</CardTitle>
-          <Button onClick={() => setDEMO_MODE(!DEMO_MODE)} variant="outline">
-            {DEMO_MODE ? 'Exit Demo Mode' : 'Enter Demo Mode'}
+          <Button onClick={() => setfalse(true)} variant="outline">
+            {false ? 'Exit Demo Mode' : 'Enter Demo Mode'}
           </Button>
         </CardHeader>
         <CardContent>
@@ -136,7 +96,7 @@ const PolicyRenewalAutomation: React.FC = () => {
             Manage and automate the renewal process for upcoming insurance policies.
           </p>
 
-          {isLoading && !DEMO_MODE ? (
+          {isLoading ? (
             <div className="flex items-center justify-center h-40">
               <Loader2 className="h-8 w-8 animate-spin" />
               <span className="ml-2">Loading upcoming policies...</span>

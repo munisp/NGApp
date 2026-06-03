@@ -21,56 +21,6 @@ interface PremiumRate {
   status: 'Active' | 'Inactive' | 'Pending';
 }
 
-const DEMO_MODE = process.env.DEMO_MODE === 'true';
-
-const demoPremiumRates: PremiumRate[] = [
-  {
-    id: 'pr-001',
-    productType: 'Life Assurance',
-    ageGroup: '18-30',
-    gender: 'Male',
-    rate: 0.0015,
-    effectiveDate: '2023-01-01',
-    status: 'Active',
-  },
-  {
-    id: 'pr-002',
-    productType: 'Life Assurance',
-    ageGroup: '31-45',
-    gender: 'Female',
-    rate: 0.0025,
-    effectiveDate: '2023-01-01',
-    status: 'Active',
-  },
-  {
-    id: 'pr-003',
-    productType: 'Motor Insurance',
-    ageGroup: 'All',
-    gender: 'Other',
-    rate: 0.03,
-    effectiveDate: '2023-03-15',
-    status: 'Active',
-  },
-  {
-    id: 'pr-004',
-    productType: 'Health Insurance',
-    ageGroup: '0-17',
-    gender: 'Male',
-    rate: 0.005,
-    effectiveDate: '2023-06-01',
-    status: 'Pending',
-  },
-  {
-    id: 'pr-005',
-    productType: 'Travel Insurance',
-    ageGroup: 'All',
-    gender: 'Female',
-    rate: 0.0005,
-    effectiveDate: '2023-07-20',
-    status: 'Active',
-  },
-];
-
 const PremiumRateManagement: React.FC = () => {
   const { isAuthenticated, isLoading: authLoading } = useAuth();
   const utils = trpc.useUtils();
@@ -93,7 +43,7 @@ const PremiumRateManagement: React.FC = () => {
   });
 
   const { data: premiumRates, isLoading, isError, error } = trpc.premiumRates.list.useQuery(undefined, {
-    enabled: !DEMO_MODE,
+    enabled: true,
   });
 
   const createMutation = trpc.premiumRates.create.useMutation({
@@ -152,7 +102,7 @@ const PremiumRateManagement: React.FC = () => {
     );
   }
 
-  const dataToDisplay = DEMO_MODE ? demoPremiumRates : (premiumRates || []);
+  const dataToDisplay = premiumRates || [];
 
   const filteredRates = useMemo(() => {
     return dataToDisplay.filter((rate) => {
@@ -353,7 +303,7 @@ const PremiumRateManagement: React.FC = () => {
             </Select>
           </div>
 
-          {isLoading && !DEMO_MODE ? (
+          {isLoading ? (
             <div className="flex justify-center items-center h-40">
               <Loader2 className="h-8 w-8 animate-spin" />
             </div>

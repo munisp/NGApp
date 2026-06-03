@@ -8,8 +8,6 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 
-const DEMO_MODE = process.env.DEMO_MODE === 'true';
-
 interface MCMCParams {
   modelType: string;
   params: Record<string, any>;
@@ -41,7 +39,7 @@ const RiskAssessment: React.FC = () => {
       toast.error(`MCMC Simulation failed: ${error.message}`);
     },
   });
-  const { data: mcmcResults, isLoading: mcmcResultsLoading, isError: mcmcResultsError } = trpc.mcmc.results.useQuery(undefined, { enabled: mcmcSimulateMutation.isSuccess || DEMO_MODE });
+  const { data: mcmcResults, isLoading: mcmcResultsLoading, isError: mcmcResultsError } = trpc.mcmc.results.useQuery(undefined, { enabled: mcmcSimulateMutation.isSuccess || false });
 
   const geospatialAnalyzeMutation = trpc.geospatial.analyze.useMutation({
     onSuccess: (data) => {
@@ -53,10 +51,10 @@ const RiskAssessment: React.FC = () => {
       toast.error(`Geospatial Analysis failed: ${error.message}`);
     },
   });
-  const { data: geospatialRiskMap, isLoading: geospatialRiskMapLoading, isError: geospatialRiskMapError } = trpc.geospatial.riskMap.useQuery({ lat: parseFloat(geospatialLat) || 0, lng: parseFloat(geospatialLng) || 0, radius: parseFloat(geospatialRadius) || 0 }, { enabled: geospatialAnalyzeMutation.isSuccess || DEMO_MODE });
+  const { data: geospatialRiskMap, isLoading: geospatialRiskMapLoading, isError: geospatialRiskMapError } = trpc.geospatial.riskMap.useQuery({ lat: parseFloat(geospatialLat) || 0, lng: parseFloat(geospatialLng) || 0, radius: parseFloat(geospatialRadius) || 0 }, { enabled: geospatialAnalyzeMutation.isSuccess || false });
 
   const handleMCMCSimulate = () => {
-    if (!isAuthenticated && !DEMO_MODE) {
+    if (!isAuthenticated) {
       toast.error('You must be logged in to perform MCMC simulation.');
       return;
     }
@@ -69,7 +67,7 @@ const RiskAssessment: React.FC = () => {
   };
 
   const handleGeospatialAnalyze = () => {
-    if (!isAuthenticated && !DEMO_MODE) {
+    if (!isAuthenticated) {
       toast.error('You must be logged in to perform Geospatial analysis.');
       return;
     }
@@ -92,7 +90,7 @@ const RiskAssessment: React.FC = () => {
     );
   }
 
-  if (!isAuthenticated && !DEMO_MODE) {
+  if (!isAuthenticated) {
     return (
       <div className="flex items-center justify-center h-screen">
         <p>Please log in to access the Risk Assessment page.</p>

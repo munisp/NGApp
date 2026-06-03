@@ -40,46 +40,6 @@ interface Document {
   size: string;
 }
 
-const DEMO_MODE = process.env.DEMO_MODE === 'true';
-
-const DEMO_DOCUMENTS: Document[] = [
-  {
-    id: "doc-001",
-    name: "Policy_Document_John_Doe.pdf",
-    type: "PDF",
-    uploadedAt: "2024-02-28",
-    size: "1.2 MB",
-  },
-  {
-    id: "doc-002",
-    name: "Claim_Form_Jane_Smith.docx",
-    type: "DOCX",
-    uploadedAt: "2024-02-27",
-    size: "0.5 MB",
-  },
-  {
-    id: "doc-003",
-    name: "ID_Card_Michael_Brown.jpeg",
-    type: "JPEG",
-    uploadedAt: "2024-02-26",
-    size: "0.3 MB",
-  },
-  {
-    id: "doc-004",
-    name: "Vehicle_Registration_David_Lee.pdf",
-    type: "PDF",
-    uploadedAt: "2024-02-25",
-    size: "1.8 MB",
-  },
-  {
-    id: "doc-005",
-    name: "Medical_Report_Emily_White.pdf",
-    type: "PDF",
-    uploadedAt: "2024-02-24",
-    size: "2.1 MB",
-  },
-];
-
 export default function DocumentScanner() {
   const { isAuthenticated, isLoading: authLoading } = useAuth();
   const trpcUtils = trpc.useUtils();
@@ -142,7 +102,7 @@ export default function DocumentScanner() {
     );
   }
 
-  const documents = DEMO_MODE ? DEMO_DOCUMENTS : (documentsData || []);
+  const documents = documentsData || [];
 
   const filteredDocuments = documents.filter((doc) =>
     doc.name.toLowerCase().includes(searchQuery.toLowerCase())
@@ -244,7 +204,7 @@ export default function DocumentScanner() {
           </Dialog>
         </div>
 
-        {(isDocumentsLoading || deleteMutation.isPending) && !DEMO_MODE ? (
+        {(isDocumentsLoading || deleteMutation.isPending) && true ? (
           <div className="flex items-center justify-center h-40">
             <Loader2 className="h-8 w-8 animate-spin" />
           </div>

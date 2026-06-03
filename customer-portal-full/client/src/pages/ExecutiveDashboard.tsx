@@ -9,34 +9,14 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { Badge } from '@/components/ui/badge';
 
-// Define DEMO_MODE and fallback data
-const DEMO_MODE = process.env.DEMO_MODE === 'true';
-
-const demoAnalyticsData = {
-  totalPolicies: 15000,
-  newPolicies: 1200,
-  claimsProcessed: 850,
-  premiumCollected: 75000000, // NGN
-  topAgents: [
-    { id: '1', name: 'Aisha Bello', policies: 320, premium: 15000000 },
-    { id: '2', name: 'Chinedu Okoro', policies: 280, premium: 12000000 },
-    { id: '3', name: 'Fatima Musa', policies: 250, premium: 10000000 },
-  ],
-};
-
-const demoPerformanceMetrics = {
-  uptime: '99.9%',
-  avgResponseTime: '150ms',
-  errorRate: '0.1%',
-  activeUsers: 2500,
-};
+// Define false and fallback data
 
 const ExecutiveDashboard: React.FC = () => {
   const { isAuthenticated, isLoading: authLoading } = useAuth();
   const [period, setPeriod] = useState<'daily' | 'weekly' | 'monthly' | 'quarterly'>('monthly');
 
-  const { data: analyticsData, isLoading: analyticsLoading, error: analyticsError } = trpc.analytics.dashboard.useQuery({ period }, { enabled: !DEMO_MODE && isAuthenticated });
-  const { data: performanceMetrics, isLoading: performanceLoading, error: performanceError } = trpc.performance.metrics.useQuery(undefined, { enabled: !DEMO_MODE && isAuthenticated });
+  const { data: analyticsData, isLoading: analyticsLoading, error: analyticsError } = trpc.analytics.dashboard.useQuery({ period }, { enabled: isAuthenticated });
+  const { data: performanceMetrics, isLoading: performanceLoading, error: performanceError } = trpc.performance.metrics.useQuery(undefined, { enabled: isAuthenticated });
 
   useEffect(() => {
     if (analyticsError) {
@@ -63,8 +43,8 @@ const ExecutiveDashboard: React.FC = () => {
     );
   }
 
-  const currentAnalyticsData = DEMO_MODE ? demoAnalyticsData : analyticsData;
-  const currentPerformanceMetrics = DEMO_MODE ? demoPerformanceMetrics : performanceMetrics;
+  const currentAnalyticsData = analyticsData;
+  const currentPerformanceMetrics = performanceMetrics;
 
   const isLoading = analyticsLoading || performanceLoading;
 

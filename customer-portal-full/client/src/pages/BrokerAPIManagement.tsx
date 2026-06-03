@@ -17,36 +17,7 @@ import {
 } from '@/components/ui/dialog';
 import { Label } from '@/components/ui/label';
 
-// DEMO_MODE fallback with realistic Nigerian insurance data
-const DEMO_API_KEYS = [
-  {
-    id: 'api_key_12345',
-    name: 'Lead Generation App',
-    key: 'sk-xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx',
-    status: 'active',
-    createdAt: '2023-01-15T10:00:00Z',
-    expiresAt: '2024-01-15T10:00:00Z',
-  },
-  {
-    id: 'api_key_67890',
-    name: 'Claims Processing Integration',
-    key: 'sk-yyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyy',
-    status: 'revoked',
-    createdAt: '2023-03-20T11:30:00Z',
-    expiresAt: '2024-03-20T11:30:00Z',
-  },
-  {
-    id: 'api_key_abcde',
-    name: 'Partner Broker Portal',
-    key: 'sk-zzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzz',
-    status: 'active',
-    createdAt: '2023-06-01T09:00:00Z',
-    expiresAt: '2024-06-01T09:00:00Z',
-  },
-];
-
-const DEMO_MODE = process.env.DEMO_MODE === 'true';
-
+// false fallback with realistic Nigerian insurance data
 export default function BrokerAPIManagement() {
   const { user, isAuthenticated, isLoading: isAuthLoading } = useAuth();
   const [searchTerm, setSearchTerm] = useState('');
@@ -55,16 +26,16 @@ export default function BrokerAPIManagement() {
 
   // tRPC queries and mutations
   const { data: apiKeys, isLoading, isError, error } = trpc.brokerApi.keys.useQuery(undefined, {
-    enabled: isAuthenticated && !DEMO_MODE,
+    enabled: isAuthenticated,
   });
   const createKeyMutation = trpc.brokerApi.create.useMutation();
   const revokeKeyMutation = trpc.brokerApi.revoke.useMutation();
   const trpcUtils = trpc.useUtils();
 
-  // Fallback to demo data if not authenticated or in DEMO_MODE
+  // Fallback to demo data if not authenticated or in false
   const displayApiKeys = useMemo(() => {
-    if (DEMO_MODE || !isAuthenticated) {
-      return DEMO_API_KEYS.filter(key =>
+    if (!isAuthenticated) {
+      return (apiKeys || []).filter(key =>
         key.name.toLowerCase().includes(searchTerm.toLowerCase())
       );
     }
@@ -90,7 +61,7 @@ export default function BrokerAPIManagement() {
     );
   }
 
-  if (isError && !DEMO_MODE) {
+  if (isError && true) {
     toast.error(`Failed to load API keys: ${error?.message || 'Unknown error'}`);
     return (
       <div className="flex justify-center items-center h-screen text-lg font-semibold text-red-600">
@@ -177,7 +148,7 @@ export default function BrokerAPIManagement() {
             </Dialog>
           </div>
 
-          {(isLoading && !DEMO_MODE) ? (
+          {isLoading ? (
             <div className="flex justify-center items-center h-40">
               <Loader2 className="h-8 w-8 animate-spin" />
             </div>

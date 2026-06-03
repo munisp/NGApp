@@ -7,8 +7,6 @@ import { toast } from 'sonner';
 import { trpc } from '@/lib/trpc';
 import { useAuth } from '@/_core/hooks/useAuth';
 
-const DEMO_MODE = process.env.DEMO_MODE === 'true';
-
 interface ModelSecurityStatus {
   modelName: string;
   status: 'Secure' | 'Vulnerable' | 'Scanning';
@@ -17,20 +15,12 @@ interface ModelSecurityStatus {
   recommendations: string[];
 }
 
-const demoSecurityStatus: ModelSecurityStatus = {
-  modelName: 'FraudDetectionV1',
-  status: 'Secure',
-  lastScan: '2024-03-01T10:00:00Z',
-  vulnerabilitiesFound: 0,
-  recommendations: ['No immediate actions required.']
-};
-
 const ModelSecurityDashboard: React.FC = () => {
   const { isAuthenticated, isLoading: authLoading } = useAuth();
   const trpcUtils = trpc.useUtils();
 
   const { data: securityStatus, isLoading: isStatusLoading, error: statusError } = trpc.modelSecurity.status.useQuery(undefined, {
-    enabled: isAuthenticated && !DEMO_MODE,
+    enabled: isAuthenticated,
   });
 
   const { mutate: scanModel, isLoading: isScanning, error: scanError } = trpc.modelSecurity.scan.useMutation({
@@ -69,7 +59,7 @@ const ModelSecurityDashboard: React.FC = () => {
     );
   }
 
-  const currentStatus = DEMO_MODE ? demoSecurityStatus : securityStatus;
+  const currentStatus = securityStatus;
   const isLoading = isStatusLoading || isScanning;
 
   const handleScan = () => {

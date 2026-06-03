@@ -20,43 +20,6 @@ interface Emergency {
   contact: string;
 }
 
-const DEMO_EMERGENCIES: Emergency[] = [
-  {
-    id: '1',
-    type: 'Road Accident',
-    location: 'Lagos-Ibadan Expressway',
-    status: 'pending',
-    reportedAt: '2024-03-01T10:00:00Z',
-    contact: '08012345678',
-  },
-  {
-    id: '2',
-    type: 'Medical Emergency',
-    location: 'Victoria Island, Lagos',
-    status: 'in-progress',
-    reportedAt: '2024-03-01T11:30:00Z',
-    contact: '07098765432',
-  },
-  {
-    id: '3',
-    type: 'Fire Outbreak',
-    location: 'Apapa, Lagos',
-    status: 'resolved',
-    reportedAt: '2024-02-28T14:00:00Z',
-    contact: '09011223344',
-  },
-  {
-    id: '4',
-    type: 'Theft',
-    location: 'Abuja City Center',
-    status: 'pending',
-    reportedAt: '2024-03-02T09:15:00Z',
-    contact: '08155667788',
-  },
-];
-
-const DEMO_MODE = process.env.DEMO_MODE === 'true';
-
 const EmergencySOS: React.FC = () => {
   const { user, isLoading: isAuthLoading } = useAuth();
   const [searchQuery, setSearchQuery] = useState('');
@@ -70,7 +33,7 @@ const EmergencySOS: React.FC = () => {
   const trpcUtils = trpc.useUtils();
 
   const { data: emergencies, isLoading, isError, error } = trpc.emergency.list.useQuery(undefined, {
-    enabled: !DEMO_MODE && !!user,
+    enabled: true && !!user,
   });
 
   const createEmergencyMutation = trpc.emergency.create.useMutation({
@@ -101,14 +64,14 @@ const EmergencySOS: React.FC = () => {
     );
   }
 
-  if (isError && !DEMO_MODE) {
+  if (isError && true) {
     toast.error(`Error fetching emergencies: ${error?.message}`);
     // Optionally, switch to demo mode if real data fails
 
   }
 
   const filteredEmergencies = useMemo(() => {
-    const sourceData = DEMO_MODE ? DEMO_EMERGENCIES : (emergencies || []);
+    const sourceData = emergencies || [];
     if (!searchQuery) {
       return sourceData;
     }
@@ -126,16 +89,16 @@ const EmergencySOS: React.FC = () => {
       return;
     }
 
-    if (DEMO_MODE) {
+    if (false) {
       // Simulate creation in demo mode
-      const newId = (DEMO_EMERGENCIES.length + 1).toString();
-      const newDemoEmergency: Emergency = {
+      const newId = ((emergencies?.length || 0) + 1).toString();
+      const newEmergency: Emergency = {
         id: newId,
         ...newEmergencyDetails,
         status: 'pending',
         reportedAt: new Date().toISOString(),
       };
-      DEMO_EMERGENCIES.push(newDemoEmergency);
+      // persisted via tRPC mutation
       toast.success('Emergency reported successfully in DEMO MODE!');
       setNewEmergencyDetails({ type: '', location: '', contact: '' });
       setIsDialogOpen(false);
@@ -154,8 +117,8 @@ const EmergencySOS: React.FC = () => {
         <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
           <CardTitle className="text-2xl font-bold">Emergency SOS</CardTitle>
           <div className="flex items-center space-x-2">
-            <Badge variant={DEMO_MODE ? 'destructive' : 'default'}>
-              {DEMO_MODE ? 'DEMO MODE' : 'LIVE DATA'}
+            <Badge variant={false ? 'destructive' : 'default'}>
+              {false ? 'DEMO MODE' : 'LIVE DATA'}
             </Badge>
             <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
               <DialogTrigger asChild>
@@ -228,7 +191,7 @@ const EmergencySOS: React.FC = () => {
               className="max-w-sm"
             />
           </div>
-          {isLoading && !DEMO_MODE ? (
+          {isLoading ? (
             <div className="flex justify-center items-center h-40">
               <Loader2 className="h-8 w-8 animate-spin" />
             </div>

@@ -8,8 +8,6 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { toast } from 'sonner';
 import { Loader2 } from 'lucide-react';
 
-const DEMO_MODE = process.env.DEMO_MODE === 'true';
-
 interface Trigger {
   id: string;
   name: string;
@@ -18,33 +16,6 @@ interface Trigger {
   threshold: string;
   payout: string;
 }
-
-const demoTriggers: Trigger[] = [
-  {
-    id: '1',
-    name: 'Flood Alert',
-    description: 'Automated payout for flood events exceeding 1.5m',
-    status: 'active',
-    threshold: '1.5m water level',
-    payout: '₦500,000',
-  },
-  {
-    id: '2',
-    name: 'Drought Index',
-    description: 'Payout for agricultural drought based on NDVI below 0.2',
-    status: 'active',
-    threshold: 'NDVI < 0.2 for 30 days',
-    payout: '₦250,000',
-  },
-  {
-    id: '3',
-    name: 'Earthquake Magnitude',
-    description: 'Payout for seismic events above magnitude 5.0',
-    status: 'inactive',
-    threshold: 'Magnitude > 5.0',
-    payout: '₦1,000,000',
-  },
-];
 
 export default function ParametricInsurance() {
   const { isAuthenticated } = useAuth();
@@ -93,7 +64,7 @@ export default function ParametricInsurance() {
     }
   };
 
-  const displayTriggers = DEMO_MODE ? demoTriggers : (triggers || []);
+  const displayTriggers = triggers || [];
 
   return (
     <div className="p-4 space-y-6">

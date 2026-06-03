@@ -29,54 +29,6 @@ interface Claim {
   description: string;
 }
 
-const DEMO_CLAIMS: Claim[] = [
-  {
-    id: "CLM001",
-    policyNumber: "POL789012",
-    claimantName: "Aisha Bello",
-    dateFiled: "2024-02-15",
-    status: "Approved",
-    amount: 150000,
-    description: "Vehicle accident claim for a Toyota Camry."
-  },
-  {
-    id: "CLM002",
-    policyNumber: "POL123456",
-    claimantName: "Chike Okoro",
-    dateFiled: "2024-02-20",
-    status: "Pending",
-    amount: 50000,
-    description: "Health insurance claim for malaria treatment."
-  },
-  {
-    id: "CLM003",
-    policyNumber: "POL345678",
-    claimantName: "Fatima Yusuf",
-    dateFiled: "2024-02-22",
-    status: "In Progress",
-    amount: 250000,
-    description: "Property damage claim due to fire incident."
-  },
-  {
-    id: "CLM004",
-    policyNumber: "POL901234",
-    claimantName: "Kunle Adebayo",
-    dateFiled: "2024-02-25",
-    status: "Rejected",
-    amount: 0,
-    description: "Travel insurance claim for lost luggage."
-  },
-  {
-    id: "CLM005",
-    policyNumber: "POL567890",
-    claimantName: "Ngozi Eze",
-    dateFiled: "2024-02-28",
-    status: "Approved",
-    amount: 100000,
-    description: "Life insurance claim payout."
-  },
-];
-
 const ClaimsTimeline: React.FC = () => {
   const { user, isAuthenticated, isLoading: isAuthLoading } = useAuth();
   const [searchQuery, setSearchQuery] = useState<string>("");
@@ -85,16 +37,14 @@ const ClaimsTimeline: React.FC = () => {
   const [claimsPerPage] = useState<number>(5);
   const [selectedClaimId, setSelectedClaimId] = useState<string | null>(null);
 
-  const DEMO_MODE = process.env.DEMO_MODE === 'true';
-
   const { data: claimsData, isLoading: isClaimsLoading, error: claimsError } = trpc.claims.list.useQuery(
     undefined, // No input needed for list, assuming it returns all claims for the authenticated user
-    { enabled: !DEMO_MODE && isAuthenticated }
+    { enabled: isAuthenticated }
   );
 
   const { data: selectedClaim, isLoading: isSelectedClaimLoading, error: selectedClaimError } = trpc.claims.getById.useQuery(
     { id: selectedClaimId! },
-    { enabled: !DEMO_MODE && isAuthenticated && !!selectedClaimId }
+    { enabled: isAuthenticated && !!selectedClaimId }
   );
 
   useEffect(() => {
@@ -114,7 +64,7 @@ const ClaimsTimeline: React.FC = () => {
     );
   }
 
-  if (!isAuthenticated && !DEMO_MODE) {
+  if (!isAuthenticated) {
     return (
       <div className="flex justify-center items-center h-screen text-lg font-semibold">
         Please log in to view your claims timeline.
@@ -122,7 +72,7 @@ const ClaimsTimeline: React.FC = () => {
     );
   }
 
-  const allClaims = DEMO_MODE ? DEMO_CLAIMS : (claimsData || []);
+  const allClaims = claimsData || [];
 
   const filteredClaims = allClaims.filter((claim) => {
     const matchesSearch = searchQuery === "" ||
@@ -184,7 +134,7 @@ const ClaimsTimeline: React.FC = () => {
             </Select>
           </div>
 
-          {(isClaimsLoading && !DEMO_MODE) ? (
+          {(isClaimsLoading && true) ? (
             <div className="flex justify-center items-center h-40">
               <Loader2 className="h-8 w-8 animate-spin" />
             </div>
@@ -229,14 +179,14 @@ const ClaimsTimeline: React.FC = () => {
                           <DialogHeader>
                             <DialogTitle>Claim Details: {selectedClaimId}</DialogTitle>
                             <DialogDescription>
-                              {DEMO_MODE ? "Demo data for claim details." : "Full details of the selected claim."}
+                              {false ? "Demo data for claim details." : "Full details of the selected claim."}
                             </DialogDescription>
                           </DialogHeader>
-                          {(isSelectedClaimLoading && !DEMO_MODE) ? (
+                          {(isSelectedClaimLoading && true) ? (
                             <div className="flex justify-center items-center h-20">
                               <Loader2 className="h-6 w-6 animate-spin" />
                             </div>
-                          ) : (selectedClaimId && (DEMO_MODE ? DEMO_CLAIMS.find(c => c.id === selectedClaimId) : selectedClaim)) ? (
+                          ) : (selectedClaimId && selectedClaim) ? (
                             <div className="grid gap-4 py-4">
                               <div className="grid grid-cols-4 items-center gap-4">
                                 <p className="text-sm font-medium col-span-1">Claim ID:</p>
@@ -244,32 +194,32 @@ const ClaimsTimeline: React.FC = () => {
                               </div>
                               <div className="grid grid-cols-4 items-center gap-4">
                                 <p className="text-sm font-medium col-span-1">Policy No.:</p>
-                                <p className="col-span-3">{(DEMO_MODE ? DEMO_CLAIMS.find(c => c.id === selectedClaimId) : selectedClaim)?.policyNumber}</p>
+                                <p className="col-span-3">{selectedClaim?.policyNumber}</p>
                               </div>
                               <div className="grid grid-cols-4 items-center gap-4">
                                 <p className="text-sm font-medium col-span-1">Claimant:</p>
-                                <p className="col-span-3">{(DEMO_MODE ? DEMO_CLAIMS.find(c => c.id === selectedClaimId) : selectedClaim)?.claimantName}</p>
+                                <p className="col-span-3">{selectedClaim?.claimantName}</p>
                               </div>
                               <div className="grid grid-cols-4 items-center gap-4">
                                 <p className="text-sm font-medium col-span-1">Date Filed:</p>
-                                <p className="col-span-3">{(DEMO_MODE ? DEMO_CLAIMS.find(c => c.id === selectedClaimId) : selectedClaim)?.dateFiled ? new Date((DEMO_MODE ? DEMO_CLAIMS.find(c => c.id === selectedClaimId) : selectedClaim)!.dateFiled).toLocaleDateString() : "N/A"}</p>
+                                <p className="col-span-3">{selectedClaim?.dateFiled ? new Date(selectedClaim!.dateFiled).toLocaleDateString() : "N/A"}</p>
                               </div>
                               <div className="grid grid-cols-4 items-center gap-4">
                                 <p className="text-sm font-medium col-span-1">Status:</p>
                                 <Badge
                                   className="col-span-3"
-                                  variant={((DEMO_MODE ? DEMO_CLAIMS.find(c => c.id === selectedClaimId) : selectedClaim)?.status === "Approved") ? "default" : ((DEMO_MODE ? DEMO_CLAIMS.find(c => c.id === selectedClaimId) : selectedClaim)?.status === "Rejected") ? "destructive" : "outline"}
+                                  variant={(selectedClaim?.status === "Approved") ? "default" : (selectedClaim?.status === "Rejected") ? "destructive" : "outline"}
                                 >
-                                  {(DEMO_MODE ? DEMO_CLAIMS.find(c => c.id === selectedClaimId) : selectedClaim)?.status}
+                                  {selectedClaim?.status}
                                 </Badge>
                               </div>
                               <div className="grid grid-cols-4 items-center gap-4">
                                 <p className="text-sm font-medium col-span-1">Amount:</p>
-                                <p className="col-span-3">₦{(DEMO_MODE ? DEMO_CLAIMS.find(c => c.id === selectedClaimId) : selectedClaim)?.amount.toLocaleString()}</p>
+                                <p className="col-span-3">₦{selectedClaim?.amount.toLocaleString()}</p>
                               </div>
                               <div className="grid grid-cols-4 items-start gap-4">
                                 <p className="text-sm font-medium col-span-1">Description:</p>
-                                <p className="col-span-3">{(DEMO_MODE ? DEMO_CLAIMS.find(c => c.id === selectedClaimId) : selectedClaim)?.description}</p>
+                                <p className="col-span-3">{selectedClaim?.description}</p>
                               </div>
                             </div>
                           ) : (

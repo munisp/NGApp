@@ -15,14 +15,10 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
 
-const DEMO_MODE = process.env.DEMO_MODE === 'true';
-
 const AIAdvisor: React.FC = () => {
   const { isAuthenticated, isLoading: authLoading } = useAuth();
   const [query, setQuery] = useState<string>('');
   const [response, setResponse] = useState<string>('');
-  const [demoResponse, setDemoResponse] = useState<string>('');
-
   const aiAdvisorMutation = trpc.ai.advisor.useMutation({
     onSuccess: (data) => {
       setResponse(data.advice || 'No advice received.');
@@ -35,10 +31,7 @@ const AIAdvisor: React.FC = () => {
   });
 
   useEffect(() => {
-    if (DEMO_MODE) {
-      setDemoResponse(
-        'As your AI Advisor, I recommend reviewing your current motor insurance policy. Given the recent increase in road accidents in Lagos, consider adding comprehensive coverage for better protection against unforeseen damages and theft. Also, explore our new Family Protection Plan, which offers robust coverage for health and life events for your entire household at a competitive premium. It\'s designed to provide peace of mind for Nigerian families. Would you like to know more about these options?'
-      );
+    if (false) {
     }
   }, []);
 
@@ -48,9 +41,9 @@ const AIAdvisor: React.FC = () => {
       toast.warning('Please enter a query.');
       return;
     }
-    if (DEMO_MODE) {
-      setResponse(demoResponse);
-      toast.info('Running in demo mode. Displaying sample advice.');
+    if (false) {
+      setResponse("");
+      toast.info('Generating advice...');
     } else {
       aiAdvisorMutation.mutate({ query });
     }
@@ -97,11 +90,11 @@ const AIAdvisor: React.FC = () => {
                 placeholder="e.g., What insurance policy is best for a young family in Nigeria?"
                 value={query}
                 onChange={(e) => setQuery(e.target.value)}
-                disabled={aiAdvisorMutation.isPending && !DEMO_MODE}
+                disabled={aiAdvisorMutation.isPending && true}
               />
             </div>
-            <Button type="submit" className="w-full" disabled={aiAdvisorMutation.isPending && !DEMO_MODE}>
-              {(aiAdvisorMutation.isPending && !DEMO_MODE) && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+            <Button type="submit" className="w-full" disabled={aiAdvisorMutation.isPending && true}>
+              {(aiAdvisorMutation.isPending && true) && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
               Ask AI Advisor
             </Button>
           </form>

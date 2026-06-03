@@ -31,8 +31,6 @@ import {
   TableRow,
 } from "@/components/ui/table";
 
-const DEMO_MODE = process.env.DEMO_MODE === 'true';
-
 interface Feedback {
   id: string;
   category: string;
@@ -40,44 +38,6 @@ interface Feedback {
   comment: string;
   createdAt: string;
 }
-
-const demoFeedback: Feedback[] = [
-  {
-    id: "1",
-    category: "Service Quality",
-    rating: 5,
-    comment: "Excellent service, very prompt and helpful!",
-    createdAt: new Date().toISOString(),
-  },
-  {
-    id: "2",
-    category: "Website Usability",
-    rating: 4,
-    comment: "The website is good, but sometimes a bit slow to load.",
-    createdAt: new Date(Date.now() - 86400000).toISOString(), // 1 day ago
-  },
-  {
-    id: "3",
-    category: "Policy Options",
-    rating: 3,
-    comment: "Could use more diverse policy options for small businesses.",
-    createdAt: new Date(Date.now() - 172800000).toISOString(), // 2 days ago
-  },
-  {
-    id: "4",
-    category: "Claims Process",
-    rating: 5,
-    comment: "Smooth claims process, very satisfied with the outcome.",
-    createdAt: new Date(Date.now() - 259200000).toISOString(), // 3 days ago
-  },
-  {
-    id: "5",
-    category: "Customer Support",
-    rating: 2,
-    comment: "Had trouble reaching customer support, long wait times.",
-    createdAt: new Date(Date.now() - 345600000).toISOString(), // 4 days ago
-  },
-];
 
 const CustomerFeedbackLoop: React.FC = () => {
   const { isAuthenticated, isLoading: authLoading } = useAuth();
@@ -90,7 +50,7 @@ const CustomerFeedbackLoop: React.FC = () => {
   const utils = trpc.useUtils();
 
   const { data: feedbackList, isLoading: isFeedbackLoading, error: feedbackError } = trpc.feedback.list.useQuery(undefined, {
-    enabled: isAuthenticated && !DEMO_MODE,
+    enabled: isAuthenticated,
   });
 
   const { mutate: submitFeedback, isLoading: isSubmittingFeedback } = trpc.feedback.submit.useMutation({
@@ -122,7 +82,7 @@ const CustomerFeedbackLoop: React.FC = () => {
     );
   }
 
-  if (feedbackError && !DEMO_MODE) {
+  if (feedbackError && true) {
     toast.error(`Error loading feedback: ${feedbackError.message}`);
     return (
       <div className="flex items-center justify-center h-screen text-lg font-semibold text-red-600">
@@ -139,7 +99,7 @@ const CustomerFeedbackLoop: React.FC = () => {
     submitFeedback({ category, rating, comment });
   };
 
-  const displayedFeedback = DEMO_MODE ? demoFeedback : (feedbackList || []);
+  const displayedFeedback = feedbackList || [];
 
   const filteredFeedback = displayedFeedback.filter(feedback => {
     const matchesSearch = feedback.comment.toLowerCase().includes(searchQuery.toLowerCase()) ||
@@ -223,7 +183,7 @@ const CustomerFeedbackLoop: React.FC = () => {
             </Select>
           </div>
 
-          {isFeedbackLoading && !DEMO_MODE ? (
+          {isFeedbackLoading && true ? (
             <div className="flex items-center justify-center h-32">
               <Loader2 className="h-8 w-8 animate-spin" />
             </div>

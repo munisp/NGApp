@@ -20,21 +20,6 @@ import {
   TableRow,
 } from '@/components/ui/table';
 
-const DEMO_MODE = process.env.DEMO_MODE === 'true';
-
-const demoMetrics = [
-  { metric: 'CPU Usage', value: '75%', threshold: '80%' },
-  { metric: 'Memory Usage', value: '60%', threshold: '70%' },
-  { metric: 'Disk I/O', value: '120 MB/s', threshold: '150 MB/s' },
-  { metric: 'Active Connections', value: '500', threshold: '600' },
-];
-
-const demoRecommendations = [
-  { id: '1', recommendation: 'Optimize frequently run queries', status: 'Pending' },
-  { id: '2', recommendation: 'Increase database instance memory', status: 'Applied' },
-  { id: '3', recommendation: 'Implement connection pooling', status: 'Pending' },
-];
-
 export default function PostgreSQLScaling() {
   const { isAuthenticated, isLoading: authLoading } = useAuth();
 
@@ -65,8 +50,8 @@ export default function PostgreSQLScaling() {
     toast.error(`Failed to load recommendations: ${recommendationsErrorData?.message}`);
   }
 
-  const currentMetrics = DEMO_MODE ? demoMetrics : metrics;
-  const currentRecommendations = DEMO_MODE ? demoRecommendations : recommendations;
+  const currentMetrics = metrics;
+  const currentRecommendations = recommendations;
 
   return (
     <div className="container mx-auto p-6 space-y-8">

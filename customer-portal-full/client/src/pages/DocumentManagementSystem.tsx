@@ -18,37 +18,6 @@ interface Document {
   url: string;
 }
 
-const DEMO_DOCUMENTS: Document[] = [
-  {
-    id: 'doc1',
-    name: 'Policy_Agreement_John_Doe.pdf',
-    type: 'Policy',
-    uploadedAt: '2023-01-15',
-    url: '#',
-  },
-  {
-    id: 'doc2',
-    name: 'Claim_Form_Jane_Smith.docx',
-    type: 'Claim',
-    uploadedAt: '2023-02-20',
-    url: '#',
-  },
-  {
-    id: 'doc3',
-    name: 'KYC_Document_Alice_Brown.jpeg',
-    type: 'KYC',
-    uploadedAt: '2023-03-10',
-    url: '#',
-  },
-  {
-    id: 'doc4',
-    name: 'Medical_Report_Bob_White.pdf',
-    type: 'Medical',
-    uploadedAt: '2023-04-05',
-    url: '#',
-  },
-];
-
 const DocumentManagementSystem: React.FC = () => {
   const { isAuthenticated } = useAuth();
   const [searchTerm, setSearchTerm] = useState('');
@@ -59,11 +28,9 @@ const DocumentManagementSystem: React.FC = () => {
   const [documentToDelete, setDocumentToDelete] = useState<string | null>(null);
   const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false);
 
-  const DEMO_MODE = process.env.DEMO_MODE === 'true';
-
   const { data: documents, isLoading, isError, error, refetch } = trpc.documents.list.useQuery(
     undefined,
-    { enabled: !DEMO_MODE }
+    { enabled: true }
   );
 
   const uploadMutation = trpc.documents.upload.useMutation({
@@ -113,7 +80,7 @@ const DocumentManagementSystem: React.FC = () => {
     }
   };
 
-  const filteredDocuments = (DEMO_MODE ? DEMO_DOCUMENTS : documents || []).filter((doc) =>
+  const filteredDocuments = (documents || []).filter((doc) =>
     doc.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
     doc.type.toLowerCase().includes(searchTerm.toLowerCase())
   );
@@ -121,7 +88,7 @@ const DocumentManagementSystem: React.FC = () => {
   const paginatedDocuments = filteredDocuments.slice((page - 1) * pageSize, page * pageSize);
   const totalPages = Math.ceil(filteredDocuments.length / pageSize);
 
-  if (!isAuthenticated && !DEMO_MODE) {
+  if (!isAuthenticated) {
     return <div className="p-4 text-center text-red-500">Please log in to access document management.</div>;
   }
 
@@ -133,7 +100,7 @@ const DocumentManagementSystem: React.FC = () => {
     );
   }
 
-  if (isError && !DEMO_MODE) {
+  if (isError && true) {
     toast.error(`Failed to load documents: ${error?.message}`);
     return <div className="p-4 text-center text-red-500">Error loading documents. Please try again.</div>;
   }

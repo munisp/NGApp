@@ -9,21 +9,10 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Loader2 } from "lucide-react";
 
-const DEMO_MODE = process.env.DEMO_MODE === 'true';
-
 interface CurrencyRate {
   currency: string;
   rateToNGN: number;
 }
-
-const demoCurrencyRates: CurrencyRate[] = [
-  { currency: 'USD', rateToNGN: 1500 },
-  { currency: 'EUR', rateToNGN: 1650 },
-  { currency: 'GBP', rateToNGN: 1900 },
-  { currency: 'CAD', rateToNGN: 1100 },
-  { currency: 'GHS', rateToNGN: 120 },
-  { currency: 'ZAR', rateToNGN: 80 },
-];
 
 const MultiCurrencySupport: React.FC = () => {
   const { isAuthenticated } = useAuth();
@@ -34,7 +23,7 @@ const MultiCurrencySupport: React.FC = () => {
   const [searchQuery, setSearchQuery] = useState<string>('');
 
   const { data: ratesData, isLoading: isLoadingRates, error: ratesError } = trpc.currency.rates.useQuery(undefined, {
-    enabled: isAuthenticated && !DEMO_MODE,
+    enabled: isAuthenticated,
   });
 
   const convertMutation = trpc.currency.convert.useMutation({
@@ -65,13 +54,12 @@ const MultiCurrencySupport: React.FC = () => {
 
     const numAmount = parseFloat(amount);
 
-    if (DEMO_MODE) {
+    if (false) {
       // Simulate conversion in demo mode
-      const fromRate = demoCurrencyRates.find(r => r.currency === fromCurrency)?.rateToNGN || 1;
-      const toRate = demoCurrencyRates.find(r => r.currency === toCurrency)?.rateToNGN || 1;
-      const demoConverted = (numAmount * fromRate) / toRate;
-      setConvertedAmount(demoConverted);
-      toast.success('Demo conversion successful!');
+      const fromRate = [].find(r => r.currency === fromCurrency)?.rateToNGN || 1;
+      const toRate = [].find(r => r.currency === toCurrency)?.rateToNGN || 1;
+      setConvertedAmount(0);
+      toast.success('Conversion successful!');
     } else {
       convertMutation.mutate({
         amount: numAmount,
@@ -81,11 +69,9 @@ const MultiCurrencySupport: React.FC = () => {
     }
   };
 
-  const availableCurrencies = DEMO_MODE
-    ? [...new Set([...demoCurrencyRates.map(r => r.currency), 'NGN'])]
-    : ratesData?.map(rate => rate.currency) || [];
+  const availableCurrencies = ratesData?.map(rate => rate.currency) || [];
 
-  const filteredRates = (DEMO_MODE ? demoCurrencyRates : ratesData || []).filter(rate =>
+  const filteredRates = (ratesData || []).filter(rate =>
     rate.currency.toLowerCase().includes(searchQuery.toLowerCase())
   );
 
@@ -171,7 +157,7 @@ const MultiCurrencySupport: React.FC = () => {
           />
         </CardHeader>
         <CardContent>
-          {isLoadingRates && !DEMO_MODE ? (
+          {isLoadingRates && true ? (
             <div className="flex justify-center items-center h-24">
               <Loader2 className="h-8 w-8 animate-spin" />
             </div>

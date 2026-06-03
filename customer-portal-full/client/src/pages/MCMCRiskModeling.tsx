@@ -17,8 +17,6 @@ interface SimulationParams {
   thinning: number;
 }
 
-const DEMO_MODE = process.env.DEMO_MODE === 'true';
-
 const MCMCRiskModeling: React.FC = () => {
   const { isAuthenticated, isLoading: authLoading } = useAuth();
 
@@ -33,7 +31,7 @@ const MCMCRiskModeling: React.FC = () => {
   const utils = trpc.useUtils();
 
   const { data: simulationResults, isLoading: resultsLoading, error: resultsError } = trpc.mcmc.results.useQuery(undefined, {
-    enabled: isAuthenticated || DEMO_MODE,
+    enabled: isAuthenticated || false,
   });
 
   const { mutate: simulateMCMC, isLoading: simulateLoading, error: simulateError } = trpc.mcmc.simulate.useMutation({
@@ -54,7 +52,7 @@ const MCMCRiskModeling: React.FC = () => {
     );
   }
 
-  if (!isAuthenticated && !DEMO_MODE) {
+  if (!isAuthenticated) {
     return (
       <div className="flex items-center justify-center h-screen text-lg font-semibold text-red-600">
         Please log in to access MCMC Risk Modeling.
@@ -72,29 +70,7 @@ const MCMCRiskModeling: React.FC = () => {
     simulateMCMC(params);
   };
 
-  const demoSimulationResults = {
-    id: 'demo-123',
-    modelType: 'financial',
-    status: 'completed',
-    timestamp: new Date().toISOString(),
-    parameters: { modelType: 'financial', iterations: 10000, burnIn: 1000, thinning: 10 },
-    results: [
-      { metric: 'VaR (99%)', value: 1500000, unit: 'NGN' },
-      { metric: 'Expected Shortfall (99%)', value: 1800000, unit: 'NGN' },
-      { metric: 'Conditional VaR (95%)', value: 1200000, unit: 'NGN' },
-      { metric: 'Standard Deviation', value: 250000, unit: 'NGN' },
-      { metric: 'Mean Loss', value: 500000, unit: 'NGN' },
-      { metric: 'Max Loss', value: 2500000, unit: 'NGN' },
-      { metric: 'Min Loss', value: 100000, unit: 'NGN' },
-      { metric: 'Skewness', value: 0.8, unit: '' },
-      { metric: 'Kurtosis', value: 3.5, unit: '' },
-      { metric: 'Confidence Interval (Lower)', value: 1400000, unit: 'NGN' },
-      { metric: 'Confidence Interval (Upper)', value: 1600000, unit: 'NGN' },
-    ],
-    summary: 'MCMC simulation for financial risk completed. Results indicate potential losses and risk measures.',
-  };
-
-  const currentResults = DEMO_MODE ? demoSimulationResults : simulationResults;
+  const currentResults = simulationResults;
 
   const filteredResults = currentResults?.results?.filter(result =>
     result.metric.toLowerCase().includes(searchQuery.toLowerCase())

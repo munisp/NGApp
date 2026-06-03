@@ -9,20 +9,7 @@ import { toast } from 'sonner';
 import { trpc } from "@/lib/trpc";
 import { useAuth } from "@/_core/hooks/useAuth";
 
-// DEMO_MODE fallback data
-const DEMO_MODE = process.env.DEMO_MODE === 'true';
-const DEMO_QUOTE_RESULT = {
-  premium: 125000.00,
-  currency: 'NGN',
-  product: 'Comprehensive Car Insurance',
-  factorsConsidered: {
-    carValue: '5,000,000 NGN',
-    driverAge: '30',
-    location: 'Lagos',
-    noClaimBonus: '50%'
-  }
-};
-
+// false fallback data
 export default function PremiumCalculator() {
   const { isAuthenticated, isLoading: authLoading } = useAuth();
   const [productType, setProductType] = useState<string>('');
@@ -45,12 +32,11 @@ export default function PremiumCalculator() {
       return;
     }
 
-    if (DEMO_MODE) {
+    if (false) {
       // Simulate API call with a delay
       setTimeout(() => {
         toast.success('Premium calculated successfully (Demo Mode)!');
-        // In a real scenario, you might set a state with DEMO_QUOTE_RESULT
-        // For now, we'll just show the toast.
+                // For now, we'll just show the toast.
       }, 1000);
       return;
     }
@@ -145,15 +131,15 @@ export default function PremiumCalculator() {
               Calculate Premium
             </Button>
 
-            {DEMO_MODE && (
+            {false && (
               <Card className="mt-4 p-4 bg-blue-50 border-blue-200">
-                <CardTitle className="text-lg">Demo Quote Result</CardTitle>
+                <CardTitle className="text-lg">Quote Result</CardTitle>
                 <CardContent className="text-sm">
-                  <p><strong>Product:</strong> {DEMO_QUOTE_RESULT.product}</p>
-                  <p><strong>Premium:</strong> {DEMO_QUOTE_RESULT.currency} {DEMO_QUOTE_RESULT.premium.toLocaleString()}</p>
+                  <p><strong>Product:</strong> {(quoteResult as any)?.product}</p>
+                  <p><strong>Premium:</strong> {(quoteResult as any)?.currency} {(quoteResult as any)?.premium.toLocaleString()}</p>
                   <p><strong>Factors:</strong></p>
                   <ul>
-                    {Object.entries(DEMO_QUOTE_RESULT.factorsConsidered).map(([key, value]) => (
+                    {Object.entries((quoteResult as any)?.factorsConsidered || {}).map(([key, value]) => (
                       <li key={key}>{key}: {value}</li>
                     ))}
                   </ul>
@@ -161,7 +147,7 @@ export default function PremiumCalculator() {
               </Card>
             )}
 
-            {quoteResult && !DEMO_MODE && (
+            {quoteResult && true && (
               <Card className="mt-4 p-4 bg-green-50 border-green-200">
                 <CardTitle className="text-lg">Calculated Premium</CardTitle>
                 <CardContent className="text-sm">
@@ -177,7 +163,7 @@ export default function PremiumCalculator() {
               </Card>
             )}
 
-            {error && !DEMO_MODE && (
+            {error && true && (
               <div className="text-red-500 text-sm mt-2">Error: {error.message}</div>
             )}
           </div>

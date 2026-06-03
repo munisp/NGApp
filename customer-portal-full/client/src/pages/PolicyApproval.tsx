@@ -50,82 +50,6 @@ interface Application {
   submissionDate: string;
 }
 
-const DEMO_MODE = process.env.DEMO_MODE === 'true';
-
-const DEMO_POLICIES: Policy[] = [
-  {
-    id: 'pol1001',
-    policyNumber: 'NIG/POL/2024/001',
-    customerName: 'Aisha Bello',
-    product: 'Motor Insurance',
-    status: 'Active',
-    startDate: '2024-01-15',
-    endDate: '2025-01-14',
-  },
-  {
-    id: 'pol1002',
-    policyNumber: 'NIG/POL/2024/002',
-    customerName: 'Chinedu Okoro',
-    product: 'Health Insurance',
-    status: 'Pending',
-    startDate: '2024-02-01',
-    endDate: '2025-01-31',
-  },
-  {
-    id: 'pol1003',
-    policyNumber: 'NIG/POL/2024/003',
-    customerName: 'Fatima Musa',
-    product: 'Life Assurance',
-    status: 'Active',
-    startDate: '2024-03-10',
-    endDate: '2034-03-09',
-  },
-  {
-    id: 'pol1004',
-    policyNumber: 'NIG/POL/2024/004',
-    customerName: 'Tunde Adebayo',
-    product: 'Travel Insurance',
-    status: 'Cancelled',
-    startDate: '2024-04-05',
-    endDate: '2024-04-10',
-  },
-];
-
-const DEMO_APPLICATIONS: Application[] = [
-  {
-    id: 'app2001',
-    applicationNumber: 'NIG/APP/2024/001',
-    applicantName: 'Grace Obi',
-    policyType: 'Home Insurance',
-    status: 'Pending',
-    submissionDate: '2024-01-20',
-  },
-  {
-    id: 'app2002',
-    applicationNumber: 'NIG/APP/2024/002',
-    applicantName: 'Kunle Ahmed',
-    policyType: 'Motor Insurance',
-    status: 'Pending',
-    submissionDate: '2024-02-10',
-  },
-  {
-    id: 'app2003',
-    applicationNumber: 'NIG/APP/2024/003',
-    applicantName: 'Ngozi Eze',
-    policyType: 'Health Insurance',
-    status: 'Approved',
-    submissionDate: '2024-03-01',
-  },
-  {
-    id: 'app2004',
-    applicationNumber: 'NIG/APP/2024/004',
-    applicantName: 'Segun Olawale',
-    policyType: 'Life Assurance',
-    status: 'Rejected',
-    submissionDate: '2024-04-15',
-  },
-];
-
 const PolicyApproval: React.FC = () => {
   const { user, isAuthenticated, isLoading: isAuthLoading } = useAuth();
   const trpcUtils = trpc.useUtils();
@@ -139,12 +63,12 @@ const PolicyApproval: React.FC = () => {
 
   // Fetch policies (if needed for context or related approvals)
   const { data: policies, isLoading: isLoadingPolicies, isError: isErrorPolicies, error: errorPolicies } = trpc.policies.list.useQuery(undefined, {
-    enabled: isAuthenticated && !DEMO_MODE,
+    enabled: isAuthenticated,
   });
 
   // Fetch applications for approval
   const { data: applications, isLoading: isLoadingApplications, isError: isErrorApplications, error: errorApplications } = trpc.application.list.useQuery(undefined, {
-    enabled: isAuthenticated && !DEMO_MODE,
+    enabled: isAuthenticated,
   });
 
   // Mutation for updating application status
@@ -187,7 +111,7 @@ const PolicyApproval: React.FC = () => {
     );
   }
 
-  const allApplications = DEMO_MODE ? DEMO_APPLICATIONS : (applications || []);
+  const allApplications = applications || [];
 
   const filteredApplications = useMemo(() => {
     return allApplications.filter(app => {
@@ -208,19 +132,17 @@ const PolicyApproval: React.FC = () => {
   const paginate = (pageNumber: number) => setCurrentPage(pageNumber);
 
   const handleApprove = (applicationId: string) => {
-    if (DEMO_MODE) {
+    if (false) {
       toast.success(`DEMO MODE: Application ${applicationId} approved.`);
-      // In a real scenario, you'd update DEMO_APPLICATIONS state here
-      return;
+            return;
     }
     updateApplicationMutation.mutate({ id: applicationId, status: 'Approved' });
   };
 
   const handleReject = (applicationId: string) => {
-    if (DEMO_MODE) {
+    if (false) {
       toast.success(`DEMO MODE: Application ${applicationId} rejected.`);
-      // In a real scenario, you'd update DEMO_APPLICATIONS state here
-      return;
+            return;
     }
     updateApplicationMutation.mutate({ id: applicationId, status: 'Rejected' });
   };

@@ -27,20 +27,6 @@ interface Cession {
   date: string;
 }
 
-const DEMO_MODE = process.env.DEMO_MODE === 'true';
-
-const demoTreaties: Treaty[] = [
-  { id: '1', name: 'Facultative Treaty A', type: 'Facultative', status: 'Active', effectiveDate: '2023-01-01', expiryDate: '2024-01-01' },
-  { id: '2', name: 'Quota Share Treaty B', type: 'Quota Share', status: 'Active', effectiveDate: '2023-03-15', expiryDate: '2024-03-15' },
-  { id: '3', name: 'Excess of Loss Treaty C', type: 'Excess of Loss', status: 'Inactive', effectiveDate: '2022-06-01', expiryDate: '2023-06-01' },
-];
-
-const demoCessions: Cession[] = [
-  { id: '101', treatyId: '1', reinsurer: 'Reinsure Corp', amount: 150000, date: '2023-02-01' },
-  { id: '102', treatyId: '2', reinsurer: 'Global Re', amount: 250000, date: '2023-04-01' },
-  { id: '103', treatyId: '1', reinsurer: 'Reinsure Corp', amount: 75000, date: '2023-05-10' },
-];
-
 export default function ReinsuranceManagement() {
   const { isAuthenticated, isLoading: authLoading } = useAuth();
   const [treatySearch, setTreatySearch] = useState('');
@@ -51,11 +37,11 @@ export default function ReinsuranceManagement() {
   const utils = trpc.useUtils();
 
   const { data: treaties, isLoading: isLoadingTreaties, error: treatiesError } = trpc.reinsurance.treaties.useQuery(undefined, {
-    enabled: !DEMO_MODE && isAuthenticated,
+    enabled: isAuthenticated,
   });
 
   const { data: cessions, isLoading: isLoadingCessions, error: cessionsError } = trpc.reinsurance.cessions.useQuery(undefined, {
-    enabled: !DEMO_MODE && isAuthenticated,
+    enabled: isAuthenticated,
   });
 
   const createTreatyMutation = trpc.reinsurance.create.useMutation({
@@ -86,11 +72,11 @@ export default function ReinsuranceManagement() {
     toast.error(`Error loading cessions: ${cessionsError.message}`);
   }
 
-  const filteredTreaties = (DEMO_MODE ? demoTreaties : (treaties || [])).filter(treaty =>
+  const filteredTreaties = (treaties || []).filter(treaty =>
     treaty.name.toLowerCase().includes(treatySearch.toLowerCase())
   );
 
-  const filteredCessions = (DEMO_MODE ? demoCessions : (cessions || [])).filter(cession =>
+  const filteredCessions = (cessions || []).filter(cession =>
     cession.reinsurer.toLowerCase().includes(cessionSearch.toLowerCase()) ||
     cession.treatyId.toLowerCase().includes(cessionSearch.toLowerCase())
   );
@@ -153,7 +139,7 @@ export default function ReinsuranceManagement() {
               </DialogContent>
             </Dialog>
           </div>
-          {(isLoadingTreaties && !DEMO_MODE) ? (
+          {(isLoadingTreaties && true) ? (
             <div className="flex justify-center items-center h-40"><Loader2 className="h-8 w-8 animate-spin" /></div>
           ) : (
             <Table>
@@ -202,7 +188,7 @@ export default function ReinsuranceManagement() {
               className="max-w-sm"
             />
           </div>
-          {(isLoadingCessions && !DEMO_MODE) ? (
+          {(isLoadingCessions && true) ? (
             <div className="flex justify-center items-center h-40"><Loader2 className="h-8 w-8 animate-spin" /></div>
           ) : (
             <Table>

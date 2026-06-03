@@ -17,21 +17,6 @@ interface Bank {
   status: 'active' | 'inactive';
 }
 
-const DEMO_MODE = process.env.DEMO_MODE === 'true';
-
-const demoBanks: Bank[] = [
-  { id: '1', name: 'Access Bank Plc', code: '044', status: 'active' },
-  { id: '2', name: 'Guaranty Trust Bank Plc', code: '058', status: 'active' },
-  { id: '3', name: 'Zenith Bank Plc', code: '057', status: 'active' },
-  { id: '4', name: 'United Bank for Africa Plc', code: '033', status: 'active' },
-  { id: '5', name: 'First Bank of Nigeria Ltd', code: '011', status: 'active' },
-  { id: '6', name: 'Ecobank Nigeria Plc', code: '050', status: 'active' },
-  { id: '7', name: 'Fidelity Bank Plc', code: '070', status: 'active' },
-  { id: '8', name: 'Union Bank of Nigeria Plc', code: '032', status: 'active' },
-  { id: '9', name: 'Sterling Bank Plc', code: '232', status: 'active' },
-  { id: '10', name: 'Wema Bank Plc', code: '035', status: 'active' },
-];
-
 const NigerianBankIntegrations: React.FC = () => {
   const { isAuthenticated, isLoading: authLoading } = useAuth();
   const [searchTerm, setSearchTerm] = useState('');
@@ -42,7 +27,7 @@ const NigerianBankIntegrations: React.FC = () => {
   const utils = trpc.useUtils();
 
   const { data: banks, isLoading: isLoadingBanks, error: banksError } = trpc.bankIntegrations.banks.useQuery(undefined, {
-    enabled: isAuthenticated && !DEMO_MODE,
+    enabled: isAuthenticated,
   });
 
   const verifyAccountMutation = trpc.bankIntegrations.verifyAccount.useMutation({
@@ -72,7 +57,7 @@ const NigerianBankIntegrations: React.FC = () => {
     verifyAccountMutation.mutate({ accountNumber, bankCode: selectedBankCode });
   };
 
-  const filteredBanks = (DEMO_MODE ? demoBanks : (banks || [])).filter(bank =>
+  const filteredBanks = (banks || []).filter(bank =>
     bank.name.toLowerCase().includes(searchTerm.toLowerCase())
   );
 
@@ -118,7 +103,7 @@ const NigerianBankIntegrations: React.FC = () => {
                       className="col-span-3 p-2 border rounded-md"
                     >
                       <option value="">Select a bank</option>
-                      {(DEMO_MODE ? demoBanks : (banks || [])).map((bank) => (
+                      {(banks || []).map((bank) => (
                         <option key={bank.id} value={bank.code}>
                           {bank.name}
                         </option>
@@ -160,7 +145,7 @@ const NigerianBankIntegrations: React.FC = () => {
               className="max-w-sm"
             />
           </div>
-          {(isLoadingBanks && !DEMO_MODE) ? (
+          {(isLoadingBanks && true) ? (
             <div className="flex items-center justify-center h-40">
               <Loader2 className="h-8 w-8 animate-spin" />
             </div>

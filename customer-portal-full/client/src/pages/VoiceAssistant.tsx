@@ -8,8 +8,6 @@ import { toast } from 'sonner';
 import { trpc } from '@/lib/trpc';
 import { useAuth } from '@/_core/hooks/useAuth';
 
-const DEMO_MODE = process.env.DEMO_MODE === 'true';
-
 const VoiceAssistant: React.FC = () => {
   const { isAuthenticated, isLoading: authLoading } = useAuth();
   const [audioFile, setAudioFile] = useState<File | null>(null);

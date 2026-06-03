@@ -34,39 +34,6 @@ interface Evidence {
   url: string;
 }
 
-const DEMO_MODE = process.env.DEMO_MODE === 'true';
-
-const demoEvidence: Evidence[] = [
-  {
-    id: "1",
-    fileName: "accident_report_2024.pdf",
-    fileType: "PDF",
-    uploadedAt: "2024-02-15T10:00:00Z",
-    url: "#"
-  },
-  {
-    id: "2",
-    fileName: "police_statement_john_doe.jpg",
-    fileType: "JPEG",
-    uploadedAt: "2024-02-15T11:30:00Z",
-    url: "#"
-  },
-  {
-    id: "3",
-    fileName: "medical_report_hospital_a.docx",
-    fileType: "DOCX",
-    uploadedAt: "2024-02-16T09:00:00Z",
-    url: "#"
-  },
-  {
-    id: "4",
-    fileName: "witness_testimony_mary_jane.mp3",
-    fileType: "MP3",
-    uploadedAt: "2024-02-16T14:00:00Z",
-    url: "#"
-  },
-];
-
 export default function ClaimsEvidence({ claimId }: ClaimsEvidenceProps) {
   const { isAuthenticated, isLoading: authLoading } = useAuth();
   const utils = trpc.useUtils();
@@ -125,7 +92,7 @@ export default function ClaimsEvidence({ claimId }: ClaimsEvidenceProps) {
     }
   };
 
-  const filteredEvidence = (DEMO_MODE ? demoEvidence : evidence || []).filter(item =>
+  const filteredEvidence = (evidence || []).filter(item =>
     item.fileName.toLowerCase().includes(searchQuery.toLowerCase())
   );
 

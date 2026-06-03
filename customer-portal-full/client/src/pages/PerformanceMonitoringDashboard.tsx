@@ -7,8 +7,6 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Badge } from "@/components/ui/badge";
 
-const DEMO_MODE = process.env.DEMO_MODE === 'true';
-
 interface PerformanceMetric {
   id: string;
   name: string;
@@ -16,14 +14,6 @@ interface PerformanceMetric {
   unit: string;
   trend: "up" | "down" | "stable";
 }
-
-const demoPerformanceMetrics: PerformanceMetric[] = [
-  { id: "1", name: "Claims Processed", value: "1,234", unit: "claims", trend: "up" },
-  { id: "2", name: "Average Resolution Time", value: "3.5", unit: "days", trend: "down" },
-  { id: "3", name: "Customer Satisfaction", value: "92", unit: "%", trend: "up" },
-  { id: "4", name: "Policy Renewals", value: "8,765", unit: "policies", trend: "up" },
-  { id: "5", name: "Agent Productivity", value: "15", unit: "policies/day", trend: "stable" },
-];
 
 export default function PerformanceMonitoringDashboard() {
   const { isAuthenticated, isLoading: authLoading } = useAuth();
@@ -67,7 +57,7 @@ export default function PerformanceMonitoringDashboard() {
     );
   }
 
-  const metricsToDisplay = DEMO_MODE ? demoPerformanceMetrics : (data as PerformanceMetric[] || []);
+  const metricsToDisplay = (data as PerformanceMetric[] || []);
 
   return (
     <div className="container mx-auto py-8">

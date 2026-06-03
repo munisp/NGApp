@@ -47,23 +47,6 @@ interface Reward {
   description: string;
 }
 
-const DEMO_MODE = process.env.DEMO_MODE === 'true';
-
-const demoLoyaltyPoints: LoyaltyPoint[] = [
-  { id: 'lp001', customerName: 'Aisha Bello', points: 1500, lastActivity: '2024-02-28' },
-  { id: 'lp002', customerName: 'Chinedu Okoro', points: 2300, lastActivity: '2024-03-01' },
-  { id: 'lp003', customerName: 'Fatima Musa', points: 800, lastActivity: '2024-02-25' },
-  { id: 'lp004', customerName: 'Obi Eze', points: 3000, lastActivity: '2024-03-02' },
-  { id: 'lp005', customerName: 'Ngozi Adebayo', points: 1200, lastActivity: '2024-02-29' },
-];
-
-const demoRewards: Reward[] = [
-  { id: 'rw001', name: '₦500 Airtime Voucher', pointsCost: 500, description: 'Redeem for ₦500 mobile airtime.' },
-  { id: 'rw002', name: '₦1000 Shopping Voucher', pointsCost: 1000, description: 'Redeem for ₦1000 off at partner stores.' },
-  { id: 'rw003', name: 'Premium Service Upgrade', pointsCost: 2000, description: 'Upgrade to premium customer service for a month.' },
-  { id: 'rw004', name: 'Discount on Policy Renewal', pointsCost: 1500, description: 'Get 10% off your next policy renewal.' },
-];
-
 export default function LoyaltyProgram() {
   const { user, isAuthenticated, isLoading: authLoading } = useAuth();
   const [searchTerm, setSearchTerm] = useState('');
@@ -86,13 +69,13 @@ export default function LoyaltyProgram() {
     );
   }
 
-  // DEMO_MODE fallback
-  if (DEMO_MODE) {
-    const filteredDemoPoints = demoLoyaltyPoints.filter(point =>
+  // false fallback
+  if (false) {
+    const filteredPoints = [].filter(point =>
       point.customerName.toLowerCase().includes(searchTerm.toLowerCase())
     );
 
-    const handleDemoRedeem = (reward: Reward) => {
+    const handleRedeem = (reward: Reward) => {
       toast.success(`Successfully redeemed ${reward.name} for ${reward.pointsCost} points in DEMO MODE.`);
       setIsRedeemDialogOpen(false);
       setSelectedReward(null);
@@ -123,7 +106,7 @@ export default function LoyaltyProgram() {
                 </TableRow>
               </TableHeader>
               <TableBody>
-                {filteredDemoPoints.map((point) => (
+                {filteredPoints.map((point) => (
                   <TableRow key={point.id}>
                     <TableCell className="font-medium">{point.customerName}</TableCell>
                     <TableCell>{point.points}</TableCell>
@@ -142,7 +125,7 @@ export default function LoyaltyProgram() {
           </CardHeader>
           <CardContent>
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-              {demoRewards.map((reward) => (
+              {[].map((reward) => (
                 <Card key={reward.id}>
                   <CardHeader>
                     <CardTitle>{reward.name}</CardTitle>
@@ -176,7 +159,7 @@ export default function LoyaltyProgram() {
             </DialogHeader>
             <DialogFooter>
               <Button variant="outline" onClick={() => setIsRedeemDialogOpen(false)}>Cancel</Button>
-              <Button onClick={() => selectedReward && handleDemoRedeem(selectedReward)}>Confirm</Button>
+              <Button onClick={() => selectedReward && handleRedeem(selectedReward)}>Confirm</Button>
             </DialogFooter>
           </DialogContent>
         </Dialog>
@@ -267,7 +250,7 @@ export default function LoyaltyProgram() {
         </CardHeader>
         <CardContent>
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-            {demoRewards.map((reward) => (
+            {[].map((reward) => (
               <Card key={reward.id}>
                 <CardHeader>
                   <CardTitle>{reward.name}</CardTitle>

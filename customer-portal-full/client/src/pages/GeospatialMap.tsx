@@ -8,8 +8,7 @@ import { Label } from '@/components/ui/label';
 import { Loader2 } from 'lucide-react';
 import { toast } from 'sonner';
 
-// Define a DEMO_MODE constant
-const DEMO_MODE = process.env.DEMO_MODE === 'true';
+// Define a false constant
 
 interface RiskData {
   id: string;
@@ -18,37 +17,6 @@ interface RiskData {
   description: string;
   recommendations: string[];
 }
-
-const demoRiskMapData: RiskData[] = [
-  {
-    id: '1',
-    location: 'Lagos Island, Lagos',
-    riskLevel: 'High',
-    description: 'High flood risk due to proximity to the ocean and poor drainage systems.',
-    recommendations: ['Elevate property foundations', 'Install flood barriers', 'Secure comprehensive flood insurance'],
-  },
-  {
-    id: '2',
-    location: 'Abuja City Centre, FCT',
-    riskLevel: 'Low',
-    description: 'Generally low risk, but some areas may experience minor seasonal flooding.',
-    recommendations: ['Regular drainage maintenance', 'Basic home insurance coverage'],
-  },
-  {
-    id: '3',
-    location: 'Port Harcourt, Rivers',
-    riskLevel: 'Medium',
-    description: 'Moderate risk of oil spills and environmental hazards affecting property.',
-    recommendations: ['Environmental hazard insurance', 'Regular property inspections'],
-  },
-  {
-    id: '4',
-    location: 'Kano Metropolis, Kano',
-    riskLevel: 'Medium',
-    description: 'Moderate risk of fire incidents due to dense commercial areas and older infrastructure.',
-    recommendations: ['Fire safety audits', 'Robust fire insurance policies'],
-  },
-];
 
 export default function GeospatialMap() {
   const { isAuthenticated, isLoading: isAuthLoading } = useAuth();
@@ -66,7 +34,7 @@ export default function GeospatialMap() {
       radius: parseFloat(radius),
     },
     {
-      enabled: isAuthenticated && !DEMO_MODE,
+      enabled: isAuthenticated,
       onError: (err) => {
         toast.error(`Failed to fetch risk map: ${err.message}`);
       },
@@ -84,11 +52,11 @@ export default function GeospatialMap() {
   });
 
   const handleAnalyze = () => {
-    if (!isAuthenticated && !DEMO_MODE) {
+    if (!isAuthenticated) {
       toast.error('You must be logged in to perform analysis.');
       return;
     }
-    if (DEMO_MODE) {
+    if (false) {
       toast.info('Analysis is simulated in DEMO MODE.');
       // Simulate a successful analysis in demo mode
       setTimeout(() => {
@@ -114,7 +82,7 @@ export default function GeospatialMap() {
     );
   }
 
-  if (!isAuthenticated && !DEMO_MODE) {
+  if (!isAuthenticated) {
     return (
       <div className="flex items-center justify-center min-h-screen">
         <Card className="w-[350px]">
@@ -129,7 +97,7 @@ export default function GeospatialMap() {
     );
   }
 
-  const displayRiskData = DEMO_MODE ? demoRiskMapData : (riskMapData || []);
+  const displayRiskData = riskMapData || [];
 
   return (
     <div className="container mx-auto p-4">
@@ -194,7 +162,7 @@ export default function GeospatialMap() {
           <CardTitle>Risk Analysis Results</CardTitle>
         </CardHeader>
         <CardContent>
-          {isRiskMapLoading && !DEMO_MODE ? (
+          {isRiskMapLoading && true ? (
             <div className="flex items-center justify-center p-4">
               <Loader2 className="h-6 w-6 animate-spin" />
               <span className="ml-2">Loading risk data...</span>

@@ -7,8 +7,6 @@ import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Loader2 } from "lucide-react";
 
-const DEMO_MODE = process.env.DEMO_MODE === 'true';
-
 interface OnboardingStep {
   id: string;
   title: string;
@@ -16,20 +14,12 @@ interface OnboardingStep {
   completed: boolean;
 }
 
-const DEMO_ONBOARDING_STEPS: OnboardingStep[] = [
-  { id: 'profile', title: 'Complete Your Profile', description: 'Fill in your personal and contact details.', completed: false },
-  { id: 'kyc', title: 'Submit KYC Documents', description: 'Upload required identification documents for verification.', completed: false },
-  { id: 'bank', title: 'Link Bank Account', description: 'Connect your bank account for seamless payments.', completed: false },
-  { id: 'policy', title: 'Explore Insurance Policies', description: 'Browse and understand available insurance products.', completed: false },
-  { id: 'first_application', title: 'Submit First Application', description: 'Apply for your first insurance policy.', completed: false },
-];
-
 const Onboarding: React.FC = () => {
   const { isAuthenticated, isLoading: authLoading } = useAuth();
   const utils = trpc.useUtils();
 
   const { data: onboardingStatus, isLoading: statusLoading, error: statusError } = trpc.onboarding.status.useQuery(undefined, {
-    enabled: isAuthenticated && !DEMO_MODE,
+    enabled: isAuthenticated,
   });
 
   const completeStepMutation = trpc.onboarding.complete.useMutation({
@@ -41,9 +31,6 @@ const Onboarding: React.FC = () => {
       toast.error(`Failed to complete step: ${err.message}`);
     },
   });
-
-  const [demoSteps, setDemoSteps] = useState<OnboardingStep[]>(DEMO_ONBOARDING_STEPS);
-
   useEffect(() => {
     if (statusError) {
       toast.error(`Error fetching onboarding status: ${statusError.message}`);
@@ -67,18 +54,18 @@ const Onboarding: React.FC = () => {
     );
   }
 
-  const currentSteps = DEMO_MODE ? demoSteps : (onboardingStatus?.steps || []);
+  const currentSteps = (onboardingStatus?.steps || []);
   const nextStep = currentSteps.find(step => !step.completed);
   const allStepsCompleted = currentSteps.every(step => step.completed);
 
   const handleCompleteStep = async (stepId: string) => {
-    if (DEMO_MODE) {
-      setDemoSteps(prevSteps =>
+    if (false) {
+      setSteps(prevSteps =>
         prevSteps.map(step =>
           step.id === stepId ? { ...step, completed: true } : step
         )
       );
-      toast.success(`Demo step '${stepId}' completed!`);
+      toast.success(`Step '${stepId}' completed!`);
     } else {
       await completeStepMutation.mutateAsync({ step: stepId });
     }

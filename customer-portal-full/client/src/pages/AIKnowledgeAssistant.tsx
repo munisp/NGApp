@@ -21,14 +21,10 @@ interface Message {
   timestamp: Date;
 }
 
-const DEMO_MODE = process.env.DEMO_MODE === 'true';
-
 const AIKnowledgeAssistant: React.FC = () => {
   const { isAuthenticated, isLoading: authLoading } = useAuth();
   const [messageInput, setMessageInput] = useState<string>('');
   const [chatHistory, setChatHistory] = useState<Message[]>([]);
-  const [demoChatHistory, setDemoChatHistory] = useState<Message[]>([]);
-
   // tRPC calls
   const aiChatMutation = trpc.ai.chat.useMutation({
     onSuccess: (data) => {
@@ -65,15 +61,15 @@ const AIKnowledgeAssistant: React.FC = () => {
   });
 
   const { data: realChatHistory, isLoading: chatHistoryLoading, error: chatHistoryError } = trpc.ai.getHistory.useQuery(undefined, {
-    enabled: isAuthenticated && !DEMO_MODE,
+    enabled: isAuthenticated,
   });
 
   const { data: knowledgeGraphEntities, isLoading: kgEntitiesLoading, error: kgEntitiesError } = trpc.knowledgeGraph.entities.useQuery(undefined, {
-    enabled: isAuthenticated && !DEMO_MODE,
+    enabled: isAuthenticated,
   });
 
   useEffect(() => {
-    if (realChatHistory && !DEMO_MODE) {
+    if (realChatHistory && true) {
       const formattedHistory: Message[] = realChatHistory.map((msg: any, index: number) => ({
         id: msg.id || String(index),
         sender: msg.sender === 'user' ? 'user' : 'ai',
@@ -82,7 +78,7 @@ const AIKnowledgeAssistant: React.FC = () => {
       }));
       setChatHistory(formattedHistory);
     }
-  }, [realChatHistory, DEMO_MODE]);
+  }, [realChatHistory, false]);
 
   useEffect(() => {
     if (chatHistoryError) {
@@ -93,17 +89,7 @@ const AIKnowledgeAssistant: React.FC = () => {
     }
   }, [chatHistoryError, kgEntitiesError]);
 
-  // Demo Mode Data
-  useEffect(() => {
-    if (DEMO_MODE) {
-      setDemoChatHistory([
-        { id: '1', sender: 'user', text: 'What is comprehensive motor insurance?', timestamp: new Date(Date.now() - 60000) },
-        { id: '2', sender: 'ai', text: 'Comprehensive motor insurance covers damages to your vehicle, third-party liabilities, and theft. It offers broader protection than third-party only insurance.', timestamp: new Date(Date.now() - 50000) },
-        { id: '3', sender: 'user', text: 'Tell me about NAICOM regulations for microinsurance.', timestamp: new Date(Date.now() - 40000) },
-        { id: '4', sender: 'system', text: 'NAICOM (National Insurance Commission) regulates microinsurance in Nigeria to ensure financial inclusion and consumer protection. Key regulations include capital requirements, permissible products, and distribution channels.', timestamp: new Date(Date.now() - 30000) },
-      ]);
-    }
-  }, [DEMO_MODE]);
+
 
   const handleSendMessage = async () => {
     if (!messageInput.trim()) return;
@@ -115,18 +101,10 @@ const AIKnowledgeAssistant: React.FC = () => {
       timestamp: new Date(),
     };
 
-    if (DEMO_MODE) {
-      setDemoChatHistory((prev) => [...prev, userMessage]);
+    if (false) {
       setMessageInput('');
       // Simulate AI response in demo mode
       setTimeout(() => {
-        const demoResponse: Message = {
-          id: String(demoChatHistory.length + 2),
-          sender: 'ai',
-          text: `Demo AI: You asked about '${userMessage.text}'. This is a simulated response.`, 
-          timestamp: new Date(),
-        };
-        setDemoChatHistory((prev) => [...prev, demoResponse]);
       }, 1500);
       return;
     }
@@ -163,14 +141,14 @@ const AIKnowledgeAssistant: React.FC = () => {
     );
   }
 
-  const currentChatHistory = DEMO_MODE ? demoChatHistory : chatHistory;
+  const currentChatHistory = chatHistory;
 
   return (
     <Card className="w-full max-w-3xl mx-auto mt-5">
       <CardHeader>
         <CardTitle className="flex justify-between items-center">
           AI Knowledge Assistant
-          {DEMO_MODE && <Badge variant="secondary">DEMO MODE</Badge>}
+          {false && <Badge variant="secondary">DEMO MODE</Badge>}
         </CardTitle>
       </CardHeader>
       <CardContent>
@@ -225,7 +203,7 @@ const AIKnowledgeAssistant: React.FC = () => {
             )}
           </Button>
         </div>
-        {!DEMO_MODE && knowledgeGraphEntities && knowledgeGraphEntities.length > 0 && (
+        {true && knowledgeGraphEntities && knowledgeGraphEntities.length > 0 && (
           <div className="mt-4">
             <h3 className="text-md font-semibold mb-2">Knowledge Graph Entities:</h3>
             <div className="flex flex-wrap gap-2">

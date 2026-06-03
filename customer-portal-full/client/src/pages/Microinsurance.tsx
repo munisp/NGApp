@@ -21,47 +21,6 @@ interface MicroinsuranceProduct {
   provider: string;
 }
 
-const DEMO_PRODUCTS: MicroinsuranceProduct[] = [
-  {
-    id: 'prod_001',
-    name: 'Farmer Shield',
-    description: 'Affordable insurance for small-scale farmers against crop failure and livestock loss.',
-    premium: 1500,
-    coverage: 'Up to NGN 100,000 for crop loss, NGN 50,000 for livestock.',
-    eligibility: 'Farmers with less than 5 acres of land.',
-    provider: 'AgroSure Insurance',
-  },
-  {
-    id: 'prod_002',
-    name: 'Trader Protect',
-    description: 'Daily income protection for market traders in case of illness or market disruption.',
-    premium: 500,
-    coverage: 'NGN 5,000 daily income replacement for up to 10 days.',
-    eligibility: 'Registered market traders.',
-    provider: 'MarketGuard',
-  },
-  {
-    id: 'prod_003',
-    name: 'Artisan Cover',
-    description: 'Tools and personal accident insurance for artisans like tailors, carpenters, and mechanics.',
-    premium: 1000,
-    coverage: 'NGN 200,000 for accidental death, NGN 50,000 for tool damage.',
-    eligibility: 'Certified artisans.',
-    provider: 'CraftSecure',
-  },
-  {
-    id: 'prod_004',
-    name: 'Health Micro',
-    description: 'Basic health coverage for low-income families, covering common ailments and emergencies.',
-    premium: 2500,
-    coverage: 'Hospitalization up to NGN 150,000, outpatient visits.',
-    eligibility: 'Families with monthly income below NGN 80,000.',
-    provider: 'WellLife Health',
-  },
-];
-
-const DEMO_MODE = process.env.DEMO_MODE === 'true';
-
 const MicroinsurancePage: React.FC = () => {
   const { user, isLoading: isAuthLoading } = useAuth();
   const [searchTerm, setSearchTerm] = useState('');
@@ -109,7 +68,7 @@ const MicroinsurancePage: React.FC = () => {
     toast.error(`Failed to load products: ${error?.message}`);
   }
 
-  const displayedProducts = DEMO_MODE ? DEMO_PRODUCTS : (products || []);
+  const displayedProducts = products || [];
 
   const filteredProducts = displayedProducts.filter(product =>
     product.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
@@ -117,7 +76,7 @@ const MicroinsurancePage: React.FC = () => {
   );
 
   const handleEnroll = (productId: string) => {
-    if (DEMO_MODE) {
+    if (false) {
       toast.info('Enrollment is in DEMO MODE. No actual enrollment will occur.');
       toast.success(`Successfully simulated enrollment for product ID: ${productId}`);
       return;
@@ -138,7 +97,7 @@ const MicroinsurancePage: React.FC = () => {
         />
       </div>
 
-      {DEMO_MODE && (
+      {false && (
         <Badge variant="destructive" className="mb-4">DEMO MODE ACTIVE: Displaying sample data.</Badge>
       )}
 

@@ -42,43 +42,6 @@ interface Scheme {
   applicationDeadline: string;
 }
 
-const DEMO_MODE = process.env.DEMO_MODE === 'true';
-
-const DEMO_SCHEMES: Scheme[] = [
-  {
-    id: 'agri-001',
-    name: 'Rice Farmers Support Scheme',
-    description: 'Provides financial and technical support to rice farmers.',
-    eligibility: 'Must be a registered rice farmer with at least 1 hectare of land.',
-    status: 'Active',
-    applicationDeadline: '2024-12-31',
-  },
-  {
-    id: 'agri-002',
-    name: 'Cassava Value Chain Initiative',
-    description: 'A scheme to boost cassava production and processing.',
-    eligibility: 'Open to cassava farmers and processors.',
-    status: 'Active',
-    applicationDeadline: '2024-11-15',
-  },
-  {
-    id: 'agri-003',
-    name: 'Livestock Development Program',
-    description: 'Supports livestock farmers with improved breeds and veterinary services.',
-    eligibility: 'Registered livestock farmers.',
-    status: 'Inactive',
-    applicationDeadline: '2024-10-01',
-  },
-  {
-    id: 'agri-004',
-    name: 'Fisheries Modernization Project',
-    description: 'Aimed at modernizing fishing practices and aquaculture.',
-    eligibility: 'Fishermen and aquaculture operators.',
-    status: 'Active',
-    applicationDeadline: '2025-01-31',
-  },
-];
-
 const AgriculturalUnderwriting: React.FC = () => {
   const { isAuthenticated, isLoading: authLoading } = useAuth();
   const [searchQuery, setSearchQuery] = useState('');
@@ -89,7 +52,7 @@ const AgriculturalUnderwriting: React.FC = () => {
   const [farmSize, setFarmSize] = useState('');
 
   const { data: schemes, isLoading, isError, error } = trpc.agricultural.schemes.useQuery(undefined, {
-    enabled: !DEMO_MODE && isAuthenticated,
+    enabled: isAuthenticated,
   });
 
   const applyMutation = trpc.agricultural.submitApplication.useMutation({
@@ -121,7 +84,7 @@ const AgriculturalUnderwriting: React.FC = () => {
     );
   }
 
-  if (isError && !DEMO_MODE) {
+  if (isError && true) {
     toast.error(`Failed to load schemes: ${error?.message}`);
     return (
       <div className="flex items-center justify-center h-screen text-lg font-semibold text-red-500">
@@ -130,7 +93,7 @@ const AgriculturalUnderwriting: React.FC = () => {
     );
   }
 
-  const dataToDisplay = DEMO_MODE ? DEMO_SCHEMES : (schemes || []);
+  const dataToDisplay = schemes || [];
 
   const filteredSchemes = dataToDisplay.filter(scheme => {
     const matchesSearch = scheme.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
@@ -178,7 +141,7 @@ const AgriculturalUnderwriting: React.FC = () => {
             </Select>
           </div>
 
-          {isLoading && !DEMO_MODE ? (
+          {isLoading ? (
             <div className="flex items-center justify-center h-40">
               <Loader2 className="h-8 w-8 animate-spin" />
             </div>

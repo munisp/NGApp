@@ -10,8 +10,6 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { Badge } from '@/components/ui/badge';
 
-const DEMO_MODE = process.env.DEMO_MODE === 'true';
-
 interface ScanResult {
   id: string;
   type: string;
@@ -41,21 +39,8 @@ const InsuranceRadar: React.FC = () => {
   const { data: alerts, isLoading: isLoadingAlerts, isError: isErrorAlerts, error: alertsError } = trpc.insuranceRadar.alerts.useQuery();
 
   // Demo data for scan results
-  const demoScanResults: ScanResult[] = [
-    { id: 'sr1', type: 'Policy Anomaly', description: 'Unusual policy activity detected for customer ID 123', severity: 'high', status: 'open', timestamp: '2024-03-01T10:00:00Z' },
-    { id: 'sr2', type: 'Claim Discrepancy', description: 'Mismatch in claim details for claim #456', severity: 'medium', status: 'open', timestamp: '2024-03-01T11:30:00Z' },
-    { id: 'sr3', type: 'Fraudulent Activity', description: 'Potential fraud identified in agent network', severity: 'high', status: 'open', timestamp: '2024-03-01T14:15:00Z' },
-    { id: 'sr4', type: 'Compliance Breach', description: 'Violation of NAICOM regulation 2.1.4', severity: 'low', status: 'resolved', timestamp: '2024-02-28T09:00:00Z' },
-    { id: 'sr5', type: 'Underwriting Error', description: 'Incorrect premium calculation for policy P789', severity: 'medium', status: 'open', timestamp: '2024-02-29T16:45:00Z' },
-  ];
 
   // Demo data for alerts
-  const demoAlerts: Alert[] = [
-    { id: 'al1', message: 'High volume of claims from Lagos region', category: 'Operations', level: 'warning', date: '2024-03-01T08:00:00Z' },
-    { id: 'al2', message: 'System performance degradation detected', category: 'System', level: 'critical', date: '2024-03-01T12:00:00Z' },
-    { id: 'al3', message: 'New regulatory update from NAICOM', category: 'Compliance', level: 'info', date: '2024-02-29T10:00:00Z' },
-    { id: 'al4', message: 'Unusual login attempts from unknown IP', category: 'Security', level: 'critical', date: '2024-03-01T15:00:00Z' },
-  ];
 
   if (isErrorScanResults) {
     toast.error(`Failed to load scan results: ${scanResultsError?.message}`);
@@ -65,8 +50,8 @@ const InsuranceRadar: React.FC = () => {
     toast.error(`Failed to load alerts: ${alertsError?.message}`);
   }
 
-  const displayedScanResults = DEMO_MODE ? demoScanResults : (scanResults || []);
-  const displayedAlerts = DEMO_MODE ? demoAlerts : (alerts || []);
+  const displayedScanResults = scanResults || [];
+  const displayedAlerts = alerts || [];
 
   const filteredScanResults = displayedScanResults
     .filter(result =>

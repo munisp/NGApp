@@ -7,21 +7,12 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 
-const DEMO_MODE = process.env.DEMO_MODE === 'true';
-
 interface KycStatus {
   id: string;
   status: 'verified' | 'pending' | 'failed';
   lastVerified: string;
   blockchainHash: string;
 }
-
-const demoKycStatus: KycStatus = {
-  id: 'kyc_demo_123',
-  status: 'verified',
-  lastVerified: new Date().toLocaleString(),
-  blockchainHash: '0xabc123def456ghi789jkl012mno345pqr678stu901vwx234yz567',
-};
 
 const BlockchainStatus: React.FC = () => {
   const { isAuthenticated, user } = useAuth();
@@ -33,12 +24,12 @@ const BlockchainStatus: React.FC = () => {
   }
 
   const { data, isLoading, isError, error, refetch } = trpc.kyc.status.useQuery(undefined, {
-    enabled: !DEMO_MODE, // Disable query in demo mode
+    enabled: true, // Disable query in demo mode
   });
 
-  const kycStatus = DEMO_MODE ? demoKycStatus : data;
+  const kycStatus = data;
 
-  if (isLoading && !DEMO_MODE) {
+  if (isLoading) {
     return (
       <div className="flex items-center justify-center h-full">
         <Loader2 className="h-8 w-8 animate-spin" />
@@ -47,7 +38,7 @@ const BlockchainStatus: React.FC = () => {
     );
   }
 
-  if (isError && !DEMO_MODE) {
+  if (isError && true) {
     toast.error(`Error fetching KYC status: ${error?.message}`);
     return (
       <div className="flex items-center justify-center h-full text-red-500">
@@ -85,8 +76,8 @@ const BlockchainStatus: React.FC = () => {
               </p>
               <p><strong>Last Verified:</strong> {kycStatus.lastVerified}</p>
               <p><strong>Blockchain Hash:</strong> {kycStatus.blockchainHash}</p>
-              <Button onClick={() => refetch()} disabled={isLoading && !DEMO_MODE}>
-                {isLoading && !DEMO_MODE && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+              <Button onClick={() => refetch()} disabled={isLoading}>
+                {isLoading && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
                 Re-verify Status
               </Button>
             </div>

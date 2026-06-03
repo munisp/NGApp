@@ -22,49 +22,7 @@ import {
   Table, TableBody, TableCell, TableHead, TableHeader, TableRow
 } from '@/components/ui/table';
 
-// DEMO_MODE fallback data
-const DEMO_P2P_POOLS = [
-  {
-    id: 'pool1',
-    name: 'Community Health Pool',
-    description: 'Covers basic health expenses for community members.',
-    members: 150,
-    targetAmount: 500000,
-    currentAmount: 350000,
-    status: 'active',
-    contributions: [
-      { userId: 'user1', amount: 5000, date: '2024-01-15' },
-      { userId: 'user2', amount: 10000, date: '2024-02-20' },
-    ],
-  },
-  {
-    id: 'pool2',
-    name: 'Small Business Protection',
-    description: 'Protects small businesses against unforeseen losses.',
-    members: 80,
-    targetAmount: 1000000,
-    currentAmount: 750000,
-    status: 'active',
-    contributions: [
-      { userId: 'user3', amount: 20000, date: '2024-03-01' },
-      { userId: 'user4', amount: 15000, date: '2024-03-10' },
-    ],
-  },
-  {
-    id: 'pool3',
-    name: 'Crop Harvest Assurance',
-    description: 'Insurance for farmers against crop failure.',
-    members: 200,
-    targetAmount: 750000,
-    currentAmount: 100000,
-    status: 'pending',
-    contributions: [
-      { userId: 'user5', amount: 2500, date: '2024-04-05' },
-    ],
-  },
-];
-
-const DEMO_MODE = process.env.DEMO_MODE === 'true';
+// false fallback data
 
 const P2PInsurance: React.FC = () => {
   const { user, isAuthenticated, isLoading: authLoading } = useAuth();
@@ -103,7 +61,7 @@ const P2PInsurance: React.FC = () => {
     toast.error(`Error loading P2P pools: ${error?.message || 'Unknown error'}`);
   }
 
-  const displayPools = DEMO_MODE ? DEMO_P2P_POOLS : (pools || []);
+  const displayPools = (pools || []);
 
   return (
     <P2PInsuranceContent
@@ -128,7 +86,7 @@ const P2PInsurance: React.FC = () => {
 };
 
 interface P2PInsuranceContentProps {
-  pools: typeof DEMO_P2P_POOLS;
+  pools: any[];
   searchQuery: string;
   setSearchQuery: (query: string) => void;
   filterStatus: string;

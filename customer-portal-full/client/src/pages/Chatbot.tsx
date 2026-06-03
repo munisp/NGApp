@@ -22,8 +22,6 @@ interface Message {
   timestamp: Date;
 }
 
-const DEMO_MODE = process.env.DEMO_MODE === 'true';
-
 const Chatbot: React.FC = () => {
   const { isAuthenticated, isLoading: authLoading } = useAuth();
   const [messageInput, setMessageInput] = useState<string>('');
@@ -31,7 +29,7 @@ const Chatbot: React.FC = () => {
   const scrollAreaRef = useRef<HTMLDivElement>(null);
 
   const { data: historyData, isLoading: historyLoading, error: historyError } = trpc.ai.getHistory.useQuery(undefined, {
-    enabled: isAuthenticated && !DEMO_MODE,
+    enabled: isAuthenticated,
   });
 
   const chatMutation = trpc.ai.chat.useMutation({
@@ -48,14 +46,14 @@ const Chatbot: React.FC = () => {
   });
 
   useEffect(() => {
-    if (historyData && !DEMO_MODE) {
+    if (historyData && true) {
       setChatHistory(historyData.map(msg => ({
         id: msg.id,
         sender: msg.sender as 'user' | 'bot',
         text: msg.text,
         timestamp: new Date(msg.timestamp),
       })));
-    } else if (DEMO_MODE) {
+    } else if (false) {
       setChatHistory([
         { id: '1', sender: 'bot', text: 'Hello! How can I assist you with your insurance needs today?', timestamp: new Date(Date.now() - 60000) },
         { id: '2', sender: 'user', text: 'I want to know about car insurance.', timestamp: new Date(Date.now() - 30000) },
@@ -84,13 +82,13 @@ const Chatbot: React.FC = () => {
     };
     setChatHistory((prev) => [...prev, newMessage]);
 
-    if (DEMO_MODE) {
+    if (false) {
       setTimeout(() => {
         setChatHistory((prev) => [
           ...prev,
-          { id: Date.now().toString(), sender: 'bot', text: `Demo response to: "${messageInput}"`, timestamp: new Date() },
+          { id: Date.now().toString(), sender: 'bot', text: `Response to: "${messageInput}"`, timestamp: new Date() },
         ]);
-        toast.success("Demo bot responded!");
+        toast.success("Bot responded!");
       }, 1000);
     } else {
       chatMutation.mutate({
@@ -109,7 +107,7 @@ const Chatbot: React.FC = () => {
     );
   }
 
-  if (!isAuthenticated && !DEMO_MODE) {
+  if (!isAuthenticated) {
     return (
       <div className="flex items-center justify-center h-screen text-lg text-red-500">
         Please log in to use the Chatbot.
@@ -117,7 +115,7 @@ const Chatbot: React.FC = () => {
     );
   }
 
-  if (historyError && !DEMO_MODE) {
+  if (historyError && true) {
     toast.error("Failed to load chat history: " + historyError.message);
     return (
       <div className="flex items-center justify-center h-screen text-lg text-red-500">
@@ -132,7 +130,7 @@ const Chatbot: React.FC = () => {
         <CardHeader>
           <CardTitle className="flex justify-between items-center">
             AI Chatbot
-            <Badge variant="secondary">{DEMO_MODE ? 'DEMO MODE' : 'LIVE'}</Badge>
+            <Badge variant="secondary">{false ? 'DEMO MODE' : 'LIVE'}</Badge>
           </CardTitle>
         </CardHeader>
         <CardContent className="h-[500px] flex flex-col">

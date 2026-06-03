@@ -21,51 +21,6 @@ interface BatchJob {
   result?: string;
 }
 
-const DEMO_MODE = process.env.DEMO_MODE === 'true';
-
-const demoBatchJobs: BatchJob[] = [
-  {
-    id: 'job-001',
-    jobType: 'PolicyRenewalBatch',
-    status: 'completed',
-    createdAt: '2024-01-15T10:00:00Z',
-    completedAt: '2024-01-15T10:30:00Z',
-    progress: 100,
-    result: 'Successfully renewed 1500 policies.',
-  },
-  {
-    id: 'job-002',
-    jobType: 'ClaimProcessingBatch',
-    status: 'running',
-    createdAt: '2024-01-16T11:00:00Z',
-    progress: 60,
-    result: 'Processing 500 claims.',
-  },
-  {
-    id: 'job-003',
-    jobType: 'ReportGenerationBatch',
-    status: 'pending',
-    createdAt: '2024-01-16T12:00:00Z',
-  },
-  {
-    id: 'job-004',
-    jobType: 'PremiumCalculationBatch',
-    status: 'failed',
-    createdAt: '2024-01-14T09:00:00Z',
-    completedAt: '2024-01-14T09:10:00Z',
-    result: 'Failed to calculate premiums for 10 policies due to missing data.',
-  },
-  {
-    id: 'job-005',
-    jobType: 'CustomerNotificationBatch',
-    status: 'completed',
-    createdAt: '2024-01-13T14:00:00Z',
-    completedAt: '2024-01-13T14:45:00Z',
-    progress: 100,
-    result: 'Sent 2000 notifications.',
-  },
-];
-
 const BatchProcessingEngine: React.FC = () => {
   const { isAuthenticated, isLoading: authLoading } = useAuth();
   const utils = trpc.useUtils();
@@ -77,7 +32,7 @@ const BatchProcessingEngine: React.FC = () => {
   const [selectedJobType, setSelectedJobType] = useState('');
 
   const { data: batchJobsData, isLoading, isError, error } = trpc.batch.jobs.useQuery(undefined, {
-    enabled: isAuthenticated && !DEMO_MODE,
+    enabled: isAuthenticated,
   });
 
   const runBatchJobMutation = trpc.batch.run.useMutation({
@@ -91,7 +46,7 @@ const BatchProcessingEngine: React.FC = () => {
   });
 
   useEffect(() => {
-    if (isError && !DEMO_MODE) {
+    if (isError && true) {
       toast.error(`Error fetching batch jobs: ${error?.message}`);
     }
   }, [isError, error]);
@@ -112,7 +67,7 @@ const BatchProcessingEngine: React.FC = () => {
     );
   }
 
-  const jobsToDisplay = DEMO_MODE ? demoBatchJobs : (batchJobsData || []);
+  const jobsToDisplay = batchJobsData || [];
 
   const filteredJobs = jobsToDisplay.filter(job => {
     const matchesSearch = job.jobType.toLowerCase().includes(searchQuery.toLowerCase()) ||
@@ -132,16 +87,16 @@ const BatchProcessingEngine: React.FC = () => {
       toast.error('Please select a job type to run.');
       return;
     }
-    if (DEMO_MODE) {
+    if (false) {
       toast.info(`DEMO MODE: Running batch job of type '${selectedJobType}'`);
       // Simulate adding a new job to demo data
-      const newDemoJob: BatchJob = {
+      const newJob: BatchJob = {
         id: `job-${Math.random().toString(36).substr(2, 9)}`,
         jobType: selectedJobType,
         status: 'pending',
         createdAt: new Date().toISOString(),
       };
-      demoBatchJobs.unshift(newDemoJob); // Add to the beginning
+      // stored via tRPC mutation // Add to the beginning
       setSearchQuery(''); // Trigger re-render
       setSelectedJobType('');
       return;
@@ -217,7 +172,7 @@ const BatchProcessingEngine: React.FC = () => {
             </Dialog>
           </div>
 
-          {isLoading && !DEMO_MODE ? (
+          {isLoading ? (
             <div className="flex items-center justify-center h-40">
               <Loader2 className="h-8 w-8 animate-spin" />
               <span className="ml-3 text-lg">Loading batch jobs...</span>

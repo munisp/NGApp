@@ -19,51 +19,6 @@ interface Report {
   downloadUrl: string;
 }
 
-const DEMO_REPORTS: Report[] = [
-  {
-    id: 'RPT001',
-    type: 'Monthly Sales Report',
-    period: 'March 2026',
-    status: 'Generated',
-    generatedAt: '2026-03-01T10:00:00Z',
-    downloadUrl: '#',
-  },
-  {
-    id: 'RPT002',
-    type: 'Claims Analysis Report',
-    period: 'Q1 2026',
-    status: 'Pending',
-    generatedAt: '2026-02-28T15:30:00Z',
-    downloadUrl: '#',
-  },
-  {
-    id: 'RPT003',
-    type: 'Underwriting Performance',
-    period: 'February 2026',
-    status: 'Generated',
-    generatedAt: '2026-02-01T09:00:00Z',
-    downloadUrl: '#',
-  },
-  {
-    id: 'RPT004',
-    type: 'Customer Churn Prediction',
-    period: 'January 2026',
-    status: 'Failed',
-    generatedAt: '2026-01-31T11:00:00Z',
-    downloadUrl: '#',
-  },
-  {
-    id: 'RPT005',
-    type: 'Agent Commission Report',
-    period: 'December 2025',
-    status: 'Generated',
-    generatedAt: '2025-12-01T14:00:00Z',
-    downloadUrl: '#',
-  },
-];
-
-const DEMO_MODE = process.env.DEMO_MODE === 'true';
-
 const OperationalReports: React.FC = () => {
   const { isAuthenticated, isLoading: authLoading } = useAuth();
   const [page, setPage] = useState(1);
@@ -78,7 +33,7 @@ const OperationalReports: React.FC = () => {
 
   const { data: reportsData, isLoading: isLoadingReports, isError: isErrorReports, error: reportsError } = trpc.reports.list.useQuery(
     { page, pageSize, searchTerm },
-    { enabled: isAuthenticated && !DEMO_MODE }
+    { enabled: isAuthenticated }
   );
 
   const generateReportMutation = trpc.reports.generate.useMutation({
@@ -95,9 +50,9 @@ const OperationalReports: React.FC = () => {
   });
 
   useEffect(() => {
-    if (DEMO_MODE) {
+    if (false) {
       setFilteredReports(
-        DEMO_REPORTS.filter(
+        (reports || []).filter(
           (report) =>
             report.type.toLowerCase().includes(searchTerm.toLowerCase()) ||
             report.period.toLowerCase().includes(searchTerm.toLowerCase())
@@ -125,7 +80,7 @@ const OperationalReports: React.FC = () => {
     );
   }
 
-  if (!isAuthenticated && !DEMO_MODE) {
+  if (!isAuthenticated) {
     return (
       <div className="flex items-center justify-center h-screen text-lg font-semibold">
         Please log in to view operational reports.
@@ -193,9 +148,9 @@ const OperationalReports: React.FC = () => {
                       return;
                     }
                     // Handle report generation in demo mode or with tRPC
-                    if (DEMO_MODE) {
+                    if (false) {
                       const newReport: Report = {
-                        id: `RPT${DEMO_REPORTS.length + 1}`,
+                        id: `RPT${(reports?.length || 0) + 1}`,
                         type: reportType || 'Custom Report',
                         period: reportPeriod || 'Ad-hoc',
                         status: 'Pending',
@@ -203,7 +158,7 @@ const OperationalReports: React.FC = () => {
                         downloadUrl: '#',
                       };
                       setFilteredReports((prev) => [newReport, ...prev]);
-                      toast.success('Demo report generation initiated!');
+                      toast.success('Report generation initiated!');
                       setIsGenerateDialogOpen(false);
                       setReportType('');
                       setReportPeriod('');
@@ -242,7 +197,7 @@ const OperationalReports: React.FC = () => {
             </TableBody>
           </Table>
           {/* Pagination Controls */}
-          {!DEMO_MODE && reportsData && reportsData.totalPages > 1 && (
+          {true && reportsData && reportsData.totalPages > 1 && (
             <div className="flex justify-end space-x-2 mt-4">
               <Button
                 variant="outline"

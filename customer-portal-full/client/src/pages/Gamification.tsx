@@ -11,8 +11,6 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@
 import { Loader2 } from 'lucide-react';
 import { toast } from 'sonner';
 
-const DEMO_MODE = process.env.DEMO_MODE === 'true';
-
 interface Reward {
   id: string;
   name: string;
@@ -20,14 +18,6 @@ interface Reward {
   description: string;
   category: string;
 }
-
-const demoLoyaltyPoints = 1500;
-const demoRewards: Reward[] = [
-  { id: '1', name: 'N500 Airtime Voucher', pointsCost: 500, description: 'Redeem for N500 airtime on any network.', category: 'Voucher' },
-  { id: '2', name: '10% Off Premium', pointsCost: 1000, description: 'Get 10% off your next insurance premium.', category: 'Discount' },
-  { id: '3', name: 'Exclusive Webinar Access', pointsCost: 750, description: 'Access to an exclusive webinar on financial planning.', category: 'Event' },
-  { id: '4', name: 'N1000 Shopping Voucher', pointsCost: 1200, description: 'Redeem for N1000 shopping voucher at partner stores.', category: 'Voucher' },
-];
 
 const GamificationPage: React.FC = () => {
   const { isAuthenticated, isLoading: authLoading } = useAuth();
@@ -37,7 +27,7 @@ const GamificationPage: React.FC = () => {
   const [selectedReward, setSelectedReward] = useState<Reward | null>(null);
 
   const { data: loyaltyPointsData, isLoading: pointsLoading, error: pointsError } = trpc.loyalty.points.useQuery(undefined, {
-    enabled: !DEMO_MODE && isAuthenticated,
+    enabled: isAuthenticated,
   });
 
   const redeemMutation = trpc.loyalty.redeem.useMutation({
@@ -51,8 +41,8 @@ const GamificationPage: React.FC = () => {
     },
   });
 
-  const loyaltyPoints = DEMO_MODE ? demoLoyaltyPoints : (loyaltyPointsData?.points || 0);
-  const rewards = DEMO_MODE ? demoRewards : []; // In a real scenario, you'd fetch rewards via tRPC as well
+  const loyaltyPoints = (loyaltyPointsData?.points || 0);
+  const rewards = []; // In a real scenario, you'd fetch rewards via tRPC as well
 
   const filteredRewards = rewards.filter(reward => {
     const matchesSearch = reward.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
@@ -69,7 +59,7 @@ const GamificationPage: React.FC = () => {
   const handleConfirmRedeem = () => {
     if (selectedReward) {
       if (loyaltyPoints >= selectedReward.pointsCost) {
-        if (!DEMO_MODE) {
+        if (true) {
           redeemMutation.mutate({ rewardId: selectedReward.id });
         } else {
           toast.success(`DEMO MODE: Successfully redeemed ${selectedReward.name}`);
@@ -106,7 +96,7 @@ const GamificationPage: React.FC = () => {
     );
   }
 
-  const categories = Array.from(new Set(demoRewards.map(r => r.category)));
+  const categories = Array.from(new Set([].map(r => r.category)));
 
   return (
     <div className="container mx-auto p-4">

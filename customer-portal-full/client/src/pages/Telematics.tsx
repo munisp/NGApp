@@ -22,51 +22,6 @@ interface TelematicsData {
   engineStatus: string;
 }
 
-const DEMO_TELEMATICS_DATA: TelematicsData[] = [
-  {
-    id: "tel001",
-    vehicleId: "ABC-123-NG",
-    driverId: "DRV-001",
-    timestamp: "2024-01-15T10:30:00Z",
-    speed: 85,
-    location: { lat: 6.5244, lng: 3.3792 }, // Lagos, Nigeria
-    fuelLevel: 0.75,
-    engineStatus: "Running",
-  },
-  {
-    id: "tel002",
-    vehicleId: "XYZ-789-NG",
-    driverId: "DRV-002",
-    timestamp: "2024-01-15T11:00:00Z",
-    speed: 60,
-    location: { lat: 9.0765, lng: 7.3986 }, // Abuja, Nigeria
-    fuelLevel: 0.50,
-    engineStatus: "Idle",
-  },
-  {
-    id: "tel003",
-    vehicleId: "DEF-456-NG",
-    driverId: "DRV-001",
-    timestamp: "2024-01-15T11:15:00Z",
-    speed: 100,
-    location: { lat: 7.3775, lng: 3.9470 }, // Ibadan, Nigeria
-    fuelLevel: 0.90,
-    engineStatus: "Running",
-  },
-  {
-    id: "tel004",
-    vehicleId: "GHI-012-NG",
-    driverId: "DRV-003",
-    timestamp: "2024-01-15T12:00:00Z",
-    speed: 70,
-    location: { lat: 5.4833, lng: 7.0433 }, // Port Harcourt, Nigeria
-    fuelLevel: 0.30,
-    engineStatus: "Running",
-  },
-];
-
-const DEMO_MODE = process.env.DEMO_MODE === 'true';
-
 const Telematics: React.FC = () => {
   const { isAuthenticated, isLoading: isAuthLoading } = useAuth();
   const [searchQuery, setSearchQuery] = useState<string>('');
@@ -88,7 +43,7 @@ const Telematics: React.FC = () => {
 
   const { data, isLoading, isError, error } = trpc.telematics.data.useQuery(
     { page, pageSize, searchQuery, vehicleId: filterVehicleId },
-    { enabled: isAuthenticated && !DEMO_MODE }
+    { enabled: isAuthenticated }
   );
 
   const submitMutation = trpc.telematics.submit.useMutation({
@@ -169,20 +124,13 @@ const Telematics: React.FC = () => {
     );
   }
 
-  const displayData = DEMO_MODE
-    ? DEMO_TELEMATICS_DATA.filter(item =>
-        item.vehicleId.toLowerCase().includes(searchQuery.toLowerCase()) &&
-        (filterVehicleId === '' || item.vehicleId === filterVehicleId)
-      )
-    : data?.items || [];
+  const displayData = data?.items || [];
 
-  const totalPages = DEMO_MODE ? Math.ceil(displayData.length / pageSize) : data?.totalPages || 1;
+  const totalPages = data?.totalPages || 1;
 
-  const paginatedData = DEMO_MODE
-    ? displayData.slice((page - 1) * pageSize, page * pageSize)
-    : displayData;
+  const paginatedData = displayData;
 
-  const uniqueVehicleIds = Array.from(new Set(DEMO_TELEMATICS_DATA.map(d => d.vehicleId)));
+  const uniqueVehicleIds = Array.from(new Set((telematicsData || []).map(d => d.vehicleId)));
 
   return (
     <div className="container mx-auto py-8">
@@ -312,7 +260,7 @@ const Telematics: React.FC = () => {
             </Select>
           </div>
 
-          {(isLoading && !DEMO_MODE) ? (
+          {isLoading ? (
             <div className="flex justify-center items-center h-40">
               <Loader2 className="h-8 w-8 animate-spin" />
             </div>

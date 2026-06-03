@@ -36,71 +36,6 @@ interface ABTest {
   conversionRateB: number;
 }
 
-const DEMO_MODE = process.env.DEMO_MODE === 'true';
-
-const DEMO_AB_TESTS: ABTest[] = [
-  {
-    id: 'ab1',
-    name: 'Homepage CTA Color',
-    description: 'Testing red vs blue CTA button on homepage',
-    status: 'active',
-    startDate: '2024-01-15',
-    endDate: '2024-02-15',
-    variantA: 'Red Button',
-    variantB: 'Blue Button',
-    conversionRateA: 0.05,
-    conversionRateB: 0.07,
-  },
-  {
-    id: 'ab2',
-    name: 'Product Page Layout',
-    description: 'Comparing two different product detail page layouts',
-    status: 'completed',
-    startDate: '2023-11-01',
-    endDate: '2023-12-01',
-    variantA: 'Layout A',
-    variantB: 'Layout B',
-    conversionRateA: 0.03,
-    conversionRateB: 0.025,
-  },
-  {
-    id: 'ab3',
-    name: 'Email Subject Line',
-    description: 'A/B testing subject lines for welcome email series',
-    status: 'draft',
-    startDate: '2024-03-01',
-    endDate: '2024-03-31',
-    variantA: 'Subject Line 1',
-    variantB: 'Subject Line 2',
-    conversionRateA: 0,
-    conversionRateB: 0,
-  },
-  {
-    id: 'ab4',
-    name: 'Checkout Flow Steps',
-    description: 'Optimizing the number of steps in the insurance checkout process',
-    status: 'inactive',
-    startDate: '2024-01-01',
-    endDate: '2024-01-31',
-    variantA: '3 Steps',
-    variantB: '5 Steps',
-    conversionRateA: 0.08,
-    conversionRateB: 0.06,
-  },
-  {
-    id: 'ab5',
-    name: 'Ad Copy Variation',
-    description: 'Testing different ad copies for social media campaigns',
-    status: 'active',
-    startDate: '2024-02-20',
-    endDate: '2024-03-20',
-    variantA: 'Ad Copy A',
-    variantB: 'Ad Copy B',
-    conversionRateA: 0.01,
-    conversionRateB: 0.012,
-  },
-];
-
 const ABTestingFramework: React.FC = () => {
   const { isAuthenticated, isLoading: isAuthLoading } = useAuth();
   const utils = trpc.useUtils();
@@ -125,7 +60,7 @@ const ABTestingFramework: React.FC = () => {
   });
 
   const { data: abTests, isLoading, isError, error } = trpc.abTesting.list.useQuery(undefined, {
-    enabled: !DEMO_MODE && isAuthenticated,
+    enabled: isAuthenticated,
   });
 
   const createMutation = trpc.abTesting.create.useMutation({
@@ -171,7 +106,7 @@ const ABTestingFramework: React.FC = () => {
   });
 
   const dataToDisplay = useMemo(() => {
-    const sourceData = DEMO_MODE ? DEMO_AB_TESTS : (abTests || []);
+    const sourceData = abTests || [];
 
     let filteredData = sourceData.filter(test =>
       test.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
@@ -188,7 +123,7 @@ const ABTestingFramework: React.FC = () => {
   }, [abTests, searchTerm, filterStatus, page, pageSize]);
 
   const totalPages = useMemo(() => {
-    const sourceData = DEMO_MODE ? DEMO_AB_TESTS : (abTests || []);
+    const sourceData = abTests || [];
     let filteredData = sourceData.filter(test =>
       test.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
       test.description.toLowerCase().includes(searchTerm.toLowerCase())
@@ -215,7 +150,7 @@ const ABTestingFramework: React.FC = () => {
     );
   }
 
-  if (!DEMO_MODE && isError) {
+  if (isError) {
     return (
       <div className="flex items-center justify-center min-h-screen text-lg font-semibold text-red-500">
         Error loading A/B tests: {error?.message}
@@ -334,7 +269,7 @@ const ABTestingFramework: React.FC = () => {
             </Dialog>
           </div>
 
-          {(isLoading && !DEMO_MODE) ? (
+          {isLoading ? (
             <div className="flex items-center justify-center h-64">
               <Loader2 className="h-8 w-8 animate-spin" />
             </div>

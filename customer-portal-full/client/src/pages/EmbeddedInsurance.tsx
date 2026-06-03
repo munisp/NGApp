@@ -21,56 +21,6 @@ interface EmbeddedPartner {
   productsOffered: string[];
 }
 
-const DEMO_MODE = process.env.DEMO_MODE === 'true';
-
-const DEMO_PARTNERS: EmbeddedPartner[] = [
-  {
-    id: 'ep001',
-    name: 'Jumia Nigeria',
-    industry: 'E-commerce',
-    status: 'active',
-    integrationDate: '2023-01-15',
-    contactEmail: 'partners@jumia.com.ng',
-    productsOffered: ['Device Protection', 'Shipping Insurance'],
-  },
-  {
-    id: 'ep002',
-    name: 'GIG Logistics',
-    industry: 'Logistics',
-    status: 'pending',
-    integrationDate: '2023-03-01',
-    contactEmail: 'partners@giglogistics.ng',
-    productsOffered: ['Transit Insurance'],
-  },
-  {
-    id: 'ep003',
-    name: 'Paystack',
-    industry: 'Fintech',
-    status: 'inactive',
-    integrationDate: '2022-11-20',
-    contactEmail: 'partners@paystack.com',
-    productsOffered: ['Payment Protection'],
-  },
-  {
-    id: 'ep004',
-    name: 'Konga Nigeria',
-    industry: 'E-commerce',
-    status: 'active',
-    integrationDate: '2023-02-10',
-    contactEmail: 'partners@konga.com',
-    productsOffered: ['Device Protection', 'Extended Warranty'],
-  },
-  {
-    id: 'ep005',
-    name: 'Bolt Nigeria',
-    industry: 'Ride-hailing',
-    status: 'pending',
-    integrationDate: '2023-04-05',
-    contactEmail: 'partners@bolt.eu',
-    productsOffered: ['Passenger Accident Cover'],
-  },
-];
-
 const EmbeddedInsurance: React.FC = () => {
   const { user, isAuthenticated, isLoading: isAuthLoading } = useAuth();
   const [searchTerm, setSearchTerm] = useState('');
@@ -79,7 +29,7 @@ const EmbeddedInsurance: React.FC = () => {
   const [partnersPerPage] = useState(5);
 
   const { data: partnersData, isLoading, isError, error, refetch } = trpc.embedded.partners.useQuery(undefined, {
-    enabled: isAuthenticated && !DEMO_MODE,
+    enabled: isAuthenticated,
   });
 
   const activateMutation = trpc.embedded.activate.useMutation({
@@ -108,12 +58,12 @@ const EmbeddedInsurance: React.FC = () => {
   const [newPartnerProducts, setNewPartnerProducts] = useState('');
 
   useEffect(() => {
-    if (isError && !DEMO_MODE) {
+    if (isError && true) {
       toast.error(`Error fetching partners: ${error?.message || 'Unknown error'}`);
     }
-  }, [isError, error, DEMO_MODE]);
+  }, [isError, error, false]);
 
-  const partners = DEMO_MODE ? DEMO_PARTNERS : (partnersData || []);
+  const partners = partnersData || [];
 
   const filteredPartners = useMemo(() => {
     let filtered = partners;
@@ -141,12 +91,12 @@ const EmbeddedInsurance: React.FC = () => {
   }, [filteredPartners, currentPage, partnersPerPage]);
 
   const handleActivatePartner = useCallback((partnerId: string) => {
-    if (!isAuthenticated && !DEMO_MODE) {
+    if (!isAuthenticated) {
       toast.error('You must be logged in to perform this action.');
       return;
     }
     activateMutation.mutate({ partnerId });
-  }, [activateMutation, isAuthenticated, DEMO_MODE]);
+  }, [activateMutation, isAuthenticated, false]);
 
   const handlePageChange = (pageNumber: number) => {
     setCurrentPage(pageNumber);
@@ -161,7 +111,7 @@ const EmbeddedInsurance: React.FC = () => {
     );
   }
 
-  if (!isAuthenticated && !DEMO_MODE) {
+  if (!isAuthenticated) {
     return (
       <div className="flex justify-center items-center h-screen">
         <Card className="w-[350px]">
@@ -243,7 +193,7 @@ const EmbeddedInsurance: React.FC = () => {
             </Select>
           </div>
 
-          {isLoading && !DEMO_MODE ? (
+          {isLoading ? (
             <div className="flex justify-center items-center h-40">
               <Loader2 className="h-8 w-8 animate-spin" />
               <p className="ml-2">Loading partners...</p>

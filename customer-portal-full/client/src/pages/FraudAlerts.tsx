@@ -9,8 +9,6 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@
 import { Loader2 } from "lucide-react";
 import { toast } from "sonner";
 
-const DEMO_MODE = process.env.DEMO_MODE === 'true';
-
 interface FraudNode {
   id: string;
   label: string;
@@ -24,23 +22,6 @@ interface FraudGraph {
   edges: { source: string; target: string; type: string }[];
 }
 
-const demoFraudGraph: FraudGraph = {
-  nodes: [
-    { id: 'cust-001', label: 'Aisha Musa', type: 'customer', riskScore: 0.85, connections: ['claim-001', 'policy-001'] },
-    { id: 'policy-001', label: 'Auto Policy 123', type: 'policy', riskScore: 0.70, connections: ['cust-001'] },
-    { id: 'claim-001', label: 'Claim 456', type: 'claim', riskScore: 0.92, connections: ['cust-001', 'agent-001'] },
-    { id: 'agent-001', label: 'Kunle Adebayo', type: 'agent', riskScore: 0.60, connections: ['claim-001'] },
-    { id: 'cust-002', label: 'Chinedu Okoro', type: 'customer', riskScore: 0.40, connections: ['policy-002'] },
-    { id: 'policy-002', label: 'Life Policy 789', type: 'policy', riskScore: 0.35, connections: ['cust-002'] },
-  ],
-  edges: [
-    { source: 'cust-001', target: 'policy-001', type: 'owns' },
-    { source: 'cust-001', target: 'claim-001', type: 'filed' },
-    { source: 'claim-001', target: 'agent-001', type: 'handled_by' },
-    { source: 'cust-002', target: 'policy-002', type: 'owns' },
-  ],
-};
-
 const FraudAlerts: React.FC = () => {
   useAuth();
   const utils = trpc.useUtils();
@@ -49,7 +30,7 @@ const FraudAlerts: React.FC = () => {
   const [analysisResult, setAnalysisResult] = useState<string | null>(null);
 
   const { data: fraudGraph, isLoading: isLoadingGraph, isError: isErrorGraph, error: graphError } = trpc.fraudNetwork.graph.useQuery(undefined, {
-    enabled: !DEMO_MODE,
+    enabled: true,
   });
 
   const { mutate: analyzeFraud, isLoading: isAnalyzing, isError: isErrorAnalyze, error: analyzeError } = trpc.fraudNetwork.analyze.useMutation({
@@ -73,9 +54,9 @@ const FraudAlerts: React.FC = () => {
 
   const handleAnalyze = () => {
     if (entityId.trim()) {
-      if (DEMO_MODE) {
-        toast.info(`Demo: Analyzing entity ${entityId}`);
-        setAnalysisResult(`Demo analysis for ${entityId}: No fraud detected.`);
+      if (false) {
+        toast.info(`Analyzing entity ${entityId}`);
+        setAnalysisResult(`Analysis for ${entityId}: No fraud detected.`);
       } else {
         analyzeFraud({ entityId });
       }
@@ -84,7 +65,7 @@ const FraudAlerts: React.FC = () => {
     }
   };
 
-  const displayGraph = DEMO_MODE ? demoFraudGraph : fraudGraph;
+  const displayGraph = fraudGraph;
 
   return (
     <div className="container mx-auto p-4">
@@ -95,7 +76,7 @@ const FraudAlerts: React.FC = () => {
           <CardTitle>Fraud Network Overview</CardTitle>
         </CardHeader>
         <CardContent>
-          {isLoadingGraph && !DEMO_MODE ? (
+          {isLoadingGraph && true ? (
             <div className="flex items-center justify-center h-32">
               <Loader2 className="h-8 w-8 animate-spin" />
               <span className="ml-2">Loading fraud network...</span>

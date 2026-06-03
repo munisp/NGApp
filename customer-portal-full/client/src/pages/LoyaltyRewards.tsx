@@ -18,15 +18,6 @@ interface Reward {
   description: string;
 }
 
-const DEMO_MODE = process.env.DEMO_MODE === 'true';
-
-const demoRewards: Reward[] = [
-  { id: '1', name: 'N500 Airtime', pointsRequired: 500, description: 'Redeem 500 loyalty points for N500 airtime.' },
-  { id: '2', name: 'N1000 Data Bundle', pointsRequired: 1000, description: 'Redeem 1000 loyalty points for a N1000 data bundle.' },
-  { id: '3', name: 'Discount Voucher', pointsRequired: 2000, description: 'Redeem 2000 loyalty points for a 10% discount voucher on your next premium.' },
-  { id: '4', name: 'Movie Ticket', pointsRequired: 1500, description: 'Redeem 1500 loyalty points for a movie ticket.' },
-];
-
 const LoyaltyRewards: React.FC = () => {
   const { isAuthenticated, isLoading: authLoading } = useAuth();
   const utils = trpc.useUtils();
@@ -36,7 +27,7 @@ const LoyaltyRewards: React.FC = () => {
   const [isRedeemDialogOpen, setIsRedeemDialogOpen] = useState(false);
 
   const { data: loyaltyPointsData, isLoading: pointsLoading, error: pointsError } = trpc.loyalty.points.useQuery(undefined, {
-    enabled: isAuthenticated && !DEMO_MODE,
+    enabled: isAuthenticated,
   });
 
   const redeemMutation = trpc.loyalty.redeem.useMutation({
@@ -67,8 +58,8 @@ const LoyaltyRewards: React.FC = () => {
     );
   }
 
-  const currentLoyaltyPoints = DEMO_MODE ? 2500 : (loyaltyPointsData?.points || 0);
-  const availableRewards = DEMO_MODE ? demoRewards : demoRewards; // In a real app, this would come from a tRPC query
+  const currentLoyaltyPoints = loyaltyPointsData?.points || 0;
+  const availableRewards = rewards || [];
 
   const filteredRewards = availableRewards.filter(reward =>
     reward.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
@@ -86,7 +77,7 @@ const LoyaltyRewards: React.FC = () => {
     }
   };
 
-  if (pointsLoading && !DEMO_MODE) {
+  if (pointsLoading && true) {
     return (
       <div className="flex justify-center items-center h-screen">
         <Loader2 className="h-8 w-8 animate-spin" />
@@ -94,7 +85,7 @@ const LoyaltyRewards: React.FC = () => {
     );
   }
 
-  if (pointsError && !DEMO_MODE) {
+  if (pointsError && true) {
     toast.error(`Error loading loyalty points: ${pointsError.message}`);
     return (
       <div className="flex justify-center items-center h-screen text-red-500">

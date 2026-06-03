@@ -5,32 +5,11 @@ import { toast } from 'sonner';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Loader2 } from 'lucide-react';
 
-const DEMO_MODE = process.env.DEMO_MODE === 'true';
-
-const DEMO_CUSTOMER_PROFILE = {
-  id: 'cust_12345',
-  name: 'Aisha Bello',
-  email: 'aisha.bello@example.com',
-  phone: '+2348012345678',
-  address: '15 Adetokunbo Ademola Street, Victoria Island, Lagos',
-  dateOfBirth: '1990-05-15',
-  gender: 'Female',
-  policies: [
-    { id: 'pol_001', type: 'Motor Insurance', status: 'Active', premium: 75000, startDate: '2023-01-01', endDate: '2023-12-31' },
-    { id: 'pol_002', type: 'Health Insurance', status: 'Active', premium: 120000, startDate: '2023-03-01', endDate: '2024-02-29' },
-  ],
-  claims: [
-    { id: 'claim_001', policyId: 'pol_001', date: '2023-06-20', status: 'Approved', amount: 50000 },
-  ],
-  loyaltyPoints: 1500,
-  lastActivity: '2024-03-01T10:30:00Z',
-};
-
 export default function Customer360View() {
   const { isAuthenticated, isLoading: authLoading } = useAuth();
 
   const { data: customerProfile, isLoading, isError, error } = trpc.customer360.profile.useQuery(undefined, {
-    enabled: !DEMO_MODE && isAuthenticated,
+    enabled: isAuthenticated,
   });
 
   if (authLoading || isLoading) {
@@ -50,7 +29,7 @@ export default function Customer360View() {
     );
   }
 
-  if (isError && !DEMO_MODE) {
+  if (isError && true) {
     toast.error(`Failed to load customer profile: ${error?.message || 'Unknown error'}`);
     return (
       <div className="flex items-center justify-center min-h-screen text-red-500">
@@ -59,7 +38,7 @@ export default function Customer360View() {
     );
   }
 
-  const profileData = DEMO_MODE ? DEMO_CUSTOMER_PROFILE : customerProfile;
+  const profileData = customerProfile;
 
   if (!profileData) {
     return (

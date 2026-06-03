@@ -41,20 +41,6 @@ interface AdjudicationResult {
   recommendedAction: string;
 }
 
-const DEMO_CLAIMS: Claim[] = [
-  { id: 'CLAIM001', policyHolder: 'Aisha Bello', claimType: 'Auto Accident', status: 'Pending', amount: 150000, dateFiled: '2024-01-15' },
-  { id: 'CLAIM002', policyHolder: 'Chinedu Okoro', claimType: 'Health Insurance', status: 'Processing', amount: 75000, dateFiled: '2024-01-20' },
-  { id: 'CLAIM003', policyHolder: 'Fatima Musa', claimType: 'Property Damage', status: 'Pending', amount: 300000, dateFiled: '2024-01-22' },
-  { id: 'CLAIM004', policyHolder: 'Kunle Adebayo', claimType: 'Life Insurance', status: 'Adjudicated', amount: 1000000, dateFiled: '2024-01-25' },
-  { id: 'CLAIM005', policyHolder: 'Ngozi Eze', claimType: 'Travel Insurance', status: 'Pending', amount: 50000, dateFiled: '2024-01-28' },
-];
-
-const DEMO_ADJUDICATION_RESULTS: AdjudicationResult[] = [
-  { claimId: 'CLAIM004', adjudicationStatus: 'Approved', reason: 'All documents verified', recommendedAction: 'Process payment' },
-];
-
-const DEMO_MODE = process.env.DEMO_MODE === 'true';
-
 export default function AIClaimsAdjudication() {
   const { isAuthenticated, isLoading: authLoading } = useAuth();
   const utils = trpc.useUtils();
@@ -68,15 +54,15 @@ export default function AIClaimsAdjudication() {
 
   // tRPC Queries
   const { data: claimsData, isLoading: claimsLoading, error: claimsError } = trpc.claims.list.useQuery(undefined, {
-    enabled: isAuthenticated && !DEMO_MODE,
+    enabled: isAuthenticated,
   });
 
   const { data: queueData, isLoading: queueLoading, error: queueError } = trpc.claimRouting.queue.useQuery(undefined, {
-    enabled: isAuthenticated && !DEMO_MODE,
+    enabled: isAuthenticated,
   });
 
   const { data: adjudicationResultsData, isLoading: adjudicationResultsLoading, error: adjudicationResultsError } = trpc.aiClaims.results.useQuery(undefined, {
-    enabled: isAuthenticated && !DEMO_MODE,
+    enabled: isAuthenticated,
   });
 
   // tRPC Mutation
@@ -121,8 +107,8 @@ export default function AIClaimsAdjudication() {
     );
   }
 
-  const allClaims = DEMO_MODE ? DEMO_CLAIMS : (claimsData || []);
-  const allAdjudicationResults = DEMO_MODE ? DEMO_ADJUDICATION_RESULTS : (adjudicationResultsData || []);
+  const allClaims = claimsData || [];
+  const allAdjudicationResults = adjudicationResultsData || [];
 
   const filteredClaims = useMemo(() => {
     let filtered = allClaims;

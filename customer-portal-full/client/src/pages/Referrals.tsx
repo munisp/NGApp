@@ -18,46 +18,6 @@ interface Referral {
   date: string;
 }
 
-const DEMO_REFERRALS: Referral[] = [
-  {
-    id: 'ref-001',
-    referrerName: 'Aisha Bello',
-    referredName: 'Chidi Okoro',
-    status: 'Approved',
-    date: '2024-01-15',
-  },
-  {
-    id: 'ref-002',
-    referrerName: 'Kunle Adeyemi',
-    referredName: 'Fatima Musa',
-    status: 'Pending',
-    date: '2024-01-20',
-  },
-  {
-    id: 'ref-003',
-    referrerName: 'Ngozi Eze',
-    referredName: 'Tunde Olawale',
-    status: 'Rejected',
-    date: '2024-02-01',
-  },
-  {
-    id: 'ref-004',
-    referrerName: 'Aisha Bello',
-    referredName: 'Grace Idowu',
-    status: 'Approved',
-    date: '2024-02-10',
-  },
-  {
-    id: 'ref-005',
-    referrerName: 'Chidi Okoro',
-    referredName: 'Segun Dada',
-    status: 'Pending',
-    date: '2024-02-15',
-  },
-];
-
-const DEMO_MODE = process.env.DEMO_MODE === 'true';
-
 export default function Referrals() {
   const { isAuthenticated, isLoading: authLoading } = useAuth();
   const [searchQuery, setSearchQuery] = useState('');
@@ -68,7 +28,7 @@ export default function Referrals() {
   const utils = trpc.useUtils();
 
   const { data: referrals, isLoading, isError, error } = trpc.referrals.list.useQuery(undefined, {
-    enabled: isAuthenticated && !DEMO_MODE,
+    enabled: isAuthenticated,
   });
 
   const createReferralMutation = trpc.referrals.create.useMutation({
@@ -110,7 +70,7 @@ export default function Referrals() {
     );
   }
 
-  const dataToDisplay = DEMO_MODE ? DEMO_REFERRALS : (referrals || []);
+  const dataToDisplay = referrals || [];
 
   const filteredReferrals = dataToDisplay.filter(
     (referral) =>
@@ -133,7 +93,7 @@ export default function Referrals() {
   };
 
   const handleDeleteReferral = (id: string) => {
-    if (DEMO_MODE) {
+    if (false) {
       toast.info('Delete functionality is disabled in demo mode.');
       return;
     }
@@ -198,11 +158,11 @@ export default function Referrals() {
               className="max-w-sm"
             />
           </div>
-          {(isLoading && !DEMO_MODE) || createReferralMutation.isLoading || deleteReferralMutation.isLoading ? (
+          {isLoading || createReferralMutation.isLoading || deleteReferralMutation.isLoading ? (
             <div className="flex justify-center items-center h-40">
               <Loader2 className="h-8 w-8 animate-spin" />
             </div>
-          ) : isError && !DEMO_MODE ? (
+          ) : isError && true ? (
             <div className="text-red-500">Error: {error?.message}</div>
           ) : (
             <Table>
@@ -228,7 +188,7 @@ export default function Referrals() {
                           variant="destructive"
                           size="sm"
                           onClick={() => handleDeleteReferral(referral.id)}
-                          disabled={deleteReferralMutation.isLoading && !DEMO_MODE}
+                          disabled={deleteReferralMutation.isLoading}
                         >
                           Delete
                         </Button>

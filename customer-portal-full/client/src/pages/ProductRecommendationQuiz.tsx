@@ -10,8 +10,6 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Badge } from "@/components/ui/badge";
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogTrigger, DialogFooter } from "@/components/ui/dialog";
 
-const DEMO_MODE = process.env.DEMO_MODE === 'true';
-
 interface Product {
   id: string;
   name: string;
@@ -28,56 +26,6 @@ interface Recommendation {
   factorsConsidered: string[];
 }
 
-const demoProducts: Product[] = [
-  {
-    id: 'prod-001',
-    name: 'Comprehensive Auto Insurance',
-    category: 'Auto',
-    description: 'Full coverage for your vehicle against accidents, theft, and natural disasters.',
-    minPremium: 50000,
-    maxPremium: 250000,
-  },
-  {
-    id: 'prod-002',
-    name: 'Basic Health Plan',
-    category: 'Health',
-    description: 'Affordable health coverage for essential medical services.',
-    minPremium: 30000,
-    maxPremium: 150000,
-  },
-  {
-    id: 'prod-003',
-    name: 'Homeowner Protection',
-    category: 'Property',
-    description: 'Insure your home against fire, theft, and other perils.',
-    minPremium: 80000,
-    maxPremium: 400000,
-  },
-  {
-    id: 'prod-004',
-    name: 'Travel Shield',
-    category: 'Travel',
-    description: 'Comprehensive travel insurance for local and international trips.',
-    minPremium: 15000,
-    maxPremium: 75000,
-  },
-  {
-    id: 'prod-005',
-    name: 'Life Assurance Classic',
-    category: 'Life',
-    description: 'Secure your family\'s financial future with a robust life insurance policy.',
-    minPremium: 100000,
-    maxPremium: 1000000,
-  },
-];
-
-const demoRecommendation: Recommendation = {
-  productId: 'prod-001',
-  productName: 'Comprehensive Auto Insurance',
-  recommendedPremium: 120000,
-  factorsConsidered: ['Vehicle Type', 'Driver Age', 'Location', 'Driving History'],
-};
-
 const ProductRecommendationQuiz: React.FC = () => {
   const { isAuthenticated, isLoading: authLoading } = useAuth();
   const [selectedCategory, setSelectedCategory] = useState<string>('');
@@ -88,7 +36,7 @@ const ProductRecommendationQuiz: React.FC = () => {
 
   const { data: products, isLoading: productsLoading, isError: productsError, error: productsErrorData } = trpc.marketplace.products.useQuery(
     { category: selectedCategory || undefined, search: searchTerm || undefined },
-    { enabled: isAuthenticated && !DEMO_MODE }
+    { enabled: isAuthenticated }
   );
 
   const { mutate: getQuote, isLoading: quoteLoading, isError: quoteError, error: quoteErrorData, data: quoteResult } = trpc.dynamicPricing.quote.useMutation({
@@ -176,10 +124,7 @@ const ProductRecommendationQuiz: React.FC = () => {
     });
   };
 
-  const displayedProducts = DEMO_MODE ? demoProducts.filter(p =>
-    (selectedCategory ? p.category === selectedCategory : true) &&
-    (searchTerm ? p.name.toLowerCase().includes(searchTerm.toLowerCase()) || p.description.toLowerCase().includes(searchTerm.toLowerCase()) : true)
-  ) : (products || []);
+  const displayedProducts = products || [];
 
   return (
     <div className="container mx-auto p-4">
@@ -215,7 +160,7 @@ const ProductRecommendationQuiz: React.FC = () => {
           {/* More quiz questions can be added here */}
         </CardContent>
         <CardFooter>
-          <Button onClick={() => toast.info('Quiz answers submitted! (Demo action)')}>Submit Quiz</Button>
+          <Button onClick={() => toast.info('Quiz answers submitted!')}>Submit Quiz</Button>
         </CardFooter>
       </Card>
 
@@ -247,7 +192,7 @@ const ProductRecommendationQuiz: React.FC = () => {
         </CardContent>
       </Card>
 
-      {(productsLoading && !DEMO_MODE) ? (
+      {(productsLoading && true) ? (
         <div className="flex justify-center items-center h-48">
           <Loader2 className="h-8 w-8 animate-spin" />
         </div>

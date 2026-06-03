@@ -19,51 +19,6 @@ interface Application {
   premium: number;
 }
 
-const DEMO_APPLICATIONS: Application[] = [
-  {
-    id: 'app_001',
-    policyType: 'Auto Insurance',
-    status: 'Pending',
-    applicantName: 'Chidi Okoro',
-    submissionDate: '2024-01-15',
-    premium: 120000,
-  },
-  {
-    id: 'app_002',
-    policyType: 'Health Insurance',
-    status: 'Approved',
-    applicantName: 'Fatima Yusuf',
-    submissionDate: '2024-01-20',
-    premium: 85000,
-  },
-  {
-    id: 'app_003',
-    policyType: 'Life Insurance',
-    status: 'Rejected',
-    applicantName: 'Kunle Adebayo',
-    submissionDate: '2024-01-22',
-    premium: 250000,
-  },
-  {
-    id: 'app_004',
-    policyType: 'Home Insurance',
-    status: 'Pending',
-    applicantName: 'Aisha Bello',
-    submissionDate: '2024-02-01',
-    premium: 90000,
-  },
-  {
-    id: 'app_005',
-    policyType: 'Travel Insurance',
-    status: 'Approved',
-    applicantName: 'Ngozi Eze',
-    submissionDate: '2024-02-05',
-    premium: 30000,
-  },
-];
-
-const DEMO_MODE = process.env.DEMO_MODE === 'true';
-
 const InsuranceApplication: React.FC = () => {
   const { isAuthenticated, isLoading: authLoading } = useAuth();
   const [searchTerm, setSearchTerm] = useState('');
@@ -82,12 +37,12 @@ const InsuranceApplication: React.FC = () => {
 
   const { data: applicationsData, isLoading: isFetchingApplications, error: applicationsError } = trpc.application.list.useQuery(
     undefined, // No input needed for list, assuming it returns all applications
-    { enabled: isAuthenticated && !DEMO_MODE }
+    { enabled: isAuthenticated }
   );
 
   const { data: singleApplicationData, isLoading: isFetchingSingleApplication, error: singleApplicationError } = trpc.application.get.useQuery(
     { id: currentApplication?.id || '' },
-    { enabled: isAuthenticated && !DEMO_MODE && !!currentApplication?.id }
+    { enabled: isAuthenticated && !!currentApplication?.id }
   );
 
   const createApplicationMutation = trpc.application.create.useMutation({
@@ -140,7 +95,7 @@ const InsuranceApplication: React.FC = () => {
     );
   }
 
-  const applications = DEMO_MODE ? DEMO_APPLICATIONS : (applicationsData || []);
+  const applications = applicationsData || [];
 
   const filteredApplications = applications.filter((app) => {
     const matchesSearch = app.applicantName.toLowerCase().includes(searchTerm.toLowerCase()) ||

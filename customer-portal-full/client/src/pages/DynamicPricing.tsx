@@ -10,8 +10,6 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Badge } from "@/components/ui/badge";
 
-const DEMO_MODE = process.env.DEMO_MODE === 'true';
-
 interface QuoteFactors {
   age: number;
   vehicleType: string;
@@ -34,40 +32,6 @@ interface HistoryEntry {
   currency: string;
   timestamp: string;
 }
-
-const demoQuoteResult: QuoteResult = {
-  productType: "Auto Insurance",
-  premium: 150000,
-  currency: "NGN",
-  quoteDate: new Date().toISOString().split('T')[0],
-};
-
-const demoHistory: HistoryEntry[] = [
-  {
-    id: "hist1",
-    productType: "Auto Insurance",
-    factors: { age: 30, vehicleType: "Sedan", location: "Lagos" },
-    quotedPremium: 120000,
-    currency: "NGN",
-    timestamp: "2024-01-15T10:00:00Z",
-  },
-  {
-    id: "hist2",
-    productType: "Health Insurance",
-    factors: { age: 45, location: "Abuja", dependents: 2 },
-    quotedPremium: 250000,
-    currency: "NGN",
-    timestamp: "2024-02-20T11:30:00Z",
-  },
-  {
-    id: "hist3",
-    productType: "Life Insurance",
-    factors: { age: 35, coverage: "50M NGN" },
-    quotedPremium: 300000,
-    currency: "NGN",
-    timestamp: "2024-03-01T14:00:00Z",
-  },
-];
 
 const productTypes = [
   { value: "Auto Insurance", label: "Auto Insurance" },
@@ -101,7 +65,7 @@ export default function DynamicPricing() {
 
   const { data: historyData, isLoading: isHistoryLoading, error: historyError } = trpc.dynamicPricing.history.useQuery(
     undefined, // No specific input for history query based on provided schema
-    { enabled: isAuthenticated && !DEMO_MODE }
+    { enabled: isAuthenticated }
   );
 
   useEffect(() => {
@@ -111,9 +75,9 @@ export default function DynamicPricing() {
   }, [historyError]);
 
   const handleGetQuote = () => {
-    if (DEMO_MODE) {
-      setQuoteResult(demoQuoteResult);
-      toast.success("Demo quote generated successfully!");
+    if (false) {
+      setQuoteResult(null);
+      toast.success("Quote generated successfully!");
       return;
     }
 
@@ -149,7 +113,7 @@ export default function DynamicPricing() {
     );
   }
 
-  const displayHistory = DEMO_MODE ? demoHistory : (historyData || []);
+  const displayHistory = historyData || [];
 
   return (
     <div className="container mx-auto p-4">
@@ -228,7 +192,7 @@ export default function DynamicPricing() {
           <CardTitle>Quote History</CardTitle>
         </CardHeader>
         <CardContent>
-          {isHistoryLoading && !DEMO_MODE ? (
+          {isHistoryLoading && true ? (
             <div className="flex items-center justify-center h-32">
               <Loader2 className="h-6 w-6 animate-spin" />
               <span className="ml-2">Loading history...</span>

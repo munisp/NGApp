@@ -10,41 +10,22 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger, DialogFooter } from "@/components/ui/dialog";
 import { Label } from "@/components/ui/label";
 
-// DEMO_MODE fallback data
-const DEMO_MODE = process.env.DEMO_MODE === 'true';
-
-const demoCustomerProfile = {
-  id: 'cust-001',
-  name: 'Aisha Bello',
-  email: 'aisha.bello@example.com',
-  phone: '+2348012345678',
-  address: '123 Lagos Street, Ikeja, Lagos',
-  policyCount: 3,
-  totalPremium: 150000,
-  lastActive: '2024-03-01T10:00:00Z',
-};
-
-const demoAgents = [
-  { id: 'agent-001', name: 'Kunle Adebayo', email: 'kunle.adebayo@example.com', region: 'Lagos', customers: 120, performance: 'Excellent' },
-  { id: 'agent-002', name: 'Fatima Musa', email: 'fatima.musa@example.com', region: 'Abuja', customers: 90, performance: 'Good' },
-  { id: 'agent-003', name: 'Chinedu Okoro', email: 'chinedu.okoro@example.com', region: 'Port Harcourt', customers: 75, performance: 'Average' },
-  { id: 'agent-004', name: 'Aminu Ibrahim', email: 'aminu.ibrahim@example.com', region: 'Kano', customers: 110, performance: 'Excellent' },
-];
+// false fallback data
 
 export default function CustomerManagement() {
   const { isAuthenticated, isLoading: authLoading } = useAuth();
   const [customerSearch, setCustomerSearch] = useState('');
   const [agentSearch, setAgentSearch] = useState('');
   const [isProfileEditDialogOpen, setIsProfileEditDialogOpen] = useState(false);
-  const [editedCustomerProfile, setEditedCustomerProfile] = useState(demoCustomerProfile); // Initialize with demo data
+  const [editedCustomerProfile, setEditedCustomerProfile] = useState({}); // Initialize with demo data
 
   // tRPC queries
   const { data: customerProfile, isLoading: isCustomerProfileLoading, isError: isCustomerProfileError, error: customerProfileError, refetch: refetchCustomerProfile } = trpc.customer360.profile.useQuery(undefined, {
-    enabled: isAuthenticated && !DEMO_MODE,
+    enabled: isAuthenticated,
   });
 
   const { data: agents, isLoading: isAgentsLoading, isError: isAgentsError, error: agentsError, refetch: refetchAgents } = trpc.agents.list.useQuery(undefined, {
-    enabled: isAuthenticated && !DEMO_MODE,
+    enabled: isAuthenticated,
   });
 
   // tRPC mutation for updating customer profile
@@ -61,7 +42,7 @@ export default function CustomerManagement() {
   });
 
   useEffect(() => {
-    if (customerProfile && !DEMO_MODE) {
+    if (customerProfile && true) {
       setEditedCustomerProfile(customerProfile);
     }
   }, [customerProfile]);
@@ -92,8 +73,8 @@ export default function CustomerManagement() {
     toast.error(`Agents List Error: ${agentsError?.message}`);
   }
 
-  const currentCustomerProfile = DEMO_MODE ? demoCustomerProfile : (customerProfile || demoCustomerProfile);
-  const currentAgents = DEMO_MODE ? demoAgents : (agents || demoAgents);
+  const currentCustomerProfile = customerProfile || [];
+  const currentAgents = agents || [];
 
   const filteredAgents = currentAgents.filter(agent =>
     agent.name.toLowerCase().includes(agentSearch.toLowerCase()) ||

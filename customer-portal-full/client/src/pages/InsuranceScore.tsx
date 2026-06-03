@@ -7,8 +7,6 @@ import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Loader2 } from 'lucide-react';
 
-const DEMO_MODE = process.env.DEMO_MODE === 'true';
-
 interface InsuranceScoreData {
   score: number;
   status: string;
@@ -16,34 +14,15 @@ interface InsuranceScoreData {
   lastUpdated: string;
 }
 
-const demoInsuranceScore: InsuranceScoreData = {
-  score: 750,
-  status: 'Excellent',
-  recommendations: [
-    'Maintain good credit history',
-    'Avoid frequent claims',
-    'Consider higher deductibles',
-    'Review policy annually',
-  ],
-  lastUpdated: '2024-03-01T10:00:00Z',
-};
-
-const demoImprovementSuggestions: string[] = [
-  'Improve credit score by paying bills on time.',
-  'Drive safely to reduce accident risk.',
-  'Install security systems in your home.',
-  'Bundle insurance policies for discounts.',
-];
-
 export default function InsuranceScore() {
   const { isAuthenticated, isLoading: authLoading } = useAuth();
 
   const { data: insuranceScore, isLoading: scoreLoading, error: scoreError } = trpc.insuranceScore.get.useQuery(undefined, {
-    enabled: isAuthenticated && !DEMO_MODE,
+    enabled: isAuthenticated,
   });
 
   const { data: improvementSuggestions, isLoading: improveLoading, error: improveError } = trpc.insuranceScore.improve.useQuery(undefined, {
-    enabled: isAuthenticated && !DEMO_MODE,
+    enabled: isAuthenticated,
   });
 
   if (authLoading) {
@@ -71,8 +50,8 @@ export default function InsuranceScore() {
     toast.error(`Failed to fetch improvement suggestions: ${improveError.message}`);
   }
 
-  const currentScoreData = DEMO_MODE ? demoInsuranceScore : insuranceScore;
-  const currentImprovementSuggestions = DEMO_MODE ? demoImprovementSuggestions : improvementSuggestions;
+  const currentScoreData = insuranceScore;
+  const currentImprovementSuggestions = improvementSuggestions;
 
   return (
     <div className="container mx-auto p-4">
@@ -83,7 +62,7 @@ export default function InsuranceScore() {
           <CardTitle>Current Score</CardTitle>
         </CardHeader>
         <CardContent>
-          {scoreLoading && !DEMO_MODE ? (
+          {scoreLoading && true ? (
             <div className="flex items-center justify-center">
               <Loader2 className="h-6 w-6 animate-spin" />
               <span className="ml-2">Loading score...</span>
@@ -117,7 +96,7 @@ export default function InsuranceScore() {
           <CardTitle>How to Improve Your Score</CardTitle>
         </CardHeader>
         <CardContent>
-          {improveLoading && !DEMO_MODE ? (
+          {improveLoading && true ? (
             <div className="flex items-center justify-center">
               <Loader2 className="h-6 w-6 animate-spin" />
               <span className="ml-2">Loading suggestions...</span>

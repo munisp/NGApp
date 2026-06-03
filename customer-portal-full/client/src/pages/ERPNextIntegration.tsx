@@ -7,14 +7,12 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 
-const DEMO_MODE = process.env.DEMO_MODE === 'true';
-
 export default function ERPNextIntegration() {
   const { isAuthenticated } = useAuth();
 
   // tRPC query for ERPNext status
   const { data: erpnextStatus, isLoading: isLoadingStatus, isError: isErrorStatus, error: statusError, refetch: refetchStatus } = trpc.erpnext.status.useQuery(undefined, {
-    enabled: isAuthenticated && !DEMO_MODE,
+    enabled: isAuthenticated,
   });
 
   // tRPC mutation for ERPNext sync
@@ -38,17 +36,11 @@ export default function ERPNextIntegration() {
   };
 
   // Demo data for ERPNext status
-  const demoERPNextStatus = {
-    lastSync: "2024-03-01T10:30:00Z",
-    status: "Synced",
-    recordsSynced: 12345,
-    pendingRecords: 123,
-  };
 
-  const currentStatus = DEMO_MODE ? demoERPNextStatus : erpnextStatus;
-  const currentIsLoading = DEMO_MODE ? false : isLoadingStatus;
-  const currentIsError = DEMO_MODE ? false : isErrorStatus;
-  const currentError = DEMO_MODE ? null : statusError;
+  const currentStatus = erpnextStatus;
+  const currentIsLoading = isLoadingStatus;
+  const currentIsError = isErrorStatus;
+  const currentError = statusError;
 
   if (!isAuthenticated) {
     return (

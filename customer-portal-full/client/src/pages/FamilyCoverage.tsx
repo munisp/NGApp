@@ -17,15 +17,6 @@ interface FamilyMember {
   dateOfBirth: string;
 }
 
-const DEMO_MODE = process.env.DEMO_MODE === 'true';
-
-const demoFamilyMembers: FamilyMember[] = [
-  { id: '1', name: 'Aisha Musa', relationship: 'Spouse', dateOfBirth: '1988-05-10' },
-  { id: '2', name: 'Segun Adebayo', relationship: 'Child', dateOfBirth: '2015-03-22' },
-  { id: '3', name: 'Fatima Bello', relationship: 'Child', dateOfBirth: '2018-11-01' },
-  { id: '4', name: 'Chinedu Okoro', relationship: 'Parent', dateOfBirth: '1965-07-15' },
-];
-
 export default function FamilyCoverage() {
   const { isAuthenticated, isLoading: authLoading } = useAuth();
   const [searchQuery, setSearchQuery] = useState('');
@@ -37,7 +28,7 @@ export default function FamilyCoverage() {
   const utils = trpc.useUtils();
 
   const { data: familyMembers, isLoading: isFetchingMembers, error: fetchError } = trpc.familyCoverage.members.useQuery(undefined, {
-    enabled: isAuthenticated && !DEMO_MODE,
+    enabled: isAuthenticated,
   });
 
   const addMemberMutation = trpc.familyCoverage.add.useMutation({
@@ -93,12 +84,12 @@ export default function FamilyCoverage() {
     removeMemberMutation.mutate({ id });
   };
 
-  const filteredMembers = (DEMO_MODE ? demoFamilyMembers : familyMembers || []).filter(member =>
+  const filteredMembers = (familyMembers || []).filter(member =>
     member.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
     member.relationship.toLowerCase().includes(searchQuery.toLowerCase())
   );
 
-  if (isFetchingMembers && !DEMO_MODE) {
+  if (isFetchingMembers && true) {
     return (
       <div className="flex items-center justify-center h-screen">
         <Loader2 className="h-8 w-8 animate-spin" />
@@ -107,7 +98,7 @@ export default function FamilyCoverage() {
     );
   }
 
-  if (fetchError && !DEMO_MODE) {
+  if (fetchError && true) {
     return (
       <div className="flex items-center justify-center h-screen text-red-500">
         Error loading family members: {fetchError.message}

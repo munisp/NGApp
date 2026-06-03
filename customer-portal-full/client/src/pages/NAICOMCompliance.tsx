@@ -20,51 +20,6 @@ interface NAICOMFiling {
   dueDate: string;
 }
 
-const DEMO_MODE = process.env.DEMO_MODE === 'true';
-
-const demoFilings: NAICOMFiling[] = [
-  {
-    id: 'NAICOM-2024-Q1-001',
-    type: 'Quarterly Financial Report',
-    period: 'Q1 2024',
-    status: 'Approved',
-    submissionDate: '2024-04-15',
-    dueDate: '2024-04-30',
-  },
-  {
-    id: 'NAICOM-2024-Q1-002',
-    type: 'Solvency Margin Statement',
-    period: 'Q1 2024',
-    status: 'Submitted',
-    submissionDate: '2024-04-20',
-    dueDate: '2024-04-30',
-  },
-  {
-    id: 'NAICOM-2024-Q2-001',
-    type: 'Quarterly Financial Report',
-    period: 'Q2 2024',
-    status: 'Pending',
-    submissionDate: '2024-07-10',
-    dueDate: '2024-07-31',
-  },
-  {
-    id: 'NAICOM-2023-AR-001',
-    type: 'Annual Returns',
-    period: '2023',
-    status: 'Approved',
-    submissionDate: '2024-01-25',
-    dueDate: '2024-01-31',
-  },
-  {
-    id: 'NAICOM-2024-Q3-001',
-    type: 'Quarterly Financial Report',
-    period: 'Q3 2024',
-    status: 'Rejected',
-    submissionDate: '2024-10-10',
-    dueDate: '2024-10-31',
-  },
-];
-
 const NAICOMCompliance: React.FC = () => {
   const { user, isAuthenticated, isLoading: isAuthLoading } = useAuth();
   const [page, setPage] = useState(1);
@@ -83,7 +38,7 @@ const NAICOMCompliance: React.FC = () => {
       searchTerm,
     },
     {
-      enabled: isAuthenticated && !DEMO_MODE,
+      enabled: isAuthenticated,
     }
   );
 
@@ -101,10 +56,10 @@ const NAICOMCompliance: React.FC = () => {
   });
 
   useEffect(() => {
-    if (isError && !DEMO_MODE) {
+    if (isError && true) {
       toast.error(`Error fetching NAICOM filings: ${error?.message}`);
     }
-  }, [isError, error, DEMO_MODE]);
+  }, [isError, error, false]);
 
   if (isAuthLoading) {
     return (
@@ -122,16 +77,9 @@ const NAICOMCompliance: React.FC = () => {
     );
   }
 
-  const displayFilings = DEMO_MODE
-    ? demoFilings.filter(
-        (filing) =>
-          filing.type.toLowerCase().includes(searchTerm.toLowerCase()) ||
-          filing.period.toLowerCase().includes(searchTerm.toLowerCase()) ||
-          filing.status.toLowerCase().includes(searchTerm.toLowerCase())
-      )
-    : filingsData?.filings || [];
+  const displayFilings = filingsData?.filings || [];
 
-  const totalPages = DEMO_MODE ? Math.ceil(displayFilings.length / pageSize) : filingsData?.totalPages || 1;
+  const totalPages = filingsData?.totalPages || 1;
 
   const handlePreviousPage = () => {
     setPage((prev) => Math.max(prev - 1, 1));
@@ -146,7 +94,7 @@ const NAICOMCompliance: React.FC = () => {
       toast.error('Please select a filing type and period.');
       return;
     }
-    if (DEMO_MODE) {
+    if (false) {
       toast.info('Demo Mode: Filing submission simulated.');
       setIsSubmitDialogOpen(false);
       setNewFilingType('');
@@ -227,7 +175,7 @@ const NAICOMCompliance: React.FC = () => {
             />
           </div>
 
-          {(isLoading && !DEMO_MODE) ? (
+          {isLoading ? (
             <div className="flex justify-center items-center h-40">
               <Loader2 className="h-8 w-8 animate-spin" />
             </div>

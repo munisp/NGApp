@@ -23,8 +23,6 @@ import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 
-const DEMO_MODE = process.env.DEMO_MODE === 'true';
-
 const ChurnPrediction: React.FC = () => {
   const { isAuthenticated, isLoading: authLoading } = useAuth();
 
@@ -35,28 +33,16 @@ const ChurnPrediction: React.FC = () => {
 
   // tRPC calls
   const { data: churnPredictions, isLoading: isChurnListLoading, error: churnListError } = trpc.churn.list.useQuery(undefined, {
-    enabled: !DEMO_MODE && isAuthenticated,
+    enabled: isAuthenticated,
   });
 
   const { data: predictedChurn, isLoading: isPredictChurnLoading, error: predictChurnError } = trpc.churn.predict.useQuery(undefined, {
-    enabled: !DEMO_MODE && isAuthenticated,
+    enabled: isAuthenticated,
   });
 
-  // Demo data for DEMO_MODE
-  const demoChurnPredictions = [
-    { id: '1', customerName: 'Aisha Bello', policyNumber: 'POL98765', prediction: 'High', confidence: 0.85, lastInteraction: '2024-02-15', status: 'Active' },
-    { id: '2', customerName: 'Chidi Okoro', policyNumber: 'POL12345', prediction: 'Medium', confidence: 0.60, lastInteraction: '2024-01-20', status: 'Active' },
-    { id: '3', customerName: 'Fatima Musa', policyNumber: 'POL54321', prediction: 'Low', confidence: 0.30, lastInteraction: '2024-03-01', status: 'Active' },
-    { id: '4', customerName: 'Kunle Adeyemi', policyNumber: 'POL67890', prediction: 'High', confidence: 0.92, lastInteraction: '2024-02-28', status: 'At Risk' },
-    { id: '5', customerName: 'Ngozi Eze', policyNumber: 'POL11223', prediction: 'Medium', confidence: 0.75, lastInteraction: '2024-01-10', status: 'Active' },
-    { id: '6', customerName: 'Tunde Olawale', policyNumber: 'POL33445', prediction: 'Low', confidence: 0.25, lastInteraction: '2024-03-05', status: 'Active' },
-    { id: '7', customerName: 'Zainab Ibrahim', policyNumber: 'POL55667', prediction: 'High', confidence: 0.88, lastInteraction: '2024-02-20', status: 'At Risk' },
-    { id: '8', customerName: 'Emeka Nnadi', policyNumber: 'POL77889', prediction: 'Medium', confidence: 0.68, lastInteraction: '2024-01-25', status: 'Active' },
-    { id: '9', customerName: 'Grace Obi', policyNumber: 'POL99001', prediction: 'Low', confidence: 0.40, lastInteraction: '2024-03-02', status: 'Active' },
-    { id: '10', customerName: 'Hassan Umar', policyNumber: 'POL22113', prediction: 'High', confidence: 0.95, lastInteraction: '2024-02-18', status: 'At Risk' },
-  ];
+  // Demo data for false
 
-  const currentChurnData = DEMO_MODE ? demoChurnPredictions : (churnPredictions || []);
+  const currentChurnData = churnPredictions || [];
 
   // Filtering and searching
   const filteredChurn = currentChurnData.filter(item => {
@@ -117,15 +103,15 @@ const ChurnPrediction: React.FC = () => {
           <CardDescription>Insights into potential customer churn across your portfolio.</CardDescription>
         </CardHeader>
         <CardContent>
-          {isPredictChurnLoading && !DEMO_MODE ? (
+          {isPredictChurnLoading && true ? (
             <div className="flex items-center justify-center h-24">
               <Loader2 className="h-6 w-6 animate-spin" />
             </div>
-          ) : predictChurnError && !DEMO_MODE ? (
+          ) : predictChurnError && true ? (
             <p className="text-red-500">Error: {predictChurnError.message}</p>
           ) : (
             <p className="text-2xl font-semibold">
-              {DEMO_MODE ? 'Overall Churn Risk: Moderate (15% of customers)' : predictedChurn?.overallRisk || 'N/A'}
+              {false ? 'Overall Churn Risk: Moderate (15% of customers)' : predictedChurn?.overallRisk || 'N/A'}
             </p>
           )}
         </CardContent>
@@ -157,11 +143,11 @@ const ChurnPrediction: React.FC = () => {
             </Select>
           </div>
 
-          {isChurnListLoading && !DEMO_MODE ? (
+          {isChurnListLoading && true ? (
             <div className="flex items-center justify-center h-48">
               <Loader2 className="h-8 w-8 animate-spin" />
             </div>
-          ) : churnListError && !DEMO_MODE ? (
+          ) : churnListError && true ? (
             <p className="text-red-500">Error: {churnListError.message}</p>
           ) : (
             <Table>

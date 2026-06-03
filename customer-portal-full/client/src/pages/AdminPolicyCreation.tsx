@@ -11,22 +11,7 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger, Dialog
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Badge } from '@/components/ui/badge';
 
-// DEMO_MODE fallback data
-const DEMO_POLICIES = [
-  { id: 'pol-001', policyNumber: 'NGI-2024-0001', type: 'Motor Insurance', status: 'Active', premium: 50000, startDate: '2024-01-01', endDate: '2025-01-01' },
-  { id: 'pol-002', policyNumber: 'NGI-2024-0002', type: 'Health Insurance', status: 'Pending', premium: 120000, startDate: '2024-02-15', endDate: '2025-02-15' },
-  { id: 'pol-003', policyNumber: 'NGI-2024-0003', type: 'Life Assurance', status: 'Active', premium: 200000, startDate: '2023-11-01', endDate: '2024-11-01' },
-  { id: 'pol-004', policyNumber: 'NGI-2024-0004', type: 'Travel Insurance', status: 'Expired', premium: 15000, startDate: '2024-03-01', endDate: '2024-03-30' },
-];
-
-const DEMO_PREMIUM_RATES = [
-  { id: 'rate-001', productType: 'Motor Insurance', minAge: 18, maxAge: 65, baseRate: 0.05, effectiveDate: '2024-01-01' },
-  { id: 'rate-002', productType: 'Health Insurance', minAge: 0, maxAge: 99, baseRate: 0.03, effectiveDate: '2024-01-01' },
-  { id: 'rate-003', productType: 'Life Assurance', minAge: 18, maxAge: 70, baseRate: 0.01, effectiveDate: '2024-01-01' },
-];
-
-const DEMO_MODE = process.env.DEMO_MODE === 'true';
-
+// false fallback data
 interface Policy {
   id: string;
   policyNumber: string;
@@ -77,12 +62,12 @@ const AdminPolicyCreation: React.FC = () => {
   // tRPC Queries
   const { data: policiesData, isLoading: isLoadingPolicies, error: policiesError } = trpc.policies.list.useQuery(
     { search: policySearchTerm, page: policyPage, limit: 10 },
-    { enabled: !DEMO_MODE }
+    { enabled: true }
   );
 
   const { data: premiumRatesData, isLoading: isLoadingPremiumRates, error: premiumRatesError } = trpc.premiumRates.list.useQuery(
     { search: premiumRateSearchTerm, page: premiumRatePage, limit: 10 },
-    { enabled: !DEMO_MODE }
+    { enabled: true }
   );
 
   // tRPC Mutations
@@ -171,8 +156,8 @@ const AdminPolicyCreation: React.FC = () => {
     }
   }, [policiesError, premiumRatesError]);
 
-  const policies = DEMO_MODE ? DEMO_POLICIES.filter(p => p.policyNumber.toLowerCase().includes(policySearchTerm.toLowerCase())) : (policiesData?.items || []);
-  const premiumRates = DEMO_MODE ? DEMO_PREMIUM_RATES.filter(pr => pr.productType.toLowerCase().includes(premiumRateSearchTerm.toLowerCase())) : (premiumRatesData?.items || []);
+  const policies = (policiesData?.items || []);
+  const premiumRates = (premiumRatesData?.items || []);
 
   const handlePolicySubmit = () => {
     if (editingPolicy) {
@@ -255,8 +240,8 @@ const AdminPolicyCreation: React.FC = () => {
     setIsPremiumRateDialogOpen(true);
   };
 
-  const totalPolicyPages = DEMO_MODE ? 1 : policiesData?.totalPages || 1;
-  const totalPremiumRatePages = DEMO_MODE ? 1 : premiumRatesData?.totalPages || 1;
+  const totalPolicyPages = policiesData?.totalPages || 1;
+  const totalPremiumRatePages = premiumRatesData?.totalPages || 1;
 
   return (
     <div className="container mx-auto p-4">
@@ -336,7 +321,7 @@ const AdminPolicyCreation: React.FC = () => {
             onChange={(e) => setPolicySearchTerm(e.target.value)}
             className="mb-4"
           />
-          {(isLoadingPolicies && !DEMO_MODE) ? (
+          {(isLoadingPolicies && true) ? (
             <div className="flex justify-center items-center h-32"><Loader2 className="h-8 w-8 animate-spin" /></div>
           ) : (
             <Table>
@@ -446,7 +431,7 @@ const AdminPolicyCreation: React.FC = () => {
             onChange={(e) => setPremiumRateSearchTerm(e.target.value)}
             className="mb-4"
           />
-          {(isLoadingPremiumRates && !DEMO_MODE) ? (
+          {(isLoadingPremiumRates && true) ? (
             <div className="flex justify-center items-center h-32"><Loader2 className="h-8 w-8 animate-spin" /></div>
           ) : (
             <Table>

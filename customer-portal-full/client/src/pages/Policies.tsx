@@ -9,25 +9,13 @@ import { getLoginUrl } from "@/const";
 import { useEffect, useState } from "react";
 import { toast } from "sonner";
 
-// Demo mode data
-const DEMO_MODE = process.env.DEMO_MODE === 'true';
-const DEMO_POLICIES = [
-  { id: 1, policyNumber: "POL-2026-001", name: "Comprehensive Health Plan", type: "Health", premium: "150000", status: "Active", startDate: new Date("2025-01-15"), expiryDate: new Date("2026-01-15"), createdAt: new Date(), updatedAt: new Date() },
-  { id: 2, policyNumber: "POL-2026-002", name: "Auto Protection Plus", type: "Auto", premium: "85000", status: "Active", startDate: new Date("2025-03-01"), expiryDate: new Date("2026-03-01"), createdAt: new Date(), updatedAt: new Date() },
-  { id: 3, policyNumber: "POL-2025-003", name: "Home Shield", type: "Property", premium: "200000", status: "Expired", startDate: new Date("2024-06-01"), expiryDate: new Date("2025-06-01"), createdAt: new Date(), updatedAt: new Date() },
-  { id: 4, policyNumber: "POL-2026-004", name: "Life Protection Premium", type: "Life", premium: "350000", status: "Active", startDate: new Date("2025-02-01"), expiryDate: new Date("2026-02-01"), createdAt: new Date(), updatedAt: new Date() },
-];
-
 export default function Policies() {
   const { isAuthenticated, loading: authLoading } = useAuth();
-  const [demoMode] = useState(DEMO_MODE);
-
-  
   const { data: realPolicies, isLoading } = trpc.policies.list.useQuery(undefined, {
-    enabled: isAuthenticated && !demoMode,
+    enabled: isAuthenticated,
   });
 
-  const policies = demoMode ? DEMO_POLICIES : realPolicies;
+  const policies = realPolicies;
 
   const renewMutation = trpc.policies.renew.useMutation({
     onSuccess: () => {
@@ -44,12 +32,12 @@ export default function Policies() {
   });
 
   useEffect(() => {
-    if (!demoMode && !authLoading && !isAuthenticated) {
+    if (!authLoading && !isAuthenticated) {
       window.location.href = getLoginUrl();
     }
-  }, [authLoading, isAuthenticated, demoMode]);
+  }, [authLoading, isAuthenticated]);
 
-  if (!demoMode && (authLoading || !isAuthenticated)) {
+  if ((authLoading || !isAuthenticated)) {
     return (
       <div className="min-h-screen flex items-center justify-center">
         <Loader2 className="h-8 w-8 animate-spin text-blue-600" />

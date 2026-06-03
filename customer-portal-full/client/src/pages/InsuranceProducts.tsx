@@ -39,8 +39,7 @@ import {
   TableRow,
 } from "@/components/ui/table";
 
-// DEMO_MODE fallback data
-const DEMO_MODE = process.env.DEMO_MODE === 'true';
+// false fallback data
 
 interface Product {
   id: string;
@@ -51,99 +50,6 @@ interface Product {
   provider: string;
   features: string[];
 }
-
-const DEMO_PRODUCTS: Product[] = [
-  {
-    id: "prod_001",
-    name: "Motor Insurance (Third Party)",
-    category: "Auto",
-    description: "Covers damages to third-party property and bodily injury.",
-    price: 15000, // NGN
-    provider: "Leadway Assurance",
-    features: ["Third-party liability", "Property damage"],
-  },
-  {
-    id: "prod_002",
-    name: "Comprehensive Motor Insurance",
-    category: "Auto",
-    description: "Covers own vehicle damage, theft, and third-party liability.",
-    price: 65000,
-    provider: "AIICO Insurance",
-    features: ["Own damage", "Theft", "Third-party liability", "Fire"],
-  },
-  {
-    id: "prod_003",
-    name: "Health Insurance (Basic Plan)",
-    category: "Health",
-    description: "Access to primary healthcare services and consultations.",
-    price: 30000,
-    provider: "Reliance HMO",
-    features: ["GP visits", "Basic diagnostics", "Prescription drugs"],
-  },
-  {
-    id: "prod_004",
-    name: "Travel Insurance (International)",
-    category: "Travel",
-    description: "Covers medical emergencies, trip cancellations, and lost luggage during international travel.",
-    price: 25000,
-    provider: "AXA Mansard",
-    features: ["Medical emergencies", "Trip cancellation", "Lost luggage"],
-  },
-  {
-    id: "prod_005",
-    name: "Home Insurance (Fire & Burglary)",
-    category: "Home",
-    description: "Protects your home and contents against fire and burglary.",
-    price: 40000,
-    provider: "Custodian Life Assurance",
-    features: ["Fire damage", "Burglary", "Property damage"],
-  },
-  {
-    id: "prod_006",
-    name: "Life Assurance (Term Life)",
-    category: "Life",
-    description: "Provides financial protection for your loved ones for a specific term.",
-    price: 50000,
-    provider: "FBNInsurance",
-    features: ["Death benefit", "Critical illness option"],
-  },
-  {
-    id: "prod_007",
-    name: "Education Protection Plan",
-    category: "Education",
-    description: "Ensures your child's education is secured even in unforeseen circumstances.",
-    price: 35000,
-    provider: "Cornerstone Insurance",
-    features: ["School fees payment", "Parental disability cover"],
-  },
-  {
-    id: "prod_008",
-    name: "Agricultural Insurance (Crop)",
-    category: "Agriculture",
-    description: "Protects farmers against crop loss due to natural disasters.",
-    price: 20000,
-    provider: "NAIC",
-    features: ["Crop failure", "Pest infestation", "Drought"],
-  },
-  {
-    id: "prod_009",
-    name: "SME Business Protection",
-    category: "Business",
-    description: "Comprehensive insurance for small and medium-sized enterprises.",
-    price: 80000,
-    provider: "Royal Exchange General Insurance",
-    features: ["Property damage", "Business interruption", "Public liability"],
-  },
-  {
-    id: "prod_010",
-    name: "Gadget Insurance",
-    category: "Gadget",
-    description: "Covers your electronic gadgets against damage, theft, and loss.",
-    price: 10000,
-    provider: "Leadway Assurance",
-    features: ["Screen damage", "Water damage", "Theft"],
-  },
-];
 
 const CATEGORIES = [
   "All",
@@ -173,7 +79,7 @@ export default function InsuranceProducts() {
       search: searchQuery || undefined,
     },
     {
-      enabled: !DEMO_MODE && isAuthenticated,
+      enabled: isAuthenticated,
       onError: (err) => {
         toast.error(`Failed to fetch products: ${err.message}`);
       },
@@ -190,7 +96,7 @@ export default function InsuranceProducts() {
     },
   });
 
-  const products = DEMO_MODE ? DEMO_PRODUCTS : data || [];
+  const products = data || [];
 
   const filteredProducts = useMemo(() => {
     let filtered = products;
@@ -275,12 +181,12 @@ export default function InsuranceProducts() {
         </CardContent>
       </Card>
 
-      {isLoading && !DEMO_MODE ? (
+      {isLoading ? (
         <div className="flex items-center justify-center min-h-[200px]">
           <Loader2 className="h-8 w-8 animate-spin" />
           <p className="ml-2">Loading products...</p>
         </div>
-      ) : isError && !DEMO_MODE ? (
+      ) : isError && true ? (
         <div className="flex items-center justify-center min-h-[200px] text-red-500">
           <p>Error: {error?.message || "Failed to load products."}</p>
         </div>

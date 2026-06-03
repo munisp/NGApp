@@ -9,14 +9,12 @@ import { toast } from "sonner";
 
 interface AnalyticsDashboardProps {}
 
-const DEMO_MODE = process.env.DEMO_MODE === 'true';
-
 const Analytics: React.FC<AnalyticsDashboardProps> = () => {
   const { isAuthenticated, isLoading: authLoading } = useAuth();
   const [period, setPeriod] = useState<'daily' | 'weekly' | 'monthly' | 'yearly'>('monthly');
 
   const { data, isLoading, isError, error } = trpc.analytics.dashboard.useQuery({ period }, {
-    enabled: isAuthenticated && !DEMO_MODE,
+    enabled: isAuthenticated,
   });
 
   if (authLoading) {
@@ -35,7 +33,7 @@ const Analytics: React.FC<AnalyticsDashboardProps> = () => {
     );
   }
 
-  if (isError && !DEMO_MODE) {
+  if (isError && true) {
     toast.error(`Error loading analytics: ${error?.message}`);
     return (
       <div className="flex items-center justify-center h-full text-lg font-semibold text-red-500">
@@ -44,24 +42,7 @@ const Analytics: React.FC<AnalyticsDashboardProps> = () => {
     );
   }
 
-  const demoData = {
-    totalPolicies: 15000,
-    totalClaims: 3500,
-    premiumCollected: '₦150,000,000',
-    payouts: '₦75,000,000',
-    newCustomers: 1200,
-    topAgents: [
-      { id: '1', name: 'Aisha Bello', policies: 320, premium: '₦12,000,000' },
-      { id: '2', name: 'Chinedu Okoro', policies: 280, premium: '₦10,500,000' },
-      { id: '3', name: 'Fatima Musa', policies: 250, premium: '₦9,800,000' },
-    ],
-    charts: {
-      premiums: [10, 20, 30, 25, 35, 40, 45],
-      claims: [5, 8, 12, 10, 15, 18, 20],
-    },
-  };
-
-  const displayData = DEMO_MODE ? demoData : data;
+  const displayData = data;
 
   return (
     <div className="p-4 space-y-4">
@@ -82,7 +63,7 @@ const Analytics: React.FC<AnalyticsDashboardProps> = () => {
         <Button onClick={() => toast.info("Refreshing data...")}>Refresh</Button>
       </div>
 
-      {isLoading && !DEMO_MODE ? (
+      {isLoading ? (
         <div className="flex items-center justify-center h-64">
           <Loader2 className="h-12 w-12 animate-spin" />
         </div>

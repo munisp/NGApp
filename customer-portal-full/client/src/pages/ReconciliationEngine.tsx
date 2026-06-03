@@ -44,16 +44,6 @@ interface ReconciliationSummary {
   lastRun: string;
 }
 
-const DEMO_RECONCILIATION_DATA: ReconciliationSummary[] = [
-  { id: 'rec-001', period: '2024-01', status: 'Completed', discrepancies: 5, lastRun: '2024-02-01' },
-  { id: 'rec-002', period: '2024-02', status: 'Pending', discrepancies: 0, lastRun: '2024-03-01' },
-  { id: 'rec-003', period: '2024-03', status: 'Failed', discrepancies: 12, lastRun: '2024-04-01' },
-  { id: 'rec-004', period: '2024-04', status: 'Completed', discrepancies: 2, lastRun: '2024-05-01' },
-  { id: 'rec-005', period: '2024-05', status: 'Pending', discrepancies: 0, lastRun: '2024-06-01' },
-];
-
-const DEMO_MODE = process.env.DEMO_MODE === 'true';
-
 const ReconciliationEngine: React.FC = () => {
   const { isAuthenticated, isLoading: authLoading } = useAuth();
   const [selectedPeriod, setSelectedPeriod] = useState<string>('2024-06');
@@ -87,7 +77,7 @@ const ReconciliationEngine: React.FC = () => {
     }
   };
 
-  const filteredSummaries = (DEMO_MODE ? DEMO_RECONCILIATION_DATA : (summaryData || [])).filter(summary =>
+  const filteredSummaries = (summaryData || []).filter(summary =>
     summary.period.toLowerCase().includes(searchQuery.toLowerCase()) ||
     summary.status.toLowerCase().includes(searchQuery.toLowerCase())
   );

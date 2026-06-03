@@ -49,47 +49,6 @@ interface USSDSession {
   menuPath: string;
 }
 
-const DEMO_MODE = process.env.DEMO_MODE === 'true';
-
-const DEMO_SESSIONS: USSDSession[] = [
-  {
-    id: 'ussd_001',
-    phoneNumber: '08012345678',
-    serviceCode: '*901#',
-    status: 'active',
-    lastActivity: '2024-03-01T10:30:00Z',
-    duration: 120,
-    menuPath: 'Main Menu > Check Balance',
-  },
-  {
-    id: 'ussd_002',
-    phoneNumber: '07098765432',
-    serviceCode: '*321#',
-    status: 'completed',
-    lastActivity: '2024-02-28T15:00:00Z',
-    duration: 60,
-    menuPath: 'Main Menu > Buy Data',
-  },
-  {
-    id: 'ussd_003',
-    phoneNumber: '09011223344',
-    serviceCode: '*901#',
-    status: 'failed',
-    lastActivity: '2024-02-27T09:00:00Z',
-    duration: 10,
-    menuPath: 'Main Menu > Pay Premium',
-  },
-  {
-    id: 'ussd_004',
-    phoneNumber: '08055667788',
-    serviceCode: '*321#',
-    status: 'active',
-    lastActivity: '2024-03-02T11:45:00Z',
-    duration: 90,
-    menuPath: 'Main Menu > Policy Info',
-  },
-];
-
 const USSDGateway: React.FC = () => {
   const { isAuthenticated, isLoading: authLoading } = useAuth();
   const utils = trpc.useUtils();
@@ -106,7 +65,7 @@ const USSDGateway: React.FC = () => {
   // Fetch USSD Sessions
   const { data: sessions, isLoading: isSessionsLoading, error: sessionsError } = trpc.ussd.sessions.useQuery(
     undefined, // No input parameters for now, assuming it fetches all
-    { enabled: isAuthenticated && !DEMO_MODE }
+    { enabled: isAuthenticated }
   );
 
   // Simulate USSD Session Mutation
@@ -151,7 +110,7 @@ const USSDGateway: React.FC = () => {
     );
   }
 
-  const allSessions = DEMO_MODE ? DEMO_SESSIONS : (sessions || []);
+  const allSessions = sessions || [];
 
   const filteredSessions = allSessions.filter((session) => {
     const matchesSearch = searchQuery === '' ||
@@ -251,7 +210,7 @@ const USSDGateway: React.FC = () => {
             </Dialog>
           </div>
 
-          {isSessionsLoading && !DEMO_MODE ? (
+          {isSessionsLoading && true ? (
             <div className="flex justify-center items-center h-40">
               <Loader2 className="h-8 w-8 animate-spin" />
             </div>

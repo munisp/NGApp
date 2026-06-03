@@ -10,19 +10,9 @@ import { useAuth } from "@/_core/hooks/useAuth";
 import { getLoginUrl } from "@/const";
 import { toast } from "sonner";
 
-// Demo mode data
-const DEMO_MODE = process.env.DEMO_MODE === 'true';
-const DEMO_USER = { 
-  id: "demo-user-001", 
-  name: "Demo User", 
-  email: "demo@insureportal.ng",
-  loginMethod: "OAuth",
-  lastSignedIn: new Date("2026-01-31T08:30:00")
-};
-
 export default function Profile() {
   const { user: authUser, isAuthenticated, loading: authLoading } = useAuth();
-  const user = DEMO_MODE ? DEMO_USER : authUser;
+  const user = authUser;
   const [formData, setFormData] = useState({
     name: "",
     email: "",
@@ -43,7 +33,7 @@ export default function Profile() {
   });
 
   useEffect(() => {
-    if (!DEMO_MODE && !authLoading && !isAuthenticated) {
+    if (!authLoading && !isAuthenticated) {
       window.location.href = getLoginUrl();
     }
   }, [authLoading, isAuthenticated]);
@@ -57,7 +47,7 @@ export default function Profile() {
     }
   }, [user]);
 
-  if (!DEMO_MODE && (authLoading || !isAuthenticated)) {
+  if ((authLoading || !isAuthenticated)) {
     return (
       <div className="min-h-screen flex items-center justify-center">
         <Loader2 className="h-8 w-8 animate-spin text-blue-600" />

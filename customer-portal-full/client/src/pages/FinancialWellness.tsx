@@ -11,8 +11,6 @@ import { toast } from "sonner";
 import { trpc } from "@/lib/trpc";
 import { useAuth } from "@/_core/hooks/useAuth";
 
-const DEMO_MODE = process.env.DEMO_MODE === 'true';
-
 interface FinancialScore {
   score: number;
   level: string;
@@ -27,30 +25,17 @@ interface Recommendation {
   status: 'Pending' | 'Completed';
 }
 
-const demoFinancialScore: FinancialScore = {
-  score: 750,
-  level: 'Excellent',
-  description: 'Your financial health is strong, indicating good management of your finances and low risk.'
-};
-
-const demoRecommendations: Recommendation[] = [
-  { id: 'rec1', title: 'Review your pension plan', category: 'Retirement', impact: 'High', status: 'Pending' },
-  { id: 'rec2', title: 'Increase emergency savings', category: 'Savings', impact: 'Medium', status: 'Completed' },
-  { id: 'rec3', title: 'Explore investment opportunities', category: 'Investment', impact: 'High', status: 'Pending' },
-  { id: 'rec4', title: 'Optimize insurance coverage', category: 'Insurance', impact: 'Medium', status: 'Pending' },
-];
-
 export default function FinancialWellness() {
   const { isAuthenticated, isLoading: authLoading } = useAuth();
   const [searchTerm, setSearchTerm] = useState('');
   const [filterCategory, setFilterCategory] = useState('all');
 
   const { data: financialScore, isLoading: scoreLoading, error: scoreError } = trpc.financialWellness.score.useQuery(undefined, {
-    enabled: !DEMO_MODE && isAuthenticated,
+    enabled: isAuthenticated,
   });
 
   const { data: recommendations, isLoading: recommendationsLoading, error: recommendationsError } = trpc.financialWellness.recommendations.useQuery(undefined, {
-    enabled: !DEMO_MODE && isAuthenticated,
+    enabled: isAuthenticated,
   });
 
   if (authLoading) {
@@ -77,8 +62,8 @@ export default function FinancialWellness() {
     toast.error(`Failed to fetch recommendations: ${recommendationsError.message}`);
   }
 
-  const currentFinancialScore = DEMO_MODE ? demoFinancialScore : financialScore;
-  const currentRecommendations = DEMO_MODE ? demoRecommendations : recommendations;
+  const currentFinancialScore = financialScore;
+  const currentRecommendations = recommendations;
 
   const filteredRecommendations = currentRecommendations?.filter(rec => {
     const matchesSearch = rec.title.toLowerCase().includes(searchTerm.toLowerCase());
@@ -86,7 +71,7 @@ export default function FinancialWellness() {
     return matchesSearch && matchesCategory;
   });
 
-  const uniqueCategories = Array.from(new Set(demoRecommendations.map(rec => rec.category)));
+  const uniqueCategories = Array.from(new Set([].map(rec => rec.category)));
 
   return (
     <div className="container mx-auto p-4">
@@ -98,7 +83,7 @@ export default function FinancialWellness() {
             <CardTitle>Your Financial Score</CardTitle>
           </CardHeader>
           <CardContent>
-            {scoreLoading && !DEMO_MODE ? (
+            {scoreLoading && true ? (
               <div className="flex items-center justify-center h-24">
                 <Loader2 className="h-6 w-6 animate-spin" />
               </div>
@@ -141,7 +126,7 @@ export default function FinancialWellness() {
               </Select>
             </div>
 
-            {recommendationsLoading && !DEMO_MODE ? (
+            {recommendationsLoading && true ? (
               <div className="flex items-center justify-center h-48">
                 <Loader2 className="h-6 w-6 animate-spin" />
               </div>

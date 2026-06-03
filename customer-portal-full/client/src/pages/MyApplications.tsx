@@ -47,51 +47,6 @@ interface Application {
   premium: number;
 }
 
-const DEMO_APPLICATIONS: Application[] = [
-  {
-    id: "app_001",
-    policyType: "Motor Insurance",
-    status: "Approved",
-    submissionDate: "2024-01-15",
-    applicantName: "Aisha Bello",
-    premium: 120000,
-  },
-  {
-    id: "app_002",
-    policyType: "Health Insurance",
-    status: "Pending",
-    submissionDate: "2024-02-20",
-    applicantName: "Chinedu Okoro",
-    premium: 85000,
-  },
-  {
-    id: "app_003",
-    policyType: "Life Assurance",
-    status: "Rejected",
-    submissionDate: "2024-03-10",
-    applicantName: "Fatima Yusuf",
-    premium: 250000,
-  },
-  {
-    id: "app_004",
-    policyType: "Travel Insurance",
-    status: "Draft",
-    submissionDate: "2024-04-05",
-    applicantName: "Kunle Adebayo",
-    premium: 30000,
-  },
-  {
-    id: "app_005",
-    policyType: "Home Insurance",
-    status: "Pending",
-    submissionDate: "2024-05-01",
-    applicantName: "Ngozi Eze",
-    premium: 180000,
-  },
-];
-
-const DEMO_MODE = process.env.DEMO_MODE === 'true';
-
 export default function MyApplications() {
   const { isAuthenticated, user } = useAuth();
   const [searchQuery, setSearchQuery] = useState("");
@@ -124,7 +79,7 @@ export default function MyApplications() {
       page: currentPage,
       limit: itemsPerPage,
     },
-    { enabled: isAuthenticated && !DEMO_MODE }
+    { enabled: isAuthenticated }
   );
 
   const createApplicationMutation = trpc.application.create.useMutation({
@@ -152,16 +107,9 @@ export default function MyApplications() {
     },
   });
 
-  const applications = DEMO_MODE ? DEMO_APPLICATIONS.filter((app) => {
-    const matchesSearch = searchQuery
-      ? app.policyType.toLowerCase().includes(searchQuery.toLowerCase()) ||
-        app.applicantName.toLowerCase().includes(searchQuery.toLowerCase())
-      : true;
-    const matchesStatus = filterStatus ? app.status === filterStatus : true;
-    return matchesSearch && matchesStatus;
-  }) : data?.applications || [];
+  const applications = data?.applications || [];
 
-  const totalPages = DEMO_MODE ? Math.ceil(applications.length / itemsPerPage) : data?.totalPages || 1;
+  const totalPages = data?.totalPages || 1;
 
   useEffect(() => {
     if (isError) {
@@ -223,10 +171,7 @@ export default function MyApplications() {
     setIsEditDialogOpen(true);
   };
 
-  const paginatedApplications = DEMO_MODE ? applications.slice(
-    (currentPage - 1) * itemsPerPage,
-    currentPage * itemsPerPage
-  ) : applications;
+  const paginatedApplications = applications;
 
   return (
     <div className="container mx-auto p-4">
@@ -301,7 +246,7 @@ export default function MyApplications() {
             </Dialog>
           </div>
 
-          {(isLoading && !DEMO_MODE) ? (
+          {isLoading ? (
             <div className="flex justify-center items-center h-40">
               <Loader2 className="h-8 w-8 animate-spin" />
             </div>

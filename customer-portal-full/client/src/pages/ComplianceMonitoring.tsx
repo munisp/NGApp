@@ -19,46 +19,6 @@ interface ComplianceRecord {
   details: string;
 }
 
-const DEMO_MODE = process.env.DEMO_MODE === 'true';
-
-const DEMO_COMPLIANCE_DATA: ComplianceRecord[] = [
-  {
-    id: 'comp-001',
-    rule: 'NAICOM Solvency II Capital Requirements',
-    status: 'Compliant',
-    lastRun: '2024-02-28',
-    details: 'All capital requirements met as per latest audit.'
-  },
-  {
-    id: 'comp-002',
-    rule: 'Data Privacy Act (NDPR) Compliance',
-    status: 'Non-Compliant',
-    lastRun: '2024-02-20',
-    details: 'Identified minor discrepancies in data handling procedures.'
-  },
-  {
-    id: 'comp-003',
-    rule: 'Anti-Money Laundering (AML) Regulations',
-    status: 'Pending',
-    lastRun: '2024-02-15',
-    details: 'Ongoing review of suspicious transaction reports.'
-  },
-  {
-    id: 'comp-004',
-    rule: 'Consumer Protection Framework',
-    status: 'Compliant',
-    lastRun: '2024-01-30',
-    details: 'Customer complaint resolution process is robust.'
-  },
-  {
-    id: 'comp-005',
-    rule: 'Insurance Act 2003 Adherence',
-    status: 'Compliant',
-    lastRun: '2024-02-25',
-    details: 'All policy wordings and claims processes align with the Act.'
-  },
-];
-
 const ComplianceMonitoring: React.FC = () => {
   const { isAuthenticated, isLoading: authLoading } = useAuth();
   const [searchTerm, setSearchTerm] = useState('');
@@ -87,7 +47,7 @@ const ComplianceMonitoring: React.FC = () => {
     return <div className="text-center text-red-500">Error: ${error?.message}</div>;
   }
 
-  const filteredData = (DEMO_MODE ? DEMO_COMPLIANCE_DATA : complianceData || []).filter(record => {
+  const filteredData = (complianceData || []).filter(record => {
     const matchesSearch = record.rule.toLowerCase().includes(searchTerm.toLowerCase()) ||
                           record.details.toLowerCase().includes(searchTerm.toLowerCase());
     const matchesStatus = filterStatus === 'All' || record.status === filterStatus;
@@ -141,7 +101,7 @@ const ComplianceMonitoring: React.FC = () => {
             </Select>
           </div>
 
-          {(isLoading && !DEMO_MODE) ? (
+          {isLoading ? (
             <div className="flex items-center justify-center h-48">
               <Loader2 className="h-8 w-8 animate-spin" />
             </div>

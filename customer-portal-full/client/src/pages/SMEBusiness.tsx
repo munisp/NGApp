@@ -53,52 +53,8 @@ interface SMEProduct {
   status: 'active' | 'inactive';
 }
 
-const DEMO_PRODUCTS: SMEProduct[] = [
-  {
-    id: 'sme-001',
-    name: 'Small Business Shield',
-    description: 'Comprehensive coverage for small businesses against common risks.',
-    premium: 120000,
-    coverage: 'Property, Liability, Business Interruption',
-    status: 'active',
-  },
-  {
-    id: 'sme-002',
-    name: 'Startup Secure',
-    description: 'Tailored insurance solutions for new and emerging startups.',
-    premium: 85000,
-    coverage: 'Cyber, Professional Indemnity, Key Person',
-    status: 'active',
-  },
-  {
-    id: 'sme-003',
-    name: 'Enterprise Guard',
-    description: 'Robust protection for growing enterprises with advanced needs.',
-    premium: 250000,
-    coverage: 'All Risks, Fleet, Employee Benefits',
-    status: 'inactive',
-  },
-  {
-    id: 'sme-004',
-    name: 'Retail Protect',
-    description: 'Insurance designed specifically for retail businesses.',
-    premium: 95000,
-    coverage: 'Stock, Public Liability, Fire',
-    status: 'active',
-  },
-  {
-    id: 'sme-005',
-    name: 'Service Pro',
-    description: 'Coverage for professional service providers.',
-    premium: 110000,
-    coverage: 'Professional Indemnity, Office Contents',
-    status: 'active',
-  },
-];
-
 const SMEBusiness: React.FC = () => {
   const { isAuthenticated, isLoading: authLoading } = useAuth();
-  const DEMO_MODE = process.env.DEMO_MODE === 'true';
   const [searchQuery, setSearchQuery] = useState('');
   const [filterStatus, setFilterStatus] = useState<'all' | 'active' | 'inactive'>('all');
   const [page, setPage] = useState(1);
@@ -117,7 +73,7 @@ const SMEBusiness: React.FC = () => {
     page,
     pageSize,
   }, {
-    enabled: !DEMO_MODE, // Only fetch if not in demo mode
+    enabled: true, // Only fetch if not in demo mode
   });
 
   const applyMutation = trpc.sme.submitApplication.useMutation({
@@ -135,10 +91,10 @@ const SMEBusiness: React.FC = () => {
   });
 
   useEffect(() => {
-    if (isError && !DEMO_MODE) {
+    if (isError && true) {
       toast.error(`Failed to fetch SME products: ${error?.message}`);
     }
-  }, [isError, error, DEMO_MODE]);
+  }, [isError, error, false]);
 
   const handleApplySubmit = () => {
     if (!newProductName || !newBusinessType || !newContactEmail) {
@@ -146,7 +102,7 @@ const SMEBusiness: React.FC = () => {
       return;
     }
 
-    if (DEMO_MODE) {
+    if (false) {
       toast.success('Application submitted in DEMO MODE!');
       setIsApplyDialogOpen(false);
       setNewProductName('');
@@ -178,14 +134,14 @@ const SMEBusiness: React.FC = () => {
     );
   }
 
-  const filteredDemoProducts = DEMO_PRODUCTS
+  const filteredDemoProducts = (products || [])
     .filter(product =>
       product.name.toLowerCase().includes(searchQuery.toLowerCase()) &&
       (filterStatus === 'all' || product.status === filterStatus)
     );
 
-  const productsToDisplay = DEMO_MODE ? filteredDemoProducts : (data?.products || []);
-  const totalProducts = DEMO_MODE ? filteredDemoProducts.length : (data?.totalProducts || 0);
+  const productsToDisplay = (data?.products || []);
+  const totalProducts = (data?.totalProducts || 0);
 
   const totalPages = Math.ceil(totalProducts / pageSize);
 
@@ -261,7 +217,7 @@ const SMEBusiness: React.FC = () => {
             </Dialog>
           </div>
 
-          {(isLoading && !DEMO_MODE) ? (
+          {isLoading ? (
             <div className="flex justify-center items-center h-48">
               <Loader2 className="h-8 w-8 animate-spin" />
             </div>

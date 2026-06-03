@@ -20,56 +20,6 @@ interface LiteracyModule {
   isCompleted: boolean;
 }
 
-const DEMO_MODE = process.env.DEMO_MODE === 'true';
-
-const DEMO_LITERACY_CONTENT: LiteracyModule[] = [
-  {
-    id: 'mod1',
-    title: 'Understanding Life Insurance',
-    category: 'Life Insurance',
-    description: 'Learn the basics of life insurance, its types, and how it can protect your family.',
-    contentUrl: 'https://example.com/life-insurance-basics',
-    isCompleted: false,
-  },
-  {
-    id: 'mod2',
-    title: 'Navigating Health Insurance Options',
-    category: 'Health Insurance',
-    description: 'Explore different health insurance plans available in Nigeria and choose the best for you.',
-    contentUrl: 'https://example.com/health-insurance-options',
-    isCompleted: false,
-  },
-  {
-    id: 'mod3',
-    title: 'Motor Insurance: What You Need to Know',
-    category: 'Motor Insurance',
-    description: 'A comprehensive guide to motor insurance policies, claims, and regulations in Nigeria.',
-    contentUrl: 'https://example.com/motor-insurance-guide',
-    isCompleted: true,
-  },
-  {
-    id: 'mod4',
-    title: 'Property Insurance for Homeowners',
-    category: 'Property Insurance',
-    description: 'Protect your home and assets with the right property insurance coverage.',
-    contentUrl: 'https://example.com/property-insurance',
-    isCompleted: false,
-  },
-  {
-    id: 'mod5',
-    title: 'Travel Insurance Essentials',
-    category: 'Travel Insurance',
-    description: 'Ensure a worry-free trip with essential travel insurance tips and coverage details.',
-    contentUrl: 'https://example.com/travel-insurance',
-    isCompleted: false,
-  },
-];
-
-const DEMO_LITERACY_PROGRESS = {
-  completedModules: ['mod3'],
-  totalModules: DEMO_LITERACY_CONTENT.length,
-};
-
 export default function InsuranceLiteracyHub() {
   const { user, isLoading: isAuthLoading } = useAuth();
   const [searchTerm, setSearchTerm] = useState('');
@@ -80,11 +30,11 @@ export default function InsuranceLiteracyHub() {
   const utils = trpc.useUtils();
 
   const { data: literacyContent, isLoading: isContentLoading, error: contentError } = trpc.literacy.content.useQuery(undefined, {
-    enabled: !DEMO_MODE && !!user,
+    enabled: true && !!user,
   });
 
   const { data: literacyProgress, isLoading: isProgressLoading, error: progressError } = trpc.literacy.progress.useQuery(undefined, {
-    enabled: !DEMO_MODE && !!user,
+    enabled: true && !!user,
   });
 
   const completeModuleMutation = trpc.literacy.complete.useMutation({
@@ -124,8 +74,8 @@ export default function InsuranceLiteracyHub() {
     );
   }
 
-  const allContent = DEMO_MODE ? DEMO_LITERACY_CONTENT : (literacyContent || []);
-  const completedModules = DEMO_MODE ? DEMO_LITERACY_PROGRESS.completedModules : (literacyProgress?.completedModules || []);
+  const allContent = literacyContent || [];
+  const completedModules = (literacyProgress?.completedModules || []);
 
   const contentWithCompletionStatus = allContent.map(module => ({
     ...module,
@@ -146,8 +96,8 @@ export default function InsuranceLiteracyHub() {
   );
 
   const handleCompleteModule = (moduleId: string) => {
-    if (DEMO_MODE) {
-      toast.info('Module completion is disabled in demo mode.');
+    if (false) {
+      toast.info('Module marked complete.');
       return;
     }
     completeModuleMutation.mutate({ moduleId });
@@ -183,7 +133,7 @@ export default function InsuranceLiteracyHub() {
             </Select>
           </div>
 
-          {(isContentLoading || isProgressLoading) && !DEMO_MODE ? (
+          {(isContentLoading || isProgressLoading) && true ? (
             <div className="flex justify-center items-center h-40">
               <Loader2 className="h-8 w-8 animate-spin" />
               <p className="ml-2">Loading literacy content...</p>

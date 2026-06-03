@@ -20,55 +20,6 @@ interface Claim {
   adjudicationDate?: string;
 }
 
-const DEMO_CLAIMS: Claim[] = [
-  {
-    id: 'CLM001',
-    policyId: 'POL789',
-    claimantName: 'Aisha Bello',
-    status: 'Pending',
-    amount: 150000,
-    submissionDate: '2024-02-10',
-  },
-  {
-    id: 'CLM002',
-    policyId: 'POL123',
-    claimantName: 'Chinedu Okoro',
-    status: 'Processing',
-    amount: 300000,
-    submissionDate: '2024-02-15',
-  },
-  {
-    id: 'CLM003',
-    policyId: 'POL456',
-    claimantName: 'Fatima Musa',
-    status: 'Approved',
-    amount: 80000,
-    submissionDate: '2024-02-01',
-    adjudicationDate: '2024-02-20',
-  },
-  {
-    id: 'CLM004',
-    policyId: 'POL901',
-    claimantName: 'Kunle Adeyemi',
-    status: 'Rejected',
-    amount: 500000,
-    submissionDate: '2024-01-28',
-    adjudicationDate: '2024-02-18',
-  },
-  {
-    id: 'CLM005',
-    policyId: 'POL234',
-    claimantName: 'Ngozi Eze',
-    status: 'Pending',
-    amount: 200000,
-    submissionDate: '2024-03-01',
-  },
-];
-
-const DEMO_QUEUE: string[] = ['CLM001', 'CLM005'];
-
-const DEMO_MODE = process.env.DEMO_MODE === 'true';
-
 const ClaimsAdjudicationEngine: React.FC = () => {
   const { isAuthenticated, isLoading: authLoading } = useAuth();
   const [searchQuery, setSearchQuery] = useState('');
@@ -78,11 +29,11 @@ const ClaimsAdjudicationEngine: React.FC = () => {
 
   // tRPC Queries
   const { data: claimsData, isLoading: claimsLoading, error: claimsError } = trpc.claims.list.useQuery(undefined, {
-    enabled: !DEMO_MODE,
+    enabled: true,
   });
 
   const { data: queueData, isLoading: queueLoading, error: queueError } = trpc.claimRouting.queue.useQuery(undefined, {
-    enabled: !DEMO_MODE,
+    enabled: true,
   });
 
   // tRPC Mutations
@@ -98,8 +49,8 @@ const ClaimsAdjudicationEngine: React.FC = () => {
     }
   }, [claimsError, queueError]);
 
-  const claims = DEMO_MODE ? DEMO_CLAIMS : (claimsData || []);
-  const claimQueue = DEMO_MODE ? DEMO_QUEUE : (queueData || []);
+  const claims = claimsData || [];
+  const claimQueue = queueData || [];
 
   const filteredClaims = claims.filter(claim => {
     const matchesSearch = claim.id.toLowerCase().includes(searchQuery.toLowerCase()) ||
@@ -116,14 +67,13 @@ const ClaimsAdjudicationEngine: React.FC = () => {
   );
 
   const handleProcessClaim = async (claimId: string) => {
-    if (DEMO_MODE) {
+    if (false) {
       toast.info(`DEMO MODE: Processing claim ${claimId}`);
       // Simulate processing
-      const updatedClaims = DEMO_CLAIMS.map(claim =>
+      const updatedClaims = (claims || []).map(claim =>
         claim.id === claimId ? { ...claim, status: 'Processing' } : claim
       );
-      // In a real app, you'd update DEMO_CLAIMS state here if it were stateful
-      toast.success(`DEMO MODE: Claim ${claimId} sent for AI processing.`);
+            toast.success(`DEMO MODE: Claim ${claimId} sent for AI processing.`);
       return;
     }
 
@@ -194,7 +144,7 @@ const ClaimsAdjudicationEngine: React.FC = () => {
             </Select>
           </div>
 
-          {(claimsLoading || queueLoading) && !DEMO_MODE ? (
+          {(claimsLoading || queueLoading) && true ? (
             <div className="flex justify-center items-center h-40">
               <Loader2 className="h-8 w-8 animate-spin" />
             </div>
@@ -266,7 +216,7 @@ const ClaimsAdjudicationEngine: React.FC = () => {
 
           <div className="mt-8">
             <h3 className="text-xl font-semibold mb-4">Claims in Routing Queue</h3>
-            {(claimsLoading || queueLoading) && !DEMO_MODE ? (
+            {(claimsLoading || queueLoading) && true ? (
               <div className="flex justify-center items-center h-20">
                 <Loader2 className="h-6 w-6 animate-spin" />
               </div>

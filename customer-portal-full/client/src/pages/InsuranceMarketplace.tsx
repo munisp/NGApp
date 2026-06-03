@@ -11,8 +11,6 @@ import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, D
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Badge } from "@/components/ui/badge";
 
-const DEMO_MODE = process.env.DEMO_MODE === 'true';
-
 interface Product {
   id: string;
   name: string;
@@ -21,49 +19,6 @@ interface Product {
   price: number;
   provider: string;
 }
-
-const demoProducts: Product[] = [
-  {
-    id: 'prod_001',
-    name: 'Comprehensive Auto Insurance',
-    category: 'Auto',
-    description: 'Full coverage for your vehicle against accidents, theft, and natural disasters.',
-    price: 120000,
-    provider: 'Leadway Assurance',
-  },
-  {
-    id: 'prod_002',
-    name: 'Health Care Plan - Platinum',
-    category: 'Health',
-    description: 'Extensive health coverage including specialist visits and hospital stays.',
-    price: 250000,
-    provider: 'AXA Mansard',
-  },
-  {
-    id: 'prod_003',
-    name: 'Homeowner Protection',
-    category: 'Home',
-    description: 'Protect your home and belongings from unforeseen events.',
-    price: 80000,
-    provider: 'AIICO Insurance',
-  },
-  {
-    id: 'prod_004',
-    name: 'Travel Insurance - International',
-    category: 'Travel',
-    description: 'Coverage for medical emergencies, trip cancellations, and lost luggage during international travel.',
-    price: 35000,
-    provider: 'Cornerstone Insurance',
-  },
-  {
-    id: 'prod_005',
-    name: 'Life Assurance - Gold',
-    category: 'Life',
-    description: 'Financial security for your loved ones in case of unforeseen circumstances.',
-    price: 150000,
-    provider: 'Custodian Life Assurance',
-  },
-];
 
 const InsuranceMarketplace: React.FC = () => {
   const { isAuthenticated, isLoading: authLoading } = useAuth();
@@ -77,7 +32,7 @@ const InsuranceMarketplace: React.FC = () => {
   // Fetch products
   const { data: productsData, isLoading: productsLoading, error: productsError } = trpc.marketplace.products.useQuery(
     { category: selectedCategory === 'all' ? undefined : selectedCategory, search: searchQuery },
-    { enabled: isAuthenticated && !DEMO_MODE }
+    { enabled: isAuthenticated }
   );
 
   // Purchase mutation
@@ -105,13 +60,7 @@ const InsuranceMarketplace: React.FC = () => {
     purchaseMutation.mutate({ productId });
   };
 
-  const filteredProducts = DEMO_MODE ? demoProducts.filter(product => {
-    const matchesCategory = selectedCategory === 'all' || product.category === selectedCategory;
-    const matchesSearch = product.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
-                          product.description.toLowerCase().includes(searchQuery.toLowerCase()) ||
-                          product.provider.toLowerCase().includes(searchQuery.toLowerCase());
-    return matchesCategory && matchesSearch;
-  }) : (productsData || []);
+  const filteredProducts = productsData || [];
 
   const totalPages = Math.ceil(filteredProducts.length / itemsPerPage);
   const paginatedProducts = filteredProducts.slice(
@@ -119,7 +68,7 @@ const InsuranceMarketplace: React.FC = () => {
     currentPage * itemsPerPage
   );
 
-  const categories = Array.from(new Set(DEMO_MODE ? demoProducts.map(p => p.category) : (productsData || []).map(p => p.category)));
+  const categories = Array.from(new Set((productsData || []).map(p => p.category)));
 
   if (authLoading) {
     return (
@@ -130,7 +79,7 @@ const InsuranceMarketplace: React.FC = () => {
     );
   }
 
-  if (!isAuthenticated && !DEMO_MODE) {
+  if (!isAuthenticated) {
     return (
       <div className="flex justify-center items-center h-screen">
         <Card className="w-[350px]">
@@ -179,7 +128,7 @@ const InsuranceMarketplace: React.FC = () => {
         </Select>
       </div>
 
-      {(productsLoading && !DEMO_MODE) ? (
+      {(productsLoading && true) ? (
         <div className="flex justify-center items-center h-64">
           <Loader2 className="h-8 w-8 animate-spin" />
           <p className="ml-2">Loading products...</p>

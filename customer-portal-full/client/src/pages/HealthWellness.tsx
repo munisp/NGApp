@@ -33,51 +33,6 @@ interface HealthData {
   status: 'normal' | 'elevated' | 'low';
 }
 
-const DEMO_HEALTH_DATA: HealthData[] = [
-  {
-    id: '1',
-    date: '2024-02-28',
-    metric: 'Blood Pressure',
-    value: 120,
-    unit: 'mmHg',
-    status: 'normal',
-  },
-  {
-    id: '2',
-    date: '2024-02-28',
-    metric: 'Heart Rate',
-    value: 75,
-    unit: 'bpm',
-    status: 'normal',
-  },
-  {
-    id: '3',
-    date: '2024-02-27',
-    metric: 'Blood Sugar',
-    value: 140,
-    unit: 'mg/dL',
-    status: 'elevated',
-  },
-  {
-    id: '4',
-    date: '2024-02-27',
-    metric: 'Cholesterol',
-    value: 180,
-    unit: 'mg/dL',
-    status: 'normal',
-  },
-  {
-    id: '5',
-    date: '2024-02-26',
-    metric: 'Weight',
-    value: 70,
-    unit: 'kg',
-    status: 'normal',
-  },
-];
-
-const DEMO_MODE = process.env.DEMO_MODE === 'true';
-
 const HealthWellness: React.FC = () => {
   const { isAuthenticated, isLoading: authLoading } = useAuth();
   const [searchQuery, setSearchQuery] = useState('');
@@ -137,7 +92,7 @@ const HealthWellness: React.FC = () => {
     );
   }
 
-  const healthData = DEMO_MODE ? DEMO_HEALTH_DATA : (data || []);
+  const healthData = data || [];
 
   const filteredData = healthData.filter((item) => {
     const matchesSearch = item.metric.toLowerCase().includes(searchQuery.toLowerCase());

@@ -17,8 +17,6 @@ import {
 } from '@/components/ui/dialog';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 
-const DEMO_MODE = process.env.DEMO_MODE === 'true';
-
 interface Policy {
   id: string;
   policyNumber: string;
@@ -28,54 +26,6 @@ interface Policy {
   renewalDate: string;
   status: 'Active' | 'Expired' | 'Pending Renewal';
 }
-
-const demoPolicies: Policy[] = [
-  {
-    id: 'pol-001',
-    policyNumber: 'NIG/INS/2024/001',
-    policyHolder: 'Aisha Bello',
-    product: 'Motor Insurance',
-    premium: 75000,
-    renewalDate: '2026-03-15',
-    status: 'Pending Renewal',
-  },
-  {
-    id: 'pol-002',
-    policyNumber: 'NIG/INS/2024/002',
-    policyHolder: 'Chukwuma Okoro',
-    product: 'Health Insurance',
-    premium: 120000,
-    renewalDate: '2026-04-01',
-    status: 'Pending Renewal',
-  },
-  {
-    id: 'pol-003',
-    policyNumber: 'NIG/INS/2024/003',
-    policyHolder: 'Fatima Musa',
-    product: 'Life Assurance',
-    premium: 250000,
-    renewalDate: '2026-03-20',
-    status: 'Pending Renewal',
-  },
-  {
-    id: 'pol-004',
-    policyNumber: 'NIG/INS/2024/004',
-    policyHolder: 'Tunde Adebayo',
-    product: 'Home Insurance',
-    premium: 90000,
-    renewalDate: '2026-05-10',
-    status: 'Active',
-  },
-  {
-    id: 'pol-005',
-    policyNumber: 'NIG/INS/2024/005',
-    policyHolder: 'Ngozi Eze',
-    product: 'Travel Insurance',
-    premium: 30000,
-    renewalDate: '2026-03-05',
-    status: 'Expired',
-  },
-];
 
 const PolicyRenewal: React.FC = () => {
   const { isAuthenticated, isLoading: authLoading } = useAuth();
@@ -87,7 +37,7 @@ const PolicyRenewal: React.FC = () => {
   const trpcUtils = trpc.useUtils();
 
   const { data: upcomingPoliciesData, isLoading, isError, error } = trpc.policyRenewal.upcoming.useQuery(undefined, {
-    enabled: !DEMO_MODE && isAuthenticated,
+    enabled: isAuthenticated,
   });
 
   const renewMutation = trpc.policyRenewal.renew.useMutation({
@@ -119,7 +69,7 @@ const PolicyRenewal: React.FC = () => {
     );
   }
 
-  const policiesToDisplay = DEMO_MODE ? demoPolicies : (upcomingPoliciesData || []);
+  const policiesToDisplay = upcomingPoliciesData || [];
 
   const filteredPolicies = policiesToDisplay.filter(policy => {
     const matchesSearch = policy.policyNumber.toLowerCase().includes(searchQuery.toLowerCase()) ||
@@ -140,7 +90,7 @@ const PolicyRenewal: React.FC = () => {
     }
   };
 
-  if (isLoading && !DEMO_MODE) {
+  if (isLoading) {
     return (
       <div className="flex items-center justify-center min-h-screen">
         <Loader2 className="h-8 w-8 animate-spin" />
@@ -149,7 +99,7 @@ const PolicyRenewal: React.FC = () => {
     );
   }
 
-  if (isError && !DEMO_MODE) {
+  if (isError && true) {
     return (
       <div className="flex items-center justify-center min-h-screen text-red-500">
         Error loading policies: {error?.message}

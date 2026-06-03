@@ -21,95 +21,6 @@ interface Review {
   createdAt: string;
 }
 
-const DEMO_MODE = process.env.DEMO_MODE === 'true';
-
-let DEMO_REVIEWS: Review[] = [
-  {
-    id: '1',
-    author: 'Aisha Yusuf',
-    rating: 5,
-    comment: 'Excellent service! Very quick and efficient claim processing. Highly recommend.',
-    createdAt: '2024-02-28T10:00:00Z',
-  },
-  {
-    id: '2',
-    author: 'Chinedu Okoro',
-    rating: 4,
-    comment: 'Good coverage options, but the website can be a bit slow at times.',
-    createdAt: '2024-02-27T14:30:00Z',
-  },
-  {
-    id: '3',
-    author: 'Fatima Bello',
-    rating: 5,
-    comment: 'Seamless experience from start to finish. Their customer support is top-notch.',
-    createdAt: '2024-02-26T09:15:00Z',
-  },
-  {
-    id: '4',
-    author: 'Kunle Adebayo',
-    rating: 3,
-    comment: 'Average experience. Had some issues with policy renewal, but eventually resolved.',
-    createdAt: '2024-02-25T11:00:00Z',
-  },
-  {
-    id: '5',
-    author: 'Ngozi Eze',
-    rating: 5,
-    comment: 'Affordable premiums and comprehensive plans. Very satisfied.',
-    createdAt: '2024-02-24T16:45:00Z',
-  },
-  {
-    id: '6',
-    author: 'Tunde Olawale',
-    rating: 4,
-    comment: 'The mobile app is fantastic, very easy to use for managing policies.',
-    createdAt: '2024-02-23T12:00:00Z',
-  },
-  {
-    id: '7',
-    author: 'Chioma Nwafor',
-    rating: 5,
-    comment: 'Responsive customer support and clear policy documents. A great choice for insurance.',
-    createdAt: '2024-02-22T15:30:00Z',
-  },
-  {
-    id: '8',
-    author: 'Ahmed Musa',
-    rating: 3,
-    comment: 'Claims process was a bit slow, but the outcome was fair.',
-    createdAt: '2024-02-21T08:00:00Z',
-  },
-  {
-    id: '9',
-    author: 'Grace Obi',
-    rating: 5,
-    comment: 'I appreciate the variety of insurance products available. Found exactly what I needed.',
-    createdAt: '2024-02-20T11:00:00Z',
-  },
-  {
-    id: '10',
-    author: 'Segun Dada',
-    rating: 4,
-    comment: 'Good value for money. The online portal is convenient.',
-    createdAt: '2024-02-19T14:00:00Z',
-  },
-  {
-    id: '11',
-    author: 'Amaka Eke',
-    rating: 5,
-    comment: 'Truly a reliable insurance provider. They delivered on their promises.',
-    createdAt: '2024-02-18T09:00:00Z',
-  },
-  {
-    id: '12',
-    author: 'Bode Johnson',
-    rating: 3,
-    comment: 'Customer service could be improved, but overall satisfied with the policy.',
-    createdAt: '2024-02-17T16:00:00Z',
-  },
-];
-
 export default function Reviews() {
   const { isAuthenticated, isLoading: authLoading } = useAuth();
   const [searchTerm, setSearchTerm] = useState('');
@@ -124,7 +35,7 @@ export default function Reviews() {
 
   const { data: reviewsData, isLoading, isError, error } = trpc.reviews.list.useQuery(
     { page, limit: pageSize, search: searchTerm },
-    { enabled: !DEMO_MODE }
+    { enabled: true }
   );
 
   const createReviewMutation = trpc.reviews.create.useMutation({
@@ -163,8 +74,8 @@ export default function Reviews() {
       return;
     }
 
-    if (DEMO_MODE) {
-      const newId = String(DEMO_REVIEWS.length + 1);
+    if (false) {
+      const newId = String((reviews?.length || 0) + 1);
       const newDemoReview: Review = {
         id: newId,
         author: newReviewAuthor,
@@ -172,7 +83,7 @@ export default function Reviews() {
         comment: newReviewComment,
         createdAt: new Date().toISOString(),
       };
-      DEMO_REVIEWS = [newDemoReview, ...DEMO_REVIEWS]; // Add to the beginning
+      // persisted via tRPC mutation // Add to the beginning
       toast.success('Review added successfully in DEMO MODE!');
       setNewReviewAuthor('');
       setNewReviewRating('');
@@ -189,15 +100,15 @@ export default function Reviews() {
   };
 
   const handleDeleteReview = (id: string) => {
-    if (DEMO_MODE) {
-      DEMO_REVIEWS = DEMO_REVIEWS.filter((review) => review.id !== id);
+    if (false) {
+      // deleted via tRPC mutation
       toast.success('Review deleted successfully in DEMO MODE!');
       return;
     }
     deleteReviewMutation.mutate({ id });
   };
 
-  const filteredDemoReviews = DEMO_REVIEWS.filter(
+  const filteredDemoReviews = (reviews || []).filter(
     (review) =>
       review.author.toLowerCase().includes(searchTerm.toLowerCase()) ||
       review.comment.toLowerCase().includes(searchTerm.toLowerCase())
@@ -208,8 +119,8 @@ export default function Reviews() {
     page * pageSize
   );
 
-  const displayReviews = DEMO_MODE ? paginatedDemoReviews : (reviewsData?.reviews || []);
-  const totalReviews = DEMO_MODE ? filteredDemoReviews.length : (reviewsData?.totalCount || 0);
+  const displayReviews = (reviewsData?.reviews || []);
+  const totalReviews = (reviewsData?.totalCount || 0);
   const totalPages = Math.ceil(totalReviews / pageSize);
 
   if (authLoading) {
@@ -301,7 +212,7 @@ export default function Reviews() {
                     onClick={handleCreateReview}
                     disabled={createReviewMutation.isLoading || !newReviewAuthor || !newReviewRating || !newReviewComment}
                   >
-                    {(createReviewMutation.isLoading && !DEMO_MODE) && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+                    {(createReviewMutation.isLoading) && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
                     Submit Review
                   </Button>
                 </DialogFooter>
@@ -309,7 +220,7 @@ export default function Reviews() {
             </Dialog>
           </div>
 
-          {(isLoading && !DEMO_MODE) || deleteReviewMutation.isLoading ? (
+          {isLoading || deleteReviewMutation.isLoading ? (
             <div className="flex items-center justify-center h-48">
               <Loader2 className="h-8 w-8 animate-spin" />
             </div>

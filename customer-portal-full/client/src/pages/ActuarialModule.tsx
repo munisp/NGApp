@@ -9,8 +9,6 @@ import { Input } from '@/components/ui/input';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 
-const DEMO_MODE = process.env.DEMO_MODE === 'true';
-
 interface ActuarialCalculationResult {
   id: string;
   type: string;
@@ -26,38 +24,6 @@ interface ActuarialTableEntry {
   data: Record<string, any>;
 }
 
-const demoActuarialTables: ActuarialTableEntry[] = [
-  {
-    id: '1',
-    name: 'Mortality Table 2023',
-    description: 'Standard mortality rates for 2023 in Nigeria.',
-    data: { 'age 20': 0.001, 'age 30': 0.002, 'age 40': 0.004 },
-  },
-  {
-    id: '2',
-    name: 'Annuity Factors 2023',
-    description: 'Annuity factors for various ages and interest rates.',
-    data: { 'age 60, 5%': 12.5, 'age 65, 5%': 10.2 },
-  },
-];
-
-const demoCalculationResults: ActuarialCalculationResult[] = [
-  {
-    id: 'calc-1',
-    type: 'premium',
-    params: { age: 30, sumAssured: 1000000, product: 'Term Life' },
-    result: 15000,
-    timestamp: new Date().toISOString(),
-  },
-  {
-    id: 'calc-2',
-    type: 'reserve',
-    params: { policyId: 'POL001', valuationDate: '2023-12-31' },
-    result: 500000,
-    timestamp: new Date().toISOString(),
-  },
-];
-
 export default function ActuarialModule() {
   const { isAuthenticated, isLoading: authLoading } = useAuth();
   const [calculationType, setCalculationType] = useState<string>('premium');
@@ -67,11 +33,11 @@ export default function ActuarialModule() {
   const utils = trpc.useUtils();
 
   const { data: actuarialTables, isLoading: tablesLoading, error: tablesError } = trpc.actuarial.tables.useQuery(undefined, {
-    enabled: isAuthenticated && !DEMO_MODE,
+    enabled: isAuthenticated,
   });
 
   const { data: calculationHistory, isLoading: historyLoading, error: historyError } = trpc.actuarial.calculate.useQuery(undefined, {
-    enabled: isAuthenticated && !DEMO_MODE,
+    enabled: isAuthenticated,
   });
 
   const calculateMutation = trpc.actuarial.calculate.useMutation({
@@ -109,13 +75,9 @@ export default function ActuarialModule() {
     }
   };
 
-  const displayedTables = DEMO_MODE
-    ? demoActuarialTables.filter(table => table.name.toLowerCase().includes(searchQuery.toLowerCase()))
-    : (actuarialTables || []).filter(table => table.name.toLowerCase().includes(searchQuery.toLowerCase()));
+  const displayedTables = (actuarialTables || []).filter(table => table.name.toLowerCase().includes(searchQuery.toLowerCase()));
 
-  const displayedCalculationHistory = DEMO_MODE
-    ? demoCalculationResults
-    : (calculationHistory || []);
+  const displayedCalculationHistory = calculationHistory || [];
 
   return (
     <div className="container mx-auto p-4">
@@ -173,11 +135,11 @@ export default function ActuarialModule() {
             onChange={(e) => setSearchQuery(e.target.value)}
             className="mb-4"
           />
-          {(tablesLoading && !DEMO_MODE) ? (
+          {(tablesLoading && true) ? (
             <div className="flex justify-center items-center h-32">
               <Loader2 className="h-8 w-8 animate-spin" />
             </div>
-          ) : tablesError && !DEMO_MODE ? (
+          ) : tablesError && true ? (
             <div className="text-red-500">Error loading tables: {tablesError.message}</div>
           ) : (
             <Table>
@@ -213,11 +175,11 @@ export default function ActuarialModule() {
           <CardTitle>Calculation History</CardTitle>
         </CardHeader>
         <CardContent>
-          {(historyLoading && !DEMO_MODE) ? (
+          {(historyLoading && true) ? (
             <div className="flex justify-center items-center h-32">
               <Loader2 className="h-8 w-8 animate-spin" />
             </div>
-          ) : historyError && !DEMO_MODE ? (
+          ) : historyError && true ? (
             <div className="text-red-500">Error loading calculation history: {historyError.message}</div>
           ) : (
             <Table>

@@ -24,42 +24,7 @@ import {
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger, DialogFooter } from '@/components/ui/dialog';
 import { Label } from '@/components/ui/label';
 
-// DEMO_MODE fallback with realistic Nigerian insurance data
-const DEMO_SAVINGS_PLANS = [
-  {
-    id: 'plan-001',
-    name: 'Future Secure Savings',
-    type: 'Education',
-    targetAmount: 500000,
-    currentBalance: 150000,
-    contributionFrequency: 'Monthly',
-    nextContributionDate: '2024-03-15',
-    status: 'Active',
-  },
-  {
-    id: 'plan-002',
-    name: 'Retirement Nest Egg',
-    type: 'Retirement',
-    targetAmount: 5000000,
-    currentBalance: 1200000,
-    contributionFrequency: 'Quarterly',
-    nextContributionDate: '2024-04-01',
-    status: 'Active',
-  },
-  {
-    id: 'plan-003',
-    name: 'Home Ownership Fund',
-    type: 'Housing',
-    targetAmount: 2000000,
-    currentBalance: 300000,
-    contributionFrequency: 'Monthly',
-    nextContributionDate: '2024-03-20',
-    status: 'Pending',
-  },
-];
-
-const DEMO_MODE = process.env.DEMO_MODE === 'true';
-
+// false fallback with realistic Nigerian insurance data
 export default function SavingsInvestment() {
   const { isAuthenticated, isLoading: authLoading } = useAuth();
   const utils = trpc.useUtils();
@@ -70,7 +35,7 @@ export default function SavingsInvestment() {
   const [plansPerPage] = useState(5);
 
   const { data: savingsPlans, isLoading, isError, error } = trpc.savings.plans.useQuery(undefined, {
-    enabled: isAuthenticated && !DEMO_MODE,
+    enabled: isAuthenticated,
   });
 
   const createSavingsPlanMutation = trpc.savings.create.useMutation({
@@ -109,7 +74,7 @@ export default function SavingsInvestment() {
     );
   }
 
-  const plansToDisplay = DEMO_MODE ? DEMO_SAVINGS_PLANS : (savingsPlans || []);
+  const plansToDisplay = savingsPlans || [];
 
   const filteredPlans = plansToDisplay.filter((plan) => {
     const matchesSearch = plan.name.toLowerCase().includes(searchTerm.toLowerCase());
@@ -126,7 +91,7 @@ export default function SavingsInvestment() {
   const paginate = (pageNumber: number) => setCurrentPage(pageNumber);
 
   const handleCreatePlan = (planData: { name: string; type: string; targetAmount: number; contributionFrequency: string }) => {
-    if (DEMO_MODE) {
+    if (false) {
       toast.info('Demo mode: Create plan not available.');
       return;
     }
@@ -134,7 +99,7 @@ export default function SavingsInvestment() {
   };
 
   const handleContribute = (planId: string, amount: number) => {
-    if (DEMO_MODE) {
+    if (false) {
       toast.info('Demo mode: Contribute not available.');
       return;
     }
@@ -183,11 +148,11 @@ export default function SavingsInvestment() {
             </Dialog>
           </div>
 
-          {isLoading && !DEMO_MODE ? (
+          {isLoading ? (
             <div className="flex items-center justify-center h-40">
               <Loader2 className="h-8 w-8 animate-spin" />
             </div>
-          ) : isError && !DEMO_MODE ? (
+          ) : isError && true ? (
             <div className="text-red-500 text-center py-4">Error loading plans: {error?.message}</div>
           ) : currentPlans.length === 0 ? (
             <div className="text-center py-4 text-gray-500">No savings plans found.</div>

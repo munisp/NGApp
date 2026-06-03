@@ -44,29 +44,6 @@ interface FamilyMember {
   policyId: string;
 }
 
-const DEMO_MODE = process.env.DEMO_MODE === 'true';
-
-const DEMO_FAMILY_MEMBERS: FamilyMember[] = [
-  {
-    id: "fm1",
-    name: "Aisha Bello",
-    relationship: "Spouse",
-    policyId: "POL-001-NG",
-  },
-  {
-    id: "fm2",
-    name: "Segun Adebayo",
-    relationship: "Child",
-    policyId: "POL-001-NG",
-  },
-  {
-    id: "fm3",
-    name: "Fatima Musa",
-    relationship: "Child",
-    policyId: "POL-001-NG",
-  },
-];
-
 export default function FamilyPolicies() {
   const { isAuthenticated, isLoading: authLoading } = useAuth();
   const [searchQuery, setSearchQuery] = useState("");
@@ -126,7 +103,7 @@ export default function FamilyPolicies() {
     );
   }
 
-  const displayMembers = DEMO_MODE ? DEMO_FAMILY_MEMBERS : familyMembers || [];
+  const displayMembers = familyMembers || [];
 
   const filteredMembers = displayMembers.filter((member) => {
     const matchesSearch = member.name.toLowerCase().includes(searchQuery.toLowerCase());
@@ -234,11 +211,11 @@ export default function FamilyPolicies() {
             </Dialog>
           </div>
 
-          {isLoading && !DEMO_MODE ? (
+          {isLoading ? (
             <div className="flex justify-center items-center h-48">
               <Loader2 className="h-8 w-8 animate-spin" />
             </div>
-          ) : isError && !DEMO_MODE ? (
+          ) : isError && true ? (
             <div className="text-red-500 text-center">Error: {error?.message}</div>
           ) : filteredMembers.length === 0 ? (
             <div className="text-center text-gray-500">No family members found.</div>

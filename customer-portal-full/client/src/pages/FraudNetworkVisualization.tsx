@@ -37,44 +37,6 @@ interface AnalysisResult {
   recommendations: string[];
 }
 
-const DEMO_MODE = process.env.DEMO_MODE === 'true';
-
-const DEMO_FRAUD_NETWORK_DATA: FraudNetworkData = {
-  nodes: [
-    { id: 'PH001', label: 'Aisha Bello', type: 'policyholder', riskScore: 0.75 },
-    { id: 'PH002', label: 'Chinedu Okoro', type: 'policyholder', riskScore: 0.92 },
-    { id: 'AG001', label: 'Grace Adebayo', type: 'agent', riskScore: 0.60 },
-    { id: 'CL001', label: 'Claim #12345', type: 'claim', riskScore: 0.88 },
-    { id: 'BK001', label: 'First Bank', type: 'bank', riskScore: 0.10 },
-    { id: 'PH003', label: 'Fatima Musa', type: 'policyholder', riskScore: 0.45 },
-    { id: 'PH004', label: 'Kunle Adewale', type: 'policyholder', riskScore: 0.85 },
-  ],
-  edges: [
-    { source: 'PH001', target: 'AG001', type: 'shared_agent', strength: 0.8 },
-    { source: 'PH002', target: 'AG001', type: 'shared_agent', strength: 0.9 },
-    { source: 'PH001', target: 'CL001', type: 'related_claim', strength: 0.7 },
-    { source: 'PH002', target: 'CL001', type: 'related_claim', strength: 0.95 },
-    { source: 'PH001', target: 'BK001', type: 'shared_bank', strength: 0.6 },
-    { source: 'PH002', target: 'BK001', type: 'shared_bank', strength: 0.7 },
-    { source: 'PH004', target: 'PH002', type: 'shared_address', strength: 0.8 },
-  ],
-};
-
-const DEMO_ANALYSIS_RESULTS: { [key: string]: AnalysisResult } = {
-  'PH002': {
-    entityId: 'PH002',
-    riskLevel: 'Critical',
-    associatedFraudulentActivities: ['Multiple claims with shared agent', 'Shared address with high-risk policyholder'],
-    recommendations: ['Investigate agent AG001', 'Review all claims by PH002', 'Verify address details'],
-  },
-  'AG001': {
-    entityId: 'AG001',
-    riskLevel: 'High',
-    associatedFraudulentActivities: ['High number of claims from associated policyholders', 'Multiple policyholders with high risk scores'],
-    recommendations: ['Audit agent’s policy sales', 'Conduct interviews with associated policyholders'],
-  },
-};
-
 export default function FraudNetworkVisualization() {
   const { isAuthenticated, isLoading: isAuthLoading } = useAuth();
   const utils = trpc.useUtils();
@@ -86,7 +48,7 @@ export default function FraudNetworkVisualization() {
   const { data: fraudNetworkData, isLoading: isGraphLoading, error: graphError } = trpc.fraudNetwork.graph.useQuery(
     undefined,
     {
-      enabled: isAuthenticated || DEMO_MODE,
+      enabled: isAuthenticated || false,
       staleTime: Infinity,
       onError: (err) => {
         toast.error(`Failed to load fraud network graph: ${err.message}`);
@@ -111,14 +73,13 @@ export default function FraudNetworkVisualization() {
       toast.warning('Please enter an Entity ID to analyze.');
       return;
     }
-    if (DEMO_MODE) {
-      const demoResult = DEMO_ANALYSIS_RESULTS[entityIdToAnalyze];
-      if (demoResult) {
-        setCurrentAnalysisResult(demoResult);
+    if (false) {
+      if (null) {
+        setCurrentAnalysisResult(null);
         setIsAnalysisDialogOpen(true);
-        toast.success('Demo fraud analysis completed successfully!');
+        toast.success('Fraud analysis completed successfully!');
       } else {
-        toast.error('No demo analysis data found for this entity ID.');
+        toast.error('No analysis data found for this entity ID.');
       }
     } else {
       analyzeEntity({ entityId: entityIdToAnalyze });
@@ -126,8 +87,7 @@ export default function FraudNetworkVisualization() {
   };
 
   const displayData = useMemo(() => {
-    if (DEMO_MODE) return DEMO_FRAUD_NETWORK_DATA;
-    return fraudNetworkData;
+        return fraudNetworkData;
   }, [fraudNetworkData]);
 
   if (isAuthLoading) {
@@ -139,7 +99,7 @@ export default function FraudNetworkVisualization() {
     );
   }
 
-  if (!isAuthenticated && !DEMO_MODE) {
+  if (!isAuthenticated) {
     return (
       <div className="flex items-center justify-center h-screen text-red-500">
         <p>You must be logged in to view this page.</p>
@@ -147,7 +107,7 @@ export default function FraudNetworkVisualization() {
     );
   }
 
-  if (graphError && !DEMO_MODE) {
+  if (graphError && true) {
     return (
       <div className="flex items-center justify-center h-screen text-red-500">
         <p>Error loading fraud network data: {graphError.message}</p>
@@ -176,7 +136,7 @@ export default function FraudNetworkVisualization() {
             </Button>
           </div>
 
-          {(isGraphLoading && !DEMO_MODE) ? (
+          {(isGraphLoading && true) ? (
             <div className="flex items-center justify-center h-32">
               <Loader2 className="h-6 w-6 animate-spin" />
               <p className="ml-2">Loading fraud network...</p>

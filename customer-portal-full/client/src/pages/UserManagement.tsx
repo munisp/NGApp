@@ -21,51 +21,6 @@ interface Agent {
   lastLogin: string;
 }
 
-const DEMO_MODE = process.env.DEMO_MODE === 'true';
-
-const DEMO_AGENTS: Agent[] = [
-  {
-    id: 'user-1',
-    name: 'Aisha Bello',
-    email: 'aisha.bello@example.com',
-    role: 'Admin',
-    status: 'Active',
-    lastLogin: '2024-03-01T10:00:00Z',
-  },
-  {
-    id: 'user-2',
-    name: 'Chinedu Okoro',
-    email: 'chinedu.okoro@example.com',
-    role: 'Agent',
-    status: 'Active',
-    lastLogin: '2024-03-02T11:30:00Z',
-  },
-  {
-    id: 'user-3',
-    name: 'Fatima Musa',
-    email: 'fatima.musa@example.com',
-    role: 'Underwriter',
-    status: 'Inactive',
-    lastLogin: '2024-02-28T09:15:00Z',
-  },
-  {
-    id: 'user-4',
-    name: 'Kunle Adebayo',
-    email: 'kunle.adebayo@example.com',
-    role: 'Claims Adjuster',
-    status: 'Pending',
-    lastLogin: '2024-03-01T14:45:00Z',
-  },
-  {
-    id: 'user-5',
-    name: 'Ngozi Eze',
-    email: 'ngozi.eze@example.com',
-    role: 'Agent',
-    status: 'Active',
-    lastLogin: '2024-03-03T08:00:00Z',
-  },
-];
-
 const UserManagement: React.FC = () => {
   const { isAuthenticated, isLoading: isAuthLoading } = useAuth();
   const [searchTerm, setSearchTerm] = useState('');
@@ -83,7 +38,7 @@ const UserManagement: React.FC = () => {
       search: searchTerm,
     },
     {
-      enabled: !DEMO_MODE && isAuthenticated,
+      enabled: isAuthenticated,
       keepPreviousData: true,
     }
   );
@@ -130,17 +85,17 @@ const UserManagement: React.FC = () => {
     }
   };
 
-  const filteredDemoAgents = DEMO_AGENTS.filter(
+  const filteredDemoAgents = (agents || []).filter(
     (agent) =>
       agent.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
       agent.email.toLowerCase().includes(searchTerm.toLowerCase())
   );
 
-  const displayAgents = DEMO_MODE ? filteredDemoAgents : agentsData?.agents || [];
-  const totalAgents = DEMO_MODE ? filteredDemoAgents.length : agentsData?.totalCount || 0;
+  const displayAgents = agentsData?.agents || [];
+  const totalAgents = agentsData?.totalCount || 0;
   const totalPages = Math.ceil(totalAgents / pageSize);
 
-  if (isAuthLoading || (!isAuthenticated && !DEMO_MODE)) {
+  if (isAuthLoading || (!isAuthenticated)) {
     return (
       <div className="flex items-center justify-center min-h-screen">
         <Loader2 className="h-8 w-8 animate-spin" />
@@ -149,7 +104,7 @@ const UserManagement: React.FC = () => {
     );
   }
 
-  if (isError && !DEMO_MODE) {
+  if (isError && true) {
     toast.error(`Error fetching users: ${error?.message}`);
     return (
       <div className="flex items-center justify-center min-h-screen text-red-500">
@@ -173,7 +128,7 @@ const UserManagement: React.FC = () => {
           </CardTitle>
         </CardHeader>
         <CardContent>
-          {isLoading && !DEMO_MODE ? (
+          {isLoading ? (
             <div className="flex items-center justify-center h-48">
               <Loader2 className="h-8 w-8 animate-spin" />
               <span className="ml-2">Loading users...</span>

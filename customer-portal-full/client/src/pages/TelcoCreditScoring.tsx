@@ -11,25 +11,12 @@ import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, Di
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { Badge } from '@/components/ui/badge';
 
-const DEMO_MODE = process.env.DEMO_MODE === 'true';
-
 interface TelcoCreditScoreData {
   score: number;
   grade: string;
   recommendations: string[];
   lastUpdated: string;
 }
-
-const DEMO_TELCO_CREDIT_SCORE: TelcoCreditScoreData = {
-  score: 720,
-  grade: 'Excellent',
-  recommendations: [
-    'Maintain consistent airtime top-ups.',
-    'Ensure timely data subscription renewals.',
-    'Consider linking your NIN for enhanced profile verification.',
-  ],
-  lastUpdated: '2024-03-01',
-};
 
 const TelcoCreditScoring: React.FC = () => {
   const { isAuthenticated, isLoading: authLoading } = useAuth();
@@ -40,7 +27,7 @@ const TelcoCreditScoring: React.FC = () => {
   const [consent, setConsent] = useState(false);
 
   const { data: scoreData, isLoading: isScoreLoading, error: scoreError } = trpc.telcoCredit.score.useQuery(undefined, {
-    enabled: isAuthenticated && !DEMO_MODE,
+    enabled: isAuthenticated,
   });
 
   const { mutate: applyForScore, isLoading: isApplyLoading } = trpc.telcoCredit.submitApplication.useMutation({
@@ -78,7 +65,7 @@ const TelcoCreditScoring: React.FC = () => {
     );
   }
 
-  const displayScoreData = DEMO_MODE ? DEMO_TELCO_CREDIT_SCORE : scoreData;
+  const displayScoreData = scoreData;
 
   const handleApplySubmit = () => {
     if (!phoneNumber || !consent) {
@@ -96,7 +83,7 @@ const TelcoCreditScoring: React.FC = () => {
           <CardDescription>View your telco-based credit score and apply for an update.</CardDescription>
         </CardHeader>
         <CardContent>
-          {isScoreLoading && !DEMO_MODE ? (
+          {isScoreLoading && true ? (
             <div className="flex items-center justify-center h-32">
               <Loader2 className="h-6 w-6 animate-spin" />
               <span className="ml-2">Loading score...</span>

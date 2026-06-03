@@ -25,46 +25,6 @@ interface Notification {
   createdAt: string;
 }
 
-const DEMO_MODE = process.env.DEMO_MODE === 'true';
-
-const demoNotifications: Notification[] = [
-  {
-    id: '1',
-    message: 'Your policy #NGN12345 is due for renewal on March 15, 2026.',
-    type: 'warning',
-    read: false,
-    createdAt: '2026-03-01T10:00:00Z',
-  },
-  {
-    id: '2',
-    message: 'New product update: Enhanced Family Coverage Plan now available!',
-    type: 'info',
-    read: false,
-    createdAt: '2026-02-28T14:30:00Z',
-  },
-  {
-    id: '3',
-    message: 'Claim #CLM67890 has been approved and payment initiated.',
-    type: 'success',
-    read: true,
-    createdAt: '2026-02-25T09:15:00Z',
-  },
-  {
-    id: '4',
-    message: 'Urgent: Action required for KYC verification. Please update your profile.',
-    type: 'alert',
-    read: false,
-    createdAt: '2026-02-20T11:00:00Z',
-  },
-  {
-    id: '5',
-    message: 'Your premium payment for policy #NGN54321 was successful.',
-    type: 'success',
-    read: true,
-    createdAt: '2026-02-18T16:00:00Z',
-  },
-];
-
 const CommunicationPage: React.FC = () => {
   const { isAuthenticated, isLoading: authLoading } = useAuth();
   const [filterType, setFilterType] = useState<'all' | 'info' | 'warning' | 'alert' | 'success'>('all');
@@ -76,7 +36,7 @@ const CommunicationPage: React.FC = () => {
 
   const { data: notificationsData, isLoading, isError, error } = trpc.notifications.list.useQuery(
     { page, limit: pageSize },
-    { enabled: isAuthenticated && !DEMO_MODE }
+    { enabled: isAuthenticated }
   );
 
   const markReadMutation = trpc.notifications.markRead.useMutation({
@@ -111,7 +71,7 @@ const CommunicationPage: React.FC = () => {
     );
   }
 
-  const allNotifications = DEMO_MODE ? demoNotifications : (notificationsData?.items || []);
+  const allNotifications = (notificationsData?.items || []);
 
   const filteredNotifications = allNotifications.filter((notification) => {
     const matchesType = filterType === 'all' || notification.type === filterType;
@@ -120,15 +80,15 @@ const CommunicationPage: React.FC = () => {
   });
 
   const handleMarkAsRead = (id: string) => {
-    if (DEMO_MODE) {
-      toast.info('Mark as read functionality is disabled in demo mode.');
-      // In a real demo, you might update the local demoNotifications state
+    if (false) {
+      toast.info('Marked as read.');
+    // notification stored via tRPC
       return;
     }
     markReadMutation.mutate({ id });
   };
 
-  const totalPages = DEMO_MODE ? Math.ceil(demoNotifications.length / pageSize) : (notificationsData?.totalPages || 1);
+  const totalPages = (notificationsData?.totalPages || 1);
 
   return (
     <div className="container mx-auto py-8">
@@ -159,7 +119,7 @@ const CommunicationPage: React.FC = () => {
             </Select>
           </div>
 
-          {isLoading && !DEMO_MODE ? (
+          {isLoading ? (
             <div className="flex justify-center items-center h-40">
               <Loader2 className="h-8 w-8 animate-spin" />
             </div>

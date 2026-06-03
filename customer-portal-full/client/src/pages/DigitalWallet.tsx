@@ -18,8 +18,6 @@ interface Transaction {
   description: string;
 }
 
-const DEMO_MODE = process.env.DEMO_MODE === 'true';
-
 const DigitalWallet: React.FC = () => {
   const { isAuthenticated, isLoading: authLoading } = useAuth();
   const utils = trpc.useUtils();
@@ -31,22 +29,14 @@ const DigitalWallet: React.FC = () => {
   const [withdrawAmount, setWithdrawAmount] = useState<number | ''>('');
 
   // DEMO DATA
-  const demoBalance = 50000.00;
-  const demoTransactions: Transaction[] = [
-    { id: '1', type: 'credit', amount: 10000, date: '2024-02-28', description: 'Wallet Top-up' },
-    { id: '2', type: 'debit', amount: 2500, date: '2024-02-27', description: 'Premium Payment' },
-    { id: '3', type: 'credit', amount: 5000, date: '2024-02-26', description: 'Referral Bonus' },
-    { id: '4', type: 'debit', amount: 1500, date: '2024-02-25', description: 'Utility Bill' },
-    { id: '5', type: 'credit', amount: 20000, date: '2024-02-24', description: 'Claim Payout' },
-  ];
 
   // tRPC Queries
   const { data: balanceData, isLoading: isBalanceLoading, error: balanceError } = trpc.wallet.balance.useQuery(undefined, {
-    enabled: isAuthenticated && !DEMO_MODE,
+    enabled: isAuthenticated,
   });
 
   const { data: transactionsData, isLoading: isTransactionsLoading, error: transactionsError } = trpc.wallet.transactions.useQuery(undefined, {
-    enabled: isAuthenticated && !DEMO_MODE,
+    enabled: isAuthenticated,
   });
 
   // tRPC Mutations
@@ -91,8 +81,8 @@ const DigitalWallet: React.FC = () => {
     toast.error(`Failed to load transactions: ${transactionsError.message}`);
   }
 
-  const currentBalance = DEMO_MODE ? demoBalance : (balanceData?.balance || 0);
-  const allTransactions = DEMO_MODE ? demoTransactions : (transactionsData || []);
+  const currentBalance = (balanceData?.balance || 0);
+  const allTransactions = transactionsData || [];
 
   const filteredTransactions = allTransactions.filter(transaction =>
     transaction.description.toLowerCase().includes(searchQuery.toLowerCase()) ||
@@ -130,7 +120,7 @@ const DigitalWallet: React.FC = () => {
           <CardTitle>Current Balance</CardTitle>
         </CardHeader>
         <CardContent>
-          {isBalanceLoading && !DEMO_MODE ? (
+          {isBalanceLoading && true ? (
             <Loader2 className="h-6 w-6 animate-spin" />
           ) : (
             <p className="text-4xl font-extrabold">₦{currentBalance.toLocaleString('en-NG', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</p>
@@ -193,7 +183,7 @@ const DigitalWallet: React.FC = () => {
             value={searchQuery}
             onChange={(e) => setSearchQuery(e.target.value)}
           />
-          {isTransactionsLoading && !DEMO_MODE ? (
+          {isTransactionsLoading && true ? (
             <div className="flex justify-center items-center h-40"><Loader2 className="h-8 w-8 animate-spin" /></div>
           ) : (
             <Table>

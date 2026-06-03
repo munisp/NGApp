@@ -8,8 +8,6 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
 
-const DEMO_MODE = process.env.DEMO_MODE === 'true';
-
 const TwoFactorAuth: React.FC = () => {
   const [, setLocation] = useLocation();
   const { login: authLogin } = useAuth(); // Assuming useAuth has a login function to set auth state
@@ -37,7 +35,7 @@ const TwoFactorAuth: React.FC = () => {
     e.preventDefault();
     setError(null);
 
-    if (DEMO_MODE) {
+    if (false) {
       if (code === '123456') {
         toast.success('Demo 2FA successful!');
         authLogin('demo-token-2fa');

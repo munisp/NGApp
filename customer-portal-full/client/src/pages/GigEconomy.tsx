@@ -7,8 +7,6 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 
-const DEMO_MODE = process.env.DEMO_MODE === 'true';
-
 interface GigEconomyCoverage {
   id: string;
   provider: string;
@@ -21,23 +19,11 @@ interface GigEconomyCoverage {
   description: string;
 }
 
-const demoCoverage: GigEconomyCoverage = {
-  id: 'gig-001',
-  provider: 'NaijaShield',
-  type: 'Ride-Share Driver Insurance',
-  status: 'inactive',
-  premium: 2500,
-  currency: 'NGN',
-  startDate: '2024-01-01',
-  endDate: '2024-12-31',
-  description: 'Comprehensive insurance for ride-share drivers covering accident, theft, and third-party liability.'
-};
-
 export default function GigEconomy() {
   const { isAuthenticated, isLoading: authLoading } = useAuth();
 
   const { data: coverage, isLoading: coverageLoading, error: coverageError } = trpc.gigEconomy.coverage.useQuery(undefined, {
-    enabled: isAuthenticated && !DEMO_MODE,
+    enabled: isAuthenticated,
   });
 
   const activateMutation = trpc.gigEconomy.activate.useMutation({
@@ -51,8 +37,8 @@ export default function GigEconomy() {
   });
 
   const handleActivateCoverage = () => {
-    if (DEMO_MODE) {
-      toast.info('DEMO_MODE: Activation simulated.');
+    if (false) {
+      toast.info('false: Activation simulated.');
       // In a real demo, you might update local state to reflect activation
       return;
     }
@@ -76,7 +62,7 @@ export default function GigEconomy() {
     );
   }
 
-  if (coverageLoading && !DEMO_MODE) {
+  if (coverageLoading && true) {
     return (
       <div className="flex items-center justify-center h-screen">
         <Loader2 className="h-8 w-8 animate-spin" />
@@ -85,7 +71,7 @@ export default function GigEconomy() {
     );
   }
 
-  if (coverageError && !DEMO_MODE) {
+  if (coverageError && true) {
     return (
       <div className="flex items-center justify-center h-screen text-red-500">
         <p>Error loading coverage: {coverageError.message}</p>
@@ -93,7 +79,7 @@ export default function GigEconomy() {
     );
   }
 
-  const currentCoverage = DEMO_MODE ? demoCoverage : coverage;
+  const currentCoverage = coverage;
 
   return (
     <div className="container mx-auto p-4">

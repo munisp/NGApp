@@ -22,61 +22,6 @@ interface AgentCommission {
   lastUpdated: string;
 }
 
-const DEMO_COMMISSIONS: AgentCommission[] = [
-  {
-    id: '1',
-    agentName: 'Aisha Bello',
-    policyCount: 120,
-    totalPremium: 500000,
-    commissionRate: 0.15,
-    commissionEarned: 75000,
-    status: 'Paid',
-    lastUpdated: '2024-02-28',
-  },
-  {
-    id: '2',
-    agentName: 'Chinedu Okoro',
-    policyCount: 85,
-    totalPremium: 320000,
-    commissionRate: 0.12,
-    commissionEarned: 38400,
-    status: 'Pending',
-    lastUpdated: '2024-02-29',
-  },
-  {
-    id: '3',
-    agentName: 'Fatima Musa',
-    policyCount: 150,
-    totalPremium: 650000,
-    commissionRate: 0.18,
-    commissionEarned: 117000,
-    status: 'Paid',
-    lastUpdated: '2024-02-27',
-  },
-  {
-    id: '4',
-    agentName: 'Kunle Adeyemi',
-    policyCount: 90,
-    totalPremium: 380000,
-    commissionRate: 0.13,
-    commissionEarned: 49400,
-    status: 'Adjusted',
-    lastUpdated: '2024-02-26',
-  },
-  {
-    id: '5',
-    agentName: 'Ngozi Eze',
-    policyCount: 110,
-    totalPremium: 450000,
-    commissionRate: 0.16,
-    commissionEarned: 72000,
-    status: 'Pending',
-    lastUpdated: '2024-03-01',
-  },
-];
-
-const DEMO_MODE = process.env.DEMO_MODE === 'true';
-
 const AgentCommissionManagement: React.FC = () => {
   const { user, isAuthenticated, isLoading: authLoading } = useAuth();
   const [searchTerm, setSearchTerm] = useState('');
@@ -90,7 +35,7 @@ const AgentCommissionManagement: React.FC = () => {
   const trpcUtils = trpc.useUtils();
 
   const { data: commissionsData, isLoading, isError, error } = trpc.agents.commissions.useQuery(undefined, {
-    enabled: isAuthenticated && !DEMO_MODE,
+    enabled: isAuthenticated,
   });
 
   const updateAgentMutation = trpc.agents.update.useMutation({
@@ -105,10 +50,10 @@ const AgentCommissionManagement: React.FC = () => {
   });
 
   useEffect(() => {
-    if (isError && !DEMO_MODE) {
+    if (isError && true) {
       toast.error(`Error fetching commissions: ${error?.message}`);
     }
-  }, [isError, error, DEMO_MODE]);
+  }, [isError, error, false]);
 
   if (authLoading) {
     return (
@@ -126,7 +71,7 @@ const AgentCommissionManagement: React.FC = () => {
     );
   }
 
-  const commissions = DEMO_MODE ? DEMO_COMMISSIONS : (commissionsData || []);
+  const commissions = commissionsData || [];
 
   const filteredCommissions = commissions.filter((commission) => {
     const matchesSearch = commission.agentName.toLowerCase().includes(searchTerm.toLowerCase());
@@ -184,7 +129,7 @@ const AgentCommissionManagement: React.FC = () => {
             </Select>
           </div>
 
-          {isLoading && !DEMO_MODE ? (
+          {isLoading ? (
             <div className="flex justify-center items-center h-40">
               <Loader2 className="h-8 w-8 animate-spin" />
             </div>
