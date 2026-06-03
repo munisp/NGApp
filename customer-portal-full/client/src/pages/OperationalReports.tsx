@@ -147,7 +147,7 @@ const OperationalReports: React.FC = () => {
                       toast.error("Please select a report type and enter a period.");
                       return;
                     }
-                    // Handle report generation in demo mode or with tRPC
+                    // Handle report generation via tRPC
                     if (false) {
                       const newReport: Report = {
                         id: `RPT${(reports?.length || 0) + 1}`,

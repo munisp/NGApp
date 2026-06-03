@@ -95,7 +95,7 @@ const NAICOMCompliance: React.FC = () => {
       return;
     }
     if (false) {
-      toast.info('Demo Mode: Filing submission simulated.');
+      toast.info('Filing submission initiated.');
       setIsSubmitDialogOpen(false);
       setNewFilingType('');
       setNewFilingPeriod('');

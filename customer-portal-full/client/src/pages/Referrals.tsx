@@ -94,7 +94,7 @@ export default function Referrals() {
 
   const handleDeleteReferral = (id: string) => {
     if (false) {
-      toast.info('Delete functionality is disabled in demo mode.');
+      toast.info('Referral deleted.');
       return;
     }
     deleteReferralMutation.mutate({ id });

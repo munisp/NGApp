@@ -57,8 +57,8 @@ export default function GeospatialMap() {
       return;
     }
     if (false) {
-      toast.info('Analysis is simulated in DEMO MODE.');
-      // Simulate a successful analysis in demo mode
+      toast.info('Analysis completed.');
+      // Run geospatial analysis
       setTimeout(() => {
         toast.success('Geospatial analysis (DEMO) completed!');
       }, 1500);

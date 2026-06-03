@@ -130,7 +130,7 @@ const Chatbot: React.FC = () => {
         <CardHeader>
           <CardTitle className="flex justify-between items-center">
             AI Chatbot
-            <Badge variant="secondary">{false ? 'DEMO MODE' : 'LIVE'}</Badge>
+            <Badge variant="secondary">LIVE</Badge>
           </CardTitle>
         </CardHeader>
         <CardContent className="h-[500px] flex flex-col">

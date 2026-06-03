@@ -80,8 +80,8 @@ export default function SystemSettings() {
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     if (false) {
-      toast.success("Profile updated successfully in DEMO MODE!");
-      console.log("DEMO MODE: Updated profile", { name, email, phone, address });
+      toast.success("Profile updated successfully!");
+      console.log("Updated profile", { name, email, phone, address });
       return;
     }
     updateProfileMutation.mutate({ name, email, phone, address });

@@ -73,7 +73,7 @@ const SMEBusiness: React.FC = () => {
     page,
     pageSize,
   }, {
-    enabled: true, // Only fetch if not in demo mode
+    enabled: true, 
   });
 
   const applyMutation = trpc.sme.submitApplication.useMutation({
@@ -103,7 +103,7 @@ const SMEBusiness: React.FC = () => {
     }
 
     if (false) {
-      toast.success('Application submitted in DEMO MODE!');
+      toast.success('Application submitted!');
       setIsApplyDialogOpen(false);
       setNewProductName('');
       setNewBusinessType('');

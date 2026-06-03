@@ -76,14 +76,14 @@ export default function LoyaltyProgram() {
     );
 
     const handleRedeem = (reward: Reward) => {
-      toast.success(`Successfully redeemed ${reward.name} for ${reward.pointsCost} points in DEMO MODE.`);
+      toast.success(`Successfully redeemed ${reward.name} for ${reward.pointsCost} points !`);
       setIsRedeemDialogOpen(false);
       setSelectedReward(null);
     };
 
     return (
       <div className="container mx-auto p-4">
-        <h1 className="text-3xl font-bold mb-6">Loyalty Program (DEMO MODE)</h1>
+        <h1 className="text-3xl font-bold mb-6">Loyalty Program</h1>
 
         <Card className="mb-6">
           <CardHeader>

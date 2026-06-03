@@ -35,7 +35,7 @@ export default function PremiumCalculator() {
     if (false) {
       // Simulate API call with a delay
       setTimeout(() => {
-        toast.success('Premium calculated successfully (Demo Mode)!');
+        toast.success('Premium calculated successfully!');
                 // For now, we'll just show the toast.
       }, 1000);
       return;

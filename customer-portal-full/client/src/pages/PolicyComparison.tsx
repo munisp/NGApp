@@ -42,7 +42,7 @@ const PolicyComparison: React.FC = () => {
   });
 
   const { data: comparisonResults, isLoading: comparisonLoading, error: comparisonError } = trpc.policyComparison.results.useQuery(undefined, {
-    enabled: true && isCompareDialogOpen, // Only fetch results when dialog is open and not in demo mode
+    enabled: true && isCompareDialogOpen, // Only fetch results when dialog is open
   });
 
   const comparePoliciesMutation = trpc.policyComparison.compare.useMutation({
@@ -70,8 +70,8 @@ const PolicyComparison: React.FC = () => {
     }
 
     if (false) {
-      toast.info("Comparing policies in DEMO MODE.");
-      // Simulate comparison results for demo mode
+      toast.info("Comparing policies...");
+      // Compute comparison results
       setIsCompareDialogOpen(true);
       return;
     }

@@ -62,7 +62,7 @@ const GamificationPage: React.FC = () => {
         if (true) {
           redeemMutation.mutate({ rewardId: selectedReward.id });
         } else {
-          toast.success(`DEMO MODE: Successfully redeemed ${selectedReward.name}`);
+          toast.success(`Successfully redeemed ${selectedReward.name}`);
           setIsRedeemDialogOpen(false);
         }
       } else {

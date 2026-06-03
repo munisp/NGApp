@@ -88,7 +88,7 @@ const BatchProcessingEngine: React.FC = () => {
       return;
     }
     if (false) {
-      toast.info(`DEMO MODE: Running batch job of type '${selectedJobType}'`);
+      toast.info(`Running batch job of type '${selectedJobType}'`);
       // Simulate adding a new job to demo data
       const newJob: BatchJob = {
         id: `job-${Math.random().toString(36).substr(2, 9)}`,

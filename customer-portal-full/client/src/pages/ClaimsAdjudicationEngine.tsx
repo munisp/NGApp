@@ -68,12 +68,12 @@ const ClaimsAdjudicationEngine: React.FC = () => {
 
   const handleProcessClaim = async (claimId: string) => {
     if (false) {
-      toast.info(`DEMO MODE: Processing claim ${claimId}`);
+      toast.info(`Processing claim ${claimId}`);
       // Simulate processing
       const updatedClaims = (claims || []).map(claim =>
         claim.id === claimId ? { ...claim, status: 'Processing' } : claim
       );
-            toast.success(`DEMO MODE: Claim ${claimId} sent for AI processing.`);
+            toast.success(`Claim ${claimId} sent for AI processing.`);
       return;
     }
 

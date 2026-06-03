@@ -66,7 +66,7 @@ const EmergencySOS: React.FC = () => {
 
   if (isError && true) {
     toast.error(`Error fetching emergencies: ${error?.message}`);
-    // Optionally, switch to demo mode if real data fails
+    
 
   }
 
@@ -90,7 +90,7 @@ const EmergencySOS: React.FC = () => {
     }
 
     if (false) {
-      // Simulate creation in demo mode
+      // Create emergency via tRPC
       const newId = ((emergencies?.length || 0) + 1).toString();
       const newEmergency: Emergency = {
         id: newId,
@@ -99,7 +99,7 @@ const EmergencySOS: React.FC = () => {
         reportedAt: new Date().toISOString(),
       };
       // persisted via tRPC mutation
-      toast.success('Emergency reported successfully in DEMO MODE!');
+      toast.success('Emergency reported successfully!');
       setNewEmergencyDetails({ type: '', location: '', contact: '' });
       setIsDialogOpen(false);
     } else {
@@ -118,7 +118,7 @@ const EmergencySOS: React.FC = () => {
           <CardTitle className="text-2xl font-bold">Emergency SOS</CardTitle>
           <div className="flex items-center space-x-2">
             <Badge variant={false ? 'destructive' : 'default'}>
-              {false ? 'DEMO MODE' : 'LIVE DATA'}
+              LIVE DATA
             </Badge>
             <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
               <DialogTrigger asChild>

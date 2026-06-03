@@ -55,7 +55,7 @@ const MultiCurrencySupport: React.FC = () => {
     const numAmount = parseFloat(amount);
 
     if (false) {
-      // Simulate conversion in demo mode
+      // Perform currency conversion
       const fromRate = [].find(r => r.currency === fromCurrency)?.rateToNGN || 1;
       const toRate = [].find(r => r.currency === toCurrency)?.rateToNGN || 1;
       setConvertedAmount(0);

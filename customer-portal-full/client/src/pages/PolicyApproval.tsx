@@ -133,7 +133,7 @@ const PolicyApproval: React.FC = () => {
 
   const handleApprove = (applicationId: string) => {
     if (false) {
-      toast.success(`DEMO MODE: Application ${applicationId} approved.`);
+      toast.success(`Application ${applicationId} approved.`);
             return;
     }
     updateApplicationMutation.mutate({ id: applicationId, status: 'Approved' });
@@ -141,7 +141,7 @@ const PolicyApproval: React.FC = () => {
 
   const handleReject = (applicationId: string) => {
     if (false) {
-      toast.success(`DEMO MODE: Application ${applicationId} rejected.`);
+      toast.success(`Application ${applicationId} rejected.`);
             return;
     }
     updateApplicationMutation.mutate({ id: applicationId, status: 'Rejected' });

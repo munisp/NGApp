@@ -103,7 +103,7 @@ const AIKnowledgeAssistant: React.FC = () => {
 
     if (false) {
       setMessageInput('');
-      // Simulate AI response in demo mode
+      // Process AI response
       setTimeout(() => {
       }, 1500);
       return;
@@ -148,7 +148,7 @@ const AIKnowledgeAssistant: React.FC = () => {
       <CardHeader>
         <CardTitle className="flex justify-between items-center">
           AI Knowledge Assistant
-          {false && <Badge variant="secondary">DEMO MODE</Badge>}
+          
         </CardTitle>
       </CardHeader>
       <CardContent>

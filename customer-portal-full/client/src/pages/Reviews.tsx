@@ -84,7 +84,7 @@ export default function Reviews() {
         createdAt: new Date().toISOString(),
       };
       // persisted via tRPC mutation // Add to the beginning
-      toast.success('Review added successfully in DEMO MODE!');
+      toast.success('Review added successfully!');
       setNewReviewAuthor('');
       setNewReviewRating('');
       setNewReviewComment('');
@@ -102,7 +102,7 @@ export default function Reviews() {
   const handleDeleteReview = (id: string) => {
     if (false) {
       // deleted via tRPC mutation
-      toast.success('Review deleted successfully in DEMO MODE!');
+      toast.success('Review deleted successfully!');
       return;
     }
     deleteReviewMutation.mutate({ id });

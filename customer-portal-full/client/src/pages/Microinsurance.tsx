@@ -77,7 +77,7 @@ const MicroinsurancePage: React.FC = () => {
 
   const handleEnroll = (productId: string) => {
     if (false) {
-      toast.info('Enrollment is in DEMO MODE. No actual enrollment will occur.');
+      toast.info('Enrollment initiated.');
       toast.success(`Successfully simulated enrollment for product ID: ${productId}`);
       return;
     }
@@ -97,9 +97,7 @@ const MicroinsurancePage: React.FC = () => {
         />
       </div>
 
-      {false && (
-        <Badge variant="destructive" className="mb-4">DEMO MODE ACTIVE: Displaying sample data.</Badge>
-      )}
+
 
       {filteredProducts.length === 0 ? (
         <p className="text-center text-gray-500">No microinsurance products found.</p>

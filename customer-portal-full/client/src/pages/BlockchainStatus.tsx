@@ -24,7 +24,7 @@ const BlockchainStatus: React.FC = () => {
   }
 
   const { data, isLoading, isError, error, refetch } = trpc.kyc.status.useQuery(undefined, {
-    enabled: true, // Disable query in demo mode
+    enabled: true, // Query blockchain status
   });
 
   const kycStatus = data;
