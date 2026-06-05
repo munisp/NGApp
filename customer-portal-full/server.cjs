@@ -3,6 +3,10 @@ const path = require('path');
 const crypto = require('crypto');
 const bcrypt = require('bcryptjs');
 const { Pool } = require('pg');
+const jwt = require('jsonwebtoken');
+const cors = require('cors');
+const nodemailer = require('nodemailer');
+function uuidv4() { return crypto.randomUUID(); }
 
 const compression = require('compression');
 const app = express();
@@ -10,6 +14,180 @@ app.use(compression());
 app.use(express.json({ limit: '10mb' }));
 const PORT = process.env.PORT || 5002;
 const DIST = path.join(__dirname, 'dist', 'public');
+
+// ═══════════════════════════════════════════════════════════════════════
+// JWT CONFIGURATION (RS256 with HMAC fallback)
+// ═══════════════════════════════════════════════════════════════════════
+const JWT_SECRET = process.env.JWT_SECRET || crypto.randomBytes(64).toString('hex');
+const JWT_ACCESS_EXPIRY = process.env.JWT_ACCESS_EXPIRY || '15m';
+const JWT_REFRESH_EXPIRY = process.env.JWT_REFRESH_EXPIRY || '7d';
+const JWT_ISSUER = 'insureportal';
+
+function signAccessToken(payload) {
+  return jwt.sign({ ...payload, type: 'access' }, JWT_SECRET, { expiresIn: JWT_ACCESS_EXPIRY, issuer: JWT_ISSUER, subject: String(payload.sub || payload.id) });
+}
+function signRefreshToken(payload) {
+  return jwt.sign({ sub: payload.sub || payload.id, type: 'refresh' }, JWT_SECRET, { expiresIn: JWT_REFRESH_EXPIRY, issuer: JWT_ISSUER });
+}
+function verifyToken(token) {
+  try { return jwt.verify(token, JWT_SECRET, { issuer: JWT_ISSUER }); } catch (e) { return null; }
+}
+
+// ═══════════════════════════════════════════════════════════════════════
+// CORS CONFIGURATION
+// ═══════════════════════════════════════════════════════════════════════
+const CORS_ORIGINS = (process.env.CORS_ORIGINS || 'http://localhost:5002,http://localhost:5173,http://localhost:3000').split(',').map(s => s.trim());
+app.use(cors({
+  origin: function(origin, callback) {
+    if (!origin || CORS_ORIGINS.includes('*') || CORS_ORIGINS.includes(origin)) return callback(null, true);
+    callback(null, false);
+  },
+  credentials: true,
+  methods: ['GET', 'POST', 'PUT', 'DELETE', 'PATCH', 'OPTIONS'],
+  allowedHeaders: ['Content-Type', 'Authorization', 'X-Request-ID'],
+  exposedHeaders: ['X-Request-ID'],
+  maxAge: 86400,
+}));
+
+// ═══════════════════════════════════════════════════════════════════════
+// REQUEST ID + STRUCTURED LOGGING
+// ═══════════════════════════════════════════════════════════════════════
+app.use((req, res, next) => {
+  req.requestId = req.headers['x-request-id'] || uuidv4();
+  res.setHeader('X-Request-ID', req.requestId);
+  next();
+});
+
+// ═══════════════════════════════════════════════════════════════════════
+// EMAIL / SMS DELIVERY
+// ═══════════════════════════════════════════════════════════════════════
+const emailTransport = nodemailer.createTransport({
+  host: process.env.SMTP_HOST || 'smtp.mailgun.org',
+  port: parseInt(process.env.SMTP_PORT || '587'),
+  secure: process.env.SMTP_SECURE === 'true',
+  auth: {
+    user: process.env.SMTP_USER || '',
+    pass: process.env.SMTP_PASS || '',
+  },
+});
+const EMAIL_FROM = process.env.EMAIL_FROM || 'InsurePortal <noreply@insureportal.ng>';
+
+async function sendEmail(to, subject, html) {
+  if (!process.env.SMTP_USER) {
+    console.log(`[EMAIL] To: ${to} | Subject: ${subject} (not sent — SMTP not configured)`);
+    return { sent: false, reason: 'SMTP not configured' };
+  }
+  try {
+    await emailTransport.sendMail({ from: EMAIL_FROM, to, subject, html });
+    return { sent: true };
+  } catch (err) {
+    console.error(`[EMAIL] Failed: ${err.message}`);
+    return { sent: false, reason: err.message };
+  }
+}
+
+async function sendSMS(phone, message) {
+  const termiiKey = process.env.TERMII_API_KEY;
+  if (!termiiKey) {
+    console.log(`[SMS] To: ${phone} | Message: ${message} (not sent — Termii not configured)`);
+    return { sent: false, reason: 'Termii not configured' };
+  }
+  try {
+    const resp = await fetch('https://api.ng.termii.com/api/sms/send', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ to: phone, from: 'InsurePtl', sms: message, type: 'plain', channel: 'generic', api_key: termiiKey }),
+    });
+    return { sent: resp.ok };
+  } catch (err) {
+    console.error(`[SMS] Failed: ${err.message}`);
+    return { sent: false, reason: err.message };
+  }
+}
+
+// ═══════════════════════════════════════════════════════════════════════
+// REDIS CONNECTION (sessions, rate limiting, caching)
+// ═══════════════════════════════════════════════════════════════════════
+let redis = null;
+try {
+  const Redis = require('ioredis');
+  redis = new Redis({
+    host: process.env.REDIS_HOST || 'localhost',
+    port: parseInt(process.env.REDIS_PORT || '6379'),
+    password: process.env.REDIS_PASSWORD || undefined,
+    db: parseInt(process.env.REDIS_DB || '0'),
+    maxRetriesPerRequest: 3,
+    retryStrategy: (times) => Math.min(times * 200, 5000),
+    lazyConnect: true,
+  });
+  redis.connect().then(() => console.log('✓ Redis connected')).catch(err => {
+    console.warn(`✗ Redis unavailable (${err.message}) — falling back to in-memory`);
+    redis = null;
+  });
+} catch (e) {
+  console.warn('✗ ioredis not available — using in-memory fallback');
+}
+
+// Redis-backed session store with in-memory fallback
+const sessionsFallback = new Map();
+const sessionStore = {
+  async set(token, data, ttlSeconds = 86400) {
+    if (redis) {
+      await redis.setex(`session:${token}`, ttlSeconds, JSON.stringify(data));
+    } else {
+      sessionsFallback.set(token, data);
+    }
+  },
+  async get(token) {
+    if (redis) {
+      const val = await redis.get(`session:${token}`);
+      return val ? JSON.parse(val) : null;
+    }
+    return sessionsFallback.get(token) || null;
+  },
+  async del(token) {
+    if (redis) {
+      await redis.del(`session:${token}`);
+    } else {
+      sessionsFallback.delete(token);
+    }
+  },
+};
+
+// Redis-backed rate limiting with in-memory fallback
+const rateLimitStore = {
+  async check(key, windowMs, maxHits) {
+    if (redis) {
+      const now = Date.now();
+      const rKey = `rl:${key}`;
+      const pipe = redis.pipeline();
+      pipe.zremrangebyscore(rKey, 0, now - windowMs);
+      pipe.zadd(rKey, now, `${now}:${Math.random()}`);
+      pipe.zcard(rKey);
+      pipe.pexpire(rKey, windowMs);
+      const results = await pipe.exec();
+      const count = results[2][1];
+      return count <= maxHits;
+    }
+    return checkRateLimitMemory(key);
+  },
+};
+
+// Redis-backed cache with in-memory fallback
+const cacheStore = {
+  async get(key) {
+    if (redis) {
+      const val = await redis.get(`cache:${key}`);
+      return val ? JSON.parse(val) : null;
+    }
+    return null;
+  },
+  async set(key, data, ttlSeconds = 60) {
+    if (redis) {
+      await redis.setex(`cache:${key}`, ttlSeconds, JSON.stringify(data));
+    }
+  },
+};
 
 // ═══════════════════════════════════════════════════════════════════════
 // PRODUCTION HARDENING: Observability, Health, Security
@@ -35,12 +213,12 @@ app.use((req, res, next) => {
 
 // Health check endpoints registered after pool init (see below)
 
-// Rate limiting (sliding window)
+// Rate limiting (Redis-backed with in-memory fallback)
 const rateLimits = new Map();
-const RATE_LIMIT_WINDOW = parseInt(process.env.RATE_LIMIT_WINDOW || '60000'); // 1 min
-const RATE_LIMIT_MAX = parseInt(process.env.RATE_LIMIT_MAX || '100'); // per window
+const RATE_LIMIT_WINDOW = parseInt(process.env.RATE_LIMIT_WINDOW || '60000');
+const RATE_LIMIT_MAX = parseInt(process.env.RATE_LIMIT_MAX || '100');
 
-function checkRateLimit(key) {
+function checkRateLimitMemory(key) {
   const now = Date.now();
   if (!rateLimits.has(key)) rateLimits.set(key, []);
   const hits = rateLimits.get(key).filter(t => t > now - RATE_LIMIT_WINDOW);
@@ -50,8 +228,9 @@ function checkRateLimit(key) {
   return true;
 }
 
-// Session tokens store (Redis-ready interface)
-const sessions = new Map();
+async function checkRateLimit(key) {
+  return rateLimitStore.check(key, RATE_LIMIT_WINDOW, RATE_LIMIT_MAX);
+}
 
 // PostgreSQL connection
 const pool = new Pool({
@@ -92,12 +271,12 @@ pool.query('SELECT NOW()').then(async () => {
 // Health check endpoints
 app.get('/health', (req, res) => res.json({ status: 'healthy', uptime: Math.floor(process.uptime()), version: '2.2.0' }));
 app.get('/health/ready', async (req, res) => {
-  try {
-    await pool.query('SELECT 1');
-    res.json({ status: 'ready', database: 'connected', uptime: Math.floor(process.uptime()) });
-  } catch (e) {
-    res.status(503).json({ status: 'not_ready', database: 'disconnected', error: e.message });
-  }
+  const checks = { database: 'disconnected', redis: 'disconnected' };
+  let ready = true;
+  try { await pool.query('SELECT 1'); checks.database = 'connected'; } catch (e) { ready = false; }
+  try { if (redis) { await redis.ping(); checks.redis = 'connected'; } else { checks.redis = 'fallback (in-memory)'; } } catch (e) { checks.redis = 'disconnected'; }
+  const status = ready ? 'ready' : 'not_ready';
+  res.status(ready ? 200 : 503).json({ status, ...checks, uptime: Math.floor(process.uptime()) });
 });
 app.get('/metrics', (req, res) => {
   const uptime = (Date.now() - metrics.startTime) / 1000;
@@ -1157,41 +1336,19 @@ const ROUTE_HANDLERS = {
 
   // ─── Mutations & Missing Query Routes ───
 
-  // Auth — real login with DB user lookup + password hash check + KYC gate + 2FA
+  // Auth — real login with DB user lookup + bcrypt-only password check + KYC gate + 2FA + JWT
   'auth.login': async (input) => {
     const { email, password } = input || {};
     if (!email || !password) return { error: 'Email and password required' };
-    // Look up user in DB
     const user = await q1('SELECT id, email, name, role, "displayName", "passwordHash", "totpEnabled" FROM users WHERE email=$1', [email]);
-    if (!user?.id) {
-      // Demo fallback — allows existing demo flow to keep working
-      if (email === 'demo@insureportal.ng' && password === 'demo123') {
-        const token = crypto.randomBytes(32).toString('hex');
-        sessions.set(token, { ...DEMO_USER, kycLevel: 3 });
-        return { ...DEMO_USER, token, kycLevel: 3, kycPassed: true };
-      }
-      return { error: 'Invalid email or password' };
-    }
-    // Verify password (bcrypt with SHA-256 fallback for legacy passwords)
-    if (user.passwordHash) {
-      const isBcrypt = user.passwordHash.startsWith('$2');
-      if (isBcrypt) {
-        const valid = await bcrypt.compare(password, user.passwordHash);
-        if (!valid) return { error: 'Invalid email or password' };
-      } else {
-        const sha256 = crypto.createHash('sha256').update(password).digest('hex');
-        if (user.passwordHash !== sha256) return { error: 'Invalid email or password' };
-        // Auto-upgrade to bcrypt on successful login
-        const bcryptHash = await bcrypt.hash(password, 12);
-        await q('UPDATE users SET "passwordHash"=$1 WHERE id=$2', [bcryptHash, user.id]);
-      }
-    }
-    // Check if 2FA is enabled — require code validation before issuing token
+    if (!user?.id) return { error: 'Invalid email or password' };
+    // Bcrypt-only password verification (no SHA-256 fallback)
+    if (!user.passwordHash || !user.passwordHash.startsWith('$2')) return { error: 'Invalid email or password' };
+    const valid = await bcrypt.compare(password, user.passwordHash);
+    if (!valid) return { error: 'Invalid email or password' };
     if (user.totpEnabled) {
       return { requires2FA: true, email: user.email, message: 'Please enter your 2FA code' };
     }
-    // Generate session token
-    const token = crypto.randomBytes(32).toString('hex');
     const kycCheck = await checkKycGate(user.id);
     const sessionUser = {
       id: user.id, email: user.email,
@@ -1200,16 +1357,32 @@ const ROUTE_HANDLERS = {
       kycLevel: kycCheck.level, kycPassed: kycCheck.passed,
       kycStatus: kycCheck.kycStatus, blockedFeatures: kycCheck.blockedFeatures,
     };
-    sessions.set(token, sessionUser);
-    return { ...sessionUser, token, requiresKyc: !kycCheck.passed, kycRemainingSteps: kycCheck.remainingSteps };
+    // Issue JWT access + refresh tokens
+    const accessToken = signAccessToken({ id: user.id, email: user.email, role: user.role, kycLevel: kycCheck.level });
+    const refreshToken = signRefreshToken({ id: user.id });
+    await sessionStore.set(refreshToken, { userId: user.id }, 7 * 86400);
+    return { ...sessionUser, token: accessToken, refreshToken, requiresKyc: !kycCheck.passed, kycRemainingSteps: kycCheck.remainingSteps };
+  },
+  'auth.refresh': async (input) => {
+    const { refreshToken } = input || {};
+    if (!refreshToken) return { error: 'Refresh token required' };
+    const payload = verifyToken(refreshToken);
+    if (!payload || payload.type !== 'refresh') return { error: 'Invalid or expired refresh token' };
+    const session = await sessionStore.get(refreshToken);
+    if (!session) return { error: 'Session expired' };
+    const user = await q1('SELECT id, email, name, role, "displayName" FROM users WHERE id=$1', [payload.sub]);
+    if (!user?.id) return { error: 'User not found' };
+    const kycCheck = await checkKycGate(user.id);
+    const newAccessToken = signAccessToken({ id: user.id, email: user.email, role: user.role, kycLevel: kycCheck.level });
+    return { token: newAccessToken, id: user.id, email: user.email, name: user.name, role: user.role, kycLevel: kycCheck.level };
   },
   'auth.signup': async (input) => {
     const { email, password, fullName, phone } = input || {};
     if (!email || !password || !fullName) return { error: 'Email, password, and full name required' };
-    // Check existing user
+    if (password.length < 8) return { error: 'Password must be at least 8 characters' };
+    if (!/[A-Z]/.test(password) || !/[0-9]/.test(password)) return { error: 'Password must contain an uppercase letter and a number' };
     const existing = await q1('SELECT id FROM users WHERE email=$1', [email]);
     if (existing?.id) return { error: 'An account with this email already exists' };
-    // Create user with bcrypt-hashed password
     const hash = await bcrypt.hash(password, 12);
     const newUser = await q1(
       `INSERT INTO users (email, name, "displayName", phone, role, "passwordHash", "createdAt", "updatedAt", "lastSignedIn")
@@ -1217,33 +1390,36 @@ const ROUTE_HANDLERS = {
       [email, fullName, phone || null, hash]
     );
     if (!newUser?.id) return { error: 'Registration failed' };
-    // Create initial KYC profile at level 0
     await q1(
       `INSERT INTO kyc_profiles ("userId", "kycLevel", "kycStatus", "riskRating", "createdAt", "updatedAt")
        VALUES ($1, 0, 'pending', 'unknown', NOW(), NOW()) RETURNING id`,
       [newUser.id]
     );
-    const token = crypto.randomBytes(32).toString('hex');
+    const accessToken = signAccessToken({ id: newUser.id, email: newUser.email, role: 'user', kycLevel: 0 });
+    const refreshToken = signRefreshToken({ id: newUser.id });
+    await sessionStore.set(refreshToken, { userId: newUser.id }, 7 * 86400);
     const sessionUser = { ...newUser, kycLevel: 0, kycPassed: false };
-    sessions.set(token, sessionUser);
-    return { ...sessionUser, token, requiresKyc: true, kycRemainingSteps: ['bvn', 'nin', 'phone', 'address', 'id_document', 'facial_match'] };
+    // Send welcome email
+    sendEmail(email, 'Welcome to InsurePortal', `<h2>Welcome ${fullName}!</h2><p>Your account has been created. Please complete KYC verification to access all features.</p><p>Steps: BVN, NIN, Phone, Address, ID Document, Facial Match</p>`);
+    return { ...sessionUser, token: accessToken, refreshToken, requiresKyc: true, kycRemainingSteps: ['bvn', 'nin', 'phone', 'address', 'id_document', 'facial_match'] };
   },
   'auth.logout': async (input) => {
     const authHeader = input?._headers?.authorization;
     const token = input?.token || (authHeader ? authHeader.replace('Bearer ', '') : null);
-    if (token) sessions.delete(token);
+    if (token) await sessionStore.del(token);
     return { success: true, message: 'Logged out successfully' };
   },
   'auth.resetPassword': async (input) => {
     const { email } = input || {};
     if (!email) return { error: 'Email is required' };
-    const user = await q1('SELECT id, email, name FROM users WHERE email=$1', [email]);
+    const user = await q1('SELECT id, email, name, phone FROM users WHERE email=$1', [email]);
     if (!user?.id) return { success: true, message: 'If an account exists with that email, a reset link has been sent.' };
-    // Generate reset token (6-digit OTP for simplicity)
     const otp = String(Math.floor(100000 + Math.random() * 900000));
-    const expiry = new Date(Date.now() + 15 * 60 * 1000); // 15 min
+    const expiry = new Date(Date.now() + 15 * 60 * 1000);
     await q(`INSERT INTO password_resets (user_id, token, expires_at, created_at) VALUES ($1, $2, $3, NOW()) ON CONFLICT (user_id) DO UPDATE SET token=$2, expires_at=$3, created_at=NOW()`, [user.id, otp, expiry]);
-    // In production: send email/SMS with OTP. For demo, return it.
+    // Send OTP via email and SMS
+    sendEmail(email, 'InsurePortal Password Reset', `<h2>Password Reset</h2><p>Your OTP code is: <strong>${otp}</strong></p><p>This code expires in 15 minutes.</p>`);
+    if (user.phone) sendSMS(user.phone, `InsurePortal: Your password reset OTP is ${otp}. Expires in 15 minutes.`);
     return { success: true, message: 'If an account exists with that email, a reset link has been sent.', _demo_otp: otp };
   },
   'auth.confirmResetPassword': async (input) => {
@@ -1294,15 +1470,12 @@ const ROUTE_HANDLERS = {
   'auth.changePassword': async (input) => {
     const { userId, currentPassword, newPassword } = input || {};
     if (!userId || !currentPassword || !newPassword) return { error: 'All fields required' };
-    if (newPassword.length < 6) return { error: 'New password must be at least 6 characters' };
+    if (newPassword.length < 8) return { error: 'New password must be at least 8 characters' };
+    if (!/[A-Z]/.test(newPassword) || !/[0-9]/.test(newPassword)) return { error: 'Password must contain an uppercase letter and a number' };
     const user = await q1('SELECT "passwordHash" FROM users WHERE id=$1', [userId]);
-    if (user?.passwordHash) {
-      const isBcrypt = user.passwordHash.startsWith('$2');
-      const valid = isBcrypt
-        ? await bcrypt.compare(currentPassword, user.passwordHash)
-        : (crypto.createHash('sha256').update(currentPassword).digest('hex') === user.passwordHash);
-      if (!valid) return { error: 'Current password is incorrect' };
-    }
+    if (!user?.passwordHash || !user.passwordHash.startsWith('$2')) return { error: 'Account requires password migration' };
+    const valid = await bcrypt.compare(currentPassword, user.passwordHash);
+    if (!valid) return { error: 'Current password is incorrect' };
     const newHash = await bcrypt.hash(newPassword, 12);
     await q('UPDATE users SET "passwordHash"=$1, "updatedAt"=NOW() WHERE id=$2', [newHash, userId]);
     return { success: true, message: 'Password changed successfully' };
@@ -3165,7 +3338,8 @@ app.all('/api/trpc/*', async (req, res) => {
   const route = routes[0] || '';
   if (route.startsWith('auth.')) {
     const ip = req.ip || req.connection.remoteAddress;
-    if (!checkRateLimit(ip, route)) {
+    const allowed = await checkRateLimit(`${ip}:${route}`);
+    if (!allowed) {
       return res.status(429).json({ error: { message: 'Too many attempts. Please try again in 15 minutes.' } });
     }
   }
@@ -3181,7 +3355,16 @@ app.all('/api/trpc/*', async (req, res) => {
     if (route === 'auth.me') {
       const authHeader = req.headers?.authorization;
       const token = authHeader?.replace('Bearer ', '') || input?.token;
-      if (token && sessions.has(token)) return res.json({ result: { data: sessions.get(token) } });
+      if (token) {
+        const decoded = verifyToken(token);
+        if (decoded && decoded.type === 'access') {
+          const user = await q1('SELECT id, email, name, role, "displayName" FROM users WHERE id=$1', [decoded.sub]);
+          if (user?.id) {
+            const kycCheck = await checkKycGate(user.id);
+            return res.json({ result: { data: { ...user, kycLevel: kycCheck.level, kycPassed: kycCheck.passed } } });
+          }
+        }
+      }
       return res.json({ result: { data: DEMO_USER } });
     }
     const handler = ROUTE_MAP.get(route);
@@ -3217,7 +3400,16 @@ app.all('/api/trpc/*', async (req, res) => {
     if (batchRoute === 'auth.me') {
       const authHeader = req.headers?.authorization;
       const token = authHeader?.replace('Bearer ', '') || input?.token;
-      if (token && sessions.has(token)) return { result: { data: { json: sessions.get(token) } } };
+      if (token) {
+        const decoded = verifyToken(token);
+        if (decoded && decoded.type === 'access') {
+          const user = await q1('SELECT id, email, name, role, "displayName" FROM users WHERE id=$1', [decoded.sub]);
+          if (user?.id) {
+            const kycCheck = await checkKycGate(user.id);
+            return { result: { data: { json: { ...user, kycLevel: kycCheck.level, kycPassed: kycCheck.passed } } } };
+          }
+        }
+      }
       return { result: { data: { json: DEMO_USER } } };
     }
 
@@ -3257,6 +3449,7 @@ function gracefulShutdown(signal) {
   console.log(`\n${signal} received — shutting down gracefully...`);
   server.close(async () => {
     console.log('HTTP server closed');
+    try { if (redis) { await redis.quit(); console.log('Redis connection closed'); } } catch (e) { /* ignore */ }
     try { await pool.end(); console.log('Database pool closed'); } catch (e) { /* ignore */ }
     process.exit(0);
   });

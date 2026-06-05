@@ -19,6 +19,11 @@ import { AgentLocatorScreen } from '../screens/AgentLocatorScreen';
 import { EmergencyScreen } from '../screens/EmergencyScreen';
 import { InsuranceMarketplaceScreen } from '../screens/InsuranceMarketplaceScreen';
 import { SecuritySettingsScreen } from '../screens/SecuritySettingsScreen';
+import NotificationsScreen from '../screens/NotificationsScreen';
+import WalletScreen from '../screens/WalletScreen';
+import SupportScreen from '../screens/SupportScreen';
+import AnalyticsScreen from '../screens/AnalyticsScreen';
+import ReferralScreen from '../screens/ReferralScreen';
 import { OfflineIndicator } from '../components/OfflineIndicator';
 import { View } from 'react-native';
 
@@ -91,6 +96,11 @@ export function AppNavigator() {
             <Stack.Screen name="Emergency" component={EmergencyScreen} />
             <Stack.Screen name="Payments" component={PaymentsScreen} />
             <Stack.Screen name="SecuritySettings" component={SecuritySettingsScreen} />
+            <Stack.Screen name="Notifications" component={NotificationsScreen} />
+            <Stack.Screen name="Wallet" component={WalletScreen} />
+            <Stack.Screen name="Support" component={SupportScreen} />
+            <Stack.Screen name="Analytics" component={AnalyticsScreen} />
+            <Stack.Screen name="Referral" component={ReferralScreen} />
           </>
         ) : (
           <Stack.Screen name="KYC" component={KYCScreen} />
