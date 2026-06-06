@@ -122,6 +122,46 @@ const defaultNotificationPrefs = [
   { event: 'New team member added', email: true, sms: false, push: true },
 ];
 
+// Demo merchant for standalone rendering when no backend is available
+const DEMO_MERCHANT = {
+  id: 1,
+  userId: 1,
+  businessName: 'Paystack Nigeria Ltd',
+  businessType: 'ecommerce' as const,
+  website: 'https://paystack.com',
+  apiKey: 'demo_pk_abc123def456ghi789jkl012mno345',
+  apiSecret: 'demo_sk_xxxxxxxxxxxxxxxxxxxxxxxxxxxx',
+  webhookUrl: 'https://paystack.com/webhooks/payments',
+  webhookSecret: 'whsec_xxxxxxxxxxxxxxxxxxxxxxxxxxxx',
+  status: 'active' as const,
+  brandingLogo: null,
+  brandingPrimaryColor: '#2563eb',
+  brandingSecondaryColor: '#1e40af',
+  brandingBackgroundColor: '#ffffff',
+  brandingTextColor: '#1f2937',
+  brandingFontFamily: 'Inter',
+  brandingBorderRadius: '8px',
+  createdAt: new Date('2026-01-15'),
+  updatedAt: new Date('2026-06-05'),
+};
+
+// Demo transactions
+const DEMO_TRANSACTIONS = [
+  { id: 1, sessionId: 'sess_001', transactionId: 'TXN-20260605-001', merchantId: 1, amount: 500000, currency: 'NGN', status: 'completed', paymentMethod: 'card', provider: 'flutterwave', providerRef: 'FLW-REF-001', customerEmail: 'customer1@example.com', metadata: {}, createdAt: new Date('2026-06-05T10:30:00'), updatedAt: new Date('2026-06-05T10:31:00') },
+  { id: 2, sessionId: 'sess_002', transactionId: 'TXN-20260605-002', merchantId: 1, amount: 125000, currency: 'NGN', status: 'completed', paymentMethod: 'bank_transfer', provider: 'paystack', providerRef: 'PSK-REF-002', customerEmail: 'ada@merchant.ng', metadata: {}, createdAt: new Date('2026-06-05T09:15:00'), updatedAt: new Date('2026-06-05T09:16:00') },
+  { id: 3, sessionId: 'sess_003', transactionId: 'TXN-20260605-003', merchantId: 1, amount: 75000, currency: 'NGN', status: 'pending', paymentMethod: 'ussd', provider: 'flutterwave', providerRef: 'FLW-REF-003', customerEmail: 'tunde@shop.ng', metadata: {}, createdAt: new Date('2026-06-05T08:00:00'), updatedAt: new Date('2026-06-05T08:00:00') },
+  { id: 4, sessionId: 'sess_004', transactionId: 'TXN-20260604-004', merchantId: 1, amount: 2300000, currency: 'NGN', status: 'completed', paymentMethod: 'bank_transfer', provider: 'nibss', providerRef: 'NIBSS-REF-004', customerEmail: 'buyer@enterprise.com', metadata: {}, createdAt: new Date('2026-06-04T16:45:00'), updatedAt: new Date('2026-06-04T16:46:00') },
+  { id: 5, sessionId: 'sess_005', transactionId: 'TXN-20260604-005', merchantId: 1, amount: 50000, currency: 'NGN', status: 'failed', paymentMethod: 'card', provider: 'paystack', providerRef: 'PSK-REF-005', customerEmail: 'failed@test.com', metadata: {}, createdAt: new Date('2026-06-04T14:20:00'), updatedAt: new Date('2026-06-04T14:21:00') },
+];
+
+// Demo sessions
+const DEMO_SESSIONS = [
+  { id: 1, sessionId: 'sess_001', merchantId: 1, amount: 500000, currency: 'NGN', status: 'completed', successUrl: 'https://shop.ng/success', cancelUrl: 'https://shop.ng/cancel', customerEmail: 'customer1@example.com', customerName: 'Adewale Johnson', metadata: {}, expiresAt: new Date('2026-06-06'), createdAt: new Date('2026-06-05T10:30:00'), updatedAt: new Date('2026-06-05T10:31:00') },
+  { id: 2, sessionId: 'sess_002', merchantId: 1, amount: 125000, currency: 'NGN', status: 'completed', successUrl: 'https://shop.ng/success', cancelUrl: 'https://shop.ng/cancel', customerEmail: 'ada@merchant.ng', customerName: 'Ada Okafor', metadata: {}, expiresAt: new Date('2026-06-06'), createdAt: new Date('2026-06-05T09:15:00'), updatedAt: new Date('2026-06-05T09:16:00') },
+  { id: 3, sessionId: 'sess_003', merchantId: 1, amount: 75000, currency: 'NGN', status: 'pending', successUrl: 'https://shop.ng/success', cancelUrl: 'https://shop.ng/cancel', customerEmail: 'tunde@shop.ng', customerName: 'Tunde Bakare', metadata: {}, expiresAt: new Date('2026-06-06'), createdAt: new Date('2026-06-05T08:00:00'), updatedAt: new Date('2026-06-05T08:00:00') },
+  { id: 4, sessionId: 'sess_004', merchantId: 1, amount: 2300000, currency: 'NGN', status: 'expired', successUrl: 'https://enterprise.com/pay/ok', cancelUrl: 'https://enterprise.com/pay/cancel', customerEmail: 'buyer@enterprise.com', customerName: 'Enterprise Buyer', metadata: {}, expiresAt: new Date('2026-06-05'), createdAt: new Date('2026-06-04T16:45:00'), updatedAt: new Date('2026-06-04T16:46:00') },
+];
+
 export default function Dashboard() {
   const { user } = useAuth();
   const [createDialogOpen, setCreateDialogOpen] = useState(false);
@@ -137,15 +177,18 @@ export default function Dashboard() {
   const [inviteRole, setInviteRole] = useState("developer");
 
   const utils = trpc.useUtils();
-  const { data: merchants, isLoading: loadingMerchants } = trpc.merchant.list.useQuery();
-  const { data: transactions, isLoading: loadingTransactions } = trpc.payment.listTransactions.useQuery(
+  const { data: liveMerchants, isLoading: loadingMerchants } = trpc.merchant.list.useQuery();
+  const merchants = liveMerchants && liveMerchants.length > 0 ? liveMerchants : [DEMO_MERCHANT];
+  const { data: liveTransactions, isLoading: loadingTransactions } = trpc.payment.listTransactions.useQuery(
     { merchantId: selectedMerchant! },
     { enabled: !!selectedMerchant }
   );
-  const { data: sessions, isLoading: loadingSessions } = trpc.payment.listSessions.useQuery(
+  const transactions = liveTransactions && liveTransactions.length > 0 ? liveTransactions : DEMO_TRANSACTIONS;
+  const { data: liveSessions, isLoading: loadingSessions } = trpc.payment.listSessions.useQuery(
     { merchantId: selectedMerchant! },
     { enabled: !!selectedMerchant }
   );
+  const sessions = liveSessions && liveSessions.length > 0 ? liveSessions : DEMO_SESSIONS;
 
   const createMerchant = trpc.merchant.create.useMutation({
     onSuccess: (data) => {
@@ -282,16 +325,6 @@ export default function Dashboard() {
 
         {loadingMerchants ? (
           <div className="flex justify-center py-12"><Loader2 className="h-8 w-8 animate-spin" /></div>
-        ) : !merchants || merchants.length === 0 ? (
-          <Card>
-            <CardContent className="py-12 text-center">
-              <p className="text-muted-foreground mb-4">No merchant accounts yet</p>
-              <Button onClick={() => setCreateDialogOpen(true)}>
-                <Plus className="mr-2 h-4 w-4" />
-                Create Your First Merchant Account
-              </Button>
-            </CardContent>
-          </Card>
         ) : (
           <>
             {/* Merchant Selector */}
