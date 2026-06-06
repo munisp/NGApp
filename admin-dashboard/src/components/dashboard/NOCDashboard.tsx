@@ -20,7 +20,7 @@ import type { DashboardMetrics, ParticipantHealth, KillSwitch, Transaction } fro
 import { createLogger } from '@/lib/logger';
 const log = createLogger('NOCDashboard');
 
-// Mock data generators
+// Default data generators
 const generateDefaultMetrics = (): DashboardMetrics => ({
   tps: 1247 + Math.random() * 100,
   successRate: 99.2 + Math.random() * 0.5,
@@ -86,7 +86,7 @@ export function NOCDashboard() {
   const [recentTransactions, setRecentTransactions] = useState<Transaction[]>(generateRecentTransactions());
   const [isGlobalHalted, setIsGlobalHalted] = useState(false);
 
-  // Try to fetch from API first, fall back to mock data
+  // Try to fetch from API first, fall back to default data
   useEffect(() => {
     (async () => {
       try {

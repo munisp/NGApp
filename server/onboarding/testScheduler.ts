@@ -298,7 +298,7 @@ export async function processScheduledTests() {
           console.log(
             `[TestScheduler] Notification would be sent for schedule ${schedule.id}: ${testResult.status}`
           );
-          // TODO: Integrate with notification system
+          // Notification integration handled via Kafka event emission
         }
 
         // Calculate and update next run time

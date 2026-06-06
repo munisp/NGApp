@@ -14,6 +14,7 @@ import (
 	"time"
 
 	. "github.com/payment-switch/go-services/internal/onboarding"
+	"github.com/payment-switch/go-services/pkg/middleware"
 )
 
 // OnboardingServer is the main HTTP server
@@ -55,8 +56,16 @@ func (s *OnboardingServer) Start() error {
 	// Stats
 	mux.HandleFunc("/api/v1/onboarding/stats", s.handleStats)
 
-	// CORS middleware
-	handler := corsMiddleware(mux)
+	// RBAC auth middleware — skips health/ready endpoints
+	rbac := middleware.NewRBACMiddleware(&middleware.RBACConfig{
+		JWTSecret:          os.Getenv("JWT_SECRET"),
+		JWTIssuer:          "payment-switch",
+		SkipPaths:          []string{"/health", "/ready"},
+		EnableAuditLogging: true,
+	})
+
+	// CORS + Auth middleware
+	handler := corsMiddleware(rbac.Authenticate(mux))
 
 	server := &http.Server{
 		Addr:         fmt.Sprintf(":%d", s.port),

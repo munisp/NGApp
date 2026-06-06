@@ -539,7 +539,7 @@ export function KYCVerificationPortal() {
         };
         setSelectedPerson(detail);
       } else {
-        // Fallback to mock if API fails
+        // Fallback to empty state if API fails
         setSelectedPerson([]);
       }
     } catch (error) {

@@ -13,6 +13,7 @@ import (
 	"time"
 
 	"github.com/payment-switch/go-services/internal/mojaloop"
+	"github.com/payment-switch/go-services/pkg/middleware"
 )
 
 // Server configuration
@@ -114,10 +115,18 @@ func main() {
 	// TigerBeetle endpoints
 	mux.HandleFunc("/api/v1/tigerbeetle/transfer", tigerBeetleTransferHandler)
 
+	// RBAC auth middleware — skips health/ready endpoints
+	rbac := middleware.NewRBACMiddleware(&middleware.RBACConfig{
+		JWTSecret:          getEnv("JWT_SECRET", "payment-switch-secret"),
+		JWTIssuer:          getEnv("JWT_ISSUER", "payment-switch"),
+		SkipPaths:          []string{"/health", "/ready"},
+		EnableAuditLogging: true,
+	})
+
 	// Create server
 	server := &http.Server{
 		Addr:         ":" + port,
-		Handler:      loggingMiddleware(corsMiddleware(mux)),
+		Handler:      loggingMiddleware(corsMiddleware(rbac.Authenticate(mux))),
 		ReadTimeout:  15 * time.Second,
 		WriteTimeout: 15 * time.Second,
 		IdleTimeout:  60 * time.Second,

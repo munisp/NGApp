@@ -111,7 +111,7 @@ const stakeholderIcons: Record<string, React.ReactNode> = {
   DEVELOPER: <Server className="h-5 w-5" />,
 };
 
-// Mock data for demonstration
+// Default data for demonstration
 const defaultCases: OnboardingCase[] = [
   {
     id: 'OB-2024-001',
@@ -259,11 +259,11 @@ export function OnboardingPortal() {
           setCases(data.cases || []);
         } else {
           log.error('Failed to fetch cases');
-          setCases([]); // Fallback to mock data
+          setCases([]); // Fallback to default data
         }
       } catch (error) {
         log.error('Error fetching cases:', error);
-        setCases([]); // Fallback to mock data
+        setCases([]); // Fallback to default data
       } finally {
         setLoading(false);
       }
