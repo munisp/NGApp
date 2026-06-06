@@ -112,7 +112,7 @@ const stakeholderIcons: Record<string, React.ReactNode> = {
 };
 
 // Mock data for demonstration
-const mockCases: OnboardingCase[] = [
+const defaultCases: OnboardingCase[] = [
   {
     id: 'OB-2024-001',
     organizationName: 'First National Bank',
@@ -180,7 +180,7 @@ const mockCases: OnboardingCase[] = [
   },
 ];
 
-const mockCaseDetail: CaseDetail = {
+const defaultCaseDetail: CaseDetail = {
   id: 'OB-2024-001',
   organizationName: 'First National Bank',
   stakeholderType: 'BANK',
@@ -259,11 +259,11 @@ export function OnboardingPortal() {
           setCases(data.cases || []);
         } else {
           log.error('Failed to fetch cases');
-          setCases(mockCases); // Fallback to mock data
+          setCases([]); // Fallback to mock data
         }
       } catch (error) {
         log.error('Error fetching cases:', error);
-        setCases(mockCases); // Fallback to mock data
+        setCases([]); // Fallback to mock data
       } finally {
         setLoading(false);
       }
@@ -313,11 +313,11 @@ export function OnboardingPortal() {
         setSelectedCase(data);
       } else {
         log.error('Failed to fetch case details');
-        setSelectedCase(mockCaseDetail); // Fallback
+        setSelectedCase([]); // Fallback
       }
     } catch (error) {
       log.error('Error fetching case:', error);
-      setSelectedCase(mockCaseDetail); // Fallback
+      setSelectedCase([]); // Fallback
     }
   };
 
