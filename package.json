@@ -81,6 +81,7 @@
     "@types/nodemailer": "^7.0.11",
     "@types/pdfkit": "^0.17.5",
     "@types/pg": "^8.18.0",
+    "@types/ws": "^8.18.1",
     "axios": "^1.16.0",
     "class-variance-authority": "^0.7.1",
     "clsx": "^2.1.1",
@@ -144,6 +145,7 @@
     "vaul": "^1.1.2",
     "web-push": "^3.6.7",
     "wouter": "^3.7.1",
+    "ws": "^8.21.0",
     "zod": "^4.1.12"
   },
   "devDependencies": {
