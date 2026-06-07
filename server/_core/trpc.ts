@@ -94,6 +94,36 @@ export const deleteProcedure = protectedProcedure.use(pbacMiddleware("*", "delet
 /** protectedProcedure + PBAC approve guard (admin-only approval operations) */
 export const approveProcedure = protectedProcedure.use(pbacMiddleware("*", "approve"));
 
+// ─── Permify ReBAC middleware ────────────────────────────────────────────────
+import { checkPermission } from "../middlewareIntegration";
+
+/**
+ * tRPC middleware factory for Permify ReBAC enforcement.
+ * Checks relationship-based permissions with graceful degradation.
+ * Usage: protectedProcedure.use(permifyGuard("resource", "action"))
+ */
+export function permifyGuard(resource: string, action: string) {
+  return t.middleware(async ({ ctx, next }) => {
+    if (!ctx.user) {
+      throw new TRPCError({ code: "UNAUTHORIZED", message: "Authentication required" });
+    }
+    const allowed = await checkPermission(ctx.user.id, resource, action);
+    if (!allowed) {
+      throw new TRPCError({
+        code: "FORBIDDEN",
+        message: `Permission denied: '${action}' on '${resource}'`,
+      });
+    }
+    return next({ ctx });
+  });
+}
+
+/** Procedures with Permify enforcement for specific domains */
+export const complianceMutationProcedure = protectedProcedure.use(permifyGuard("compliance", "write"));
+export const enforcementMutationProcedure = protectedProcedure.use(permifyGuard("enforcement", "write"));
+export const bankingMutationProcedure = protectedProcedure.use(permifyGuard("banking", "write"));
+export const auditMutationProcedure = protectedProcedure.use(permifyGuard("audit", "write"));
+
 /** Helper: check if a user can access a specific organization's data */
 export function canAccessOrg(
   user: { role: string; organizationId?: number | null },

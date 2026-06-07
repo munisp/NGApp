@@ -160,11 +160,116 @@ export const EVENTS = {
   PLATFORM_MONTE_CARLO_ENGINE: "ndsep.platform.monte_carlo_engine",
 } as const;
 
+// ── Dead Letter Queue ────────────────────────────────────────────────────────
+
+interface DLQEntry {
+  id: string;
+  event: string;
+  payload: Record<string, unknown>;
+  target: "dapr" | "fluvio" | "opensearch" | "lakehouse";
+  error: string;
+  attempts: number;
+  firstFailedAt: string;
+  lastFailedAt: string;
+  nextRetryAt: string;
+}
+
+const DLQ: DLQEntry[] = [];
+const MAX_DLQ_SIZE = 10_000;
+const MAX_RETRY_ATTEMPTS = 5;
+const RETRY_BACKOFF_BASE_MS = 5_000;
+
+function addToDLQ(event: string, payload: Record<string, unknown>, target: DLQEntry["target"], error: string): void {
+  if (DLQ.length >= MAX_DLQ_SIZE) {
+    DLQ.shift(); // Evict oldest
+    logger.warn("[DLQ] Queue full — evicted oldest entry");
+  }
+  const now = new Date().toISOString();
+  DLQ.push({
+    id: `dlq_${Date.now()}_${Math.random().toString(36).slice(2, 8)}`,
+    event,
+    payload,
+    target,
+    error,
+    attempts: 1,
+    firstFailedAt: now,
+    lastFailedAt: now,
+    nextRetryAt: new Date(Date.now() + RETRY_BACKOFF_BASE_MS).toISOString(),
+  });
+}
+
+/** Get DLQ stats for observability */
+export function getDLQStats(): { size: number; byTarget: Record<string, number>; oldestAge?: number } {
+  const byTarget: Record<string, number> = {};
+  for (const entry of DLQ) {
+    byTarget[entry.target] = (byTarget[entry.target] ?? 0) + 1;
+  }
+  const oldestAge = DLQ.length > 0 ? Date.now() - new Date(DLQ[0].firstFailedAt).getTime() : undefined;
+  return { size: DLQ.length, byTarget, oldestAge };
+}
+
+/** Retry DLQ entries with exponential backoff */
+export async function processDLQ(): Promise<{ processed: number; succeeded: number; failed: number }> {
+  const now = Date.now();
+  const ready = DLQ.filter(e => new Date(e.nextRetryAt).getTime() <= now);
+  let succeeded = 0;
+  let failed = 0;
+
+  for (const entry of ready) {
+    try {
+      const fn = { dapr: daprPublish, fluvio: fluvioPublish, opensearch: opensearchIndex, lakehouse: lakehouseIngest };
+      if (entry.target === "lakehouse") {
+        await lakehouseIngest(entry.event.replace(/\./g, "-"), [entry.payload]);
+      } else if (entry.target === "opensearch") {
+        await opensearchIndex(entry.event.replace(/\./g, "-"), entry.payload);
+      } else {
+        await fn[entry.target](entry.event, entry.payload);
+      }
+      const idx = DLQ.indexOf(entry);
+      if (idx >= 0) DLQ.splice(idx, 1);
+      succeeded++;
+    } catch (e: unknown) {
+      entry.attempts++;
+      entry.lastFailedAt = new Date().toISOString();
+      entry.error = e instanceof Error ? e.message : String(e);
+      if (entry.attempts >= MAX_RETRY_ATTEMPTS) {
+        logger.error({ event: entry.event, target: entry.target, attempts: entry.attempts }, "[DLQ] Max retries exceeded — dropping event");
+        const idx = DLQ.indexOf(entry);
+        if (idx >= 0) DLQ.splice(idx, 1);
+        failed++;
+      } else {
+        const backoff = RETRY_BACKOFF_BASE_MS * Math.pow(2, entry.attempts - 1);
+        entry.nextRetryAt = new Date(Date.now() + backoff).toISOString();
+      }
+    }
+  }
+
+  return { processed: ready.length, succeeded, failed };
+}
+
+// Start DLQ processor (runs every 10s)
+let dlqInterval: NodeJS.Timeout | null = null;
+export function startDLQProcessor(): void {
+  if (dlqInterval) return;
+  dlqInterval = setInterval(() => {
+    processDLQ().catch(e => logger.error({ err: e }, "[DLQ] Processor error"));
+  }, 10_000);
+  logger.info("[DLQ] Processor started (interval: 10s)");
+}
+export function stopDLQProcessor(): void {
+  if (dlqInterval) { clearInterval(dlqInterval); dlqInterval = null; }
+}
+
 // ── Emit to all middleware ───────────────────────────────────────────────────
 
+/** Metrics counters for event emission */
+const emissionMetrics = { total: 0, succeeded: 0, dlqed: 0 };
+export function getEmissionMetrics() { return { ...emissionMetrics }; }
+
 /**
- * Fire-and-forget event emission to all middleware layers.
+ * Fire-and-forget event emission to all middleware layers with DLQ fallback.
  * Publishes to Dapr (→ Kafka), Fluvio, OpenSearch, and Lakehouse simultaneously.
+ * Failed emissions are queued in DLQ for automatic retry with exponential backoff.
  */
 export async function emitMutationEvent(
   event: string,
@@ -175,23 +280,33 @@ export async function emitMutationEvent(
     skipLakehouse?: boolean;
   }
 ): Promise<void> {
+  emissionMetrics.total++;
   const payload = { ...data, event, timestamp: new Date().toISOString() };
   const indexName = options?.indexName ?? event.replace(/\./g, "-");
 
-  // Fire all middleware calls in parallel, each with its own error handling
-  const promises: Promise<void>[] = [
-    daprPublish(event, payload).catch((e: unknown) => logger.debug({ err: e instanceof Error ? e.message : String(e) }, "fire-and-forget failed")),
-    fluvioPublish(event, payload).catch((e: unknown) => logger.debug({ err: e instanceof Error ? e.message : String(e) }, "fire-and-forget failed")),
+  const targets: Array<{ name: DLQEntry["target"]; fn: () => Promise<void> }> = [
+    { name: "dapr", fn: () => daprPublish(event, payload) },
+    { name: "fluvio", fn: () => fluvioPublish(event, payload) },
   ];
 
   if (!options?.skipOpenSearch) {
-    promises.push(opensearchIndex(indexName, payload).catch((e: unknown) => logger.debug({ err: e instanceof Error ? e.message : String(e) }, "fire-and-forget failed")));
+    targets.push({ name: "opensearch", fn: () => opensearchIndex(indexName, payload) });
   }
   if (!options?.skipLakehouse) {
-    promises.push(lakehouseIngest(indexName, [payload]).catch((e: unknown) => logger.debug({ err: e instanceof Error ? e.message : String(e) }, "fire-and-forget failed")));
+    targets.push({ name: "lakehouse", fn: () => lakehouseIngest(indexName, [payload]) });
   }
 
-  await Promise.allSettled(promises);
+  const results = await Promise.allSettled(targets.map(t => t.fn()));
+
+  results.forEach((result, i) => {
+    if (result.status === "rejected") {
+      const errMsg = result.reason instanceof Error ? result.reason.message : String(result.reason);
+      addToDLQ(event, payload, targets[i].name, errMsg);
+      emissionMetrics.dlqed++;
+    } else {
+      emissionMetrics.succeeded++;
+    }
+  });
 }
 
 /**

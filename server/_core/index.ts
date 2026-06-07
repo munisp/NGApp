@@ -174,7 +174,7 @@ async function startServer() {
       credentials: true,
       methods: ["GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS"],
       allowedHeaders: ["Content-Type", "Authorization", "X-Request-ID", "X-NDSEP-API-Version"],
-      exposedHeaders: ["X-Request-ID", "X-NDSEP-API-Version", "X-RateLimit-Limit", "X-RateLimit-Remaining"],
+      exposedHeaders: ["X-Request-ID", "X-NDSEP-API-Version", "X-API-Version", "X-RateLimit-Limit", "X-RateLimit-Remaining", "Deprecation", "Sunset", "Link"],
       maxAge: 86400, // 24h preflight cache
     })
   );

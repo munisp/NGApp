@@ -1,171 +1,124 @@
-###############################################################################
-# NDSEP — Local Development Docker Compose
-# Spins up all infrastructure services needed for local development.
-# The Node.js app itself runs via `pnpm dev` (not in Docker) for HMR.
-#
-# Usage:
-#   docker compose up -d           # Start all infra services
-#   docker compose down -v         # Stop and remove volumes
-#   docker compose logs -f         # Follow logs
-###############################################################################
 version: "3.9"
 
-x-logging: &default-logging
-  driver: "json-file"
-  options:
-    max-size: "20m"
-    max-file: "3"
-
 services:
-  # ─── PostgreSQL 16 ─────────────────────────────────────────────────────────
+  # ── Core Infrastructure ──────────────────────────────────────────────────────
   postgres:
     image: postgres:16-alpine
-    container_name: ndsep-postgres-dev
-    restart: unless-stopped
-    ports:
-      - "5432:5432"
     environment:
       POSTGRES_DB: ndsep_db
       POSTGRES_USER: ndsep_user
       POSTGRES_PASSWORD: ndsep_secure_2026
-      PGDATA: /var/lib/postgresql/data/pgdata
-    volumes:
-      - postgres_dev_data:/var/lib/postgresql/data
-      - ./scripts/init-db.sql:/docker-entrypoint-initdb.d/01-init.sql:ro
+    ports: ["5432:5432"]
+    volumes: ["pgdata:/var/lib/postgresql/data"]
     healthcheck:
       test: ["CMD-SHELL", "pg_isready -U ndsep_user -d ndsep_db"]
-      interval: 10s
-      timeout: 5s
+      interval: 5s
+      timeout: 3s
       retries: 5
-      start_period: 10s
-    logging: *default-logging
 
-  # ─── Redis 7 (session cache, rate-limit store, pub/sub) ────────────────────
   redis:
     image: redis:7-alpine
-    container_name: ndsep-redis-dev
-    restart: unless-stopped
-    ports:
-      - "6379:6379"
-    command: redis-server --appendonly yes --maxmemory 256mb --maxmemory-policy allkeys-lru
-    volumes:
-      - redis_dev_data:/data
+    ports: ["6379:6379"]
     healthcheck:
       test: ["CMD", "redis-cli", "ping"]
-      interval: 10s
-      timeout: 5s
-      retries: 5
-    logging: *default-logging
+      interval: 5s
+      timeout: 3s
 
-  # ─── Kafka + Zookeeper (streaming events, NIP event bus) ───────────────────
-  zookeeper:
-    image: confluentinc/cp-zookeeper:7.6.0
-    container_name: ndsep-zookeeper-dev
-    restart: unless-stopped
+  # ── TypeScript API (main server) ─────────────────────────────────────────────
+  ndsep-api:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    ports: ["5000:5000"]
     environment:
-      ZOOKEEPER_CLIENT_PORT: 2181
-      ZOOKEEPER_TICK_TIME: 2000
-    volumes:
-      - zookeeper_dev_data:/var/lib/zookeeper/data
-    logging: *default-logging
-
-  kafka:
-    image: confluentinc/cp-kafka:7.6.0
-    container_name: ndsep-kafka-dev
-    restart: unless-stopped
-    ports:
-      - "9092:9092"
+      DATABASE_URL: postgresql://ndsep_user:ndsep_secure_2026@postgres:5432/ndsep_db
+      REDIS_URL: redis://redis:6379
+      JWT_SECRET: dev-jwt-secret-32-chars-minimum!!
+      NODE_ENV: development
+      EVENT_GATEWAY_URL: http://event-gateway:8170
+      REALTIME_ENGINE_URL: http://realtime-engine:8180
+      PQC_ENGINE_URL: http://pqc-engine:8190
+      COMPLIANCE_AI_URL: http://compliance-ai:8200
     depends_on:
-      - zookeeper
-    environment:
-      KAFKA_BROKER_ID: 1
-      KAFKA_ZOOKEEPER_CONNECT: zookeeper:2181
-      KAFKA_ADVERTISED_LISTENERS: PLAINTEXT://localhost:9092,PLAINTEXT_INTERNAL://kafka:29092
-      KAFKA_LISTENER_SECURITY_PROTOCOL_MAP: PLAINTEXT:PLAINTEXT,PLAINTEXT_INTERNAL:PLAINTEXT
-      KAFKA_INTER_BROKER_LISTENER_NAME: PLAINTEXT_INTERNAL
-      KAFKA_OFFSETS_TOPIC_REPLICATION_FACTOR: 1
-      KAFKA_AUTO_CREATE_TOPICS_ENABLE: "true"
-    volumes:
-      - kafka_dev_data:/var/lib/kafka/data
-    logging: *default-logging
+      postgres: { condition: service_healthy }
+      redis: { condition: service_healthy }
 
-  # ─── Prometheus (metrics scraping) ─────────────────────────────────────────
-  prometheus:
-    image: prom/prometheus:v2.51.0
-    container_name: ndsep-prometheus-dev
-    restart: unless-stopped
-    ports:
-      - "9090:9090"
-    volumes:
-      - ./infra/prometheus/prometheus.yml:/etc/prometheus/prometheus.yml:ro
-      - ./infra/prometheus/alerts.yml:/etc/prometheus/alerts.yml:ro
-      - prometheus_dev_data:/prometheus
-    command:
-      - "--config.file=/etc/prometheus/prometheus.yml"
-      - "--storage.tsdb.path=/prometheus"
-      - "--storage.tsdb.retention.time=15d"
-      - "--web.enable-lifecycle"
-    logging: *default-logging
-
-  # ─── Grafana (dashboards) ──────────────────────────────────────────────────
-  grafana:
-    image: grafana/grafana:10.4.0
-    container_name: ndsep-grafana-dev
-    restart: unless-stopped
-    ports:
-      - "3001:3000"
+  # ── Go Services ──────────────────────────────────────────────────────────────
+  event-gateway:
+    build:
+      context: ./services/go
+      dockerfile: event-gateway/Dockerfile
+    ports: ["8170:8170"]
     environment:
-      GF_SECURITY_ADMIN_USER: admin
-      GF_SECURITY_ADMIN_PASSWORD: ndsep_grafana_2026
-      GF_USERS_ALLOW_SIGN_UP: "false"
-    volumes:
-      - grafana_dev_data:/var/lib/grafana
-      - ./infra/grafana/provisioning:/etc/grafana/provisioning:ro
-      - ./infra/grafana/dashboards:/var/lib/grafana/dashboards:ro
+      PORT: "8170"
+      KAFKA_BROKERS: kafka:9092
+
+  realtime-engine:
+    build:
+      context: ./services/go
+      dockerfile: realtime-engine/Dockerfile
+    ports: ["8180:8180"]
+    environment:
+      PORT: "8180"
+
+  dlq-processor:
+    build:
+      context: ./services/go
+      dockerfile: dlq-processor/Dockerfile
+    ports: ["9090:9090"]
+    environment:
+      DATABASE_URL: postgresql://ndsep_user:ndsep_secure_2026@postgres:5432/ndsep_db
+      REDIS_URL: redis://redis:6379
     depends_on:
-      - prometheus
-    logging: *default-logging
+      postgres: { condition: service_healthy }
 
-  # ─── Mailhog (local SMTP for email testing) ─────────────────────────────────
-  mailhog:
-    image: mailhog/mailhog:v1.0.1
-    container_name: ndsep-mailhog-dev
-    restart: unless-stopped
-    ports:
-      - "1025:1025"   # SMTP
-      - "8025:8025"   # Web UI
-    logging: *default-logging
-
-  # ─── MinIO (local S3-compatible object storage) ────────────────────────────
-  minio:
-    image: minio/minio:RELEASE.2024-03-21T23-13-43Z
-    container_name: ndsep-minio-dev
-    restart: unless-stopped
-    ports:
-      - "9000:9000"
-      - "9001:9001"
+  health-orchestrator:
+    build:
+      context: ./services/go
+      dockerfile: health-orchestrator/Dockerfile
+    ports: ["8195:8195"]
     environment:
-      MINIO_ROOT_USER: ndsep_minio
-      MINIO_ROOT_PASSWORD: ndsep_minio_2026
-    command: server /data --console-address ":9001"
+      PORT: "8195"
+
+  # ── Rust Services ────────────────────────────────────────────────────────────
+  pqc-engine:
+    build:
+      context: ./services/rust/pqc-engine
+    ports: ["8190:8190"]
+    environment:
+      PORT: "8190"
+
+  data-pipeline:
+    build:
+      context: ./services/rust/data-pipeline
+    ports: ["8191:8191"]
+    environment:
+      PORT: "8191"
+
+  # ── Python ML Services ───────────────────────────────────────────────────────
+  compliance-ai:
+    build:
+      context: ./services/python/compliance-ai
+    ports: ["8200:8200"]
+    environment:
+      PORT: "8200"
+
+  regulatory-intelligence:
+    build:
+      context: ./services/python/regulatory-intelligence
+    ports: ["8201:8201"]
+    environment:
+      PORT: "8201"
+
+  # ── Observability ────────────────────────────────────────────────────────────
+  otel-collector:
+    image: otel/opentelemetry-collector-contrib:0.114.0
+    ports:
+      - "4317:4317"   # gRPC
+      - "4318:4318"   # HTTP
+      - "8889:8889"   # Prometheus metrics
     volumes:
-      - minio_dev_data:/data
-    healthcheck:
-      test: ["CMD", "curl", "-f", "http://localhost:9000/minio/health/live"]
-      interval: 30s
-      timeout: 20s
-      retries: 3
-    logging: *default-logging
+      - ./monitoring/otel-config.yaml:/etc/otelcol-contrib/config.yaml
 
 volumes:
-  postgres_dev_data:
-  redis_dev_data:
-  zookeeper_dev_data:
-  kafka_dev_data:
-  prometheus_dev_data:
-  grafana_dev_data:
-  minio_dev_data:
-
-networks:
-  default:
-    name: ndsep-dev-network
+  pgdata:
