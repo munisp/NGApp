@@ -6,6 +6,7 @@ import { z } from "zod";
 import { router, protectedProcedure } from "../_core/trpc";
 import { TRPCError } from "@trpc/server";
 import pino from "pino";
+import { emitMutationEvent, EVENTS } from "../middlewareIntegration";
 
 const logger = pino({ name: "wiredigg-router" });
 const WIREDIGG_URL = process.env.WIREDIGG_URL ?? "http://localhost:8160";
@@ -41,8 +42,16 @@ export const wirediggRouter = router({
   interfaces: protectedProcedure.query(async () => wirediggFetch("/api/interfaces")),
   startCapture: protectedProcedure
     .input(z.object({ interface: z.string().min(1) }))
-    .mutation(async ({ input }) => wirediggFetch("/api/capture/start", "POST", input)),
-  stopCapture: protectedProcedure.mutation(async () => wirediggFetch("/api/capture/stop", "POST")),
+    .mutation(async ({ input }) => {
+      const result = await wirediggFetch("/api/capture/start", "POST", input);
+      emitMutationEvent(EVENTS.NETWORK_CAPTURE_STARTED, { interface: input.interface }).catch((e: unknown) => logger.debug({ err: e instanceof Error ? e.message : String(e) }, "fire-and-forget failed"));
+      return result;
+    }),
+  stopCapture: protectedProcedure.mutation(async () => {
+    const result = await wirediggFetch("/api/capture/stop", "POST");
+    emitMutationEvent(EVENTS.NETWORK_CAPTURE_STOPPED, { action: "stop" }).catch((e: unknown) => logger.debug({ err: e instanceof Error ? e.message : String(e) }, "fire-and-forget failed"));
+    return result;
+  }),
   resetCapture: protectedProcedure.mutation(async () => wirediggFetch("/api/capture/reset", "POST")),
   captureStats: protectedProcedure.query(async () => wirediggFetch("/api/capture/stats")),
 
@@ -69,7 +78,11 @@ export const wirediggRouter = router({
 
   // ── Anomaly detection ──
   anomalyStats: protectedProcedure.query(async () => wirediggFetch("/api/anomaly/stats")),
-  analyzeBatch: protectedProcedure.mutation(async () => wirediggFetch("/api/anomaly/analyze", "POST")),
+  analyzeBatch: protectedProcedure.mutation(async () => {
+    const result = await wirediggFetch("/api/anomaly/analyze", "POST");
+    emitMutationEvent(EVENTS.NETWORK_ANOMALY_ANALYZED, { action: "batch_analyze" }).catch((e: unknown) => logger.debug({ err: e instanceof Error ? e.message : String(e) }, "fire-and-forget failed"));
+    return result;
+  }),
 
   // ── IoT ──
   iotDevices: protectedProcedure.query(async () => wirediggFetch("/api/iot/devices")),
@@ -93,5 +106,9 @@ export const wirediggRouter = router({
   // ── Threat intelligence ──
   addMaliciousIp: protectedProcedure
     .input(z.object({ ip: z.string().min(7).max(45) }))
-    .mutation(async ({ input }) => wirediggFetch("/api/threat-intel/add-ip", "POST", input)),
+    .mutation(async ({ input }) => {
+      const result = await wirediggFetch("/api/threat-intel/add-ip", "POST", input);
+      emitMutationEvent(EVENTS.NETWORK_THREAT_ADDED, { ip: input.ip }).catch((e: unknown) => logger.debug({ err: e instanceof Error ? e.message : String(e) }, "fire-and-forget failed"));
+      return result;
+    }),
 });

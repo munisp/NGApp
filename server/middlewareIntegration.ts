@@ -113,6 +113,51 @@ export const EVENTS = {
   // Sectors
   SECTOR_BENCHMARK: "ndsep.sector.benchmark_updated",
   SECTOR_ALERT: "ndsep.sector.alert",
+
+  // NOC
+  NOC_ALERT_ACKNOWLEDGED: "ndsep.noc.alert_acknowledged",
+  NOC_ALERT_RESOLVED: "ndsep.noc.alert_resolved",
+  NOC_DEVICE_REGISTERED: "ndsep.noc.device_registered",
+  NOC_RUNBOOK_EXECUTED: "ndsep.noc.runbook_executed",
+
+  // NOC Agent
+  NOC_AGENT_METRICS_INGESTED: "ndsep.noc_agent.metrics_ingested",
+  NOC_AGENT_FALSE_POSITIVE: "ndsep.noc_agent.false_positive",
+  NOC_AGENT_DIAGNOSIS: "ndsep.noc_agent.diagnosis",
+  NOC_AGENT_LEARNING: "ndsep.noc_agent.learning_reported",
+  NOC_AGENT_REMEDIATION: "ndsep.noc_agent.remediation_executed",
+  NOC_AGENT_APPROVAL: "ndsep.noc_agent.remediation_approved",
+
+  // Network Intelligence
+  NETWORK_CAPTURE_STARTED: "ndsep.network.capture_started",
+  NETWORK_CAPTURE_STOPPED: "ndsep.network.capture_stopped",
+  NETWORK_ANOMALY_ANALYZED: "ndsep.network.anomaly_analyzed",
+  NETWORK_THREAT_ADDED: "ndsep.network.threat_ip_added",
+
+  // Platform Intelligence
+  PLATFORM_AI_QUERY: "ndsep.platform.ai_compliance_query",
+  PLATFORM_AI_DPIA: "ndsep.platform.ai_dpia_generated",
+  PLATFORM_AI_GAP_ANALYSIS: "ndsep.platform.ai_gap_analysis",
+  PLATFORM_AI_IMPACT: "ndsep.platform.ai_impact_analysis",
+  PLATFORM_AUDIT_APPENDED: "ndsep.platform.audit_appended",
+  PLATFORM_TWIN_SIMULATION: "ndsep.platform.twin_simulation",
+  PLATFORM_TWIN_MONTE_CARLO: "ndsep.platform.twin_monte_carlo",
+  PLATFORM_TWIN_POLICY_CREATED: "ndsep.platform.twin_policy_created",
+  PLATFORM_TWIN_SANDBOX: "ndsep.platform.twin_sandbox_created",
+  PLATFORM_TWIN_COUNTERFACTUAL: "ndsep.platform.twin_counterfactual",
+  PLATFORM_ML_ECONOMIC: "ndsep.platform.ml_economic_impact",
+  PLATFORM_ML_NETWORK: "ndsep.platform.ml_network_effects",
+  PLATFORM_SOVEREIGN_TRANSLATE: "ndsep.platform.sovereign_translate",
+  PLATFORM_SOVEREIGN_FAIRNESS: "ndsep.platform.sovereign_fairness",
+  PLATFORM_SOVEREIGN_REDTEAM: "ndsep.platform.sovereign_redteam",
+  PLATFORM_PQC_KEM: "ndsep.platform.pqc_kem_keypair",
+  PLATFORM_PQC_SIG: "ndsep.platform.pqc_sig_keypair",
+  PLATFORM_PQC_SIGN: "ndsep.platform.pqc_sign",
+  PLATFORM_PQC_ENCRYPT: "ndsep.platform.pqc_encrypt",
+  PLATFORM_TWIN_POLICY_COMPOSE: "ndsep.platform.twin_policy_compose",
+  PLATFORM_TWIN_AGENT_SIM: "ndsep.platform.twin_agent_sim",
+  PLATFORM_TWIN_SYSTEM_DYNAMICS: "ndsep.platform.twin_system_dynamics",
+  PLATFORM_MONTE_CARLO_ENGINE: "ndsep.platform.monte_carlo_engine",
 } as const;
 
 // ── Emit to all middleware ───────────────────────────────────────────────────
@@ -165,4 +210,28 @@ export async function checkPermission(
   } catch {
     return true; // Graceful degradation
   }
+}
+
+/**
+ * tRPC middleware factory for Permify ReBAC enforcement.
+ * Checks if the current user has the required relationship/permission
+ * on the specified resource before allowing the mutation to proceed.
+ * Gracefully degrades — if Permify is unavailable, the request is allowed.
+ */
+export function permifyMiddleware(resource: string, action: string) {
+  return async ({ ctx, next }: { ctx: { user?: { id: number; role: string } }; next: () => unknown }) => {
+    if (!ctx.user) {
+      const { TRPCError } = await import("@trpc/server");
+      throw new TRPCError({ code: "UNAUTHORIZED", message: "Authentication required" });
+    }
+    const allowed = await checkPermission(ctx.user.id, resource, action);
+    if (!allowed) {
+      const { TRPCError } = await import("@trpc/server");
+      throw new TRPCError({
+        code: "FORBIDDEN",
+        message: `Permify: user ${ctx.user.id} denied '${action}' on '${resource}'`,
+      });
+    }
+    return next();
+  };
 }

@@ -49,7 +49,7 @@ export function apiVersionMiddleware(req: Request, res: Response, next: NextFunc
  * Create a versioned router that maps /api/v1/... to /api/trpc/...
  * Provides backward-compatible access to tRPC endpoints via REST-like URLs.
  */
-export function createVersionedEndpoints(expressApp: { use: (...args: unknown[]) => void }): void {
+export function createVersionedEndpoints(expressApp: { use: (...args: any[]) => void }): void {
   // v1 compatibility layer — maps to tRPC procedures
   expressApp.use("/api/v1", apiVersionMiddleware);
   expressApp.use("/api/v2", apiVersionMiddleware);

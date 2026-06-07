@@ -63,6 +63,7 @@ import { verifyMigrations } from "../migrationVerifier";
 import { regenerateSession, generateSessionNonce } from "../sessionSecurity";
 import { traceMiddleware } from "../telemetry";
 import { initWebhookSystem, deliverWebhookEvent } from "../webhookSystem";
+import { createVersionedEndpoints } from "../apiVersioning";
 import { sdk } from "./sdk";
 import { COOKIE_NAME, ONE_YEAR_MS } from "@shared/const";
 import { getSessionCookieOptions } from "./cookies";
@@ -179,12 +180,13 @@ async function startServer() {
   );
   // ── Gzip compression ─────────────────────────────────────────────────────
   app.use(compression());
-  // ── API Versioning Header ────────────────────────────────────────────────
+  // ── API Versioning ─────────────────────────────────────────────────────────
   app.use((_req, res, next) => {
     res.setHeader("X-NDSEP-API-Version", "2.0.0");
     res.setHeader("X-NDSEP-Platform", "National Data Sovereignty Enforcement Platform");
     next();
   });
+  createVersionedEndpoints(app);
   // ── Security Headers (helmet) ─────────────────────────────────────────────
   const isProd = process.env.NODE_ENV === "production";
   app.use(

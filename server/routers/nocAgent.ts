@@ -13,6 +13,8 @@
 import { z } from "zod";
 import { router, protectedProcedure, adminProcedure } from "../_core/trpc";
 import { getPool } from "../db";
+import { emitMutationEvent, EVENTS } from "../middlewareIntegration";
+import { logger } from "../logger";
 
 const PERCEPTION_URL = "http://localhost:8194";
 const REASONING_URL = "http://localhost:8195";
@@ -102,11 +104,19 @@ export const nocAgentRouter = router({
         labels: z.record(z.string(), z.string()).optional(),
       })),
     }))
-    .mutation(async ({ input }) => agentFetch(PERCEPTION_URL, "/api/ingest", "POST", input)),
+    .mutation(async ({ input }) => {
+      const result = await agentFetch(PERCEPTION_URL, "/api/ingest", "POST", input);
+      emitMutationEvent(EVENTS.NOC_AGENT_METRICS_INGESTED, { count: input.metrics.length }).catch((e: unknown) => logger.debug({ err: e instanceof Error ? e.message : String(e) }, "fire-and-forget failed"));
+      return result;
+    }),
 
   markFalsePositive: adminProcedure
     .input(z.object({ anomaly_id: z.string() }))
-    .mutation(async ({ input }) => agentFetch(PERCEPTION_URL, "/api/false-positive", "POST", input)),
+    .mutation(async ({ input }) => {
+      const result = await agentFetch(PERCEPTION_URL, "/api/false-positive", "POST", input);
+      emitMutationEvent(EVENTS.NOC_AGENT_FALSE_POSITIVE, { anomalyId: input.anomaly_id }).catch((e: unknown) => logger.debug({ err: e instanceof Error ? e.message : String(e) }, "fire-and-forget failed"));
+      return result;
+    }),
 
   // ── Reasoning Engine ────────────────────────────────────────────────────
   diagnoses: protectedProcedure.query(async () => agentFetch(REASONING_URL, "/api/diagnoses")),
@@ -127,7 +137,11 @@ export const nocAgentRouter = router({
       detection_method: z.string(),
       context: z.record(z.string(), z.unknown()).optional(),
     }))
-    .mutation(async ({ input }) => agentFetch(REASONING_URL, "/api/diagnose", "POST", input)),
+    .mutation(async ({ input }) => {
+      const result = await agentFetch(REASONING_URL, "/api/diagnose", "POST", input);
+      emitMutationEvent(EVENTS.NOC_AGENT_DIAGNOSIS, { anomalyId: input.anomaly_id, serviceName: input.service_name, severity: input.severity }).catch((e: unknown) => logger.debug({ err: e instanceof Error ? e.message : String(e) }, "fire-and-forget failed"));
+      return result;
+    }),
 
   reportLearning: adminProcedure
     .input(z.object({
@@ -137,7 +151,11 @@ export const nocAgentRouter = router({
       resolution_time_seconds: z.number().optional(),
       notes: z.string().optional(),
     }))
-    .mutation(async ({ input }) => agentFetch(REASONING_URL, "/api/learn", "POST", input)),
+    .mutation(async ({ input }) => {
+      const result = await agentFetch(REASONING_URL, "/api/learn", "POST", input);
+      emitMutationEvent(EVENTS.NOC_AGENT_LEARNING, { remediationId: input.remediation_id, outcome: input.outcome }).catch((e: unknown) => logger.debug({ err: e instanceof Error ? e.message : String(e) }, "fire-and-forget failed"));
+      return result;
+    }),
 
   reasoningMetrics: protectedProcedure.query(async () => agentFetch(REASONING_URL, "/metrics")),
 
@@ -161,11 +179,19 @@ export const nocAgentRouter = router({
       })),
       should_auto_execute: z.boolean(),
     }))
-    .mutation(async ({ input }) => agentFetch(ACTION_URL, "/api/execute", "POST", input)),
+    .mutation(async ({ input }) => {
+      const result = await agentFetch(ACTION_URL, "/api/execute", "POST", input);
+      emitMutationEvent(EVENTS.NOC_AGENT_REMEDIATION, { diagnosisId: input.diagnosis_id, anomalyId: input.anomaly_id, autoExecute: input.should_auto_execute }).catch((e: unknown) => logger.debug({ err: e instanceof Error ? e.message : String(e) }, "fire-and-forget failed"));
+      return result;
+    }),
 
   approveRemediation: adminProcedure
     .input(z.object({ diagnosis_id: z.string() }))
-    .mutation(async ({ input }) => agentFetch(ACTION_URL, "/api/approve", "POST", input)),
+    .mutation(async ({ input }) => {
+      const result = await agentFetch(ACTION_URL, "/api/approve", "POST", input);
+      emitMutationEvent(EVENTS.NOC_AGENT_APPROVAL, { diagnosisId: input.diagnosis_id }).catch((e: unknown) => logger.debug({ err: e instanceof Error ? e.message : String(e) }, "fire-and-forget failed"));
+      return result;
+    }),
 
   actionMetrics: protectedProcedure.query(async () => agentFetch(ACTION_URL, "/metrics")),
 

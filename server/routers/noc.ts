@@ -22,6 +22,7 @@ import { router, protectedProcedure } from "../_core/trpc";
 import { TRPCError } from "@trpc/server";
 import pino from "pino";
 import { getAllMiddlewareHealth } from "../middleware/healthIntegration";
+import { emitMutationEvent, EVENTS } from "../middlewareIntegration";
 
 const logger = pino({ name: "noc-router" });
 
@@ -180,17 +181,21 @@ export const nocRouter = router({
   acknowledgeAlert: protectedProcedure
     .input(z.object({ alertId: z.string(), acknowledgedBy: z.string() }))
     .mutation(async ({ input }) => {
-      return nocFetch(NOC_ESCALATION_URL, "/api/acknowledge", "POST", {
+      const result = await nocFetch(NOC_ESCALATION_URL, "/api/acknowledge", "POST", {
         alert_id: input.alertId, acknowledged_by: input.acknowledgedBy,
       });
+      emitMutationEvent(EVENTS.NOC_ALERT_ACKNOWLEDGED, { alertId: input.alertId, acknowledgedBy: input.acknowledgedBy }).catch((e: unknown) => logger.debug({ err: e instanceof Error ? e.message : String(e) }, "fire-and-forget failed"));
+      return result;
     }),
 
   resolveAlert: protectedProcedure
     .input(z.object({ alertId: z.string(), resolutionNotes: z.string() }))
     .mutation(async ({ input }) => {
-      return nocFetch(NOC_ESCALATION_URL, "/api/resolve", "POST", {
+      const result = await nocFetch(NOC_ESCALATION_URL, "/api/resolve", "POST", {
         alert_id: input.alertId, resolution_notes: input.resolutionNotes,
       });
+      emitMutationEvent(EVENTS.NOC_ALERT_RESOLVED, { alertId: input.alertId }).catch((e: unknown) => logger.debug({ err: e instanceof Error ? e.message : String(e) }, "fire-and-forget failed"));
+      return result;
     }),
 
   // ═══════════════════════════════════════════════════════════════════════════
@@ -235,10 +240,12 @@ export const nocRouter = router({
       location: z.string().optional(),
     }))
     .mutation(async ({ input }) => {
-      return nocFetch(NOC_COLLECTOR_URL, "/api/devices/register", "POST", {
+      const result = await nocFetch(NOC_COLLECTOR_URL, "/api/devices/register", "POST", {
         hostname: input.hostname, ip_address: input.ipAddress, device_type: input.deviceType,
         vendor: input.vendor, model: input.model, location: input.location,
       });
+      emitMutationEvent(EVENTS.NOC_DEVICE_REGISTERED, { hostname: input.hostname, deviceType: input.deviceType, ipAddress: input.ipAddress }).catch((e: unknown) => logger.debug({ err: e instanceof Error ? e.message : String(e) }, "fire-and-forget failed"));
+      return result;
     }),
 
   // ═══════════════════════════════════════════════════════════════════════════
@@ -289,9 +296,11 @@ export const nocRouter = router({
   executeRunbook: protectedProcedure
     .input(z.object({ runbookId: z.string(), alertId: z.string() }))
     .mutation(async ({ input }) => {
-      return nocFetch(NOC_ESCALATION_URL, "/api/execute-runbook", "POST", {
+      const result = await nocFetch(NOC_ESCALATION_URL, "/api/execute-runbook", "POST", {
         runbook_id: input.runbookId, alert_id: input.alertId,
       });
+      emitMutationEvent(EVENTS.NOC_RUNBOOK_EXECUTED, { runbookId: input.runbookId, alertId: input.alertId }).catch((e: unknown) => logger.debug({ err: e instanceof Error ? e.message : String(e) }, "fire-and-forget failed"));
+      return result;
     }),
 
   // ═══════════════════════════════════════════════════════════════════════════
