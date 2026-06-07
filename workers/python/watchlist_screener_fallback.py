@@ -212,12 +212,12 @@ def screen_entity(
         conn = psycopg2.connect(DB_DSN)
         cur = conn.cursor()
         cur.execute("""
-            SELECT id, primary_name, aliases, category, list_source, nationality,
+            SELECT id, primary_name, aliases, category, source, nationality,
                    date_of_birth, country_of_birth
             FROM watchlist_entries WHERE is_active = TRUE LIMIT 5000
         """)
         for row in cur.fetchall():
-            entry_id, primary_name, aliases_json, category, list_source, wl_nationality, wl_dob, wl_country = row
+            entry_id, primary_name, aliases_json, category, source, wl_nationality, wl_dob, wl_country = row
             aliases: List[str] = []
             if aliases_json:
                 try:
@@ -243,7 +243,7 @@ def screen_entity(
                     "watchlist_id": str(entry_id),
                     "primary_name": primary_name,
                     "category": category,
-                    "list_source": list_source,
+                    "list_source": source,
                     "name_similarity": round(n_score, 4),
                     "dob_match_score": round(d_score, 4),
                     "nationality_match_score": round(nat_score, 4),

@@ -18,19 +18,23 @@ export function cspNonceMiddleware() {
     res.locals.cspNonce = nonce;
 
     // Override the CSP header to include the nonce
+    const isDev = process.env.NODE_ENV !== "production";
     const existingCsp = res.getHeader("Content-Security-Policy") as string | undefined;
     if (existingCsp) {
-      // Replace 'unsafe-inline' with nonce-based policy for scripts
       const updated = existingCsp
         .replace(
           /script-src[^;]*/,
-          `script-src 'self' 'nonce-${nonce}'`
+          isDev
+            ? `script-src 'self' 'unsafe-inline' 'unsafe-eval' 'nonce-${nonce}'`
+            : `script-src 'self' 'nonce-${nonce}'`
         );
       res.setHeader("Content-Security-Policy", updated);
     } else {
       res.setHeader(
         "Content-Security-Policy",
-        `default-src 'self'; script-src 'self' 'nonce-${nonce}'; style-src 'self' 'unsafe-inline'; img-src 'self' data: https:; font-src 'self'; connect-src 'self' ws: wss:; frame-ancestors 'none'; base-uri 'self'; form-action 'self'`
+        isDev
+          ? `default-src 'self'; script-src 'self' 'unsafe-inline' 'unsafe-eval' 'nonce-${nonce}'; style-src 'self' 'unsafe-inline'; img-src 'self' data: blob: https:; font-src 'self'; connect-src 'self' ws: wss:; worker-src 'self' blob:; frame-ancestors 'none'; base-uri 'self'; form-action 'self'`
+          : `default-src 'self'; script-src 'self' 'nonce-${nonce}'; style-src 'self' 'unsafe-inline'; img-src 'self' data: https:; font-src 'self'; connect-src 'self' ws: wss:; frame-ancestors 'none'; base-uri 'self'; form-action 'self'`
       );
     }
 

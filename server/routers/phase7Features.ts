@@ -28,6 +28,25 @@ async function exec(rawSql: string, params?: unknown[]): Promise<Record<string, 
   return autoDecryptRows(rawSql, (rows ?? []) as Record<string, unknown>[]);
 }
 
+// ─── Ensure changelogs table exists ──────────────────────────────────────────
+(async () => {
+  try {
+    const { getPool } = await import("../db");
+    const pool = getPool();
+    if (pool) {
+      await pool.query(`CREATE TABLE IF NOT EXISTS changelogs (
+        id SERIAL PRIMARY KEY,
+        version VARCHAR(50) NOT NULL,
+        title VARCHAR(255) NOT NULL,
+        body TEXT,
+        category VARCHAR(50) DEFAULT 'feature',
+        published_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
+        created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
+      )`);
+    }
+  } catch {}
+})();
+
 // ─── Changelog Router ──────────────────────────────────────────────────────────
 export const changelogRouter = router({
   list: publicProcedure

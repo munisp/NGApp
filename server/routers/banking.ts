@@ -584,7 +584,7 @@ const watchlistRouter = router({
       // Fuzzy name screening against watchlist
       const nameParts = input.name.toLowerCase().split(" ");
       const params: unknown[] = [];
-      let sql = `SELECT * FROM watchlist_entries WHERE is_active = 1 AND (`;
+      let sql = `SELECT * FROM watchlist_entries WHERE is_active = true AND (`;
       const conditions: string[] = [];
       for (const part of nameParts) {
         if (part.length >= 3) {
@@ -620,7 +620,7 @@ const watchlistRouter = router({
       await query(`
         INSERT INTO watchlist_entries (entity_id, entity_type, primary_name, aliases, date_of_birth, nationality,
           passport_number, source, category, reason, listing_date, is_active)
-        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, NOW(), 1)
+        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, NOW(), true)
       `, [entityId, input.entityType, input.primaryName, JSON.stringify(input.aliases),
           input.dateOfBirth ?? null, input.nationality ?? null, input.passportNumber ?? null,
           input.source, input.category, input.reason]);
@@ -631,7 +631,7 @@ const watchlistRouter = router({
   delistEntry: adminProcedure
     .input(z.object({ id: z.number(), reason: z.string().min(5) }))
     .mutation(async ({ input }) => {
-      await query(`UPDATE watchlist_entries SET is_active = 0, delisting_date = NOW(), updated_at = NOW() WHERE id = ?`, [input.id]);
+      await query(`UPDATE watchlist_entries SET is_active = false, delisting_date = NOW(), updated_at = NOW() WHERE id = ?`, [input.id]);
       emitMutationEvent("ndsep.banking.mutation", { action: "banking", ts: new Date().toISOString() }).catch((e: unknown) => logger.debug({ err: e instanceof Error ? e.message : String(e) }, "fire-and-forget failed"));
       return { success: true };
     }),
@@ -640,7 +640,7 @@ const watchlistRouter = router({
     const [row] = await query(`
       SELECT 
         COUNT(*) as total,
-        SUM(CASE WHEN is_active = 1 THEN 1 ELSE 0 END) as active,
+        SUM(CASE WHEN is_active = true THEN 1 ELSE 0 END) as active,
         SUM(CASE WHEN category = 'sanctions' THEN 1 ELSE 0 END) as sanctions,
         SUM(CASE WHEN category = 'pep' THEN 1 ELSE 0 END) as pep,
         SUM(CASE WHEN category = 'terrorism' THEN 1 ELSE 0 END) as terrorism,
@@ -679,8 +679,8 @@ const paymentsRouter = router({
       if (input.status) { sql += ` AND status = ?`; params.push(input.status); }
       if (input.senderBankCode) { sql += ` AND sender_bank_code = ?`; params.push(input.senderBankCode); }
       if (input.receiverBankCode) { sql += ` AND receiver_bank_code = ?`; params.push(input.receiverBankCode); }
-      if (input.amlFlagged !== undefined) { sql += ` AND aml_flagged = ?`; params.push(input.amlFlagged ? 1 : 0); }
-      if (input.fraudFlagged !== undefined) { sql += ` AND fraud_flagged = ?`; params.push(input.fraudFlagged ? 1 : 0); }
+      if (input.amlFlagged !== undefined) { sql += ` AND aml_flagged = ?`; params.push(input.amlFlagged); }
+      if (input.fraudFlagged !== undefined) { sql += ` AND fraud_flagged = ?`; params.push(input.fraudFlagged); }
       if (input.dateFrom) { sql += ` AND initiated_at >= ?`; params.push(input.dateFrom); }
       if (input.dateTo) { sql += ` AND initiated_at <= ?`; params.push(input.dateTo); }
       const countSql = sql.replace("SELECT *", "SELECT COUNT(*) as cnt");

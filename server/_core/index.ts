@@ -209,6 +209,7 @@ async function startServer() {
             "https://api.manus.im",
             "https://*.manus.computer",
           ],
+          workerSrc: ["'self'", "blob:"],
           frameSrc: ["'none'"],
           objectSrc: ["'none'"],
           baseUri: ["'self'"],

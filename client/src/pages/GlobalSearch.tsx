@@ -38,7 +38,7 @@ const TYPE_COLORS: Record<string, string> = {
 const TYPE_ROUTES: Record<string, string> = {
   organization: "/organizations",
   violation: "/violations",
-  enforcement_case: "/enforcement",
+  enforcement_case: "/enforcement-cases",
   dpco: "/dpco",
   citizen_request: "/citizen-rights",
 };

@@ -20,6 +20,11 @@ export async function resetDemoData(pool: Pool): Promise<{ seeded: Record<string
   try {
     await client.query("BEGIN");
 
+    // ── 0. Ensure enum values exist ────────────────────────────────────────────
+    for (const val of ['resolved', 'closed', 'overdue']) {
+      await client.query(`DO $$ BEGIN ALTER TYPE citizen_request_status ADD VALUE IF NOT EXISTS '${val}'; EXCEPTION WHEN OTHERS THEN NULL; END $$`);
+    }
+
     // ── 1. Upsert demo users ──────────────────────────────────────────────────
     await client.query(
       `INSERT INTO users (open_id, name, role, created_at, updated_at)
@@ -151,9 +156,9 @@ export async function resetDemoData(pool: Pool): Promise<{ seeded: Record<string
     let policyCount = 0;
     for (const [title, status, date] of policyRows) {
       await client.query(
-        `INSERT INTO dpco_policy_drafts (dpco_org_id, policy_title, status, last_updated, created_at, updated_at)
-         VALUES ($1,$2,$3,$4,NOW(),NOW())`,
-        [orgId, title, status, date]
+        `INSERT INTO dpco_policy_drafts (dpco_org_id, title, document_type, status, created_at, updated_at)
+         VALUES ($1,$2,'policy',$3,NOW(),NOW())`,
+        [orgId, title, status]
       );
       policyCount++;
     }
@@ -251,206 +256,230 @@ export async function resetDemoData(pool: Pool): Promise<{ seeded: Record<string
     await client.query(`DELETE FROM banking_institutions`);
 
     // 10b. Banking Institutions
-    // CBN license numbers match phase20 test expectations exactly:
-    // RC000018 = Zenith Bank (capital_adequacy_ratio > 15)
-    // RC000014 = GTBank (short_name='GTBank', status='licensed')
-    // RC000006 = OPay (license_type='payment_service_bank')
-    // RC000004 = Kuda (license_type='microfinance')
-    // [name, cbn_lic, short_name, itype, license_type, bic, nip, rtgs, cat, status, hq, assets(num), car(num), exam(str), aml(str)]
-    const bankInstitutions: Array<[string, string, string, string, string, string, string, string, string, string, string, number, number, string, string]> = [
-      ["Zenith Bank Plc",    "RC000018", "Zenith",   "commercial_bank",      "commercial",           "ZEIBNGLA", "044", "044", "A", "licensed", "Lagos", 12500000000000, 19.2, "2024-07-20", "low"],
-      ["GTBank Plc",         "RC000014", "GTBank",   "commercial_bank",      "commercial",           "GTBINGLA", "058", "058", "A", "licensed", "Lagos",  9800000000000, 18.5, "2024-06-15", "low"],
-      ["Access Bank Plc",    "RC000125", "Access",   "commercial_bank",      "commercial",           "ABNGNGLA", "044", "044", "A", "licensed", "Lagos", 15200000000000, 17.8, "2024-05-10", "low"],
-      ["OPay Digital Svcs",  "RC000006", "OPay",     "payment_service_bank", "payment_service_bank", "OPAYNG00", "100", "100", "B", "licensed", "Lagos",  2500000000000, 16.4, "2024-08-05", "medium"],
-      ["Kuda Microfinance",  "RC000004", "Kuda",     "microfinance_bank",    "microfinance",         "KUDANGLA", "090", "090", "C", "licensed", "Lagos",   500000000000, 17.1, "2024-09-12", "low"],
-      ["First Bank Nigeria", "RC000010", "FirstBank", "commercial_bank",     "commercial",           "FBNINGLA", "011", "011", "A", "licensed", "Lagos", 11000000000000, 16.9, "2024-08-05", "medium"],
+    // Schema: id, cbn_code, sort_code, bic_code, name, short_name, license_type(enum), license_number, status(enum),
+    //   head_office_address, ceo_name, total_assets, capital_adequacy_ratio, non_performing_loan_ratio,
+    //   data_protection_officer, dpco_org_id, last_examination_date, next_examination_date, compliance_score, created_at, updated_at
+    const bankInstitutions: Array<[string, string, string, string, string, string, string, string, number, number]> = [
+      ["Zenith Bank Plc",    "RC000018", "044", "ZEIBNGLA", "Zenith",    "commercial",           "LIC-ZEN-001", "Lagos", 12500000000000, 19.2],
+      ["GTBank Plc",         "RC000014", "058", "GTBINGLA", "GTBank",    "commercial",           "LIC-GTB-001", "Lagos",  9800000000000, 18.5],
+      ["Access Bank Plc",    "RC000125", "033", "ABNGNGLA", "Access",    "commercial",           "LIC-ACC-001", "Lagos", 15200000000000, 17.8],
+      ["OPay Digital Svcs",  "RC000006", "100", "OPAYNG00", "OPay",      "payment_service_bank", "LIC-OPY-001", "Lagos",  2500000000000, 16.4],
+      ["Kuda Microfinance",  "RC000004", "090", "KUDANGLA", "Kuda",      "microfinance",         "LIC-KUD-001", "Lagos",   500000000000, 17.1],
+      ["First Bank Nigeria", "RC000010", "011", "FBNINGLA", "FirstBank", "commercial",           "LIC-FBN-001", "Lagos", 11000000000000, 16.9],
     ];
     const bankIds: number[] = [];
-    for (const [name, cbn_lic, short_name, itype, license_type, bic, nip, rtgs, cat, status, hq, assets, car, exam, aml] of bankInstitutions) {
+    for (const [name, cbn_code, sort_code, bic_code, short_name, license_type, license_number, hq, assets, car] of bankInstitutions) {
       const { rows: [b] } = await client.query(
         `INSERT INTO banking_institutions
-           (name, cbn_license_number, short_name, institution_type, license_type,
-            bvn_integration, nin_integration,
-            swift_bic, nip_member_code, rtgs_member_code, cbn_category, status,
-            headquarters_state, total_assets_ngn, capital_adequacy_ratio,
-            cbn_examination_date, next_examination_date, aml_risk_rating,
-            last_aml_review_date, created_at, updated_at)
-         VALUES ($1,$2,$3,$4,$5,true,true,$6,$7,$8,$9,$10,$11,$12,$13,$14,NOW(),$15,NOW(),NOW(),NOW())
+           (name, cbn_code, sort_code, bic_code, short_name, license_type,
+            license_number, status, head_office_address, total_assets,
+            capital_adequacy_ratio, last_examination_date, next_examination_date,
+            created_at, updated_at)
+         VALUES ($1,$2,$3,$4,$5,$6,$7,'licensed',$8,$9,$10,NOW(),NOW() + INTERVAL '1 year',NOW(),NOW())
+         ON CONFLICT (cbn_code) DO UPDATE SET name = EXCLUDED.name, updated_at = NOW()
          RETURNING id`,
-        [name, cbn_lic, short_name, itype, license_type, bic, nip, rtgs, cat, status, hq, assets, car, exam, aml]
+        [name, cbn_code, sort_code, bic_code, short_name, license_type, license_number, hq, assets, car]
       );
       bankIds.push(b.id);
     }
 
     // 10c. KYC Records — diverse statuses, risk ratings, and customer types
+    // Schema: id, reference_id, organization_id, bank_id, subject_type, full_name,
+    //   date_of_birth, nationality, bvn, nin, phone_number, email, address,
+    //   selfie_url, id_document_type, id_document_url, liveness_score, face_match_score,
+    //   bvn_verified, nin_verified, address_verified, tier(enum), status(enum), risk_level,
+    //   created_at, updated_at
     let kycCount = 0;
-    const kycRecords = [
-      // [bankIdx, ref, type, name, tier, status, risk, bvn_verified, nin_verified]
-      [0, 'CUS-001', 'individual',  'Adaeze Okonkwo',     'tier2', 'verified',    'low',    true,  true],
-      [0, 'CUS-002', 'individual',  'Emeka Nwosu',        'tier1', 'pending',     'medium', false, false],
-      [0, 'CUS-003', 'individual',  'Fatima Al-Hassan',   'tier3', 'verified',    'high',   true,  true],
-      [1, 'CUS-004', 'corporate',   'Apex Trading Ltd',   'tier3', 'verified',    'medium', true,  true],
-      [1, 'CUS-005', 'corporate',   'NovaTech Systems',   'tier2', 'verified',    'low',    true,  true],
-      [1, 'CUS-006', 'individual',  'Chukwuemeka Eze',    'tier2', 'pending',     'high',   true,  false],
-      [2, 'CUS-007', 'individual',  'Ngozi Adeyemi',      'tier1', 'verified',    'low',    true,  true],
-      [2, 'CUS-008', 'individual',  'Babatunde Olatunji', 'tier2', 'under_review','high',   true,  true],
-      [2, 'CUS-009', 'corporate',   'Pinnacle Holdings',  'tier3', 'verified',    'medium', true,  true],
+    const kycRecords: Array<[number, string, string, string, string, string, boolean, boolean]> = [
+      [0, 'CUS-001', 'individual', 'Adaeze Okonkwo',     'tier2', 'verified',  true,  true],
+      [0, 'CUS-002', 'individual', 'Emeka Nwosu',        'tier1', 'pending',   false, false],
+      [0, 'CUS-003', 'individual', 'Fatima Al-Hassan',   'tier3', 'verified',  true,  true],
+      [1, 'CUS-004', 'individual', 'Apex Trading Ltd',   'tier3', 'verified',  true,  true],
+      [1, 'CUS-005', 'individual', 'NovaTech Systems',   'tier2', 'verified',  true,  true],
+      [1, 'CUS-006', 'individual', 'Chukwuemeka Eze',    'tier2', 'pending',   true,  false],
+      [2, 'CUS-007', 'individual', 'Ngozi Adeyemi',      'tier1', 'verified',  true,  true],
+      [2, 'CUS-008', 'individual', 'Babatunde Olatunji', 'tier2', 'in_review', true,  true],
+      [2, 'CUS-009', 'individual', 'Pinnacle Holdings',  'tier3', 'verified',  true,  true],
     ];
-    for (const [bidx, ref, ctype, fname, tier, kstatus, risk, bvn_v, nin_v] of kycRecords) {
-      const bankId = bankIds[bidx as number];
+    for (const [bidx, ref, stype, fname, tier, kstatus, bvn_v, nin_v] of kycRecords) {
+      const bankId = bankIds[bidx];
       await client.query(
         `INSERT INTO kyc_records
-           (bank_id, customer_ref, customer_type, full_name, bvn, nin,
-            kyc_tier, kyc_status, risk_rating, bvn_verified, nin_verified,
-            nationality, state_of_residence, occupation, created_at, updated_at)
-         VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,'Nigerian','Lagos','Business Owner',NOW(),NOW())`,
-        [bankId, ref, ctype, fname,
-         `22${bankId}${ref}0000`, `${bankId}${ref}000`,
-         tier, kstatus, risk, bvn_v, nin_v]
+           (bank_id, reference_id, subject_type, full_name,
+            bvn, nin, tier, status, bvn_verified, nin_verified,
+            nationality, created_at, updated_at)
+         VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,'Nigerian',NOW(),NOW())`,
+        [bankId, ref, stype, fname,
+         `220${bankId}00${kycCount}`, `${bankId}0${kycCount}000`,
+         tier, kstatus, bvn_v, nin_v]
       );
       kycCount++;
     }
 
-    // 10d. AML Cases — 6 cases with diverse statuses, str_filed, and risk levels
+    // 10d. AML Cases — 6 cases with diverse statuses
+    // Schema: id, case_ref, organization_id, bank_id, subject_name, subject_type, subject_bvn,
+    //   case_type(enum), status(enum), risk_score, pep_match, sanctions_match, adverse_media_match,
+    //   transaction_amount, transaction_currency, transaction_ref, source_of_funds, narrative,
+    //   str_reference, str_filed_at, assigned_to, escalated_to, closed_at, created_at, updated_at
     let amlCount = 0;
-    const amlCases = [
-      // [bankIdx, ref, type, subject, score, risk, status, amount, str_filed, pep_match, sanctions_match, closure_notes]
-      [0, 'AML-2025-001', 'suspicious_transaction', 'Ibrahim Musa',       85.5, 'high',   'under_investigation', 15000000, false, true,  false, null],
-      [0, 'AML-2025-002', 'structuring',            'Amina Bello',        72.0, 'high',   'str_filed',           8500000,  true,  false, true,  null],
-      [1, 'AML-2025-003', 'layering',               'Chidi Okafor',       61.5, 'medium', 'open',                3200000,  false, false, false, null],
-      [1, 'AML-2025-004', 'terrorist_financing',    'Yusuf Abdullahi',    92.0, 'high',   'under_investigation', 25000000, false, true,  true,  null],
-      [2, 'AML-2025-005', 'fraud',                  'Blessing Eze',       45.0, 'medium', 'closed',              1800000,  false, false, false, 'Case closed - insufficient evidence after investigation'],
-      [2, 'AML-2025-006', 'money_laundering',       'Tunde Fashola Corp', 78.5, 'high',   'str_filed',           42000000, true,  false, false, null],
+    const amlCases: Array<[number, string, string, string, number, string, number, boolean, boolean]> = [
+      [0, 'AML-2025-001', 'suspicious_transaction', 'Ibrahim Musa',       85, 'under_investigation', 15000000, true,  false],
+      [0, 'AML-2025-002', 'structuring',            'Amina Bello',        72, 'filed_str',           8500000,  false, true],
+      [1, 'AML-2025-003', 'unusual_pattern',         'Chidi Okafor',       62, 'open',                3200000,  false, false],
+      [1, 'AML-2025-004', 'sanctions_match',         'Yusuf Abdullahi',    92, 'under_investigation', 25000000, true,  true],
+      [2, 'AML-2025-005', 'suspicious_transaction',  'Blessing Eze',       45, 'closed_no_action',    1800000,  false, false],
+      [2, 'AML-2025-006', 'threshold_breach',        'Tunde Fashola Corp', 79, 'filed_str',           42000000, false, false],
     ];
-    for (const [bidx, ref, ctype, subject, score, risk, status, amount, str_filed, pep_match, sanctions_match, closure_notes] of amlCases) {
-      const bankId = bankIds[bidx as number];
+    for (const [bidx, ref, ctype, subject, score, status, amount, pep_match, sanctions_match] of amlCases) {
+      const bankId = bankIds[bidx];
       await client.query(
         `INSERT INTO aml_cases
-           (bank_id, case_reference, case_type, subject_name, alert_source,
-            alert_score, risk_level, status, transaction_amount, transaction_currency,
-            transaction_date, str_filed, pep_match, sanctions_match, closure_notes,
-            created_at, updated_at)
-         VALUES ($1,$2,$3,$4,'rule_engine',$5,$6,$7,$8,'NGN',NOW(),$9,$10,$11,$12,NOW(),NOW())`,
-        [bankId, ref, ctype, subject, score, risk, status, amount, str_filed, pep_match, sanctions_match, closure_notes]
+           (bank_id, case_ref, case_type, subject_name, risk_score,
+            status, transaction_amount, transaction_currency,
+            pep_match, sanctions_match, created_at, updated_at)
+         VALUES ($1,$2,$3,$4,$5,$6,$7,'NGN',$8,$9,NOW(),NOW())`,
+        [bankId, ref, ctype, subject, score, status, amount, pep_match, sanctions_match]
       );
       amlCount++;
     }
 
-    // 10e. Watchlist entries — 8 entries with diverse list types and flags
-    const watchlistEntries = [
-      // [source, list_type, entity_type, full_name, nationality, reason, ofac_sdn, un_consolidated, pep_link, terrorism_link, is_active]
-      ['OFAC',    'SDN',          'individual', 'Abubakar Shekau',      'Nigerian', 'Terrorism financing',       true,  false, false, true,  true],
-      ['UN',      'Consolidated', 'individual', 'Viktor Petrov',        'Russian',  'Sanctions violation',       false, true,  false, false, true],
-      ['NFIU',    'Domestic PEP', 'individual', 'Alhaji Musa Tanko',    'Nigerian', 'Politically Exposed Person', false, false, true,  false, true],
-      ['OFAC',    'SDN',          'entity',     'Crescent Trading LLC', 'UAE',      'Money laundering network',  true,  false, false, false, true],
-      ['EU',      'Consolidated', 'individual', 'Dmitri Volkov',        'Russian',  'Financial sanctions',       false, false, false, false, true],
-      ['UN',      'Consolidated', 'entity',     'Al-Nusra Front',       'Syrian',   'Terrorist organization',    false, true,  false, true,  true],
-      ['NFIU',    'Domestic PEP', 'individual', 'Senator Adewale Bello','Nigerian', 'Politically Exposed Person', false, false, true,  false, true],
-      ['HMT',     'UK Sanctions', 'individual', 'Nikolai Sorokin',      'Russian',  'Sanctions violation',       false, false, false, false, false],
+    // 10e. Watchlist entries — 8 entries with diverse source/category enums
+    // Schema: id, entity_id, entity_type, primary_name, aliases, date_of_birth, nationality,
+    //   passport_number, source(enum), category(enum), risk_level, listing_date, delisting_date,
+    //   is_active, reason, additional_info, created_at, updated_at
+    const watchlistEntries: Array<[string, string, string, string, string, string, string, boolean]> = [
+      ['WL-001', 'ofac_sdn',       'sanctions',       'individual', 'Abubakar Shekau',       'Nigerian', 'Terrorism financing',        true],
+      ['WL-002', 'un_consolidated', 'sanctions',       'individual', 'Viktor Petrov',         'Russian',  'Sanctions violation',        true],
+      ['WL-003', 'nfiu',           'pep',             'individual', 'Alhaji Musa Tanko',     'Nigerian', 'Politically Exposed Person', true],
+      ['WL-004', 'ofac_sdn',       'money_laundering','entity',     'Crescent Trading LLC',  'UAE',      'Money laundering network',   true],
+      ['WL-005', 'eu_consolidated', 'sanctions',       'individual', 'Dmitri Volkov',         'Russian',  'Financial sanctions',        true],
+      ['WL-006', 'un_consolidated', 'terrorism',       'entity',     'Al-Nusra Front',        'Syrian',   'Terrorist organization',     true],
+      ['WL-007', 'nfiu',           'pep',             'individual', 'Senator Adewale Bello', 'Nigerian', 'Politically Exposed Person', true],
+      ['WL-008', 'uk_hmt',         'sanctions',       'individual', 'Nikolai Sorokin',       'Russian',  'Sanctions violation',        false],
     ];
-    for (const [src, ltype, etype, fname, nat, reason, ofac, un, pep, terror, active] of watchlistEntries) {
+    for (const [eid, source, category, etype, pname, nat, reason, active] of watchlistEntries) {
       await client.query(
         `INSERT INTO watchlist_entries
-           (list_source, list_type, entity_type, full_name, nationality, reason,
-            designation_date, status, ofac_sdn, un_consolidated, nfiu_list,
-            pep_link, terrorism_link, is_active, created_at, updated_at)
-         VALUES ($1,$2,$3,$4,$5,$6,'2023-01-01','active',$7,$8,false,$9,$10,$11,NOW(),NOW())`,
-        [src, ltype, etype, fname, nat, reason, ofac, un, pep, terror, active]
+           (entity_id, source, category, entity_type, primary_name,
+            nationality, reason, listing_date, is_active, created_at, updated_at)
+         VALUES ($1,$2,$3,$4,$5,$6,$7,'2023-01-01',$8,NOW(),NOW())`,
+        [eid, source, category, etype, pname, nat, reason, active]
       );
     }
 
     // 10f. SWIFT Messages
+    // Schema: id, message_ref, message_type, sender_bic, sender_bank_name, receiver_bic, receiver_bank_name,
+    //   amount, currency, value_date, ordering_customer, beneficiary_customer, remittance_info,
+    //   correspondent_bic, status(enum), ack_nak_code, sanctions_screened, sanctions_flagged,
+    //   raw_message, sent_at, processed_at, created_at, updated_at
     let swiftCount = 0;
     for (const bankId of bankIds.slice(0, 2)) {
       await client.query(
         `INSERT INTO swift_messages
-           (bank_id, message_reference, message_type, direction, sender_bic,
-            receiver_bic, amount, currency, value_date, ordering_customer,
-            beneficiary_customer, status, ack_received, sanctions_screened,
-            created_at, updated_at)
-         VALUES ($1,$2,'MT103','outbound',$3,'DEUTDEFF',1000000,'USD',NOW(),
-                 'DataGuard Ltd','Test Beneficiary','acknowledged',true,true,NOW(),NOW())`,
-        [bankId, `REF-${bankId}-${Date.now()}`, "ZEIBNGLA"]
+           (message_ref, message_type, sender_bic, sender_bank_name,
+            receiver_bic, receiver_bank_name, amount, currency, value_date,
+            ordering_customer, beneficiary_customer,
+            status, sanctions_screened, sent_at, created_at, updated_at)
+         VALUES ($1,'MT103','ZEIBNGLA','Zenith Bank','DEUTDEFF','Deutsche Bank',
+                 1000000,'USD',to_char(NOW(),'YYYY-MM-DD'),'DataGuard Ltd','Test Beneficiary',
+                 'acknowledged',true,NOW(),NOW(),NOW())`,
+        [`REF-${bankId}-${Date.now()}`]
       );
       swiftCount++;
     }
 
     // 10f-2. NIP Transactions — 10 transactions with diverse statuses and flags
+    // Schema: id, session_id(NOT NULL), name_enquiry_ref, sender_bank_code(NOT NULL), sender_bank_name,
+    //   sender_account_number(NOT NULL), sender_account_name, receiver_bank_code(NOT NULL), receiver_bank_name,
+    //   receiver_account_number(NOT NULL), receiver_account_name, amount(NOT NULL), currency, narration,
+    //   status(enum), response_code, response_message, nibss_ref, channel_code,
+    //   aml_flagged, fraud_flagged, settlement_date, initiated_at
     let nipCount = 0;
-    const nipTxns = [
-      // [bankIdx, ref, sender_acc, sender_code, recv_acc, recv_code, amount, narration, status, channel, session_id, aml_flagged, fraud_flagged]
-      [0, 'NIP-2025-001', '0012345678', '044', '0098765432', '058', 500000,   'School fees payment',       'completed', 'mobile',  'SES-001-NIBSS', false, false],
-      [0, 'NIP-2025-002', '0023456789', '044', '0087654321', '011', 2500000,  'Business payment',          'completed', 'internet','SES-002-NIBSS', false, false],
-      [0, 'NIP-2025-003', '0034567890', '044', '0076543210', '033', 15000000, 'Suspicious bulk transfer',  'pending',   'ussd',    null,             true,  false],
-      [1, 'NIP-2025-004', '0045678901', '058', '0065432109', '044', 750000,   'Rent payment',              'completed', 'mobile',  'SES-004-NIBSS', false, false],
-      [1, 'NIP-2025-005', '0056789012', '058', '0054321098', '033', 8500000,  'Investment transfer',       'completed', 'internet','SES-005-NIBSS', false, false],
-      [1, 'NIP-2025-006', '0067890123', '058', '0043210987', '011', 3200000,  'Possible fraud attempt',    'pending',   'pos',     null,             false, true],
-      [2, 'NIP-2025-007', '0078901234', '033', '0032109876', '058', 1200000,  'Salary advance',            'completed', 'mobile',  'SES-007-NIBSS', false, false],
-      [2, 'NIP-2025-008', '0089012345', '033', '0021098765', '044', 25000000, 'High-value AML flagged',    'pending',   'internet',null,             true,  false],
-      [3, 'NIP-2025-009', '0090123456', '100', '0010987654', '058', 450000,   'E-commerce payment',        'completed', 'mobile',  'SES-009-NIBSS', false, false],
-      [3, 'NIP-2025-010', '0001234567', '100', '0009876543', '033', 180000,   'Utility bill payment',      'completed', 'ussd',    'SES-010-NIBSS', false, false],
+    const nipTxns: Array<[string, string, string, string, string, number, string, string, string, boolean, boolean]> = [
+      ['SES-001-NIBSS', '044', '0012345678', '058', '0098765432', 500000,   'School fees payment',       'completed',  'MOB', false, false],
+      ['SES-002-NIBSS', '044', '0023456789', '011', '0087654321', 2500000,  'Business payment',          'completed',  'INT', false, false],
+      ['SES-003-NIBSS', '044', '0034567890', '033', '0076543210', 15000000, 'Suspicious bulk transfer',  'initiated',  'USS', true,  false],
+      ['SES-004-NIBSS', '058', '0045678901', '044', '0065432109', 750000,   'Rent payment',              'completed',  'MOB', false, false],
+      ['SES-005-NIBSS', '058', '0056789012', '033', '0054321098', 8500000,  'Investment transfer',       'completed',  'INT', false, false],
+      ['SES-006-NIBSS', '058', '0067890123', '011', '0043210987', 3200000,  'Possible fraud attempt',    'initiated',  'POS', false, true],
+      ['SES-007-NIBSS', '033', '0078901234', '058', '0032109876', 1200000,  'Salary advance',            'completed',  'MOB', false, false],
+      ['SES-008-NIBSS', '033', '0089012345', '044', '0021098765', 25000000, 'High-value AML flagged',    'initiated',  'INT', true,  false],
+      ['SES-009-NIBSS', '100', '0090123456', '058', '0010987654', 450000,   'E-commerce payment',        'completed',  'MOB', false, false],
+      ['SES-010-NIBSS', '100', '0001234567', '033', '0009876543', 180000,   'Utility bill payment',      'completed',  'USS', false, false],
     ];
-    for (const [bidx, ref, sacc, scode, racc, rcode, amount, narr, status, channel, session_id, aml_f, fraud_f] of nipTxns) {
-      const bankId = bankIds[bidx as number];
+    for (const [sid, scode, sacc, rcode, racc, amount, narr, status, channel, aml_f, fraud_f] of nipTxns) {
       await client.query(
         `INSERT INTO nip_transactions
-           (bank_id, transaction_ref, sender_account, sender_bank_code,
-            receiver_account, receiver_bank_code, amount, currency, narration,
-            status, channel, session_id, nibss_ref, aml_flagged, fraud_flagged,
-            transaction_date, created_at, updated_at)
-         VALUES ($1,$2,$3,$4,$5,$6,$7,'NGN',$8,$9,$10,$11,$12,$13,$14,NOW(),NOW(),NOW())`,
-        [bankId, ref, sacc, scode, racc, rcode, amount, narr, status, channel,
-         session_id, session_id ? `NIBSS-${ref}` : null, aml_f, fraud_f]
+           (session_id, sender_bank_code, sender_account_number,
+            receiver_bank_code, receiver_account_number,
+            amount, narration, status, channel_code,
+            aml_flagged, fraud_flagged, initiated_at)
+         VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,NOW())`,
+        [sid, scode, sacc, rcode, racc, amount, narr, status, channel, aml_f, fraud_f]
       );
       nipCount++;
     }
 
     // 10g. Fraud Alerts
+    // Schema: id, alert_ref, bank_id, organization_id, transaction_ref, transaction_amount,
+    //   account_number, alert_type(enum), risk_score, ml_model, ml_confidence,
+    //   rule_triggered, status(enum), disposition, investigator_notes, assigned_to,
+    //   blocked_at, resolved_at, detected_at, created_at, updated_at
     let fraudCount = 0;
     for (const bankId of bankIds.slice(0, 3)) {
       await client.query(
         `INSERT INTO fraud_alerts
-           (bank_id, alert_reference, fraud_type, channel, customer_ref,
-            amount, currency, risk_score, risk_level, status,
-            detection_method, ml_model_version, confirmed_fraud,
-            false_positive, created_at, updated_at)
-         VALUES ($1,$2,'card_fraud','pos',$3,250000,'NGN',85.5,'high','investigating',
-                 'ml_model','v2.1.0',false,false,NOW(),NOW())`,
-        [bankId, `FRD-${bankId}-${Date.now()}`, `CUS-${bankId}-1`]
+           (bank_id, alert_ref, alert_type, transaction_amount,
+            risk_score, ml_model, ml_confidence, status,
+            detected_at, created_at, updated_at)
+         VALUES ($1,$2,'velocity_breach',250000,
+                 85,'fraud-ml-v2',0.92,'investigating',
+                 NOW(),NOW(),NOW())`,
+        [bankId, `FRD-${bankId}-${Date.now()}`]
       );
       fraudCount++;
     }
 
     // 10h. CBN Reports
+    // Schema: id, report_ref, bank_id, organization_id, report_type(enum), reporting_period,
+    //   status(enum), filing_deadline, submitted_at, acknowledged_at, cbn_ack_ref,
+    //   xml_payload, pdf_url, total_transactions, total_amount, rejection_reason,
+    //   prepared_by, approved_by, created_at, updated_at
     let cbnCount = 0;
     for (const bankId of bankIds.slice(0, 2)) {
       await client.query(
         `INSERT INTO cbn_reports
-           (bank_id, report_reference, report_type, reporting_period,
-            period_start, period_end, due_date, submission_date,
-            status, total_transactions, total_value_ngn, str_count,
-            ctr_count, aml_cases_count, submitted_by, created_at, updated_at)
-         VALUES ($1,$2,'STR','Q1-2025','2025-01-01','2025-03-31','2025-04-15','2025-04-10',
-                 'submitted',15420,8500000000,3,12,2,'Compliance Officer',NOW(),NOW())`,
+           (bank_id, report_ref, report_type, reporting_period,
+            status, filing_deadline, submitted_at,
+            total_transactions, total_amount, prepared_by,
+            created_at, updated_at)
+         VALUES ($1,$2,'str','Q1-2025',
+                 'submitted','2025-04-15','2025-04-10',
+                 15420,8500000000,'Compliance Officer',
+                 NOW(),NOW())`,
         [bankId, `CBN-${bankId}-Q1-2025`]
       );
       cbnCount++;
     }
 
     // 10i. Correspondent Banks
+    // Schema: id, bank_id, correspondent_name, correspondent_bic, country, currency,
+    //   relationship_type(enum), nostro_account, vostro_account, status(enum),
+    //   daily_limit, monthly_limit, kyc_completed, aml_risk_rating,
+    //   last_review_date, next_review_date, agreement_url, notes, created_at, updated_at
     let corrCount = 0;
     for (const bankId of bankIds.slice(0, 2)) {
       await client.query(
         `INSERT INTO correspondent_banks
            (bank_id, correspondent_name, correspondent_bic, country, currency,
             relationship_type, nostro_account, status, daily_limit, monthly_limit,
-            kyc_completed, aml_risk_rating, fatf_compliant, ofac_cleared,
-            last_review_date, next_review_date, created_at, updated_at)
-         VALUES ($1,'Deutsche Bank AG','DEUTDEFF','Germany','EUR',
+            kyc_completed, aml_risk_rating, last_review_date, next_review_date,
+            created_at, updated_at)
+         VALUES ($1,$2,$3,'Germany','EUR',
                  'nostro','DE89370400440532013000','active',
-                 50000000,500000000,true,'low',true,true,
+                 50000000,500000000,true,'low',
                  '2024-12-01','2025-12-01',NOW(),NOW())`,
-        [bankId]
+        [bankId, corrCount === 0 ? 'Deutsche Bank AG' : 'Citibank NA', corrCount === 0 ? 'DEUTDEFF' : 'CITIUS33']
       );
       corrCount++;
     }

@@ -20,6 +20,20 @@ async function exec(sql: string, params: unknown[] = []): Promise<any[]> {
   return autoDecryptRows(sql, result.rows as any[]);
 }
 
+// ─── Ensure onboarding_checklists table exists ──────────────────────────────
+(async () => {
+  try {
+    const pool = getSharedPool();
+    await pool.query(`CREATE TABLE IF NOT EXISTS onboarding_checklists (
+      id SERIAL PRIMARY KEY,
+      user_id INTEGER NOT NULL,
+      step_id VARCHAR(100) NOT NULL,
+      completed_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
+      UNIQUE(user_id, step_id)
+    )`);
+  } catch {}
+})();
+
 // ── Onboarding checklist steps ────────────────────────────────────────────────
 const ONBOARDING_STEPS = [
   { id: "profile",     label: "Complete organisation profile",          path: "/my-org",    points: 20 },
