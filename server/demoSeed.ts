@@ -24,6 +24,9 @@ export async function resetDemoData(pool: Pool): Promise<{ seeded: Record<string
     for (const val of ['resolved', 'closed', 'overdue']) {
       await client.query(`DO $$ BEGIN ALTER TYPE citizen_request_status ADD VALUE IF NOT EXISTS '${val}'; EXCEPTION WHEN OTHERS THEN NULL; END $$`);
     }
+    for (const val of ['published', 'expired', 'revoked']) {
+      await client.query(`DO $$ BEGIN ALTER TYPE privacy_notice_status ADD VALUE IF NOT EXISTS '${val}'; EXCEPTION WHEN OTHERS THEN NULL; END $$`);
+    }
 
     // ── 1. Upsert demo users ──────────────────────────────────────────────────
     await client.query(

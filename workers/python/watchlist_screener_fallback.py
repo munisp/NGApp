@@ -213,11 +213,11 @@ def screen_entity(
         cur = conn.cursor()
         cur.execute("""
             SELECT id, primary_name, aliases, category, source, nationality,
-                   date_of_birth, country_of_birth
+                   date_of_birth
             FROM watchlist_entries WHERE is_active = TRUE LIMIT 5000
         """)
         for row in cur.fetchall():
-            entry_id, primary_name, aliases_json, category, source, wl_nationality, wl_dob, wl_country = row
+            entry_id, primary_name, aliases_json, category, source, wl_nationality, wl_dob = row
             aliases: List[str] = []
             if aliases_json:
                 try:
