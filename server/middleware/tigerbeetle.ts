@@ -72,11 +72,11 @@ async function pgLedgerRecord(
     if (!pool) return false;
 
     await pool.query(
-      `INSERT INTO financial_ledger (transfer_id, debit_account, credit_account,
-       amount, currency, ledger_code, metadata, status, created_at)
-       VALUES ($1, $2, $3, $4, $5, $6, $7, 'posted', NOW())
-       ON CONFLICT (transfer_id) DO NOTHING`,
-      [transferId, debitAccount, creditAccount, amount, currency, ledgerCode, JSON.stringify(metadata)]
+      `INSERT INTO financial_ledger (transaction_id, debit_account, credit_account,
+       amount, currency, tx_type, status, metadata, organization_id, created_at)
+       VALUES ($1, $2, $3, $4, $5, 'transfer', 'posted', $6, 0, NOW())
+       ON CONFLICT (transaction_id) DO NOTHING`,
+      [transferId, debitAccount, creditAccount, amount, currency, JSON.stringify({ ...metadata, ledgerCode })]
     );
     return true;
   } catch (err) {
@@ -150,7 +150,7 @@ export async function getAccountBalance(id: bigint): Promise<{ debits: bigint; c
         COALESCE(SUM(CASE WHEN debit_account = $1 THEN amount ELSE 0 END), 0) AS total_debits,
         COALESCE(SUM(CASE WHEN credit_account = $1 THEN amount ELSE 0 END), 0) AS total_credits
        FROM financial_ledger
-       WHERE (debit_account = $1 OR credit_account = $1) AND status = 'posted'`,
+       WHERE (debit_account = $1 OR credit_account = $1) AND status IN ('posted', 'settled')`,
       [id.toString()]
     );
 
@@ -204,10 +204,10 @@ export async function getFinancialSummary(): Promise<{
 
     const result = await pool.query(`
       SELECT
-        COALESCE(SUM(CASE WHEN ledger_code = ${LEDGER_CODES.PENALTY_INCOME} THEN amount ELSE 0 END), 0) AS total_penalties,
-        COALESCE(SUM(CASE WHEN ledger_code = ${LEDGER_CODES.PAYMENT_RECEIVED} THEN amount ELSE 0 END), 0) AS total_collected,
+        COALESCE(SUM(CASE WHEN tx_type = 'penalty' THEN amount ELSE 0 END), 0) AS total_penalties,
+        COALESCE(SUM(CASE WHEN tx_type = 'payment' THEN amount ELSE 0 END), 0) AS total_collected,
         COUNT(*) AS tx_count
-      FROM financial_ledger WHERE status = 'posted'
+      FROM financial_ledger WHERE status IN ('posted', 'settled')
     `);
     const row = result.rows[0] || {};
     const totalPenalties = parseFloat(row.total_penalties) || 0;
@@ -239,7 +239,7 @@ export async function checkTigerBeetleHealth(): Promise<{
     const { getPool } = await import("../db");
     const pool = getPool();
     if (pool) {
-      await pool.query("SELECT 1 FROM financial_ledger LIMIT 1").catch(() => null);
+      await pool.query("SELECT COUNT(*) FROM financial_ledger LIMIT 1").catch(() => null);
       pgFallbackActive = true;
     }
   } catch { /* ignore */ }
