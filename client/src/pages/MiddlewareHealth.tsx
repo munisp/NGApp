@@ -1,45 +1,37 @@
-import { useQuery } from "@tanstack/react-query";
+import { trpc } from "@/lib/trpc";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Server, Activity, Zap, Database, Shield, Cpu, Globe, MessageSquare, Lock, Layers, Landmark } from "lucide-react";
 
-interface ServiceHealth {
-  name: string;
-  status: "healthy" | "degraded" | "unhealthy" | "unconfigured";
-  latencyMs: number;
-  details: Record<string, unknown>;
-  checkedAt: string;
-}
-
-interface MiddlewareHealthData {
-  overall: string;
-  services: ServiceHealth[];
-  checkedAt: string;
-}
-
 const serviceIcons: Record<string, typeof Server> = {
   PostgreSQL: Database,
+  postgres: Database,
   Redis: Zap,
+  redis: Zap,
   Kafka: MessageSquare,
+  kafka: MessageSquare,
   Temporal: Activity,
+  temporal: Activity,
   Keycloak: Lock,
+  keycloak: Lock,
   TigerBeetle: Landmark,
+  tigerBeetleHttp: Landmark,
   OpenSearch: Globe,
+  openSearch: Globe,
   APISIX: Shield,
+  apisix: Shield,
   Dapr: Layers,
+  daprSidecar: Layers,
   Fluvio: Activity,
+  fluvio: Activity,
   Permify: Lock,
+  permify: Lock,
   Mojaloop: Landmark,
+  mojaloop: Landmark,
 };
 
 export default function MiddlewareHealth() {
-  const { data, isLoading, error, refetch } = useQuery<MiddlewareHealthData>({
-    queryKey: ["middleware-health"],
-    queryFn: async () => {
-      const res = await fetch("/api/middleware/health");
-      if (!res.ok) throw new Error("Failed to fetch middleware health");
-      return res.json();
-    },
+  const { data, isLoading, error, refetch } = trpc.orchestration.middlewareHealth.useQuery(undefined, {
     refetchInterval: 15_000,
   });
 
@@ -63,6 +55,8 @@ export default function MiddlewareHealth() {
     }
   };
 
+  const overallStatus = data ? (data.healthPct >= 80 ? "healthy" : data.healthPct >= 50 ? "degraded" : "unhealthy") : "unknown";
+
   return (
     <div className="space-y-6">
       <div className="flex items-center justify-between">
@@ -70,19 +64,21 @@ export default function MiddlewareHealth() {
           <Cpu className="h-8 w-8 text-purple-600" />
           <div>
             <h1 className="text-2xl font-bold">Middleware Health</h1>
-            <p className="text-muted-foreground">Service connectivity and status monitoring</p>
+            <p className="text-muted-foreground">Service connectivity and status monitoring via tRPC</p>
           </div>
         </div>
         <button onClick={() => refetch()} className="px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 text-sm">Refresh</button>
       </div>
 
+      {error && <div className="text-red-500 p-4">Error: {error.message}</div>}
+
       {/* Overall Status */}
-      <Card className={statusColor(data?.overall ?? "unknown")}>
+      <Card className={statusColor(overallStatus)}>
         <CardContent className="flex items-center justify-center gap-4 py-8">
           <Server className="h-12 w-12" />
           <div className="text-center">
             <p className="text-lg font-medium">Overall Platform Health</p>
-            <p className="text-3xl font-bold uppercase">{data?.overall ?? "Unknown"}</p>
+            <p className="text-3xl font-bold">{data?.online ?? 0}/{data?.total ?? 0} Services Online ({data?.healthPct ?? 0}%)</p>
             <p className="text-sm opacity-70">Last checked: {data?.checkedAt ? new Date(data.checkedAt).toLocaleTimeString() : "N/A"}</p>
           </div>
         </CardContent>
@@ -90,23 +86,21 @@ export default function MiddlewareHealth() {
 
       {/* Services Grid */}
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-        {data?.services?.map((service) => {
-          const Icon = serviceIcons[service.name] ?? Server;
+        {data?.middleware?.map((service) => {
+          const Icon = serviceIcons[service.service] ?? Server;
           return (
-            <Card key={service.name}>
+            <Card key={service.service}>
               <CardHeader className="flex flex-row items-center justify-between pb-2">
                 <CardTitle className="text-sm font-medium flex items-center gap-2">
                   <Icon className="h-4 w-4" />
-                  {service.name}
+                  {service.service}
                 </CardTitle>
-                <Badge variant={statusBadge(service.status) as any}>{service.status}</Badge>
+                <Badge variant={statusBadge(service.status) as "default" | "secondary" | "destructive" | "outline"}>{service.status}</Badge>
               </CardHeader>
               <CardContent>
                 <div className="text-sm text-muted-foreground">
-                  <p>Latency: {service.latencyMs}ms</p>
-                  {Object.entries(service.details).map(([key, value]) => (
-                    <p key={key} className="truncate">{key}: {String(value)}</p>
-                  ))}
+                  <p>Latency: {service.latencyMs ?? 0}ms</p>
+                  {service.error && <p className="text-red-500 truncate">Error: {service.error}</p>}
                 </div>
               </CardContent>
             </Card>

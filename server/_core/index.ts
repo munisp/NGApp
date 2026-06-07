@@ -360,7 +360,11 @@ async function startServer() {
       if (!pool) return res.status(503).json({ error: "Database not available" });
       const { resetDemoData } = await import("../demoSeed.js");
       const result = await resetDemoData(pool);
-      logger.info({ seeded: result.seeded }, "[demo-reset] Demo data reset successfully");
+      // Also seed comprehensive domain data (all sector tables)
+      const { seedComprehensiveData } = await import("../comprehensiveSeed.js");
+      const compResult = await seedComprehensiveData(pool);
+      const allSeeded = { ...result.seeded, ...compResult.seeded };
+      logger.info({ seeded: allSeeded }, "[demo-reset] Demo data reset successfully");
       // Re-issue demo session cookie so the user stays logged in
       const isAdmin = req.query.role === "admin";
       const DEMO_OPEN_ID = isAdmin ? "demo-admin-user-001" : "demo-dpco-user-001";
