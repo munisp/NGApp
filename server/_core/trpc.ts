@@ -35,6 +35,19 @@ export const adminProcedure = t.procedure.use(
       throw new TRPCError({ code: "FORBIDDEN", message: NOT_ADMIN_ERR_MSG });
     }
 
+    // Permify ReBAC enforcement: verify admin has relationship-based permission
+    // Gracefully degrades — if Permify is unavailable, the request proceeds (role check above suffices)
+    try {
+      const { checkPermission } = await import("../middlewareIntegration");
+      const allowed = await checkPermission(ctx.user.id, "admin", "write");
+      if (!allowed) {
+        throw new TRPCError({ code: "FORBIDDEN", message: "Permify: admin write permission denied" });
+      }
+    } catch (e) {
+      // Graceful degradation: if Permify is unreachable, fall through to role-based check
+      if (e instanceof TRPCError) throw e;
+    }
+
     return next({
       ctx: {
         ...ctx,

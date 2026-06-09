@@ -146,7 +146,7 @@ const bankingRouter = router({
       sets.push("updated_at = NOW()");
       params.push(id);
       await query(`UPDATE banking_institutions SET ${sets.join(", ")} WHERE id = ?`, params);
-      emitMutationEvent("ndsep.banking.mutation", { action: "banking", ts: new Date().toISOString() }).catch((e: unknown) => logger.debug({ err: e instanceof Error ? e.message : String(e) }, "fire-and-forget failed"));
+      emitMutationEvent(EVENTS.CORRESPONDENT_BANK, { action: "institution_updated", ts: new Date().toISOString() }).catch((e: unknown) => logger.debug({ err: e instanceof Error ? e.message : String(e) }, "fire-and-forget failed"));
       return { success: true };
     }),
 
@@ -257,7 +257,7 @@ const kycRouter = router({
           input.nationality, input.bvn ?? null, input.nin ?? null, input.phoneNumber ?? null,
           input.email ?? null, input.address ?? null, input.selfieUrl ?? null,
           input.idDocumentType ?? null, input.idDocumentUrl ?? null, input.tier, expiresAt.toISOString()]);
-      emitMutationEvent("ndsep.banking.mutation", { action: "banking", ts: new Date().toISOString() }).catch((e: unknown) => logger.debug({ err: e instanceof Error ? e.message : String(e) }, "fire-and-forget failed"));
+      emitMutationEvent(EVENTS.KYC_VERIFICATION, { action: "kyc_submitted", ts: new Date().toISOString() }).catch((e: unknown) => logger.debug({ err: e instanceof Error ? e.message : String(e) }, "fire-and-forget failed"));
       return { success: true, referenceId: refId };
     }),
 
@@ -336,7 +336,7 @@ const kycRouter = router({
           input.addressVerified !== undefined ? (input.addressVerified ? 1 : 0) : null,
           ctx.user.name ?? ctx.user.email ?? "System",
           input.notes ?? null, input.id]);
-      emitMutationEvent("ndsep.banking.mutation", { action: "banking", ts: new Date().toISOString() }).catch((e: unknown) => logger.debug({ err: e instanceof Error ? e.message : String(e) }, "fire-and-forget failed"));
+      emitMutationEvent(EVENTS.KYC_VERIFICATION, { action: "kyc_approved", ts: new Date().toISOString() }).catch((e: unknown) => logger.debug({ err: e instanceof Error ? e.message : String(e) }, "fire-and-forget failed"));
       return { success: true, newStatus };
     }),
 
@@ -497,7 +497,7 @@ const amlRouter = router({
         await broadcastEvent("aml_case_escalated", { caseRef, caseType: input.caseType, riskScore: input.riskScore });
         await triggerWorkflow("AmlEscalationWorkflow", `aml-${caseRef}`, { caseRef, caseType: input.caseType, riskScore: input.riskScore });
       }
-      emitMutationEvent("ndsep.banking.mutation", { action: "banking", ts: new Date().toISOString() }).catch((e: unknown) => logger.debug({ err: e instanceof Error ? e.message : String(e) }, "fire-and-forget failed"));
+      emitMutationEvent(EVENTS.AML_CASE_CREATED, { action: "aml_case_created", ts: new Date().toISOString() }).catch((e: unknown) => logger.debug({ err: e instanceof Error ? e.message : String(e) }, "fire-and-forget failed"));
       return { success: true, caseRef, status };
     }),
 
@@ -521,7 +521,7 @@ const amlRouter = router({
       if (input.status.startsWith("closed")) { sets.push("closed_at = NOW()"); }
       params.push(input.id);
       await query(`UPDATE aml_cases SET ${sets.join(", ")} WHERE id = ?`, params);
-      emitMutationEvent("ndsep.banking.mutation", { action: "banking", ts: new Date().toISOString() }).catch((e: unknown) => logger.debug({ err: e instanceof Error ? e.message : String(e) }, "fire-and-forget failed"));
+      emitMutationEvent(EVENTS.AML_CASE_UPDATED, { action: "str_filed", ts: new Date().toISOString() }).catch((e: unknown) => logger.debug({ err: e instanceof Error ? e.message : String(e) }, "fire-and-forget failed"));
       return { success: true };
     }),
 
@@ -599,7 +599,7 @@ const watchlistRouter = router({
         params.push(input.passportNumber);
       }
       const matches = await query(sql, params);
-      emitMutationEvent("ndsep.banking.mutation", { action: "banking", ts: new Date().toISOString() }).catch((e: unknown) => logger.debug({ err: e instanceof Error ? e.message : String(e) }, "fire-and-forget failed"));
+      emitMutationEvent(EVENTS.KYC_VERIFICATION, { action: "watchlist_screened", ts: new Date().toISOString() }).catch((e: unknown) => logger.debug({ err: e instanceof Error ? e.message : String(e) }, "fire-and-forget failed"));
       return { matches, screeningRef: genRef("SCR"), matchCount: matches.length };
     }),
 
@@ -624,7 +624,7 @@ const watchlistRouter = router({
       `, [entityId, input.entityType, input.primaryName, JSON.stringify(input.aliases),
           input.dateOfBirth ?? null, input.nationality ?? null, input.passportNumber ?? null,
           input.source, input.category, input.reason]);
-      emitMutationEvent("ndsep.banking.mutation", { action: "banking", ts: new Date().toISOString() }).catch((e: unknown) => logger.debug({ err: e instanceof Error ? e.message : String(e) }, "fire-and-forget failed"));
+      emitMutationEvent(EVENTS.FRAUD_ALERT, { action: "watchlist_entity_added", ts: new Date().toISOString() }).catch((e: unknown) => logger.debug({ err: e instanceof Error ? e.message : String(e) }, "fire-and-forget failed"));
       return { success: true, entityId };
     }),
 
@@ -632,7 +632,7 @@ const watchlistRouter = router({
     .input(z.object({ id: z.number(), reason: z.string().min(5) }))
     .mutation(async ({ input }) => {
       await query(`UPDATE watchlist_entries SET is_active = false, delisting_date = NOW(), updated_at = NOW() WHERE id = ?`, [input.id]);
-      emitMutationEvent("ndsep.banking.mutation", { action: "banking", ts: new Date().toISOString() }).catch((e: unknown) => logger.debug({ err: e instanceof Error ? e.message : String(e) }, "fire-and-forget failed"));
+      emitMutationEvent(EVENTS.FRAUD_ALERT, { action: "watchlist_entity_delisted", ts: new Date().toISOString() }).catch((e: unknown) => logger.debug({ err: e instanceof Error ? e.message : String(e) }, "fire-and-forget failed"));
       return { success: true };
     }),
 
@@ -709,21 +709,77 @@ const paymentsRouter = router({
       if (input.amount > 10_000_000) {
         throw new TRPCError({ code: "BAD_REQUEST", message: "NIP single transaction limit is ₦10,000,000. Use RTGS for higher amounts." });
       }
-      // Business rule: AML threshold check - transactions >= ₦5M require AML screening
-      const amlFlagged = input.amount >= 5_000_000;
-      // Business rule: CTR threshold - transactions >= ₦5M must be reported to CBN
+
+      // ── AML Business Rules (CBN AML/CFT Reg 2022 + NFIU Guidelines) ──────
+
+      // 1. CTR Threshold: transactions >= ₦5M flagged per NFIU CTR requirement
+      const CTR_THRESHOLD = 5_000_000;
+      const amlFlagged = input.amount >= CTR_THRESHOLD;
+
+      // 2. Structuring detection: amounts in the ₦4M-₦4.99M range (just below ₦5M threshold)
+      const structuringRisk = input.amount >= 4_000_000 && input.amount < CTR_THRESHOLD;
+
+      // 3. Velocity check: >3 transactions from same account in 1 hour triggers review
+      let velocityFlagged = false;
+      try {
+        const [velRow] = await query(
+          `SELECT COUNT(*) as cnt FROM nip_transactions WHERE sender_account_number = ? AND initiated_at > NOW() - INTERVAL '1 hour'`,
+          [input.senderAccountNumber]
+        ) as any[];
+        velocityFlagged = (velRow?.cnt ?? 0) >= 3;
+      } catch { /* non-fatal — proceed with transaction */ }
+
+      // 4. Sanctions screening: check sender + receiver against watchlist
+      let sanctionsFlagged = false;
+      try {
+        const [sanctionRow] = await query(
+          `SELECT COUNT(*) as cnt FROM watchlist_entries WHERE is_active = true AND category IN ('sanctions','terrorism') AND (
+            primary_name LIKE ? OR primary_name LIKE ?
+          )`,
+          [`%${input.senderAccountName ?? ""}%`, `%${input.receiverAccountName ?? ""}%`]
+        ) as any[];
+        sanctionsFlagged = (sanctionRow?.cnt ?? 0) > 0;
+      } catch { /* non-fatal */ }
+
+      // 5. Block transaction if sanctions match (mandatory per NFIU AML/CFT Guidelines)
+      if (sanctionsFlagged) {
+        throw new TRPCError({
+          code: "FORBIDDEN",
+          message: "Transaction blocked: sanctions match detected. Escalate to compliance per NFIU AML/CFT Guidelines 2022."
+        });
+      }
+
+      // 6. Auto-generate fraud alert for combined risk indicators
+      const fraudFlagged = (amlFlagged && velocityFlagged) || structuringRisk;
+
       const sessionId = genRef("NIP").replace("-", "").substring(0, 40);
       const nibssRef = `NIBSS${Date.now()}`;
       await query(`
         INSERT INTO nip_transactions (session_id, sender_bank_code, sender_bank_name, sender_account_number, sender_account_name,
           receiver_bank_code, receiver_bank_name, receiver_account_number, receiver_account_name,
-          amount, narration, status, nibss_ref, channel_code, aml_flagged)
-        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 'initiated', ?, ?, ?)
+          amount, narration, status, nibss_ref, channel_code, aml_flagged, fraud_flagged)
+        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 'initiated', ?, ?, ?, ?)
       `, [sessionId, input.senderBankCode, null, input.senderAccountNumber, input.senderAccountName ?? null,
           input.receiverBankCode, null, input.receiverAccountNumber, input.receiverAccountName ?? null,
-          input.amount, input.narration ?? null, nibssRef, input.channelCode ?? "API", amlFlagged ? 1 : 0]);
-      emitMutationEvent("ndsep.banking.mutation", { action: "banking", ts: new Date().toISOString() }).catch((e: unknown) => logger.debug({ err: e instanceof Error ? e.message : String(e) }, "fire-and-forget failed"));
-      return { success: true, sessionId, nibssRef, amlFlagged };
+          input.amount, input.narration ?? null, nibssRef, input.channelCode ?? "API",
+          amlFlagged ? 1 : 0, fraudFlagged ? 1 : 0]);
+
+      // Auto-create AML case for flagged transactions
+      if (amlFlagged || structuringRisk) {
+        try {
+          const caseType = structuringRisk ? "structuring" : "ctr_threshold";
+          const riskScore = structuringRisk ? 70 : (velocityFlagged ? 80 : 50);
+          await query(`
+            INSERT INTO aml_cases (case_ref, subject_account, case_type, status, risk_score, narrative, transaction_amount)
+            VALUES (?, ?, ?, 'open', ?, ?, ?)
+          `, [genRef("AML"), input.senderAccountNumber, caseType, riskScore,
+              `Auto-generated: ${caseType === "structuring" ? "Potential structuring" : "CTR threshold"} — NIP ₦${(input.amount / 100).toLocaleString()} from ${input.senderAccountNumber}. ${velocityFlagged ? "VELOCITY ALERT: >3 txns/hr." : ""}`,
+              input.amount]);
+        } catch { /* non-fatal */ }
+      }
+
+      emitMutationEvent(EVENTS.SWIFT_TRANSACTION, { action: "nip_initiate", sessionId, amount: input.amount, amlFlagged, fraudFlagged, structuringRisk, velocityFlagged, ts: new Date().toISOString() }).catch((e: unknown) => logger.debug({ err: e instanceof Error ? e.message : String(e) }, "fire-and-forget failed"));
+      return { success: true, sessionId, nibssRef, amlFlagged, fraudFlagged, structuringRisk, velocityFlagged };
     }),
 
   // RTGS Transactions
@@ -756,8 +812,10 @@ const paymentsRouter = router({
     .input(z.object({
       senderBankCode: z.string().length(6),
       senderAccountNumber: z.string().optional(),
+      senderName: z.string().optional(),
       receiverBankCode: z.string().length(6),
       receiverAccountNumber: z.string().optional(),
+      receiverName: z.string().optional(),
       amount: z.number().min(10_000_000), // RTGS minimum: ₦10M
       narration: z.string().optional(),
       priority: z.enum(["normal","urgent","critical"]).default("normal"),
@@ -767,6 +825,50 @@ const paymentsRouter = router({
       if (input.amount < 10_000_000) {
         throw new TRPCError({ code: "BAD_REQUEST", message: "RTGS minimum transaction amount is ₦10,000,000" });
       }
+
+      // ── AML Rules for RTGS (all RTGS are above CTR threshold by definition) ──
+
+      // 1. All RTGS transactions must be reported as CTR (always above ₦5M)
+      const amlFlagged = true;
+
+      // 2. Enhanced due diligence for amounts >= ₦100M (CBN high-value threshold)
+      const enhancedDueDiligence = input.amount >= 100_000_000;
+
+      // 3. Sanctions screening on sender + receiver names
+      let sanctionsFlagged = false;
+      try {
+        const names = [input.senderName, input.receiverName].filter(Boolean);
+        for (const name of names) {
+          const parts = (name as string).toLowerCase().split(" ").filter(p => p.length >= 3);
+          if (parts.length > 0) {
+            const conds = parts.map(() => `LOWER(primary_name) LIKE ?`).join(" OR ");
+            const params = parts.map(p => `%${p}%`);
+            const [row] = await query(
+              `SELECT COUNT(*) as cnt FROM watchlist_entries WHERE is_active = true AND category IN ('sanctions','terrorism') AND (${conds})`,
+              params
+            ) as any[];
+            if ((row?.cnt ?? 0) > 0) { sanctionsFlagged = true; break; }
+          }
+        }
+      } catch { /* non-fatal */ }
+
+      if (sanctionsFlagged) {
+        throw new TRPCError({
+          code: "FORBIDDEN",
+          message: "RTGS transaction blocked: sanctions match detected. Mandatory escalation per NFIU AML/CFT Guidelines."
+        });
+      }
+
+      // 4. Velocity check for RTGS (unusual: >2 RTGS from same sender bank in 1 hour)
+      let velocityFlagged = false;
+      try {
+        const [velRow] = await query(
+          `SELECT COUNT(*) as cnt FROM rtgs_transactions WHERE sender_bank_code = ? AND queued_at > NOW() - INTERVAL '1 hour'`,
+          [input.senderBankCode]
+        ) as any[];
+        velocityFlagged = (velRow?.cnt ?? 0) >= 2;
+      } catch { /* non-fatal */ }
+
       const reference = genRef("RTGS");
       const cbnRef = `CBN${Date.now()}`;
       // Business rule: Determine settlement cycle based on time of day
@@ -779,8 +881,19 @@ const paymentsRouter = router({
       `, [reference, input.senderBankCode, input.senderAccountNumber ?? null, input.receiverBankCode,
           input.receiverAccountNumber ?? null, input.amount, input.narration ?? null,
           input.priority, settlementCycle, cbnRef]);
-      emitMutationEvent("ndsep.banking.mutation", { action: "banking", ts: new Date().toISOString() }).catch((e: unknown) => logger.debug({ err: e instanceof Error ? e.message : String(e) }, "fire-and-forget failed"));
-      return { success: true, reference, cbnRef, settlementCycle };
+
+      // Auto-create AML case for all RTGS (always above CTR threshold)
+      try {
+        await query(`
+          INSERT INTO aml_cases (case_ref, case_type, status, risk_score, narrative, transaction_amount)
+          VALUES (?, 'ctr_threshold', 'open', ?, ?, ?)
+        `, [genRef("AML"), enhancedDueDiligence ? 85 : 60,
+            `Auto-CTR: RTGS ₦${(input.amount / 100).toLocaleString()} via ${input.senderBankCode}→${input.receiverBankCode}. ${enhancedDueDiligence ? "ENHANCED DUE DILIGENCE REQUIRED (≥₦100M)." : ""} ${velocityFlagged ? "VELOCITY ALERT." : ""}`,
+            input.amount]);
+      } catch { /* non-fatal */ }
+
+      emitMutationEvent(EVENTS.SWIFT_TRANSACTION, { action: "rtgs_initiate", reference, amount: input.amount, amlFlagged, enhancedDueDiligence, sanctionsFlagged, velocityFlagged, ts: new Date().toISOString() }).catch((e: unknown) => logger.debug({ err: e instanceof Error ? e.message : String(e) }, "fire-and-forget failed"));
+      return { success: true, reference, cbnRef, settlementCycle, amlFlagged, enhancedDueDiligence, velocityFlagged };
     }),
 
   paymentStats: protectedProcedure.query(async () => {
@@ -861,7 +974,7 @@ const swiftRouter = router({
           input.orderingCustomer ?? null, input.beneficiaryCustomer ?? null,
           input.remittanceInfo ?? null, input.correspondentBic ?? null,
           sanctionsScreened ? 1 : 0, sanctionsFlagged ? 1 : 0]);
-      emitMutationEvent("ndsep.banking.mutation", { action: "banking", ts: new Date().toISOString() }).catch((e: unknown) => logger.debug({ err: e instanceof Error ? e.message : String(e) }, "fire-and-forget failed"));
+      emitMutationEvent(EVENTS.SWIFT_TRANSACTION, { action: "swift_message_sent", ts: new Date().toISOString() }).catch((e: unknown) => logger.debug({ err: e instanceof Error ? e.message : String(e) }, "fire-and-forget failed"));
       return { success: true, messageRef, sanctionsScreened, sanctionsFlagged };
     }),
 
@@ -874,7 +987,7 @@ const swiftRouter = router({
         throw new TRPCError({ code: "FORBIDDEN", message: "Cannot send SWIFT message: sanctions flag is set. Escalate to compliance." });
       }
       await query(`UPDATE swift_messages SET status = 'sent', sent_at = NOW(), updated_at = NOW() WHERE id = ?`, [input.id]);
-      emitMutationEvent("ndsep.banking.mutation", { action: "banking", ts: new Date().toISOString() }).catch((e: unknown) => logger.debug({ err: e instanceof Error ? e.message : String(e) }, "fire-and-forget failed"));
+      emitMutationEvent(EVENTS.SWIFT_TRANSACTION, { action: "swift_message_processed", ts: new Date().toISOString() }).catch((e: unknown) => logger.debug({ err: e instanceof Error ? e.message : String(e) }, "fire-and-forget failed"));
       return { success: true };
     }),
 
@@ -948,7 +1061,7 @@ const fraudRouter = router({
       `, [alertRef, input.bankId ?? null, input.transactionRef ?? null, input.transactionAmount ?? null,
           input.accountNumber ?? null, input.alertType, input.riskScore, input.mlModel ?? null,
           input.mlConfidence ?? null, input.ruleTriggered ?? null, autoBlocked ? new Date().toISOString() : null]);
-      emitMutationEvent("ndsep.banking.mutation", { action: "banking", ts: new Date().toISOString() }).catch((e: unknown) => logger.debug({ err: e instanceof Error ? e.message : String(e) }, "fire-and-forget failed"));
+      emitMutationEvent(EVENTS.FRAUD_ALERT, { action: "fraud_alert_created", ts: new Date().toISOString() }).catch((e: unknown) => logger.debug({ err: e instanceof Error ? e.message : String(e) }, "fire-and-forget failed"));
       return { success: true, alertRef, autoBlocked };
     }),
 
@@ -977,7 +1090,7 @@ const fraudRouter = router({
       if (newStatus === "resolved") { sets.push("resolved_at = NOW()"); }
       params.push(input.id);
       await query(`UPDATE fraud_alerts SET ${sets.join(", ")} WHERE id = ?`, params);
-      emitMutationEvent("ndsep.banking.mutation", { action: "banking", ts: new Date().toISOString() }).catch((e: unknown) => logger.debug({ err: e instanceof Error ? e.message : String(e) }, "fire-and-forget failed"));
+      emitMutationEvent(EVENTS.FRAUD_ALERT, { action: "fraud_alert_updated", ts: new Date().toISOString() }).catch((e: unknown) => logger.debug({ err: e instanceof Error ? e.message : String(e) }, "fire-and-forget failed"));
       return { success: true, newStatus };
     }),
 
@@ -1047,7 +1160,7 @@ const cbnReportsRouter = router({
       `, [reportRef, input.bankId, input.reportType, input.reportingPeriod,
           input.filingDeadline, input.totalTransactions ?? null, input.totalAmount ?? null,
           input.preparedBy ?? null]);
-      emitMutationEvent("ndsep.banking.mutation", { action: "banking", ts: new Date().toISOString() }).catch((e: unknown) => logger.debug({ err: e instanceof Error ? e.message : String(e) }, "fire-and-forget failed"));
+      emitMutationEvent(EVENTS.CBN_REPORT, { action: "cbn_report_submitted", ts: new Date().toISOString() }).catch((e: unknown) => logger.debug({ err: e instanceof Error ? e.message : String(e) }, "fire-and-forget failed"));
       return { success: true, reportRef };
     }),
 
@@ -1067,7 +1180,7 @@ const cbnReportsRouter = router({
           cbn_ack_ref = ?, approved_by = COALESCE(?, approved_by), updated_at = NOW() 
         WHERE id = ?
       `, [cbnAckRef, input.approvedBy ?? null, input.id]);
-      emitMutationEvent("ndsep.banking.mutation", { action: "banking", ts: new Date().toISOString() }).catch((e: unknown) => logger.debug({ err: e instanceof Error ? e.message : String(e) }, "fire-and-forget failed"));
+      emitMutationEvent(EVENTS.CBN_REPORT, { action: "cbn_report_approved", ts: new Date().toISOString() }).catch((e: unknown) => logger.debug({ err: e instanceof Error ? e.message : String(e) }, "fire-and-forget failed"));
       return { success: true, cbnAckRef };
     }),
 
@@ -1150,7 +1263,7 @@ const correspondentRouter = router({
           input.relationshipType, input.nostroAccount ?? null, input.vostroAccount ?? null,
           input.dailyLimit ?? null, input.monthlyLimit ?? null, input.kycCompleted ? 1 : 0,
           input.amlRiskRating, nextReview.toISOString(), input.notes ?? null]);
-      emitMutationEvent("ndsep.banking.mutation", { action: "banking", ts: new Date().toISOString() }).catch((e: unknown) => logger.debug({ err: e instanceof Error ? e.message : String(e) }, "fire-and-forget failed"));
+      emitMutationEvent(EVENTS.CORRESPONDENT_BANK, { action: "correspondent_onboarded", ts: new Date().toISOString() }).catch((e: unknown) => logger.debug({ err: e instanceof Error ? e.message : String(e) }, "fire-and-forget failed"));
       return { success: true };
     }),
 
@@ -1163,7 +1276,7 @@ const correspondentRouter = router({
     .mutation(async ({ input }) => {
       await query(`UPDATE correspondent_banks SET status = ?, notes = COALESCE(?, notes), updated_at = NOW() WHERE id = ?`,
         [input.status, input.notes ?? null, input.id]);
-      emitMutationEvent("ndsep.banking.mutation", { action: "banking", ts: new Date().toISOString() }).catch((e: unknown) => logger.debug({ err: e instanceof Error ? e.message : String(e) }, "fire-and-forget failed"));
+      emitMutationEvent(EVENTS.CORRESPONDENT_BANK, { action: "correspondent_status_updated", ts: new Date().toISOString() }).catch((e: unknown) => logger.debug({ err: e instanceof Error ? e.message : String(e) }, "fire-and-forget failed"));
       return { success: true };
     }),
 

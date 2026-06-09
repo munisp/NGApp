@@ -90,45 +90,76 @@ export function calculatePenalty(input: PenaltyInput): PenaltyCalculation {
 
 // ── Compliance Score Calculation ─────────────────────────────────────────────
 
+/**
+ * Compliance score input supports 3-state maturity levels for each control:
+ * - "none" (0 points): Control not implemented
+ * - "in_progress" (partial credit): Control partially implemented or planned
+ * - "implemented" (full credit): Control fully operational
+ * 
+ * Legacy boolean inputs are supported: true = "implemented", false = "none".
+ */
+export type ControlStatus = "none" | "in_progress" | "implemented" | boolean;
+
 export interface ComplianceScoreInput {
-  hasDpo: boolean;
-  hasPrivacyPolicy: boolean;
-  hasConsentMechanism: boolean;
-  hasBreachNotificationProcess: boolean;
-  hasDpia: boolean;
-  hasDataRetentionPolicy: boolean;
-  hasSecurityMeasures: boolean;
-  hasRecordOfProcessing: boolean;
+  hasDpo: ControlStatus;
+  hasPrivacyPolicy: ControlStatus;
+  hasConsentMechanism: ControlStatus;
+  hasBreachNotificationProcess: ControlStatus;
+  hasDpia: ControlStatus;
+  hasDataRetentionPolicy: ControlStatus;
+  hasSecurityMeasures: ControlStatus;
+  hasRecordOfProcessing: ControlStatus;
   openViolations: number;
   resolvedViolations: number;
   breachCount: number;
   lastAuditDate: Date | null;
 }
 
+function controlScore(status: ControlStatus, maxScore: number): { score: number; status: string } {
+  if (status === true || status === "implemented") return { score: maxScore, status: "implemented" };
+  if (status === "in_progress") return { score: Math.round(maxScore * 0.5), status: "in_progress" };
+  return { score: 0, status: "none" };
+}
+
 export function calculateComplianceScore(input: ComplianceScoreInput): {
   score: number;
   grade: string;
-  breakdown: Array<{ category: string; score: number; maxScore: number }>;
+  breakdown: Array<{ category: string; score: number; maxScore: number; status: string }>;
 } {
+  const dpo = controlScore(input.hasDpo, 12);
+  const privacy = controlScore(input.hasPrivacyPolicy, 10);
+  const consent = controlScore(input.hasConsentMechanism, 12);
+  const breach = controlScore(input.hasBreachNotificationProcess, 10);
+  const dpia = controlScore(input.hasDpia, 10);
+  const retention = controlScore(input.hasDataRetentionPolicy, 8);
+  const security = controlScore(input.hasSecurityMeasures, 12);
+  const ropa = controlScore(input.hasRecordOfProcessing, 8);
+
+  // Violation history: deduct 3 per open violation (min 0)
+  const violationScore = Math.max(0, 10 - input.openViolations * 3);
+  // Resolved violations earn back partial credit (0.5 per resolved, max +3)
+  const resolvedBonus = Math.min(3, input.resolvedViolations * 0.5);
+  const adjustedViolationScore = Math.min(10, violationScore + resolvedBonus);
+
+  // Incident response: base 8, deduct 2 per breach. Recency bonus if last audit < 6 months
+  let incidentScore = input.breachCount === 0 ? 8 : Math.max(0, 8 - input.breachCount * 2);
+  if (input.lastAuditDate) {
+    const monthsSinceAudit = (Date.now() - input.lastAuditDate.getTime()) / (1000 * 60 * 60 * 24 * 30);
+    if (monthsSinceAudit <= 6) incidentScore = Math.min(8, incidentScore + 2);
+    else if (monthsSinceAudit > 12) incidentScore = Math.max(0, incidentScore - 1);
+  }
+
   const breakdown = [
-    { category: "DPO Appointment", score: input.hasDpo ? 12 : 0, maxScore: 12 },
-    { category: "Privacy Policy", score: input.hasPrivacyPolicy ? 10 : 0, maxScore: 10 },
-    { category: "Consent Mechanism", score: input.hasConsentMechanism ? 12 : 0, maxScore: 12 },
-    { category: "Breach Notification", score: input.hasBreachNotificationProcess ? 10 : 0, maxScore: 10 },
-    { category: "DPIA Completed", score: input.hasDpia ? 10 : 0, maxScore: 10 },
-    { category: "Data Retention Policy", score: input.hasDataRetentionPolicy ? 8 : 0, maxScore: 8 },
-    { category: "Security Measures", score: input.hasSecurityMeasures ? 12 : 0, maxScore: 12 },
-    { category: "Record of Processing", score: input.hasRecordOfProcessing ? 8 : 0, maxScore: 8 },
-    {
-      category: "Violation History",
-      score: Math.max(0, 10 - input.openViolations * 3),
-      maxScore: 10,
-    },
-    {
-      category: "Incident Response",
-      score: input.breachCount === 0 ? 8 : Math.max(0, 8 - input.breachCount * 2),
-      maxScore: 8,
-    },
+    { category: "DPO Appointment", score: dpo.score, maxScore: 12, status: dpo.status },
+    { category: "Privacy Policy", score: privacy.score, maxScore: 10, status: privacy.status },
+    { category: "Consent Mechanism", score: consent.score, maxScore: 12, status: consent.status },
+    { category: "Breach Notification", score: breach.score, maxScore: 10, status: breach.status },
+    { category: "DPIA Completed", score: dpia.score, maxScore: 10, status: dpia.status },
+    { category: "Data Retention Policy", score: retention.score, maxScore: 8, status: retention.status },
+    { category: "Security Measures", score: security.score, maxScore: 12, status: security.status },
+    { category: "Record of Processing", score: ropa.score, maxScore: 8, status: ropa.status },
+    { category: "Violation History", score: Math.round(adjustedViolationScore), maxScore: 10, status: input.openViolations === 0 ? "clean" : `${input.openViolations} open` },
+    { category: "Incident Response", score: Math.round(incidentScore), maxScore: 8, status: input.breachCount === 0 ? "no_incidents" : `${input.breachCount} breach(es)` },
   ];
 
   const total = breakdown.reduce((sum, b) => sum + b.score, 0);
@@ -298,26 +329,88 @@ export async function checkRenewalEligibility(orgId: number): Promise<{
 
 // ── Cross-Border Transfer Adequacy Check ─────────────────────────────────────
 
-const ADEQUATE_COUNTRIES = new Set([
+// Default NDPC adequacy list — used as fallback when DB is unavailable
+const DEFAULT_ADEQUATE_COUNTRIES = new Set([
   "South Africa", "Kenya", "Ghana", "Rwanda", "Mauritius", "Senegal", "Tanzania",
   "United Kingdom", "Germany", "France", "Netherlands", "Ireland",
   "Canada", "Japan", "South Korea", "Israel", "Switzerland",
   "New Zealand", "Argentina", "Uruguay",
 ]);
 
-export function checkCrossBorderAdequacy(destinationCountry: string): {
+// Cache for DB-loaded adequacy list (TTL: 1 hour)
+let _adequacyCache: { countries: Set<string>; loadedAt: number } | null = null;
+const ADEQUACY_CACHE_TTL_MS = 60 * 60 * 1000; // 1 hour
+
+async function getAdequateCountries(): Promise<Set<string>> {
+  // Return cached if fresh
+  if (_adequacyCache && Date.now() - _adequacyCache.loadedAt < ADEQUACY_CACHE_TTL_MS) {
+    return _adequacyCache.countries;
+  }
+
+  // Try loading from DB (admin-configurable table)
+  const pool = getPool();
+  if (pool) {
+    try {
+      const result = await pool.query(
+        "SELECT country_name FROM cross_border_adequacy WHERE status = 'adequate' AND (expiry_date IS NULL OR expiry_date > NOW())"
+      );
+      if (result.rows.length > 0) {
+        const countries = new Set(result.rows.map((r: { country_name: string }) => r.country_name));
+        _adequacyCache = { countries, loadedAt: Date.now() };
+        return countries;
+      }
+    } catch {
+      // Table may not exist yet — fall through to defaults
+    }
+  }
+
+  return DEFAULT_ADEQUATE_COUNTRIES;
+}
+
+export async function checkCrossBorderAdequacy(destinationCountry: string): Promise<{
+  adequate: boolean;
+  safeguards: string[];
+  ndpaReference: string;
+  source: "database" | "default";
+}> {
+  const adequateCountries = await getAdequateCountries();
+  const adequate = adequateCountries.has(destinationCountry);
+  const source = _adequacyCache ? "database" as const : "default" as const;
+
+  const safeguards: string[] = [];
+  if (!adequate) {
+    safeguards.push("Standard Contractual Clauses (SCCs) required per NDPA S.28(1)(c)");
+    safeguards.push("Binding Corporate Rules (BCRs) may be used as alternative per NDPA S.28(1)(d)");
+    safeguards.push("Explicit consent from data subject with documented risk acknowledgment");
+    safeguards.push("NDPC pre-approval required for transfer to non-adequate jurisdiction");
+    safeguards.push("Transfer Impact Assessment (TIA) must be conducted and documented");
+  } else {
+    safeguards.push("Destination country on NDPC adequacy list — standard transfer permitted");
+    safeguards.push("Maintain record of transfer per NDPA S.27 (Record of Processing Activities)");
+  }
+
+  return {
+    adequate,
+    safeguards,
+    ndpaReference: "NDPA Article 28 — Transfer of Personal Data Outside Nigeria",
+    source,
+  };
+}
+
+// Synchronous fallback for contexts where async is not available
+export function checkCrossBorderAdequacySync(destinationCountry: string): {
   adequate: boolean;
   safeguards: string[];
   ndpaReference: string;
 } {
-  const adequate = ADEQUATE_COUNTRIES.has(destinationCountry);
+  const adequate = (_adequacyCache?.countries ?? DEFAULT_ADEQUATE_COUNTRIES).has(destinationCountry);
 
   const safeguards: string[] = [];
   if (!adequate) {
-    safeguards.push("Standard Contractual Clauses (SCCs) required");
-    safeguards.push("Binding Corporate Rules (BCRs) may be used");
-    safeguards.push("Explicit consent from data subject with risk acknowledgment");
-    safeguards.push("NDPC pre-approval required for transfer");
+    safeguards.push("Standard Contractual Clauses (SCCs) required per NDPA S.28(1)(c)");
+    safeguards.push("Binding Corporate Rules (BCRs) may be used as alternative per NDPA S.28(1)(d)");
+    safeguards.push("Explicit consent from data subject with documented risk acknowledgment");
+    safeguards.push("NDPC pre-approval required for transfer to non-adequate jurisdiction");
   }
 
   return {

@@ -87,7 +87,7 @@ export const smsAlertsRouter = router({
       const message = `NDSEP ALERT: ${input.severity.toUpperCase()} data breach at ${input.orgName}. Type: ${input.breachType}. NDPA Article 40 72-hour window started. Ref: NDSEP-${Date.now()}`;
       const smsResult = await sendTermiiSms(phone, message);
       await notifyOwner({ title: `[BREACH] ${input.severity} — ${input.orgName}`, content: `Breach Type: ${input.breachType}\nSeverity: ${input.severity}\nSMS sent to: ${phone}` });
-      emitMutationEvent("ndsep.compliance.mutation", { action: "productionFeatures", ts: new Date().toISOString() }).catch((e: unknown) => logger.debug({ err: e instanceof Error ? e.message : String(e) }, "fire-and-forget failed"));
+      emitMutationEvent(EVENTS.COMPLIANCE_SCORE_UPDATED, { action: "production_feature", ts: new Date().toISOString() }).catch((e: unknown) => logger.debug({ err: e instanceof Error ? e.message : String(e) }, "fire-and-forget failed"));
       return { sms: smsResult, timestamp: new Date().toISOString() };
     }),
 
@@ -97,7 +97,7 @@ export const smsAlertsRouter = router({
       const phone = input.phoneNumber ?? ENV.ndpcPhoneNumber;
       const message = `NDSEP ENFORCEMENT: Penalty of NGN${input.penaltyAmount.toLocaleString()} issued to ${input.orgName} for: ${input.violation}. Due in 30 days. Ref: NDSEP-PEN-${Date.now()}`;
       const smsResult = await sendTermiiSms(phone, message);
-      emitMutationEvent("ndsep.compliance.mutation", { action: "productionFeatures", ts: new Date().toISOString() }).catch((e: unknown) => logger.debug({ err: e instanceof Error ? e.message : String(e) }, "fire-and-forget failed"));
+      emitMutationEvent(EVENTS.COMPLIANCE_SCORE_UPDATED, { action: "production_feature", ts: new Date().toISOString() }).catch((e: unknown) => logger.debug({ err: e instanceof Error ? e.message : String(e) }, "fire-and-forget failed"));
       return { sms: smsResult, timestamp: new Date().toISOString() };
     }),
 
@@ -107,7 +107,7 @@ export const smsAlertsRouter = router({
       const phone = input.phoneNumber ?? ENV.ndpcPhoneNumber;
       const message = `NDSEP CERT: Compliance certificate ${input.certNumber} issued to ${input.orgName}. Valid until ${input.expiryDate}. Verify: ${ENV.certVerifyBaseUrl}/${input.certNumber}`;
       const smsResult = await sendTermiiSms(phone, message);
-      emitMutationEvent("ndsep.compliance.mutation", { action: "productionFeatures", ts: new Date().toISOString() }).catch((e: unknown) => logger.debug({ err: e instanceof Error ? e.message : String(e) }, "fire-and-forget failed"));
+      emitMutationEvent(EVENTS.COMPLIANCE_SCORE_UPDATED, { action: "production_feature", ts: new Date().toISOString() }).catch((e: unknown) => logger.debug({ err: e instanceof Error ? e.message : String(e) }, "fire-and-forget failed"));
       return { sms: smsResult, timestamp: new Date().toISOString() };
     }),
 
@@ -138,7 +138,7 @@ export const pdfGenerationRouter = router({
       const expiresAt = new Date(Date.now() + ENV.certValidityDays * 86400000).toISOString();
       const verifyUrl = `${ENV.certVerifyBaseUrl}/${certNumber}`;
       const content = `# NIGERIA DATA PROTECTION COMPLIANCE CERTIFICATE\n\n**Certificate Number:** ${certNumber}\n**Issued By:** ${ENV.certIssuerName}\n**Issue Date:** ${new Date(issuedAt).toLocaleDateString("en-NG")}\n**Expiry Date:** ${new Date(expiresAt).toLocaleDateString("en-NG")}\n\n---\n\n## Certified Organization\n\n**Name:** ${org.name}\n**Registration Number:** ${org.registration_number ?? "N/A"}\n**Sector:** ${org.sector ?? "N/A"}\n\n---\n\n## Certification Scope\n\nThis certificate confirms compliance with the **Nigeria Data Protection Act 2023 (NDPA)** and **NDPR 2019**.\n\n**Verification URL:** ${verifyUrl}\n\n*Issued by the National Data Sovereignty Enforcement Platform (NDSEP)*`;
-      emitMutationEvent("ndsep.compliance.mutation", { action: "productionFeatures", ts: new Date().toISOString() }).catch((e: unknown) => logger.debug({ err: e instanceof Error ? e.message : String(e) }, "fire-and-forget failed"));
+      emitMutationEvent(EVENTS.COMPLIANCE_SCORE_UPDATED, { action: "production_feature", ts: new Date().toISOString() }).catch((e: unknown) => logger.debug({ err: e instanceof Error ? e.message : String(e) }, "fire-and-forget failed"));
       return { certNumber, orgName: org.name, issuedAt, expiresAt, verifyUrl, content, downloadUrl: `${ENV.pdfBaseUrl}/${certNumber}.pdf` };
     }),
 
@@ -150,7 +150,7 @@ export const pdfGenerationRouter = router({
       const org = orgs[0];
       const refNumber = `CAR-${input.year}-${input.orgId}-${Date.now()}`;
       const content = `# NDPA COMPLIANCE AUDIT RETURN (CAR) ${input.year}\n\n**Reference:** ${refNumber}\n**Organization:** ${org.name}\n**Submission Date:** ${new Date().toLocaleDateString("en-NG")}\n**Reporting Year:** ${input.year}\n\n---\n\n## Section A: Organization Details\n\n| Field | Value |\n|-------|-------|\n| Organization Name | ${org.name} |\n| Registration Number | ${org.registration_number ?? "N/A"} |\n| Sector | ${org.sector ?? "N/A"} |\n\n## Section B: Data Processing Activities\n\nThis organization maintains a full Record of Processing Activities (ROPA) in compliance with NDPA 2023.\n\n## Section C: Data Subject Rights\n\nDSAR procedures are established per NDPA Section 34-40.\n\n## Section D: Security Measures\n\nTechnical and organizational measures are in place per NDPA Section 24.\n\n## Section E: Breach Incidents\n\nAll reportable breaches notified to NDPC within 72 hours per NDPA Article 40.\n\n---\n\n**Submit to:** ${ENV.carSubmissionEmail}\n**Deadline:** March ${ENV.carDeadlineDay}, ${input.year + 1}\n\n*Generated by NDSEP — ${ENV.platformUrl}*`;
-      emitMutationEvent("ndsep.compliance.mutation", { action: "productionFeatures", ts: new Date().toISOString() }).catch((e: unknown) => logger.debug({ err: e instanceof Error ? e.message : String(e) }, "fire-and-forget failed"));
+      emitMutationEvent(EVENTS.COMPLIANCE_SCORE_UPDATED, { action: "production_feature", ts: new Date().toISOString() }).catch((e: unknown) => logger.debug({ err: e instanceof Error ? e.message : String(e) }, "fire-and-forget failed"));
       return { refNumber, orgName: org.name, year: input.year, content, downloadUrl: `${ENV.pdfBaseUrl}/${refNumber}.pdf`, submissionEmail: ENV.carSubmissionEmail };
     }),
 
@@ -162,7 +162,7 @@ export const pdfGenerationRouter = router({
       const org = orgs[0];
       const noticeNumber = `NDSEP-PEN-${Date.now()}-${input.orgId}`;
       const content = `# PENALTY NOTICE\n\n**Notice Number:** ${noticeNumber}\n**Date:** ${new Date().toLocaleDateString("en-NG")}\n**Issuing Authority:** Nigeria Data Protection Commission (NDPC) via NDSEP\n\n---\n\n## Recipient\n\n**Organization:** ${org.name}\n**Sector:** ${org.sector ?? "N/A"}\n\n## Violation\n\n${input.violation}\n\n## Penalty Amount\n\n**NGN ${input.penaltyAmount.toLocaleString()}**\n\n## Payment Due Date\n\n${new Date(input.dueDate).toLocaleDateString("en-NG")}\n\n## Right of Appeal\n\nAppeal within 30 days to the Data Protection Tribunal.\n\n---\n*Issued under NDPA 2023, Section 48 — ${ENV.platformUrl}*`;
-      emitMutationEvent("ndsep.compliance.mutation", { action: "productionFeatures", ts: new Date().toISOString() }).catch((e: unknown) => logger.debug({ err: e instanceof Error ? e.message : String(e) }, "fire-and-forget failed"));
+      emitMutationEvent(EVENTS.COMPLIANCE_SCORE_UPDATED, { action: "production_feature", ts: new Date().toISOString() }).catch((e: unknown) => logger.debug({ err: e instanceof Error ? e.message : String(e) }, "fire-and-forget failed"));
       return { noticeNumber, orgName: org.name, penaltyAmount: input.penaltyAmount, dueDate: input.dueDate, content, downloadUrl: `${ENV.pdfBaseUrl}/${noticeNumber}.pdf` };
     }),
 });
@@ -186,7 +186,7 @@ export const documentVaultRouter = router({
       const docId = `DOC-${Date.now()}-${input.orgId}`;
       const storageKey = `vault/${input.orgId}/${docId}/${input.fileName}`;
       await exec(`INSERT INTO document_vault (document_id, organization_id, document_type, file_name, file_size, mime_type, storage_key, description, expiry_date, uploaded_by, uploaded_at, status) VALUES ('${docId}', ${input.orgId}, '${input.docType}', '${input.fileName}', ${input.fileSize}, '${input.mimeType}', '${storageKey}', '${input.description ?? ""}', ${input.expiryDate ? `'${input.expiryDate}'` : "NULL"}, ${ctx.user.id}, NOW(), 'active')`);
-      emitMutationEvent("ndsep.compliance.mutation", { action: "productionFeatures", ts: new Date().toISOString() }).catch((e: unknown) => logger.debug({ err: e instanceof Error ? e.message : String(e) }, "fire-and-forget failed"));
+      emitMutationEvent(EVENTS.COMPLIANCE_SCORE_UPDATED, { action: "production_feature", ts: new Date().toISOString() }).catch((e: unknown) => logger.debug({ err: e instanceof Error ? e.message : String(e) }, "fire-and-forget failed"));
       return { docId, storageKey, uploadUrl: `${ENV.vaultS3Endpoint}/${ENV.vaultS3Bucket}/${storageKey}` };
     }),
 
@@ -199,7 +199,7 @@ export const documentVaultRouter = router({
     .input(z.object({ docId: z.string() }))
     .mutation(async ({ input }) => {
       await exec(`UPDATE document_vault SET status = 'deleted' WHERE document_id = $1`, [input.docId]);
-      emitMutationEvent("ndsep.compliance.mutation", { action: "productionFeatures", ts: new Date().toISOString() }).catch((e: unknown) => logger.debug({ err: e instanceof Error ? e.message : String(e) }, "fire-and-forget failed"));
+      emitMutationEvent(EVENTS.COMPLIANCE_SCORE_UPDATED, { action: "production_feature", ts: new Date().toISOString() }).catch((e: unknown) => logger.debug({ err: e instanceof Error ? e.message : String(e) }, "fire-and-forget failed"));
       return { success: true };
     }),
 });
@@ -231,7 +231,7 @@ export const aiRiskScoringRouter = router({
         : riskLevel === "high"
         ? ["Schedule compliance review within 30 days", "Update ROPA and DPIAs", "Conduct staff training"]
         : ["Maintain current compliance posture", "Ensure annual CAR submission"];
-      emitMutationEvent("ndsep.compliance.mutation", { action: "productionFeatures", ts: new Date().toISOString() }).catch((e: unknown) => logger.debug({ err: e instanceof Error ? e.message : String(e) }, "fire-and-forget failed"));
+      emitMutationEvent(EVENTS.COMPLIANCE_SCORE_UPDATED, { action: "production_feature", ts: new Date().toISOString() }).catch((e: unknown) => logger.debug({ err: e instanceof Error ? e.message : String(e) }, "fire-and-forget failed"));
       return { orgId: input.orgId, orgName: org.name, riskScore, riskLevel, factors, recommendations, modelVersion: ENV.aiRiskModelVersion, scoredAt: new Date().toISOString() };
     }),
 
@@ -241,10 +241,10 @@ export const aiRiskScoringRouter = router({
       const complianceScore = parseFloat(String(org.compliance_score ?? 50));
       const riskScore = computeRiskScore({ breachCount: 0, penaltyCount: 0, daysOverdue: 0, complianceScore });
       const riskLevel = riskScore >= ENV.aiRiskThresholdCritical ? "critical" : riskScore >= ENV.aiRiskThresholdHigh ? "high" : riskScore >= ENV.aiRiskThresholdMedium ? "medium" : "low";
-      emitMutationEvent("ndsep.compliance.mutation", { action: "productionFeatures", ts: new Date().toISOString() }).catch((e: unknown) => logger.debug({ err: e instanceof Error ? e.message : String(e) }, "fire-and-forget failed"));
+      emitMutationEvent(EVENTS.COMPLIANCE_SCORE_UPDATED, { action: "production_feature", ts: new Date().toISOString() }).catch((e: unknown) => logger.debug({ err: e instanceof Error ? e.message : String(e) }, "fire-and-forget failed"));
       return { orgId: org.id, orgName: org.name, riskScore, riskLevel };
     });
-    emitMutationEvent("ndsep.compliance.mutation", { action: "productionFeatures", ts: new Date().toISOString() }).catch((e: unknown) => logger.debug({ err: e instanceof Error ? e.message : String(e) }, "fire-and-forget failed"));
+    emitMutationEvent(EVENTS.COMPLIANCE_SCORE_UPDATED, { action: "production_feature", ts: new Date().toISOString() }).catch((e: unknown) => logger.debug({ err: e instanceof Error ? e.message : String(e) }, "fire-and-forget failed"));
     return { scored: results.length, results };
   }),
 
@@ -281,7 +281,7 @@ export const apiKeyManagementRouter = router({
       const expiresAt = new Date(Date.now() + input.expiresInDays * 86400000).toISOString();
       const scopesJson = JSON.stringify(input.scopes).replace(/'/g, "''");
       await exec(`INSERT INTO api_keys (key_id, key_hash, name, organization_id, scopes, expires_at, created_by, created_at, status, request_count) VALUES ('${keyId}', '${keyHash}', '${input.name}', ${input.orgId}, '${scopesJson}', '${expiresAt}', ${ctx.user.id}, NOW(), 'active', 0)`);
-      emitMutationEvent("ndsep.compliance.mutation", { action: "productionFeatures", ts: new Date().toISOString() }).catch((e: unknown) => logger.debug({ err: e instanceof Error ? e.message : String(e) }, "fire-and-forget failed"));
+      emitMutationEvent(EVENTS.COMPLIANCE_SCORE_UPDATED, { action: "production_feature", ts: new Date().toISOString() }).catch((e: unknown) => logger.debug({ err: e instanceof Error ? e.message : String(e) }, "fire-and-forget failed"));
       return { keyId, rawKey, name: input.name, expiresAt, scopes: input.scopes, warning: "Store this key securely — it will not be shown again." };
     }),
 
@@ -289,7 +289,7 @@ export const apiKeyManagementRouter = router({
     .input(z.object({ keyId: z.string() }))
     .mutation(async ({ input }) => {
       await exec(`UPDATE api_keys SET status = 'revoked', revoked_at = NOW() WHERE key_id = $1`, [input.keyId]);
-      emitMutationEvent("ndsep.compliance.mutation", { action: "productionFeatures", ts: new Date().toISOString() }).catch((e: unknown) => logger.debug({ err: e instanceof Error ? e.message : String(e) }, "fire-and-forget failed"));
+      emitMutationEvent(EVENTS.COMPLIANCE_SCORE_UPDATED, { action: "production_feature", ts: new Date().toISOString() }).catch((e: unknown) => logger.debug({ err: e instanceof Error ? e.message : String(e) }, "fire-and-forget failed"));
       return { success: true };
     }),
 
@@ -316,7 +316,7 @@ export const webhookDeliveryRouter = router({
       const secret = `whsec_${crypto.randomBytes(16).toString("hex")}`;
       const eventsJson = JSON.stringify(input.events).replace(/'/g, "''");
       await exec(`INSERT INTO webhook_endpoints (endpoint_id, organization_id, url, events, secret, description, created_by, created_at, status, delivery_count, failure_count) VALUES ('${endpointId}', ${input.orgId}, '${input.url}', '${eventsJson}', '${secret}', '${input.description ?? ""}', ${ctx.user.id}, NOW(), 'active', 0, 0)`);
-      emitMutationEvent("ndsep.compliance.mutation", { action: "productionFeatures", ts: new Date().toISOString() }).catch((e: unknown) => logger.debug({ err: e instanceof Error ? e.message : String(e) }, "fire-and-forget failed"));
+      emitMutationEvent(EVENTS.COMPLIANCE_SCORE_UPDATED, { action: "production_feature", ts: new Date().toISOString() }).catch((e: unknown) => logger.debug({ err: e instanceof Error ? e.message : String(e) }, "fire-and-forget failed"));
       return { endpointId, secret, url: input.url, events: input.events };
     }),
 
@@ -339,11 +339,11 @@ export const webhookDeliveryRouter = router({
         });
         clearTimeout(timeoutId);
         await exec(`UPDATE webhook_endpoints SET delivery_count = delivery_count + 1, last_delivered_at = NOW() WHERE endpoint_id = $1`, [input.endpointId]);
-        emitMutationEvent("ndsep.compliance.mutation", { action: "productionFeatures", ts: new Date().toISOString() }).catch((e: unknown) => logger.debug({ err: e instanceof Error ? e.message : String(e) }, "fire-and-forget failed"));
+        emitMutationEvent(EVENTS.COMPLIANCE_SCORE_UPDATED, { action: "production_feature", ts: new Date().toISOString() }).catch((e: unknown) => logger.debug({ err: e instanceof Error ? e.message : String(e) }, "fire-and-forget failed"));
         return { success: res.ok, statusCode: res.status, signature };
       } catch (err) {
         await exec(`UPDATE webhook_endpoints SET failure_count = failure_count + 1 WHERE endpoint_id = $1`, [input.endpointId]);
-        emitMutationEvent("ndsep.compliance.mutation", { action: "productionFeatures", ts: new Date().toISOString() }).catch((e: unknown) => logger.debug({ err: e instanceof Error ? e.message : String(e) }, "fire-and-forget failed"));
+        emitMutationEvent(EVENTS.COMPLIANCE_SCORE_UPDATED, { action: "production_feature", ts: new Date().toISOString() }).catch((e: unknown) => logger.debug({ err: e instanceof Error ? e.message : String(e) }, "fire-and-forget failed"));
         return { success: false, error: String(err), signature };
       }
     }),
@@ -352,7 +352,7 @@ export const webhookDeliveryRouter = router({
     .input(z.object({ endpointId: z.string() }))
     .mutation(async ({ input }) => {
       await exec(`UPDATE webhook_endpoints SET status = 'deleted' WHERE endpoint_id = $1`, [input.endpointId]);
-      emitMutationEvent("ndsep.compliance.mutation", { action: "productionFeatures", ts: new Date().toISOString() }).catch((e: unknown) => logger.debug({ err: e instanceof Error ? e.message : String(e) }, "fire-and-forget failed"));
+      emitMutationEvent(EVENTS.COMPLIANCE_SCORE_UPDATED, { action: "production_feature", ts: new Date().toISOString() }).catch((e: unknown) => logger.debug({ err: e instanceof Error ? e.message : String(e) }, "fire-and-forget failed"));
       return { success: true };
     }),
 });
@@ -378,7 +378,7 @@ export const crossSectorSharingRouter = router({
         `INSERT INTO cross_sector_data_shares (share_id, organization_id, source_sector, target_sector, data_type, justification, data_elements, requested_by, requested_at, status) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, NOW(), 'pending')`,
         [shareId, input.orgId, input.sourceSector, input.targetSector, input.dataType, input.justification, elementsJson, ctx.user.id]
       );
-      emitMutationEvent("ndsep.compliance.mutation", { action: "productionFeatures", ts: new Date().toISOString() }).catch((e: unknown) => logger.debug({ err: e instanceof Error ? e.message : String(e) }, "fire-and-forget failed"));
+      emitMutationEvent(EVENTS.COMPLIANCE_SCORE_UPDATED, { action: "production_feature", ts: new Date().toISOString() }).catch((e: unknown) => logger.debug({ err: e instanceof Error ? e.message : String(e) }, "fire-and-forget failed"));
       return { shareId, status: "pending" };
     }),
 
@@ -387,7 +387,7 @@ export const crossSectorSharingRouter = router({
     .mutation(async ({ input }) => {
       const status = input.approved ? "approved" : "rejected";
       await exec(`UPDATE cross_sector_data_shares SET status = '${status}', reviewed_at = NOW(), review_notes = '${input.notes ?? ""}' WHERE share_id = '${input.shareId}'`);
-      emitMutationEvent("ndsep.compliance.mutation", { action: "productionFeatures", ts: new Date().toISOString() }).catch((e: unknown) => logger.debug({ err: e instanceof Error ? e.message : String(e) }, "fire-and-forget failed"));
+      emitMutationEvent(EVENTS.COMPLIANCE_SCORE_UPDATED, { action: "production_feature", ts: new Date().toISOString() }).catch((e: unknown) => logger.debug({ err: e instanceof Error ? e.message : String(e) }, "fire-and-forget failed"));
       return { shareId: input.shareId, status };
     }),
 
@@ -413,7 +413,7 @@ export const retentionEnforcementRouter = router({
           await exec(`UPDATE retention_policies SET status = 'overdue', last_enforced_at = NOW() WHERE id = ${policy.id}`);
         }
       }
-      emitMutationEvent("ndsep.compliance.mutation", { action: "productionFeatures", ts: new Date().toISOString() }).catch((e: unknown) => logger.debug({ err: e instanceof Error ? e.message : String(e) }, "fire-and-forget failed"));
+      emitMutationEvent(EVENTS.COMPLIANCE_SCORE_UPDATED, { action: "production_feature", ts: new Date().toISOString() }).catch((e: unknown) => logger.debug({ err: e instanceof Error ? e.message : String(e) }, "fire-and-forget failed"));
       return {
         dryRun: input.dryRun,
         overdueCount: overdue.length,
@@ -446,7 +446,7 @@ export const certVerificationRouter = router({
       const certNumber = `NDSEP-${input.certType.toUpperCase()}-${Date.now()}-${input.orgId}`;
       const expiresAt = new Date(Date.now() + ENV.certValidityDays * 86400000).toISOString();
       await exec(`INSERT INTO compliance_certificates (cert_number, organization_id, cert_type, issued_by, issued_at, expires_at, status, notes) VALUES ('${certNumber}', ${input.orgId}, '${input.certType}', ${ctx.user.id}, NOW(), '${expiresAt}', 'active', '${input.notes ?? ""}')`);
-      emitMutationEvent("ndsep.compliance.mutation", { action: "productionFeatures", ts: new Date().toISOString() }).catch((e: unknown) => logger.debug({ err: e instanceof Error ? e.message : String(e) }, "fire-and-forget failed"));
+      emitMutationEvent(EVENTS.COMPLIANCE_SCORE_UPDATED, { action: "production_feature", ts: new Date().toISOString() }).catch((e: unknown) => logger.debug({ err: e instanceof Error ? e.message : String(e) }, "fire-and-forget failed"));
       return { certNumber, expiresAt, verifyUrl: `${ENV.certVerifyBaseUrl}/${certNumber}` };
     }),
 
@@ -476,7 +476,7 @@ export const complianceRescoringRouter = router({
         await exec(`UPDATE organizations SET compliance_score = ${newScore.toFixed(1)}, updated_at = NOW() WHERE id = ${orgId}`);
         updated++;
       }
-      emitMutationEvent("ndsep.compliance.mutation", { action: "productionFeatures", ts: new Date().toISOString() }).catch((e: unknown) => logger.debug({ err: e instanceof Error ? e.message : String(e) }, "fire-and-forget failed"));
+      emitMutationEvent(EVENTS.COMPLIANCE_SCORE_UPDATED, { action: "production_feature", ts: new Date().toISOString() }).catch((e: unknown) => logger.debug({ err: e instanceof Error ? e.message : String(e) }, "fire-and-forget failed"));
       return { updated, message: `Re-scored ${updated} organizations` };
     }),
 

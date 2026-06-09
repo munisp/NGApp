@@ -162,11 +162,15 @@ export async function executeTransition(ctx: WorkflowContext, action: string): P
     return { success: false, error: "Transition conditions not met" };
   }
 
-  // Execute transition
-  await pool.query(
-    `UPDATE ${getTableName(ctx.entityType)} SET status = $1, updated_at = NOW() WHERE id = $2`,
-    [transition.to, ctx.entityId]
+  // Execute transition with optimistic locking (prevent concurrent state changes)
+  const updateResult = await pool.query(
+    `UPDATE ${getTableName(ctx.entityType)} SET status = $1, updated_at = NOW() WHERE id = $2 AND status = $3`,
+    [transition.to, ctx.entityId, currentState]
   );
+
+  if (updateResult.rowCount === 0) {
+    return { success: false, error: `Concurrent modification detected: entity ${ctx.entityId} is no longer in state '${currentState}'. Refresh and retry.` };
+  }
 
   // Run side effects
   if (transition.sideEffects) {

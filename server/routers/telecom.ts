@@ -105,7 +105,7 @@ export const telecomRouter = router({
          input.annualFeeNgn ?? null, input.issuedAt ?? null, input.expiresAt ?? null,
          input.dataLocalisationCompliant, input.lawfulInterceptEnabled]
       );
-      emitMutationEvent("ndsep.telecom.mutation", { action: "telecom", ts: new Date().toISOString() }).catch((e: unknown) => logger.debug({ err: e instanceof Error ? e.message : String(e) }, "fire-and-forget failed"));
+      emitMutationEvent(EVENTS.TELECOM_MONITORING, { action: "telecom_event", ts: new Date().toISOString() }).catch((e: unknown) => logger.debug({ err: e instanceof Error ? e.message : String(e) }, "fire-and-forget failed"));
       return rows[0];
     }),
 
@@ -161,7 +161,7 @@ export const telecomRouter = router({
          input.measuredValue ?? null, input.thresholdValue ?? null, input.measurementUnit ?? null,
          input.affectedRegion ?? null, input.affectedSubscribers ?? null, input.penaltyNgn ?? null, input.notes ?? null]
       );
-      emitMutationEvent("ndsep.telecom.mutation", { action: "telecom", ts: new Date().toISOString() }).catch((e: unknown) => logger.debug({ err: e instanceof Error ? e.message : String(e) }, "fire-and-forget failed"));
+      emitMutationEvent(EVENTS.TELECOM_MONITORING, { action: "telecom_event", ts: new Date().toISOString() }).catch((e: unknown) => logger.debug({ err: e instanceof Error ? e.message : String(e) }, "fire-and-forget failed"));
       return rows[0];
     }),
 
@@ -172,7 +172,7 @@ export const telecomRouter = router({
         `UPDATE qos_violations SET status='resolved', resolved_at=NOW(), notes=COALESCE($2,notes), updated_at=NOW() WHERE id=$1 RETURNING *`,
         [input.id, input.resolution ?? null]
       );
-      emitMutationEvent("ndsep.telecom.mutation", { action: "telecom", ts: new Date().toISOString() }).catch((e: unknown) => logger.debug({ err: e instanceof Error ? e.message : String(e) }, "fire-and-forget failed"));
+      emitMutationEvent(EVENTS.TELECOM_MONITORING, { action: "telecom_event", ts: new Date().toISOString() }).catch((e: unknown) => logger.debug({ err: e instanceof Error ? e.message : String(e) }, "fire-and-forget failed"));
       return rows[0];
     }),
 
@@ -262,7 +262,7 @@ export const telecomRouter = router({
          RETURNING id, violation_ref, operator_id, penalty_ngn`,
         input.operatorId ? [input.penaltyThresholdNgn, input.operatorId] : [input.penaltyThresholdNgn]
       );
-      emitMutationEvent("ndsep.telecom.mutation", { action: "telecom.escalateQos", ts: new Date().toISOString(), count: rows.length }).catch((e: unknown) => logger.debug({ err: e instanceof Error ? e.message : String(e) }, "fire-and-forget failed"));
+      emitMutationEvent(EVENTS.TELECOM_QOS_VIOLATION, { action: "qos_escalation", ts: new Date().toISOString(), count: rows.length }).catch((e: unknown) => logger.debug({ err: e instanceof Error ? e.message : String(e) }, "fire-and-forget failed"));
       return { escalated: rows.length, violations: rows };
     }),
 

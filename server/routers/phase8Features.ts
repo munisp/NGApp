@@ -87,7 +87,7 @@ export const changelogAdminRouter = router({
          VALUES ('${version}', '${title}', '${body}', '${category}', ${publishedAt})
          RETURNING id, version, title, body, category, published_at`
       );
-      emitMutationEvent("ndsep.compliance.mutation", { action: "phase8Features", ts: new Date().toISOString() }).catch((e: unknown) => logger.debug({ err: e instanceof Error ? e.message : String(e) }, "fire-and-forget failed"));
+      emitMutationEvent(EVENTS.ENFORCEMENT_CASE_OPENED, { action: "enforcement_event", ts: new Date().toISOString() }).catch((e: unknown) => logger.debug({ err: e instanceof Error ? e.message : String(e) }, "fire-and-forget failed"));
       return rows[0] as {
         id: number;
         version: string;
@@ -126,7 +126,7 @@ export const changelogAdminRouter = router({
          WHERE id = ${id}
          RETURNING id, version, title, body, category, published_at`
       );
-      emitMutationEvent("ndsep.compliance.mutation", { action: "phase8Features", ts: new Date().toISOString() }).catch((e: unknown) => logger.debug({ err: e instanceof Error ? e.message : String(e) }, "fire-and-forget failed"));
+      emitMutationEvent(EVENTS.ENFORCEMENT_CASE_OPENED, { action: "enforcement_event", ts: new Date().toISOString() }).catch((e: unknown) => logger.debug({ err: e instanceof Error ? e.message : String(e) }, "fire-and-forget failed"));
       return rows[0] as {
         id: number;
         version: string;
@@ -142,7 +142,7 @@ export const changelogAdminRouter = router({
     .input(z.object({ id: z.number().int().positive() }))
     .mutation(async ({ input }) => {
       await exec(`DELETE FROM changelogs WHERE id = ${input.id}`);
-      emitMutationEvent("ndsep.compliance.mutation", { action: "phase8Features", ts: new Date().toISOString() }).catch((e: unknown) => logger.debug({ err: e instanceof Error ? e.message : String(e) }, "fire-and-forget failed"));
+      emitMutationEvent(EVENTS.ENFORCEMENT_CASE_OPENED, { action: "enforcement_event", ts: new Date().toISOString() }).catch((e: unknown) => logger.debug({ err: e instanceof Error ? e.message : String(e) }, "fire-and-forget failed"));
       return { ok: true };
     }),
 });

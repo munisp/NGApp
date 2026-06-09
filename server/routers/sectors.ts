@@ -95,7 +95,7 @@ export const healthcareRouter = router({
          input.lga ?? null, input.nhiaAccreditationNumber ?? null, input.fmohLicenceNumber ?? null,
          input.bedCapacity ?? null, input.emrSystem ?? null, input.dataLocalisationCompliant, input.ndpcRegistered]
       );
-      emitMutationEvent("ndsep.sector.mutation", { action: "sectors", ts: new Date().toISOString() }).catch((e: unknown) => logger.debug({ err: e instanceof Error ? e.message : String(e) }, "fire-and-forget failed"));
+      emitMutationEvent(EVENTS.SECTOR_BENCHMARK, { action: "sector_updated", ts: new Date().toISOString() }).catch((e: unknown) => logger.debug({ err: e instanceof Error ? e.message : String(e) }, "fire-and-forget failed"));
       return rows[0];
     }),
 
@@ -188,7 +188,7 @@ export const healthcareRouter = router({
          RETURNING id, trial_name, facility_id`,
         input.facilityId ? [input.facilityId] : []
       );
-      emitMutationEvent("ndsep.sector.mutation", { action: "healthcare.flagTrials", ts: new Date().toISOString(), count: rows.length }).catch((e: unknown) => logger.debug({ err: e instanceof Error ? e.message : String(e) }, "fire-and-forget failed"));
+      emitMutationEvent(EVENTS.SECTOR_ALERT, { action: "healthcare_flagTrials", ts: new Date().toISOString(), count: rows.length }).catch((e: unknown) => logger.debug({ err: e instanceof Error ? e.message : String(e) }, "fire-and-forget failed"));
       return { suspended: rows.length, trials: rows };
     }),
 });
@@ -432,7 +432,7 @@ export const insuranceRouter = router({
          WHERE id=$1 RETURNING *`,
         [input.id, input.status, input.approvedAmountNgn ?? null, input.notes ?? null]
       );
-      emitMutationEvent("ndsep.sector.mutation", { action: "sectors", ts: new Date().toISOString() }).catch((e: unknown) => logger.debug({ err: e instanceof Error ? e.message : String(e) }, "fire-and-forget failed"));
+      emitMutationEvent(EVENTS.SECTOR_BENCHMARK, { action: "sector_updated", ts: new Date().toISOString() }).catch((e: unknown) => logger.debug({ err: e instanceof Error ? e.message : String(e) }, "fire-and-forget failed"));
       return rows[0];
     }),
 
@@ -565,7 +565,7 @@ export const fintechRouter = router({
         `UPDATE open_banking_consents SET consent_status='revoked', revoked_at=NOW(), updated_at=NOW() WHERE id=$1 RETURNING *`,
         [input.id]
       );
-      emitMutationEvent("ndsep.sector.mutation", { action: "sectors", ts: new Date().toISOString() }).catch((e: unknown) => logger.debug({ err: e instanceof Error ? e.message : String(e) }, "fire-and-forget failed"));
+      emitMutationEvent(EVENTS.SECTOR_BENCHMARK, { action: "sector_updated", ts: new Date().toISOString() }).catch((e: unknown) => logger.debug({ err: e instanceof Error ? e.message : String(e) }, "fire-and-forget failed"));
       return rows[0];
     }),
 
@@ -620,7 +620,7 @@ export const fintechRouter = router({
          RETURNING id, company_id`,
         input.companyId ? [input.companyId] : []
       );
-      emitMutationEvent("ndsep.sector.mutation", { action: "fintech.revokeConsents", ts: new Date().toISOString(), count: rows.length }).catch((e: unknown) => logger.debug({ err: e instanceof Error ? e.message : String(e) }, "fire-and-forget failed"));
+      emitMutationEvent(EVENTS.SECTOR_ALERT, { action: "fintech_revokeConsents", ts: new Date().toISOString(), count: rows.length }).catch((e: unknown) => logger.debug({ err: e instanceof Error ? e.message : String(e) }, "fire-and-forget failed"));
       return { revoked: rows.length, consents: rows };
     }),
 });

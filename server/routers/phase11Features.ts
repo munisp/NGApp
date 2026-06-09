@@ -76,7 +76,7 @@ ${items}
           `UPDATE webhook_subscriptions SET events = $1, updated_at = NOW() WHERE url = $2 AND user_id = $3`,
           [JSON.stringify(input.events), input.url, ctx.user.id]
         );
-        emitMutationEvent("ndsep.compliance.mutation", { action: "phase11Features", ts: new Date().toISOString() }).catch((e: unknown) => logger.debug({ err: e instanceof Error ? e.message : String(e) }, "fire-and-forget failed"));
+        emitMutationEvent(EVENTS.COMPLIANCE_REMEDIATION, { action: "compliance_remediation", ts: new Date().toISOString() }).catch((e: unknown) => logger.debug({ err: e instanceof Error ? e.message : String(e) }, "fire-and-forget failed"));
         return { action: "updated", url: input.url };
       }
       await rawQuery(
@@ -84,7 +84,7 @@ ${items}
          VALUES ($1, $2, $3, $4, NOW())`,
         [ctx.user.id, input.url, JSON.stringify(input.events), input.secret || null]
       );
-      emitMutationEvent("ndsep.compliance.mutation", { action: "phase11Features", ts: new Date().toISOString() }).catch((e: unknown) => logger.debug({ err: e instanceof Error ? e.message : String(e) }, "fire-and-forget failed"));
+      emitMutationEvent(EVENTS.COMPLIANCE_REMEDIATION, { action: "compliance_remediation", ts: new Date().toISOString() }).catch((e: unknown) => logger.debug({ err: e instanceof Error ? e.message : String(e) }, "fire-and-forget failed"));
       return { action: "created", url: input.url };
     }),
 
@@ -103,7 +103,7 @@ ${items}
         `DELETE FROM webhook_subscriptions WHERE id = $1 AND user_id = $2`,
         [input.id, ctx.user.id]
       );
-      emitMutationEvent("ndsep.compliance.mutation", { action: "phase11Features", ts: new Date().toISOString() }).catch((e: unknown) => logger.debug({ err: e instanceof Error ? e.message : String(e) }, "fire-and-forget failed"));
+      emitMutationEvent(EVENTS.COMPLIANCE_REMEDIATION, { action: "compliance_remediation", ts: new Date().toISOString() }).catch((e: unknown) => logger.debug({ err: e instanceof Error ? e.message : String(e) }, "fire-and-forget failed"));
       return { deleted: true };
     }),
 });
@@ -142,7 +142,7 @@ export const dsarAutomationRouter = router({
          VALUES ($1, 'auto_assigned', $2, NOW())`,
         [input.dsarId, input.assigneeId]
       );
-      emitMutationEvent("ndsep.compliance.mutation", { action: "phase11Features", ts: new Date().toISOString() }).catch((e: unknown) => logger.debug({ err: e instanceof Error ? e.message : String(e) }, "fire-and-forget failed"));
+      emitMutationEvent(EVENTS.COMPLIANCE_REMEDIATION, { action: "compliance_remediation", ts: new Date().toISOString() }).catch((e: unknown) => logger.debug({ err: e instanceof Error ? e.message : String(e) }, "fire-and-forget failed"));
       return { assigned: true };
     }),
 
@@ -164,7 +164,7 @@ export const dsarAutomationRouter = router({
           [input.extensionDays, input.reason, id]
         );
       }
-      emitMutationEvent("ndsep.compliance.mutation", { action: "phase11Features", ts: new Date().toISOString() }).catch((e: unknown) => logger.debug({ err: e instanceof Error ? e.message : String(e) }, "fire-and-forget failed"));
+      emitMutationEvent(EVENTS.COMPLIANCE_REMEDIATION, { action: "compliance_remediation", ts: new Date().toISOString() }).catch((e: unknown) => logger.debug({ err: e instanceof Error ? e.message : String(e) }, "fire-and-forget failed"));
       return { extended: input.dsarIds.length };
     }),
 
@@ -246,7 +246,7 @@ export const breachLifecycleRouter = router({
         [input.breachId, `notification_submitted_${input.notificationType}`, ctx.user.name || "System",
           `Notified ${input.notifiedAuthority}. Affected subjects: ${input.affectedDataSubjects}. Mitigation: ${input.mitigationMeasures.substring(0, 200)}`]
       );
-      emitMutationEvent("ndsep.compliance.mutation", { action: "phase11Features", ts: new Date().toISOString() }).catch((e: unknown) => logger.debug({ err: e instanceof Error ? e.message : String(e) }, "fire-and-forget failed"));
+      emitMutationEvent(EVENTS.COMPLIANCE_REMEDIATION, { action: "compliance_remediation", ts: new Date().toISOString() }).catch((e: unknown) => logger.debug({ err: e instanceof Error ? e.message : String(e) }, "fire-and-forget failed"));
       return { submitted: true, notificationType: input.notificationType };
     }),
 
@@ -305,7 +305,7 @@ export const certLifecycleRouter = router({
          WHERE id = $4`,
         [input.newExpiryDate, ctx.user.id, input.renewalNotes || null, input.certId]
       );
-      emitMutationEvent("ndsep.compliance.mutation", { action: "phase11Features", ts: new Date().toISOString() }).catch((e: unknown) => logger.debug({ err: e instanceof Error ? e.message : String(e) }, "fire-and-forget failed"));
+      emitMutationEvent(EVENTS.COMPLIANCE_REMEDIATION, { action: "compliance_remediation", ts: new Date().toISOString() }).catch((e: unknown) => logger.debug({ err: e instanceof Error ? e.message : String(e) }, "fire-and-forget failed"));
       return { renewed: true };
     }),
 
@@ -318,7 +318,7 @@ export const certLifecycleRouter = router({
          WHERE id = $3`,
         [ctx.user.id, input.reason, input.certId]
       );
-      emitMutationEvent("ndsep.compliance.mutation", { action: "phase11Features", ts: new Date().toISOString() }).catch((e: unknown) => logger.debug({ err: e instanceof Error ? e.message : String(e) }, "fire-and-forget failed"));
+      emitMutationEvent(EVENTS.COMPLIANCE_REMEDIATION, { action: "compliance_remediation", ts: new Date().toISOString() }).catch((e: unknown) => logger.debug({ err: e instanceof Error ? e.message : String(e) }, "fire-and-forget failed"));
       return { revoked: true };
     }),
 
@@ -401,7 +401,7 @@ export const sectorBenchmarkRouter = router({
         updated++;
       }
     }
-    emitMutationEvent("ndsep.compliance.mutation", { action: "phase11Features", ts: new Date().toISOString() }).catch((e: unknown) => logger.debug({ err: e instanceof Error ? e.message : String(e) }, "fire-and-forget failed"));
+    emitMutationEvent(EVENTS.COMPLIANCE_REMEDIATION, { action: "compliance_remediation", ts: new Date().toISOString() }).catch((e: unknown) => logger.debug({ err: e instanceof Error ? e.message : String(e) }, "fire-and-forget failed"));
     return { benchmarked: updated, timestamp: new Date().toISOString() };
   }),
 });
@@ -564,7 +564,7 @@ export const complianceCalendarRouter = router({
          VALUES ($1, $2, $3, $4, $5, $6, 'pending', NOW()) RETURNING id`,
         [input.title, input.deadlineType, input.dueDate, input.orgId || null, input.priority, input.notes || null]
       );
-      emitMutationEvent("ndsep.compliance.mutation", { action: "phase11Features", ts: new Date().toISOString() }).catch((e: unknown) => logger.debug({ err: e instanceof Error ? e.message : String(e) }, "fire-and-forget failed"));
+      emitMutationEvent(EVENTS.COMPLIANCE_REMEDIATION, { action: "compliance_remediation", ts: new Date().toISOString() }).catch((e: unknown) => logger.debug({ err: e instanceof Error ? e.message : String(e) }, "fire-and-forget failed"));
       return { id: row.id, created: true };
     }),
 
@@ -622,7 +622,7 @@ export const finePaymentRouter = router({
          WHERE id = $6`,
         [newStatus, input.paymentDate, input.paymentReference, input.paymentMethod, input.amount, input.fineId]
       );
-      emitMutationEvent("ndsep.compliance.mutation", { action: "phase11Features", ts: new Date().toISOString() }).catch((e: unknown) => logger.debug({ err: e instanceof Error ? e.message : String(e) }, "fire-and-forget failed"));
+      emitMutationEvent(EVENTS.COMPLIANCE_REMEDIATION, { action: "compliance_remediation", ts: new Date().toISOString() }).catch((e: unknown) => logger.debug({ err: e instanceof Error ? e.message : String(e) }, "fire-and-forget failed"));
       return { status: newStatus, paymentReference: input.paymentReference };
     }),
 
