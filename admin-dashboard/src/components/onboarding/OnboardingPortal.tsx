@@ -313,11 +313,11 @@ export function OnboardingPortal() {
         setSelectedCase(data);
       } else {
         log.error('Failed to fetch case details');
-        setSelectedCase([]); // Fallback
+        setSelectedCase(null);
       }
     } catch (error) {
       log.error('Error fetching case:', error);
-      setSelectedCase([]); // Fallback
+      setSelectedCase(null);
     }
   };
 

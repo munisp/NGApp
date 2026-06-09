@@ -529,11 +529,11 @@ export function KYBVerificationPortal() {
         const data = await response.json();
         setSelectedCase(data);
       } else {
-        setSelectedCase([]);
+        setSelectedCase(null);
       }
     } catch (error) {
       log.error('Error fetching KYB case:', error);
-      setSelectedCase([]);
+      setSelectedCase(null);
     }
   };
 

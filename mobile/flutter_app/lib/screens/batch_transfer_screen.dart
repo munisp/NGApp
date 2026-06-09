@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import '../services/api_service.dart';
+import '../utils/validators.dart';
 
 class BatchTransferScreen extends StatefulWidget {
   const BatchTransferScreen({super.key});
@@ -65,16 +66,27 @@ class _BatchTransferScreenState extends State<BatchTransferScreen> {
   }
 
   void _showCreateBatch(BuildContext context) {
+    final formKey = GlobalKey<FormState>();
+    final nameCtrl = TextEditingController();
     showDialog(
       context: context,
       builder: (ctx) => AlertDialog(
         title: const Text('New Batch Transfer'),
-        content: const Text('Upload a CSV file or create individual entries for batch processing.'),
+        content: Form(
+          key: formKey,
+          child: TextFormField(
+            controller: nameCtrl,
+            decoration: const InputDecoration(labelText: 'Batch Name', border: OutlineInputBorder(), hintText: 'e.g. June Salary Payments'),
+            validator: (v) => Validators.required(v, 'Batch name'),
+            autofocus: true,
+          ),
+        ),
         actions: [
           TextButton(onPressed: () => Navigator.pop(ctx), child: const Text('Cancel')),
           ElevatedButton(
             onPressed: () async {
-              await _api.createBatchTransfer({'name': 'Batch ${DateTime.now().toIso8601String()}'});
+              if (!formKey.currentState!.validate()) return;
+              await _api.createBatchTransfer({'name': nameCtrl.text});
               Navigator.pop(ctx);
               _loadBatches();
             },

@@ -307,10 +307,10 @@ export async function performAMLScreening(params: {
   
   // Default risk assessment — actual score would come from AML screening provider.
   const riskScore = 0;
-  let riskLevel: 'low' | 'medium' | 'high' = 'low';
+  const riskLevel: 'low' | 'medium' | 'high' = 'low';
 
   return {
-    passed: riskLevel !== 'high',
+    passed: (riskLevel as string) !== 'high',
     riskScore,
     riskLevel,
     matches: [],

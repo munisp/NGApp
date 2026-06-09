@@ -1,5 +1,7 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import '../services/api_service.dart';
+import '../utils/validators.dart';
 
 class RecurringScreen extends StatefulWidget {
   const RecurringScreen({super.key});
@@ -71,14 +73,28 @@ class _RecurringScreenState extends State<RecurringScreen> {
         final recipientCtrl = TextEditingController();
         final amountCtrl = TextEditingController();
         String frequency = 'monthly';
+        final formKey = GlobalKey<FormState>();
         return StatefulBuilder(builder: (ctx, setModalState) => Padding(
           padding: EdgeInsets.only(bottom: MediaQuery.of(ctx).viewInsets.bottom, left: 16, right: 16, top: 16),
-          child: Column(mainAxisSize: MainAxisSize.min, children: [
+          child: Form(
+            key: formKey,
+            child: Column(mainAxisSize: MainAxisSize.min, children: [
             const Text('New Recurring Payment', style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
             const SizedBox(height: 16),
-            TextField(controller: recipientCtrl, decoration: const InputDecoration(labelText: 'Recipient', border: OutlineInputBorder())),
+            TextFormField(
+              controller: recipientCtrl,
+              decoration: const InputDecoration(labelText: 'Recipient', border: OutlineInputBorder()),
+              validator: Validators.recipientName,
+              textInputAction: TextInputAction.next,
+            ),
             const SizedBox(height: 12),
-            TextField(controller: amountCtrl, decoration: const InputDecoration(labelText: 'Amount', border: OutlineInputBorder()), keyboardType: TextInputType.number),
+            TextFormField(
+              controller: amountCtrl,
+              decoration: const InputDecoration(labelText: 'Amount', border: OutlineInputBorder(), prefixText: '\u20A6 '),
+              validator: (v) => Validators.amount(v, min: 100),
+              keyboardType: const TextInputType.numberWithOptions(decimal: true),
+              inputFormatters: [FilteringTextInputFormatter.allow(RegExp(r'[\d.,]'))],
+            ),
             const SizedBox(height: 12),
             DropdownButtonFormField<String>(
               value: frequency,
@@ -93,7 +109,8 @@ class _RecurringScreenState extends State<RecurringScreen> {
             const SizedBox(height: 16),
             SizedBox(width: double.infinity, child: ElevatedButton(
               onPressed: () async {
-                await _api.createRecurringRemittance({'recipient': recipientCtrl.text, 'amount': double.tryParse(amountCtrl.text) ?? 0, 'frequency': frequency});
+                if (!formKey.currentState!.validate()) return;
+                await _api.createRecurringRemittance({'recipient': recipientCtrl.text, 'amount': double.tryParse(amountCtrl.text.replaceAll(',', '')) ?? 0, 'frequency': frequency});
                 if (mounted) Navigator.pop(ctx);
                 _loadRecurring();
               },
@@ -101,7 +118,7 @@ class _RecurringScreenState extends State<RecurringScreen> {
             )),
             const SizedBox(height: 16),
           ]),
-        ));
+        )));
       },
     );
   }

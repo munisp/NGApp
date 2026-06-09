@@ -1,5 +1,7 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import '../services/api_service.dart';
+import '../utils/validators.dart';
 
 class DisputesScreen extends StatefulWidget {
   const DisputesScreen({super.key});
@@ -70,30 +72,55 @@ class _DisputesScreenState extends State<DisputesScreen> {
   }
 
   void _showCreateDispute(BuildContext context) {
+    final formKey = GlobalKey<FormState>();
     final reasonController = TextEditingController();
     final amountController = TextEditingController();
+    final txnRefController = TextEditingController();
     showModalBottomSheet(
       context: context,
       isScrollControlled: true,
       builder: (ctx) => Padding(
         padding: EdgeInsets.only(bottom: MediaQuery.of(ctx).viewInsets.bottom, left: 16, right: 16, top: 16),
-        child: Column(mainAxisSize: MainAxisSize.min, children: [
-          const Text('Create Dispute', style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
-          const SizedBox(height: 16),
-          TextField(controller: reasonController, decoration: const InputDecoration(labelText: 'Reason', border: OutlineInputBorder())),
-          const SizedBox(height: 12),
-          TextField(controller: amountController, decoration: const InputDecoration(labelText: 'Amount', border: OutlineInputBorder()), keyboardType: TextInputType.number),
-          const SizedBox(height: 16),
-          SizedBox(width: double.infinity, child: ElevatedButton(
-            onPressed: () async {
-              await _api.createDispute({'reason': reasonController.text, 'amount': double.tryParse(amountController.text) ?? 0});
-              if (mounted) Navigator.pop(ctx);
-              _loadDisputes();
-            },
-            child: const Text('Submit Dispute'),
-          )),
-          const SizedBox(height: 16),
-        ]),
+        child: Form(
+          key: formKey,
+          child: Column(mainAxisSize: MainAxisSize.min, children: [
+            const Text('Create Dispute', style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
+            const SizedBox(height: 16),
+            TextFormField(
+              controller: txnRefController,
+              decoration: const InputDecoration(labelText: 'Transaction Reference', border: OutlineInputBorder()),
+              validator: Validators.transactionRef,
+              textInputAction: TextInputAction.next,
+            ),
+            const SizedBox(height: 12),
+            TextFormField(
+              controller: reasonController,
+              decoration: const InputDecoration(labelText: 'Reason', border: OutlineInputBorder(), hintText: 'Describe the issue in detail'),
+              validator: Validators.disputeReason,
+              maxLines: 3,
+              textInputAction: TextInputAction.next,
+            ),
+            const SizedBox(height: 12),
+            TextFormField(
+              controller: amountController,
+              decoration: const InputDecoration(labelText: 'Disputed Amount', border: OutlineInputBorder(), prefixText: '₦ '),
+              validator: (v) => Validators.amount(v, min: 1),
+              keyboardType: const TextInputType.numberWithOptions(decimal: true),
+              inputFormatters: [FilteringTextInputFormatter.allow(RegExp(r'[\d.,]'))],
+            ),
+            const SizedBox(height: 16),
+            SizedBox(width: double.infinity, child: ElevatedButton(
+              onPressed: () async {
+                if (!formKey.currentState!.validate()) return;
+                await _api.createDispute({'transaction_ref': txnRefController.text, 'reason': reasonController.text, 'amount': double.tryParse(amountController.text.replaceAll(',', '')) ?? 0});
+                if (mounted) Navigator.pop(ctx);
+                _loadDisputes();
+              },
+              child: const Text('Submit Dispute'),
+            )),
+            const SizedBox(height: 16),
+          ]),
+        ),
       ),
     );
   }

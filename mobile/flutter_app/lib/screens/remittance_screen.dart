@@ -1,5 +1,7 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import '../services/api_service.dart';
+import '../utils/validators.dart';
 
 class RemittanceScreen extends StatefulWidget {
   const RemittanceScreen({super.key});
@@ -70,30 +72,56 @@ class _RemittanceScreenState extends State<RemittanceScreen> {
   }
 
   void _showNewRemittance(BuildContext context) {
+    final formKey = GlobalKey<FormState>();
     final recipientCtrl = TextEditingController();
     final amountCtrl = TextEditingController();
+    final accountCtrl = TextEditingController();
     showModalBottomSheet(
       context: context,
       isScrollControlled: true,
       builder: (ctx) => Padding(
         padding: EdgeInsets.only(bottom: MediaQuery.of(ctx).viewInsets.bottom, left: 16, right: 16, top: 16),
-        child: Column(mainAxisSize: MainAxisSize.min, children: [
-          const Text('New Remittance', style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
-          const SizedBox(height: 16),
-          TextField(controller: recipientCtrl, decoration: const InputDecoration(labelText: 'Recipient Name', border: OutlineInputBorder())),
-          const SizedBox(height: 12),
-          TextField(controller: amountCtrl, decoration: const InputDecoration(labelText: 'Amount (NGN)', border: OutlineInputBorder()), keyboardType: TextInputType.number),
-          const SizedBox(height: 16),
-          SizedBox(width: double.infinity, child: ElevatedButton(
-            onPressed: () async {
-              await _api.createRemittance({'recipient_name': recipientCtrl.text, 'amount': double.tryParse(amountCtrl.text) ?? 0, 'source_currency': 'NGN', 'dest_currency': 'USD'});
-              if (mounted) Navigator.pop(ctx);
-              _loadRemittances();
-            },
-            child: const Text('Send Remittance'),
-          )),
-          const SizedBox(height: 16),
-        ]),
+        child: Form(
+          key: formKey,
+          child: Column(mainAxisSize: MainAxisSize.min, children: [
+            const Text('New Remittance', style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
+            const SizedBox(height: 16),
+            TextFormField(
+              controller: recipientCtrl,
+              decoration: const InputDecoration(labelText: 'Recipient Name', border: OutlineInputBorder()),
+              validator: Validators.recipientName,
+              textInputAction: TextInputAction.next,
+            ),
+            const SizedBox(height: 12),
+            TextFormField(
+              controller: accountCtrl,
+              decoration: const InputDecoration(labelText: 'Account Number', border: OutlineInputBorder()),
+              validator: Validators.accountNumber,
+              keyboardType: TextInputType.number,
+              inputFormatters: [FilteringTextInputFormatter.digitsOnly, LengthLimitingTextInputFormatter(10)],
+              textInputAction: TextInputAction.next,
+            ),
+            const SizedBox(height: 12),
+            TextFormField(
+              controller: amountCtrl,
+              decoration: const InputDecoration(labelText: 'Amount (NGN)', border: OutlineInputBorder(), prefixText: '₦ '),
+              validator: (v) => Validators.amount(v, min: 100, max: 50000000),
+              keyboardType: const TextInputType.numberWithOptions(decimal: true),
+              inputFormatters: [FilteringTextInputFormatter.allow(RegExp(r'[\d.,]'))],
+            ),
+            const SizedBox(height: 16),
+            SizedBox(width: double.infinity, child: ElevatedButton(
+              onPressed: () async {
+                if (!formKey.currentState!.validate()) return;
+                await _api.createRemittance({'recipient_name': recipientCtrl.text, 'account_number': accountCtrl.text, 'amount': double.tryParse(amountCtrl.text.replaceAll(',', '')) ?? 0, 'source_currency': 'NGN', 'dest_currency': 'USD'});
+                if (mounted) Navigator.pop(ctx);
+                _loadRemittances();
+              },
+              child: const Text('Send Remittance'),
+            )),
+            const SizedBox(height: 16),
+          ]),
+        ),
       ),
     );
   }

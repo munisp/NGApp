@@ -540,11 +540,11 @@ export function KYCVerificationPortal() {
         setSelectedPerson(detail);
       } else {
         // Fallback to empty state if API fails
-        setSelectedPerson([]);
+        setSelectedPerson(null);
       }
     } catch (error) {
       log.error('Error fetching KYC case details:', error);
-      setSelectedPerson([]);
+      setSelectedPerson(null);
     }
   };
 
