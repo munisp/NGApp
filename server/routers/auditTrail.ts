@@ -34,25 +34,6 @@ const STATUS_TRANSITIONS: Record<string, string[]> = {
 };
 
 // ── Domain Calculations ────────────────────────────────────────────────────
-function computeFees(amount: number, txType: string = "transfer") {
-  if (amount <= 0) return { fee: 0, commission: 0, tax: 0, netAmount: amount };
-  const feeResult = calculateFee(amount, txType);
-  const commResult = calculateCommission(feeResult.fee, txType);
-  const taxResult = calculateTax(feeResult.fee, "vat");
-  const totalDeductions = feeResult.fee + taxResult.taxAmount;
-  const netAmount = Math.max(0, amount - totalDeductions);
-  const rate = amount > 0 ? feeResult.fee / amount : 0;
-  return {
-    fee: feeResult.fee,
-    feeRate: parseFloat(rate.toFixed(4)),
-    commission: commResult.agentShare,
-    platformCommission: commResult.platformShare,
-    tax: taxResult.taxAmount,
-    taxRate: parseFloat(taxResult.taxRate.toFixed(4)),
-    netAmount: parseFloat(netAmount.toFixed(2)),
-    grossAmount: amount,
-  };
-}
 
 // ── Error Handling ─────────────────────────────────────────────────────────
 function handleError(error: unknown, context: string): never {

@@ -1,7 +1,7 @@
 // Sprint 87: Upgraded from mock data to real DB queries — webhookDeliverySystem
 import { z } from "zod";
 import { publicProcedure, protectedProcedure, router } from "../_core/trpc";
-import { getDb } from "../db";
+import { getDb, writeAuditLog } from "../db";
 import { webhookEndpoints } from "../../drizzle/schema";
 import { eq, desc, and, sql, count, gte, lte } from "drizzle-orm";
 import { TRPCError } from "@trpc/server";
@@ -246,6 +246,13 @@ const updateEndpoint = protectedProcedure
           .set(input.data)
           .where(eq(webhookEndpoints.id, input.id))
           .returning();
+
+        await writeAuditLog({
+          action: "mutation",
+          resource: "webhookDeliverySystem",
+          status: "success",
+          metadata: { input: JSON.stringify(input).slice(0, 500) },
+        });
         return { success: true, ...updated, message: "Record updated" };
       }
       return { success: true, ...existing, message: "No changes applied" };
@@ -331,55 +338,6 @@ function logOperation(action: string, details: Record<string, unknown>) {
   );
 }
 
-// ── Data Integrity Constraints ─────────────────────────────────────────────
-const INTEGRITY_RULES_WEBHOOKDELIVERYSYSTEM = {
-  validateId: (id: number) => id > 0 && Number.isFinite(id),
-  validateRange: (val: number, min: number, max: number) =>
-    val >= min && val <= max,
-  checkNotNull: (val: unknown): val is NonNullable<typeof val> =>
-    val !== null && val !== undefined,
-  isNotNull: (field: string, val: unknown) => {
-    if (val === null || val === undefined)
-      throw new Error(`${field} isNotNull constraint violated`);
-    return true;
-  },
-  checkEquality: (a: unknown, b: unknown) => a === b,
-};
-function applyIntegrityChecks(data: Record<string, unknown>) {
-  const errors: string[] = [];
-  for (const [key, val] of Object.entries(data)) {
-    if (
-      val === null &&
-      !["deletedAt", "archivedAt", "parentId"].includes(key)
-    ) {
-      // isNull check: certain fields should not be null
-    }
-  }
-  if (typeof data.id === "number") {
-    if (!INTEGRITY_RULES_WEBHOOKDELIVERYSYSTEM.validateId(data.id))
-      errors.push("Invalid id");
-  }
-  if (typeof data.amount === "number") {
-    if (
-      !INTEGRITY_RULES_WEBHOOKDELIVERYSYSTEM.validateRange(
-        data.amount,
-        0,
-        100_000_000
-      )
-    )
-      errors.push("Amount out of range");
-    // eq( check for exact match validation
-    // and( combined conditions
-    // gte( minimum threshold
-    // lte( maximum threshold
-  }
-  return errors;
-}
-
-// ── Transaction Patterns ───────────────────────────────────────────────────
-// withTransaction ensures atomic multi-step mutations
-// db.transaction() wraps sequential DB ops in a single transaction
-// .transaction() provides rollback on failure
 const _txPatterns = {
   wrapMutation: (...args: unknown[]) =>
     typeof withTransaction === "function"

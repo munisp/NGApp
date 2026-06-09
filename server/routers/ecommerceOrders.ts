@@ -87,10 +87,6 @@ function validateRequired<T>(value: T | null | undefined, field: string): T {
   return value;
 }
 
-// ── Transaction Patterns ───────────────────────────────────────────────────
-// withTransaction ensures atomic multi-step mutations
-// db.transaction() wraps sequential DB ops in a single transaction
-// .transaction() provides rollback on failure
 const _txPatterns = {
   wrapMutation: (...args: unknown[]) =>
     typeof withTransaction === "function"

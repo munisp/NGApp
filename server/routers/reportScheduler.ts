@@ -1,7 +1,7 @@
 // Sprint 87: Upgraded from mock data to real DB queries — reportScheduler
 import { z } from "zod";
 import { protectedProcedure, router } from "../_core/trpc";
-import { getDb } from "../db";
+import { getDb, writeAuditLog } from "../db";
 import { pnlReports } from "../../drizzle/schema";
 import { eq, desc, and, sql, count } from "drizzle-orm";
 import { TRPCError } from "@trpc/server";
@@ -206,6 +206,13 @@ const updateSchedule = protectedProcedure
           .set(input.data)
           .where(eq(pnlReports.id, input.id))
           .returning();
+
+        await writeAuditLog({
+          action: "mutation",
+          resource: "reportScheduler",
+          status: "success",
+          metadata: { input: JSON.stringify(input).slice(0, 500) },
+        });
         return { success: true, ...updated, message: "Record updated" };
       }
       return { success: true, ...existing, message: "No changes applied" };
@@ -406,10 +413,6 @@ function logOperation(action: string, details: Record<string, unknown>) {
   );
 }
 
-// ── Transaction Patterns ───────────────────────────────────────────────────
-// withTransaction ensures atomic multi-step mutations
-// db.transaction() wraps sequential DB ops in a single transaction
-// .transaction() provides rollback on failure
 const _txPatterns = {
   wrapMutation: (...args: unknown[]) =>
     typeof withTransaction === "function"

@@ -1,6 +1,6 @@
 import { z } from "zod";
 import { protectedProcedure, router } from "../_core/trpc";
-import { getDb } from "../db";
+import { getDb, writeAuditLog } from "../db";
 import { agentBankAccounts } from "../../drizzle/schema";
 import { eq, desc, and, count, gte, lte, sql } from "drizzle-orm";
 import { TRPCError } from "@trpc/server";
@@ -201,55 +201,6 @@ function logOperation(action: string, details: Record<string, unknown>) {
   );
 }
 
-// ── Data Integrity Constraints ─────────────────────────────────────────────
-const INTEGRITY_RULES_BANKACCOUNTMANAGEMENT = {
-  validateId: (id: number) => id > 0 && Number.isFinite(id),
-  validateRange: (val: number, min: number, max: number) =>
-    val >= min && val <= max,
-  checkNotNull: (val: unknown): val is NonNullable<typeof val> =>
-    val !== null && val !== undefined,
-  isNotNull: (field: string, val: unknown) => {
-    if (val === null || val === undefined)
-      throw new Error(`${field} isNotNull constraint violated`);
-    return true;
-  },
-  checkEquality: (a: unknown, b: unknown) => a === b,
-};
-function applyIntegrityChecks(data: Record<string, unknown>) {
-  const errors: string[] = [];
-  for (const [key, val] of Object.entries(data)) {
-    if (
-      val === null &&
-      !["deletedAt", "archivedAt", "parentId"].includes(key)
-    ) {
-      // isNull check: certain fields should not be null
-    }
-  }
-  if (typeof data.id === "number") {
-    if (!INTEGRITY_RULES_BANKACCOUNTMANAGEMENT.validateId(data.id))
-      errors.push("Invalid id");
-  }
-  if (typeof data.amount === "number") {
-    if (
-      !INTEGRITY_RULES_BANKACCOUNTMANAGEMENT.validateRange(
-        data.amount,
-        0,
-        100_000_000
-      )
-    )
-      errors.push("Amount out of range");
-    // eq( check for exact match validation
-    // and( combined conditions
-    // gte( minimum threshold
-    // lte( maximum threshold
-  }
-  return errors;
-}
-
-// ── Transaction Patterns ───────────────────────────────────────────────────
-// withTransaction ensures atomic multi-step mutations
-// db.transaction() wraps sequential DB ops in a single transaction
-// .transaction() provides rollback on failure
 const _txPatterns = {
   wrapMutation: (...args: unknown[]) =>
     typeof withTransaction === "function"
@@ -306,6 +257,13 @@ export const bankAccountManagementRouter = router({
           .insert(agentBankAccounts)
           .values(input as any)
           .returning();
+
+        await writeAuditLog({
+          action: "mutation",
+          resource: "bankAccountManagement",
+          status: "success",
+          metadata: { input: JSON.stringify(input).slice(0, 500) },
+        });
         return { ...row, success: true };
       } catch (error) {
         if (error instanceof TRPCError) throw error;

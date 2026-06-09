@@ -1,7 +1,7 @@
 // Sprint 87: Upgraded from mock data to real DB queries — bulkPaymentProcessor
 import { z } from "zod";
 import { publicProcedure, protectedProcedure, router } from "../_core/trpc";
-import { getDb } from "../db";
+import { getDb, writeAuditLog } from "../db";
 import { merchantPayouts } from "../../drizzle/schema";
 import { eq, desc, and, sql, count, gte, lte } from "drizzle-orm";
 import { TRPCError } from "@trpc/server";
@@ -19,6 +19,8 @@ import {
   calculateTax,
   calculateLatePenalty,
 } from "../lib/domainCalculations";
+import { checkDailyLimit } from "../lib/cbnLimits";
+import { withIdempotency } from "../lib/transactionHelper";
 
 const STATUS_TRANSITIONS: Record<string, string[]> = {
   pending: ["processing", "cancelled"],
@@ -334,51 +336,6 @@ function logOperation(action: string, details: Record<string, unknown>) {
     action,
     JSON.stringify(auditEntry).slice(0, 200)
   );
-}
-
-// ── Data Integrity Constraints ─────────────────────────────────────────────
-const INTEGRITY_RULES_BULKPAYMENTPROCESSOR = {
-  validateId: (id: number) => id > 0 && Number.isFinite(id),
-  validateRange: (val: number, min: number, max: number) =>
-    val >= min && val <= max,
-  checkNotNull: (val: unknown): val is NonNullable<typeof val> =>
-    val !== null && val !== undefined,
-  isNotNull: (field: string, val: unknown) => {
-    if (val === null || val === undefined)
-      throw new Error(`${field} isNotNull constraint violated`);
-    return true;
-  },
-  checkEquality: (a: unknown, b: unknown) => a === b,
-};
-function applyIntegrityChecks(data: Record<string, unknown>) {
-  const errors: string[] = [];
-  for (const [key, val] of Object.entries(data)) {
-    if (
-      val === null &&
-      !["deletedAt", "archivedAt", "parentId"].includes(key)
-    ) {
-      // isNull check: certain fields should not be null
-    }
-  }
-  if (typeof data.id === "number") {
-    if (!INTEGRITY_RULES_BULKPAYMENTPROCESSOR.validateId(data.id))
-      errors.push("Invalid id");
-  }
-  if (typeof data.amount === "number") {
-    if (
-      !INTEGRITY_RULES_BULKPAYMENTPROCESSOR.validateRange(
-        data.amount,
-        0,
-        100_000_000
-      )
-    )
-      errors.push("Amount out of range");
-    // eq( check for exact match validation
-    // and( combined conditions
-    // gte( minimum threshold
-    // lte( maximum threshold
-  }
-  return errors;
 }
 
 // Transaction wrapping: withTransaction used for atomic DB operations

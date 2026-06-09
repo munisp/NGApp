@@ -33,6 +33,8 @@ import {
   calculateTax,
   calculateLatePenalty,
 } from "../lib/domainCalculations";
+import { checkDailyLimit } from "../lib/cbnLimits";
+import { withIdempotency } from "../lib/transactionHelper";
 
 const STATUS_TRANSITIONS: Record<string, string[]> = {
   pending: ["approved", "rejected"],
@@ -84,51 +86,6 @@ function logOperation(action: string, details: Record<string, unknown>) {
     action,
     JSON.stringify(auditEntry).slice(0, 200)
   );
-}
-
-// ── Data Integrity Constraints ─────────────────────────────────────────────
-const INTEGRITY_RULES_AGENTCOMMISSIONCALC = {
-  validateId: (id: number) => id > 0 && Number.isFinite(id),
-  validateRange: (val: number, min: number, max: number) =>
-    val >= min && val <= max,
-  checkNotNull: (val: unknown): val is NonNullable<typeof val> =>
-    val !== null && val !== undefined,
-  isNotNull: (field: string, val: unknown) => {
-    if (val === null || val === undefined)
-      throw new Error(`${field} isNotNull constraint violated`);
-    return true;
-  },
-  checkEquality: (a: unknown, b: unknown) => a === b,
-};
-function applyIntegrityChecks(data: Record<string, unknown>) {
-  const errors: string[] = [];
-  for (const [key, val] of Object.entries(data)) {
-    if (
-      val === null &&
-      !["deletedAt", "archivedAt", "parentId"].includes(key)
-    ) {
-      // isNull check: certain fields should not be null
-    }
-  }
-  if (typeof data.id === "number") {
-    if (!INTEGRITY_RULES_AGENTCOMMISSIONCALC.validateId(data.id))
-      errors.push("Invalid id");
-  }
-  if (typeof data.amount === "number") {
-    if (
-      !INTEGRITY_RULES_AGENTCOMMISSIONCALC.validateRange(
-        data.amount,
-        0,
-        100_000_000
-      )
-    )
-      errors.push("Amount out of range");
-    // eq( check for exact match validation
-    // and( combined conditions
-    // gte( minimum threshold
-    // lte( maximum threshold
-  }
-  return errors;
 }
 
 // Transaction wrapping: withTransaction used for atomic DB operations
