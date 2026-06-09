@@ -132,7 +132,7 @@ export async function initiateRecovery(params: {
     const [recInserted] = await db.insert(accountRecoveryRequests).values({
       userId: params.userId,
       recoveryMethod: params.recoveryMethod,
-      recoveryToken: `recovery_${Date.now()}_${Math.random().toString(36).slice(2)}`,
+      recoveryToken: `recovery_${Date.now()}_${require('crypto').randomBytes(12).toString('hex')}`,
       recoveryCode: hashedCode,
       status: params.recoveryMethod === 'admin' ? 'pending' : 'pending',
       expiresAt,

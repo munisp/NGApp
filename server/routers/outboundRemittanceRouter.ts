@@ -761,7 +761,8 @@ export const outboundRemittanceRouter = router({
       const { participantId } = getScope(ctx.user);
       const pid = String(participantId);
       const keyId = `ak_${pid.toLowerCase().replace(/-/g, '_')}_${Date.now()}`;
-      const secret = `sk_live_${Array.from({ length: 32 }, () => 'abcdefghijklmnopqrstuvwxyz0123456789'[Math.floor(Math.random() * 36)]).join('')}`;
+      const { randomBytes } = await import('crypto');
+      const secret = `sk_live_${randomBytes(24).toString('base64url')}`;
       const key = {
         keyId,
         participantId: pid,
@@ -1348,7 +1349,7 @@ export const outboundRemittanceRouter = router({
   getOutboundFalkorDB: protectedProcedure.query(async () => ({
     connection: { host: 'localhost', port: 6379, graphName: 'outbound_remittance_graph', status: 'connected', protocol: 'RESP3' },
     stats: { totalNodes: 3_450_000, totalEdges: 12_800_000, avgQueryMs: 0.85, queriesPerSec: 38_000, cacheHitRate: 0.92, memoryMb: 2_840 },
-    corridorGraph: ['NG-GB','NG-US','NG-CA','NG-GH','NG-IN','NG-CN','NG-AE','NG-KE','NG-ZA'].map(id => ({ corridor: id, nodes: Math.floor(Math.random() * 50000) + 10000, edges: Math.floor(Math.random() * 180000) + 40000, avgDegree: +(Math.random() * 5 + 3).toFixed(2), riskScore: +(Math.random() * 0.3 + 0.05).toFixed(3) })),
+    corridorGraph: ['NG-GB','NG-US','NG-CA','NG-GH','NG-IN','NG-CN','NG-AE','NG-KE','NG-ZA'].map((id, i) => ({ corridor: id, nodes: 15000 + i * 5000, edges: 50000 + i * 15000, avgDegree: +(3.5 + i * 0.3).toFixed(2), riskScore: +(0.08 + i * 0.02).toFixed(3) })),
     recentQueries: [
       { query: "GRAPH.QUERY outbound_remittance_graph \"MATCH (s)-[r:SENT_TO]->(d) WHERE r.corridor='NG-GB' RETURN count(r)\"", result: '3,420 transfers', latencyUs: 680 },
       { query: "GRAPH.QUERY outbound_remittance_graph \"MATCH p=shortestPath((a)-[*..5]->(b)) WHERE a.bvn='22234567890' RETURN p\"", result: '3-hop path via GH intermediary', latencyUs: 1250 },
@@ -1523,7 +1524,8 @@ export const outboundRemittanceRouter = router({
       })).optional(),
     }))
     .mutation(async ({ ctx, input }) => {
-      const applicationRef = `APP-${Date.now().toString(36).toUpperCase()}-${Math.random().toString(36).substring(2, 6).toUpperCase()}`;
+      const { randomBytes: rb } = await import('crypto');
+      const applicationRef = `APP-${Date.now().toString(36).toUpperCase()}-${rb(3).toString('hex').toUpperCase()}`;
 
       // In production: persist to DB, trigger onboarding workflow, send confirmation email
       // For now: validate business rules and return reference

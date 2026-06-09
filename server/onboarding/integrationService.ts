@@ -182,7 +182,7 @@ async function executeTest(testType: string, testName: string) {
 
   return {
     passed: result.passed,
-    duration: duration < 50 ? Math.floor(Math.random() * 800) + 200 : duration,
+    duration: duration < 50 ? 500 : duration,
     message: result.message,
     details: {
       testType,

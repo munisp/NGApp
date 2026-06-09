@@ -229,7 +229,8 @@ async function sendEmailNotification(config: EmailConfig, payload: any): Promise
       const path = await import('path');
       const emailDir = path.join(process.cwd(), 'storage', 'emails');
       await fs.mkdir(emailDir, { recursive: true });
-      const filename = `email_${Date.now()}_${Math.random().toString(36).substring(7)}.html`;
+      const { randomBytes } = require('crypto');
+      const filename = `email_${Date.now()}_${randomBytes(4).toString('hex')}.html`;
       await fs.writeFile(path.join(emailDir, filename), emailBody);
       log.info(`[Email] Saved to storage/emails/${filename} (no email service configured)`);
     }

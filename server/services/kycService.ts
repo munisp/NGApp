@@ -305,15 +305,9 @@ export async function performAMLScreening(params: {
   // In production, this would integrate with AML screening providers
   // like ComplyAdvantage, Dow Jones, or World-Check
   
-  // For now, we'll simulate AML screening
-  const riskScore = Math.random() * 100;
+  // Default risk assessment — actual score would come from AML screening provider.
+  const riskScore = 0;
   let riskLevel: 'low' | 'medium' | 'high' = 'low';
-  
-  if (riskScore > 70) {
-    riskLevel = 'high';
-  } else if (riskScore > 40) {
-    riskLevel = 'medium';
-  }
 
   return {
     passed: riskLevel !== 'high',

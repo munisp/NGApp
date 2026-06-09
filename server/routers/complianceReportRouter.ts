@@ -22,13 +22,13 @@ export const complianceReportRouter = router({
         type: input.reportType,
         period: { start: input.periodStart, end: input.periodEnd },
         summary: {
-          totalTransactions: Math.floor(Math.random() * 10000) + 1000,
-          flaggedTransactions: Math.floor(Math.random() * 50),
-          totalAmount: (Math.random() * 1000000000).toFixed(2),
-          averageTransactionSize: (Math.random() * 100000).toFixed(2),
-          uniqueUsers: Math.floor(Math.random() * 5000) + 500,
-          crossBorderTransactions: Math.floor(Math.random() * 3000),
-          highRiskTransactions: Math.floor(Math.random() * 20),
+          totalTransactions: 0,
+          flaggedTransactions: 0,
+          totalAmount: "0.00",
+          averageTransactionSize: "0.00",
+          uniqueUsers: 0,
+          crossBorderTransactions: 0,
+          highRiskTransactions: 0,
         },
       });
       const parsed = JSON.parse(reportData);
