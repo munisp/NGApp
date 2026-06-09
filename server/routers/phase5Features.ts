@@ -163,8 +163,8 @@ export const chatSupportRouter = router({
         return { sessionId: s.id, sessionToken: s.session_token, ticketNumber: s.ticket_number, isNew: false };
       }
       // Create new session
-      const token = `sess-${ctx.user.id}-${now}-${require('crypto').randomBytes(8).toString('hex')}`;
-      const ticketNum = `TKT-${new Date().getFullYear()}-${String(Number(require('crypto').randomBytes(3).readUIntBE(0, 3)) % 99999 + 1).padStart(5,'0')}`;
+      const token = `sess-${ctx.user.id}-${now}-${Array.from(crypto.getRandomValues(new Uint8Array(8))).map(b => b.toString(16).padStart(2, '0')).join('')}`;
+      const ticketNum = `TKT-${new Date().getFullYear()}-${String(Number(crypto.getRandomValues(new Uint32Array(1))[0]) % 99999 + 1).padStart(5,'0')}`;
       const result = await exec(
         `INSERT INTO support_chat_sessions (user_id, session_token, status, subject, category, ticket_number, created_at, updated_at) VALUES (?,?,?,?,?,?,?,?)`,
         [ctx.user.id, token, 'active', input.subject ?? 'Support Request', input.category, ticketNum, now, now]

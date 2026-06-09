@@ -1220,8 +1220,7 @@ export const dpcoRouter = router({
       const [dpco] = await q("SELECT id, name FROM dpco_organisations WHERE id = ? AND status = 'active'", [input.dpcoOrgId]);
       if (!dpco) throw new TRPCError({ code: "NOT_FOUND", message: "DPCO not found or not active" });
       // Generate reference token
-      const crypto = require('crypto');
-      const token = `ENG-${Date.now().toString(36).toUpperCase()}-${crypto.randomBytes(3).toString('hex').toUpperCase()}`;
+      const token = `ENG-${Date.now().toString(36).toUpperCase()}-${Array.from(crypto.getRandomValues(new Uint8Array(3))).map(b => b.toString(16).padStart(2, '0')).join('').toUpperCase()}`;
       const [row] = await q(
         `INSERT INTO dpco_engagement_requests
            (org_name, org_sector, org_country, org_registration_number,

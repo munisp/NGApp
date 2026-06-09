@@ -39,7 +39,7 @@ async function query(sql: string, params: unknown[] = []): Promise<any[]> {
 // ─── Helper: generate unique references ──────────────────────────────────────
 function genRef(prefix: string): string {
   const ts = Date.now().toString(36).toUpperCase();
-  const rand = require('crypto').randomBytes(2).toString('hex').toUpperCase();
+  const rand = Array.from(crypto.getRandomValues(new Uint8Array(2))).map(b => b.toString(16).padStart(2, "0")).join("").toUpperCase();
   return `${prefix}-${ts}-${rand}`;
 }
 
