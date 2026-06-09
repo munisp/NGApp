@@ -5,6 +5,8 @@ import { storagePut } from "./storage";
 import { workflowRouter } from "./routers/workflows";
 import { publishPenaltyIssued, publishEnforcementCaseOpened, publishCitizenRightsRequest, kafkaSmokeTest, getKafkaProducerStatus, kafkaProduce } from "./kafka";
 import { startWorkflow, describeWorkflow, listWorkflows as temporalListWorkflows, getTemporalConfig, temporalSmokeTest } from "./temporal";
+import { dispatch as dispatchCommand } from "./cqrs/commandBus";
+import { emitMutationEvent, EVENTS } from "./middlewareIntegration";
 import { COOKIE_NAME } from "@shared/const";
 import { getSessionCookieOptions } from "./_core/cookies";
 import { systemRouter } from "./_core/systemRouter";
@@ -430,6 +432,9 @@ export const appRouter = router({
       .mutation(async ({ input, ctx }) => {
         const result = await createOrganization(input);
         createAuditLog({ userId: ctx.user.id, action: "org.create", resourceType: "organization", resourceId: result?.id, details: `Created organization: ${input.name}` }).catch((e: unknown) => logger.debug({ err: e instanceof Error ? e.message : String(e) }, "fire-and-forget failed"));
+        // Sync Permify — creator becomes org owner
+        permifyWriteRelationship("organization", String(result?.id ?? 0), "owner", "user", String(ctx.user.id)).catch((e: unknown) => logger.debug({ err: e instanceof Error ? e.message : String(e) }, "permify fire-and-forget"));
+        emitMutationEvent(EVENTS.COMPLIANCE_SCORE_UPDATED, { action: "org.create", entityId: result?.id, orgName: input.name, ts: new Date().toISOString() }).catch((e: unknown) => logger.debug({ err: e instanceof Error ? e.message : String(e) }, "fire-and-forget"));
         return result;
       }),
     update: adminProcedure
@@ -1286,7 +1291,10 @@ export const appRouter = router({
       .input(z.object({ organizationId: z.number(), userId: z.number(), role: z.string().default("member") }))
       .mutation(async ({ input, ctx }) => {
         if (ctx.user.role !== "admin" && !canAccessOrg(ctx.user, input.organizationId)) throw new TRPCError({ code: "FORBIDDEN" });
-        return createOrganizationUser({ organizationId: input.organizationId, userId: input.userId, role: input.role });
+        const result = await createOrganizationUser({ organizationId: input.organizationId, userId: input.userId, role: input.role });
+        // Sync Permify — user becomes org member with role
+        permifyWriteRelationship("organization", String(input.organizationId), input.role, "user", String(input.userId)).catch((e: unknown) => logger.debug({ err: e instanceof Error ? e.message : String(e) }, "permify fire-and-forget"));
+        return result;
       }),
     updateOrgUserRole: protectedProcedure
       .input(z.object({ id: z.number(), role: z.string() }))
@@ -2074,6 +2082,14 @@ export const appRouter = router({
           severity: "high",
           openedBy: String(ctx.user.id),
         }).catch((e: unknown) => logger.debug({ err: e instanceof Error ? e.message : String(e) }, "fire-and-forget failed"));
+        // Trigger Temporal enforcement-lifecycle workflow
+        startWorkflow("enforcement-lifecycle", {
+          workflowId: `enforcement-${result?.id ?? 0}`,
+          taskQueue: "ndsep-enforcement",
+          input: { caseId: String(result?.id ?? 0), orgId: input.organizationId, orgName: `Org-${input.organizationId}`, caseType: "penalty_escalation", severity: "high", steps: ["investigation", "evidence-collection", "hearing", "decision", "penalty-enforcement"] },
+        }).catch((e: unknown) => logger.debug({ err: e instanceof Error ? e.message : String(e) }, "temporal fire-and-forget"));
+        // CQRS command dispatch
+        dispatchCommand({ type: "enforcement.create", aggregateType: "EnforcementCase", aggregateId: String(result?.id ?? 0), payload: { orgId: input.organizationId, penaltyId: input.penaltyId, reason: input.escalationReason }, metadata: { userId: ctx.user.id, source: "routers.enforcement.escalate" } }).catch((e: unknown) => logger.debug({ err: e instanceof Error ? e.message : String(e) }, "cqrs fire-and-forget"));
         // Create in-app notification (fire-and-forget)
         createInAppNotification({
           title: `Enforcement Case Opened: ${result?.case_reference ?? `NDSEP-CASE-${String(result?.id ?? 0).padStart(6, "0")}`}`,

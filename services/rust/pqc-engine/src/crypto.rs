@@ -1,8 +1,11 @@
-//! Core PQC cryptographic operations
+//! Core PQC cryptographic operations using CRYSTALS-Kyber and CRYSTALS-Dilithium
 
 use anyhow::{anyhow, Result};
+use pqcrypto_kyber::kyber768;
+use pqcrypto_dilithium::dilithium3;
+use pqcrypto_traits::kem::{PublicKey as _, SecretKey as _, SharedSecret as _, Ciphertext as _};
+use pqcrypto_traits::sign::{PublicKey as _, SecretKey as _, DetachedSignature as _};
 use sha3::{Digest, Sha3_256};
-use rand::Rng;
 
 pub struct PQCKeyPair {
     pub public_key: Vec<u8>,
@@ -21,20 +24,12 @@ impl PQCOps {
     pub fn generate_keypair(&self, algorithm: &str) -> Result<PQCKeyPair> {
         let (pk, sk) = match algorithm {
             "kyber768" | "kyber1024" => {
-                // CRYSTALS-Kyber KEM key generation
-                // In production: use pqcrypto_kyber::kyber768::keypair()
-                let mut rng = rand::thread_rng();
-                let pk: Vec<u8> = (0..1184).map(|_| rng.gen()).collect();
-                let sk: Vec<u8> = (0..2400).map(|_| rng.gen()).collect();
-                (pk, sk)
+                let (pk, sk) = kyber768::keypair();
+                (pk.as_bytes().to_vec(), sk.as_bytes().to_vec())
             }
             "dilithium3" | "dilithium5" => {
-                // CRYSTALS-Dilithium signature key generation
-                // In production: use pqcrypto_dilithium::dilithium3::keypair()
-                let mut rng = rand::thread_rng();
-                let pk: Vec<u8> = (0..1952).map(|_| rng.gen()).collect();
-                let sk: Vec<u8> = (0..4000).map(|_| rng.gen()).collect();
-                (pk, sk)
+                let (pk, sk) = dilithium3::keypair();
+                (pk.as_bytes().to_vec(), sk.as_bytes().to_vec())
             }
             _ => return Err(anyhow!("Unsupported algorithm: {}", algorithm)),
         };
@@ -51,46 +46,75 @@ impl PQCOps {
     }
 
     pub fn encapsulate(&self, public_key: &[u8]) -> Result<(Vec<u8>, Vec<u8>)> {
-        if public_key.len() < 100 {
-            return Err(anyhow!("Invalid public key length"));
-        }
-        // CRYSTALS-Kyber encapsulation
-        // In production: use pqcrypto_kyber::kyber768::encapsulate(pk)
-        let mut rng = rand::thread_rng();
-        let ciphertext: Vec<u8> = (0..1088).map(|_| rng.gen()).collect();
-        let shared_secret: Vec<u8> = (0..32).map(|_| rng.gen()).collect();
-        Ok((ciphertext, shared_secret))
+        let pk = kyber768::PublicKey::from_bytes(public_key)
+            .map_err(|_| anyhow!("Invalid Kyber768 public key (expected {} bytes)", kyber768::public_key_bytes()))?;
+        let (ss, ct) = kyber768::encapsulate(&pk);
+        Ok((ct.as_bytes().to_vec(), ss.as_bytes().to_vec()))
+    }
+
+    pub fn decapsulate(&self, ciphertext: &[u8], secret_key: &[u8]) -> Result<Vec<u8>> {
+        let sk = kyber768::SecretKey::from_bytes(secret_key)
+            .map_err(|_| anyhow!("Invalid Kyber768 secret key"))?;
+        let ct = kyber768::Ciphertext::from_bytes(ciphertext)
+            .map_err(|_| anyhow!("Invalid Kyber768 ciphertext"))?;
+        let ss = kyber768::decapsulate(&ct, &sk);
+        Ok(ss.as_bytes().to_vec())
     }
 
     pub fn sign(&self, message: &[u8], secret_key: &[u8]) -> Result<Vec<u8>> {
-        if secret_key.len() < 100 {
-            return Err(anyhow!("Invalid secret key length"));
-        }
-        // CRYSTALS-Dilithium signing
-        // In production: use pqcrypto_dilithium::dilithium3::sign(msg, sk)
-        let mut hasher = Sha3_256::new();
-        hasher.update(message);
-        hasher.update(secret_key);
-        let hash = hasher.finalize();
-        let mut rng = rand::thread_rng();
-        let mut signature: Vec<u8> = (0..3293).map(|_| rng.gen()).collect();
-        signature[..32].copy_from_slice(&hash);
-        Ok(signature)
+        let sk = dilithium3::SecretKey::from_bytes(secret_key)
+            .map_err(|_| anyhow!("Invalid Dilithium3 secret key (expected {} bytes)", dilithium3::secret_key_bytes()))?;
+        let sig = dilithium3::detached_sign(message, &sk);
+        Ok(sig.as_bytes().to_vec())
     }
 
     pub fn verify(&self, message: &[u8], signature: &[u8], public_key: &[u8]) -> Result<bool> {
-        if signature.len() < 32 || public_key.len() < 100 {
-            return Ok(false);
+        let pk = dilithium3::PublicKey::from_bytes(public_key)
+            .map_err(|_| anyhow!("Invalid Dilithium3 public key"))?;
+        let sig = dilithium3::DetachedSignature::from_bytes(signature)
+            .map_err(|_| anyhow!("Invalid Dilithium3 signature"))?;
+        match dilithium3::verify_detached_signature(&sig, message, &pk) {
+            Ok(()) => Ok(true),
+            Err(_) => Ok(false),
         }
-        // CRYSTALS-Dilithium verification
-        // In production: use pqcrypto_dilithium::dilithium3::verify(sig, msg, pk)
-        Ok(true)
     }
 }
 
-// Hex encoding helper
 mod hex {
     pub fn encode(data: &[u8]) -> String {
         data.iter().map(|b| format!("{:02x}", b)).collect()
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn test_kyber_keygen_encapsulate_decapsulate() {
+        let ops = PQCOps::new();
+        let kp = ops.generate_keypair("kyber768").unwrap();
+        assert!(!kp.public_key.is_empty());
+        assert!(!kp.secret_key.is_empty());
+
+        let (ct, ss1) = ops.encapsulate(&kp.public_key).unwrap();
+        let ss2 = ops.decapsulate(&ct, &kp.secret_key).unwrap();
+        assert_eq!(ss1, ss2, "Shared secrets must match after KEM roundtrip");
+    }
+
+    #[test]
+    fn test_dilithium_sign_verify() {
+        let ops = PQCOps::new();
+        let kp = ops.generate_keypair("dilithium3").unwrap();
+        let message = b"NDPA compliance attestation for Org-42";
+
+        let sig = ops.sign(message, &kp.secret_key).unwrap();
+        let valid = ops.verify(message, &sig, &kp.public_key).unwrap();
+        assert!(valid, "Signature must verify with correct key");
+
+        // Tampered message should fail
+        let tampered = b"NDPA compliance attestation for Org-99";
+        let invalid = ops.verify(tampered, &sig, &kp.public_key).unwrap();
+        assert!(!invalid, "Signature must not verify with tampered message");
     }
 }

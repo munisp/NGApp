@@ -367,6 +367,42 @@ services:
     depends_on: [postgres, minio, iceberg-rest]
     restart: unless-stopped
 
+  siem-correlator:
+    build:
+      context: .
+      dockerfile: workers/python/Dockerfile
+    command: ["python", "-m", "workers.python.siem_correlator"]
+    environment:
+      DATABASE_URL: "postgresql://ndsep:ndsep@postgres:5432/ndsep"
+      KAFKA_BROKERS: "kafka:9092"
+      REDIS_URL: "redis://redis:6379"
+      OPENSEARCH_URL: "http://opensearch:9200"
+    depends_on: [postgres, kafka, redis]
+    restart: unless-stopped
+
+  noc-anomaly-detector:
+    build:
+      context: .
+      dockerfile: workers/python/Dockerfile
+    command: ["python", "-m", "workers.python.noc_anomaly_detector"]
+    environment:
+      DATABASE_URL: "postgresql://ndsep:ndsep@postgres:5432/ndsep"
+      KAFKA_BROKERS: "kafka:9092"
+      REDIS_URL: "redis://redis:6379"
+    depends_on: [postgres, kafka, redis]
+    restart: unless-stopped
+
+  watchlist-screener:
+    build:
+      context: .
+      dockerfile: workers/python/Dockerfile
+    command: ["python", "-m", "workers.python.watchlist_screener_fallback"]
+    environment:
+      DATABASE_URL: "postgresql://ndsep:ndsep@postgres:5432/ndsep"
+      REDIS_URL: "redis://redis:6379"
+    depends_on: [postgres, redis]
+    restart: unless-stopped
+
   # ── Observability ────────────────────────────────────────────────────────────
   otel-collector:
     image: otel/opentelemetry-collector-contrib:0.114.0

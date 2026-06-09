@@ -7,6 +7,7 @@ import { emitComplianceEvent, opensearchIndex, lakehouseIngest, daprPublish, flu
 import { emitMutationEvent, EVENTS } from "../middlewareIntegration";
 import { syncBreachIncident } from "../permifySync";
 import { autoDecryptRows } from "../encryptionMiddleware";
+import { startWorkflow } from "../temporal";
 import { logger } from "../logger";
 
 async function exec(query: any): Promise<[any[], any]> {
@@ -94,6 +95,12 @@ export const breachIncidentRouter = router({
       const created = (result as any[])[0];
       emitMutationEvent(EVENTS.COMPLIANCE_SCORE_UPDATED, { action: "breach_reported", entityId: created?.id, ts: new Date().toISOString() }).catch((e: unknown) => logger.debug({ err: e instanceof Error ? e.message : String(e) }, "fire-and-forget failed"));
       syncBreachIncident(String(created?.id ?? ""), String(ctx.user.id), input.organizationId).catch(() => {});
+      // Trigger Temporal breach-response workflow (72-hour SLA)
+      startWorkflow("breach-response", {
+        workflowId: `breach-${created?.id ?? 0}`,
+        taskQueue: "ndsep-breach",
+        input: { breachId: String(created?.id ?? 0), orgId: input.organizationId, severity: input.severity, title: input.title, affectedCount: input.affectedIndividualsCount, steps: ["containment", "assessment", "ndpc-notification", "individual-notification", "remediation", "post-mortem"] },
+      }).catch((e: unknown) => logger.debug({ err: e instanceof Error ? e.message : String(e) }, "temporal fire-and-forget"));
       return created;
     }),
   updateStatus: protectedProcedure
