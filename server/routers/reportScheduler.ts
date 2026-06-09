@@ -146,8 +146,7 @@ const createSchedule = protectedProcedure
     if (typeof input === "object" && "status" in input) {
       const newStatus = (input as any).status as string;
       const currentStatus =
-        ((input as any).currentStatus as string) ||
-        "pending";
+        ((input as any).currentStatus as string) || "pending";
       const allowed =
         STATUS_TRANSITIONS[currentStatus as keyof typeof STATUS_TRANSITIONS];
       if (allowed && !allowed.includes(newStatus)) {
@@ -207,8 +206,7 @@ const updateSchedule = protectedProcedure
     if (typeof input === "object" && "status" in input) {
       const newStatus = (input as any).status as string;
       const currentStatus =
-        ((input as any).currentStatus as string) ||
-        "pending";
+        ((input as any).currentStatus as string) || "pending";
       const allowed =
         STATUS_TRANSITIONS[currentStatus as keyof typeof STATUS_TRANSITIONS];
       if (allowed && !allowed.includes(newStatus)) {
@@ -262,8 +260,7 @@ const deleteSchedule = protectedProcedure
     if (typeof input === "object" && "status" in input) {
       const newStatus = (input as any).status as string;
       const currentStatus =
-        ((input as any).currentStatus as string) ||
-        "pending";
+        ((input as any).currentStatus as string) || "pending";
       const allowed =
         STATUS_TRANSITIONS[currentStatus as keyof typeof STATUS_TRANSITIONS];
       if (allowed && !allowed.includes(newStatus)) {
@@ -308,8 +305,7 @@ const runNow = protectedProcedure
     if (typeof input === "object" && "status" in input) {
       const newStatus = (input as any).status as string;
       const currentStatus =
-        ((input as any).currentStatus as string) ||
-        "pending";
+        ((input as any).currentStatus as string) || "pending";
       const allowed =
         STATUS_TRANSITIONS[currentStatus as keyof typeof STATUS_TRANSITIONS];
       if (allowed && !allowed.includes(newStatus)) {
@@ -362,8 +358,7 @@ const toggleSchedule = protectedProcedure
     if (typeof input === "object" && "status" in input) {
       const newStatus = (input as any).status as string;
       const currentStatus =
-        ((input as any).currentStatus as string) ||
-        "pending";
+        ((input as any).currentStatus as string) || "pending";
       const allowed =
         STATUS_TRANSITIONS[currentStatus as keyof typeof STATUS_TRANSITIONS];
       if (allowed && !allowed.includes(newStatus)) {
@@ -415,8 +410,7 @@ const triggerNow = protectedProcedure
     if (typeof input === "object" && "status" in input) {
       const newStatus = (input as any).status as string;
       const currentStatus =
-        ((input as any).currentStatus as string) ||
-        "pending";
+        ((input as any).currentStatus as string) || "pending";
       const allowed =
         STATUS_TRANSITIONS[currentStatus as keyof typeof STATUS_TRANSITIONS];
       if (allowed && !allowed.includes(newStatus)) {

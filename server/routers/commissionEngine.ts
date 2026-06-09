@@ -424,8 +424,7 @@ export const commissionEngineRouter = router({
   tiers: protectedProcedure.query(async () => {
     try {
       const db = await getDb();
-      if (!db || db._isNoop)
-        return { tiers: memTiers.map(t => formatTier(t)) };
+      if (!db || db._isNoop) return { tiers: memTiers.map(t => formatTier(t)) };
       const rows = await db
         .select()
         .from(commissionTiers)
@@ -458,8 +457,7 @@ export const commissionEngineRouter = router({
       if (typeof input === "object" && "status" in input) {
         const newStatus = (input as any).status as string;
         const currentStatus =
-          ((input as any).currentStatus as string) ||
-          "pending";
+          ((input as any).currentStatus as string) || "pending";
         const allowed =
           STATUS_TRANSITIONS[currentStatus as keyof typeof STATUS_TRANSITIONS];
         if (allowed && !allowed.includes(newStatus)) {
@@ -576,8 +574,7 @@ export const commissionEngineRouter = router({
       if (typeof input === "object" && "status" in input) {
         const newStatus = (input as any).status as string;
         const currentStatus =
-          ((input as any).currentStatus as string) ||
-          "pending";
+          ((input as any).currentStatus as string) || "pending";
         const allowed =
           STATUS_TRANSITIONS[currentStatus as keyof typeof STATUS_TRANSITIONS];
         if (allowed && !allowed.includes(newStatus)) {
@@ -674,8 +671,7 @@ export const commissionEngineRouter = router({
       if (typeof input === "object" && "status" in input) {
         const newStatus = (input as any).status as string;
         const currentStatus =
-          ((input as any).currentStatus as string) ||
-          "pending";
+          ((input as any).currentStatus as string) || "pending";
         const allowed =
           STATUS_TRANSITIONS[currentStatus as keyof typeof STATUS_TRANSITIONS];
         if (allowed && !allowed.includes(newStatus)) {
@@ -790,8 +786,7 @@ export const commissionEngineRouter = router({
       if (typeof input === "object" && "status" in input) {
         const newStatus = (input as any).status as string;
         const currentStatus =
-          ((input as any).currentStatus as string) ||
-          "pending";
+          ((input as any).currentStatus as string) || "pending";
         const allowed =
           STATUS_TRANSITIONS[currentStatus as keyof typeof STATUS_TRANSITIONS];
         if (allowed && !allowed.includes(newStatus)) {
@@ -900,8 +895,7 @@ export const commissionEngineRouter = router({
       if (typeof input === "object" && "status" in input) {
         const newStatus = (input as any).status as string;
         const currentStatus =
-          ((input as any).currentStatus as string) ||
-          "pending";
+          ((input as any).currentStatus as string) || "pending";
         const allowed =
           STATUS_TRANSITIONS[currentStatus as keyof typeof STATUS_TRANSITIONS];
         if (allowed && !allowed.includes(newStatus)) {
@@ -1168,8 +1162,7 @@ export const commissionEngineRouter = router({
       if (typeof input === "object" && "status" in input) {
         const newStatus = (input as any).status as string;
         const currentStatus =
-          ((input as any).currentStatus as string) ||
-          "pending";
+          ((input as any).currentStatus as string) || "pending";
         const allowed =
           STATUS_TRANSITIONS[currentStatus as keyof typeof STATUS_TRANSITIONS];
         if (allowed && !allowed.includes(newStatus)) {
@@ -1394,8 +1387,7 @@ export const commissionEngineRouter = router({
       if (typeof input === "object" && "status" in input) {
         const newStatus = (input as any).status as string;
         const currentStatus =
-          ((input as any).currentStatus as string) ||
-          "pending";
+          ((input as any).currentStatus as string) || "pending";
         const allowed =
           STATUS_TRANSITIONS[currentStatus as keyof typeof STATUS_TRANSITIONS];
         if (allowed && !allowed.includes(newStatus)) {
@@ -1443,8 +1435,7 @@ export const commissionEngineRouter = router({
       if (typeof input === "object" && "status" in input) {
         const newStatus = (input as any).status as string;
         const currentStatus =
-          ((input as any).currentStatus as string) ||
-          "pending";
+          ((input as any).currentStatus as string) || "pending";
         const allowed =
           STATUS_TRANSITIONS[currentStatus as keyof typeof STATUS_TRANSITIONS];
         if (allowed && !allowed.includes(newStatus)) {
@@ -1482,8 +1473,7 @@ export const commissionEngineRouter = router({
       if (typeof input === "object" && "status" in input) {
         const newStatus = (input as any).status as string;
         const currentStatus =
-          ((input as any).currentStatus as string) ||
-          "pending";
+          ((input as any).currentStatus as string) || "pending";
         const allowed =
           STATUS_TRANSITIONS[currentStatus as keyof typeof STATUS_TRANSITIONS];
         if (allowed && !allowed.includes(newStatus)) {

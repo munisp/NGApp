@@ -317,7 +317,7 @@ export const microInsuranceRouter = router({
         decision: z.enum(["approved", "rejected", "needs_more_info"]),
         notes: z.string().optional(),
         approvedAmount: z.number().optional(),
-      }),
+      })
     )
     .mutation(async ({ ctx, input }) => {
       const db = (await getDb())!;
@@ -326,7 +326,7 @@ export const microInsuranceRouter = router({
 
       // Look up claim
       const claimResult = await db.execute(
-        sql`SELECT id, claim_number, policy_number, amount, status FROM "insurance_claims" WHERE claim_number = ${input.claimNumber}`,
+        sql`SELECT id, claim_number, policy_number, amount, status FROM "insurance_claims" WHERE claim_number = ${input.claimNumber}`
       );
       const claim = (claimResult as any).rows?.[0];
       if (!claim) {
@@ -351,11 +351,11 @@ export const microInsuranceRouter = router({
 
       const approvedAmount =
         input.decision === "approved"
-          ? input.approvedAmount ?? claim.amount
+          ? (input.approvedAmount ?? claim.amount)
           : null;
 
       await db.execute(
-        sql`UPDATE "insurance_claims" SET status = ${newStatus}, adjudication_notes = ${input.notes ?? ""}, resolved_at = ${input.decision !== "needs_more_info" ? new Date().toISOString() : null} WHERE claim_number = ${input.claimNumber}`,
+        sql`UPDATE "insurance_claims" SET status = ${newStatus}, adjudication_notes = ${input.notes ?? ""}, resolved_at = ${input.decision !== "needs_more_info" ? new Date().toISOString() : null} WHERE claim_number = ${input.claimNumber}`
       );
 
       await writeAuditLog({
@@ -387,7 +387,7 @@ export const microInsuranceRouter = router({
     if (!session) throw new TRPCError({ code: "UNAUTHORIZED" });
 
     const result = await db.execute(
-      sql`SELECT claim_number, policy_number, claim_type, amount, status, created_at FROM "insurance_claims" WHERE agent_id = ${session.id} ORDER BY created_at DESC LIMIT 50`,
+      sql`SELECT claim_number, policy_number, claim_type, amount, status, created_at FROM "insurance_claims" WHERE agent_id = ${session.id} ORDER BY created_at DESC LIMIT 50`
     );
     return { claims: (result as any).rows ?? [] };
   }),
@@ -398,7 +398,7 @@ export const microInsuranceRouter = router({
     if (!session) throw new TRPCError({ code: "UNAUTHORIZED" });
 
     const result = await db.execute(
-      sql`SELECT policy_number, product_name, category, monthly_premium, coverage_amount, status, start_date, waiting_period_ends FROM "insurance_policies" WHERE agent_id = ${session.id} ORDER BY created_at DESC LIMIT 50`,
+      sql`SELECT policy_number, product_name, category, monthly_premium, coverage_amount, status, start_date, waiting_period_ends FROM "insurance_policies" WHERE agent_id = ${session.id} ORDER BY created_at DESC LIMIT 50`
     );
     return { policies: (result as any).rows ?? [] };
   }),
@@ -411,10 +411,10 @@ export const microInsuranceRouter = router({
       totalProducts: PRODUCTS.length,
       categories: 4,
       avgMonthlyPremium: Math.round(
-        PRODUCTS.reduce((s, p) => s + p.monthlyPremium, 0) / PRODUCTS.length,
+        PRODUCTS.reduce((s, p) => s + p.monthlyPremium, 0) / PRODUCTS.length
       ),
       avgCoverage: Math.round(
-        PRODUCTS.reduce((s, p) => s + p.coverageAmount, 0) / PRODUCTS.length,
+        PRODUCTS.reduce((s, p) => s + p.coverageAmount, 0) / PRODUCTS.length
       ),
     };
   }),

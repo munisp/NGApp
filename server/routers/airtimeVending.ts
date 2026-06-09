@@ -232,8 +232,7 @@ export const airtimeVendingRouter = router({
       if (typeof input === "object" && "status" in input) {
         const newStatus = (input as any).status as string;
         const currentStatus =
-          ((input as any).currentStatus as string) ||
-          "pending";
+          ((input as any).currentStatus as string) || "pending";
         const allowed =
           STATUS_TRANSITIONS[currentStatus as keyof typeof STATUS_TRANSITIONS];
         if (allowed && !allowed.includes(newStatus)) {
@@ -363,8 +362,7 @@ export const airtimeVendingRouter = router({
       if (typeof input === "object" && "status" in input) {
         const newStatus = (input as any).status as string;
         const currentStatus =
-          ((input as any).currentStatus as string) ||
-          "pending";
+          ((input as any).currentStatus as string) || "pending";
         const allowed =
           STATUS_TRANSITIONS[currentStatus as keyof typeof STATUS_TRANSITIONS];
         if (allowed && !allowed.includes(newStatus)) {
