@@ -1,0 +1,44 @@
+apisix:
+  node_listen: 9080
+  enable_admin: true
+  admin_listen:
+    port: 9180
+
+deployment:
+  role: traditional
+  role_traditional:
+    config_provider: yaml
+
+routes:
+  - uri: /api/*
+    upstream:
+      type: roundrobin
+      nodes:
+        "ndsep-api:5000": 1
+    plugins:
+      limit-req:
+        rate: 200
+        burst: 100
+        key_type: var
+        key: remote_addr
+        rejected_code: 429
+
+  - uri: /trpc/*
+    upstream:
+      type: roundrobin
+      nodes:
+        "ndsep-api:5000": 1
+    plugins:
+      limit-req:
+        rate: 300
+        burst: 150
+        key_type: var
+        key: remote_addr
+
+  - uri: /health
+    upstream:
+      type: roundrobin
+      nodes:
+        "ndsep-api:5000": 1
+
+#END

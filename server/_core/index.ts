@@ -74,6 +74,7 @@ const STARTUP_TIME = Date.now();
 // ─── Unhandled rejection / exception handlers ─────────────────────────────────
 import { captureError } from "../errorMonitoring";
 import { startHealthMonitor, stopHealthMonitor } from "../middlewareConnector";
+import { startKafkaConsumer, stopKafkaConsumer } from "../kafkaConsumer";
 
 process.on("uncaughtException", (err) => {
   captureError(err, "uncaughtException");
@@ -1318,6 +1319,7 @@ async function startServer() {
 
   if (process.env.NODE_ENV !== "test") {
     startHealthMonitor();
+    startKafkaConsumer().catch((e) => logger.debug({ err: e instanceof Error ? e.message : String(e) }, "[KafkaConsumer] Startup deferred"));
     setTimeout(() => startAllWorkers(), 3000);
     const portalBaseUrl = process.env.VITE_OAUTH_PORTAL_URL ?? `http://localhost:${port}`;
     startDigestScheduler(portalBaseUrl);
@@ -1375,11 +1377,12 @@ async function startServer() {
     try { const { stopSessionCleanup } = await import("../security/sessionHardening"); stopSessionCleanup(); } catch { /* ok */ }
     logger.info("[Shutdown] All schedulers and workers stopped");
 
-    // 3. Disconnect Kafka (flush pending messages)
+    // 3. Disconnect Kafka producer + consumer
     try {
       const { disconnectKafka } = await import("../kafka");
       await disconnectKafka();
-      logger.info("[Shutdown] Kafka producer disconnected");
+      await stopKafkaConsumer();
+      logger.info("[Shutdown] Kafka producer + consumer disconnected");
     } catch (e) { logger.debug({ err: e instanceof Error ? e.message : String(e) }, "[Shutdown] Kafka disconnect skipped"); }
 
     // 4. Close read replica pool

@@ -12,6 +12,7 @@ import { invokeLLM } from "../_core/llm";
 import crypto from "crypto";
 import { emitComplianceEvent, opensearchIndex, lakehouseIngest, daprPublish, fluvioPublish, permifyCheck } from "../middlewareExtensions";
 import { emitMutationEvent, EVENTS } from "../middlewareIntegration";
+import { syncEnforcementCase, syncComplianceAudit } from "../permifySync";
 import { autoDecryptRows } from "../encryptionMiddleware";
 import { encryptField, isEncryptionEnabled } from "../encryption";
 import { getPgSslConfig } from "../dbSslConfig";
@@ -1038,7 +1039,9 @@ export const enforcementActionsRouter = router({
     return query("SELECT * FROM enforcement_actions ORDER BY created_at DESC LIMIT 200", []);
   }),
   create: adminProcedure.input(z.object({ case_id: z.number(), action_type: z.string(), description: z.string().optional(), assigned_to: z.number().optional(), due_date: z.string().optional(), status: z.string().default("pending") })).mutation(async ({ input }) => {
-    const r = await query(`INSERT INTO enforcement_actions (case_id,action_type,description,assigned_to,due_date,status,created_at) VALUES ($1,$2,$3,$4,$5,$6,NOW()) RETURNING *`,[input.case_id,input.action_type,input.description??null,input.assigned_to??null,input.due_date??null,input.status]); return r[0];
+    const r = await query(`INSERT INTO enforcement_actions (case_id,action_type,description,assigned_to,due_date,status,created_at) VALUES ($1,$2,$3,$4,$5,$6,NOW()) RETURNING *`,[input.case_id,input.action_type,input.description??null,input.assigned_to??null,input.due_date??null,input.status]);
+    syncEnforcementCase(String(r[0]?.id ?? ""), String(input.assigned_to ?? "system"), input.case_id).catch(() => {});
+    return r[0];
   }),
   update: adminProcedure.input(z.object({ id: z.number(), status: z.string().optional(), description: z.string().optional() })).mutation(async ({ input }) => {
     const { id, ...f } = input; const entries = Object.entries(f).filter(([,v])=>v!==undefined);

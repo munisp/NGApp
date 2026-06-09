@@ -5,6 +5,7 @@ import { sql } from "drizzle-orm";
 import { emitEvent, logAuditEvent, broadcastEvent, cacheGetJson, cacheSetJson, cacheDel, triggerWorkflow } from "../middlewareHelpers";
 import { emitComplianceEvent, opensearchIndex, lakehouseIngest, daprPublish, fluvioPublish, permifyCheck } from "../middlewareExtensions";
 import { emitMutationEvent, EVENTS } from "../middlewareIntegration";
+import { syncBreachIncident } from "../permifySync";
 import { autoDecryptRows } from "../encryptionMiddleware";
 import { logger } from "../logger";
 
@@ -90,8 +91,10 @@ export const breachIncidentRouter = router({
     .mutation(async ({ input, ctx }) => {
       const deadline = new Date(Date.now() + 72 * 60 * 60 * 1000);
       const [result] = await exec(sql`INSERT INTO breach_incidents (organization_id, title, description, breach_incident_severity, detected_at, ndpc_notification_deadline, affected_individuals_count, data_types_affected, breach_cause, reported_by) VALUES (${input.organizationId}, ${input.title}, ${input.description ?? null}, ${input.severity}, NOW(), ${deadline.toISOString()}, ${input.affectedIndividualsCount}, ${JSON.stringify(input.dataTypesAffected)}, ${input.breachCause ?? null}, ${ctx.user.id}) RETURNING *`);
-      emitMutationEvent(EVENTS.COMPLIANCE_SCORE_UPDATED, { action: "compliance_feature", ts: new Date().toISOString() }).catch((e: unknown) => logger.debug({ err: e instanceof Error ? e.message : String(e) }, "fire-and-forget failed"));
-      return (result as any[])[0];
+      const created = (result as any[])[0];
+      emitMutationEvent(EVENTS.COMPLIANCE_SCORE_UPDATED, { action: "breach_reported", entityId: created?.id, ts: new Date().toISOString() }).catch((e: unknown) => logger.debug({ err: e instanceof Error ? e.message : String(e) }, "fire-and-forget failed"));
+      syncBreachIncident(String(created?.id ?? ""), String(ctx.user.id), input.organizationId).catch(() => {});
+      return created;
     }),
   updateStatus: protectedProcedure
     .input(z.object({ id: z.number().int(), status: z.enum(['detected','assessing','ndpc_notified','individuals_notified','contained','resolved','closed']), ndpcReferenceNumber: z.string().optional(), remediationActions: z.string().optional() }))

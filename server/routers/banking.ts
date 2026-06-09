@@ -8,7 +8,7 @@ import { z } from "zod";
 
 import { router, protectedProcedure, adminProcedure, exportProcedure, deleteProcedure, approveProcedure} from "../_core/trpc";
 import { emitEvent, logAuditEvent, broadcastEvent, broadcastUpdate, cacheGetJson, cacheSetJson, cacheDel, recordFinancialTransaction, triggerWorkflow } from "../middlewareHelpers";
-import { emitComplianceEvent, opensearchIndex, lakehouseIngest, daprPublish, fluvioPublish, permifyCheck } from "../middlewareExtensions";
+import { emitComplianceEvent, opensearchIndex, lakehouseIngest, daprPublish, fluvioPublish, permifyCheck, mojaloopTransfer, tigerbeetleTransfer, keycloakValidate, permifyWriteRelationship } from "../middlewareExtensions";
 import { emitMutationEvent, EVENTS } from "../middlewareIntegration";
 import { autoDecryptRows } from "../encryptionMiddleware";
 import { TRPCError } from "@trpc/server";
@@ -778,6 +778,26 @@ const paymentsRouter = router({
         } catch { /* non-fatal */ }
       }
 
+      // ── Mojaloop: initiate interbank settlement via payment switch ──
+      mojaloopTransfer({
+        payerFsp: input.senderBankCode,
+        payeeFsp: input.receiverBankCode,
+        amount: String(input.amount),
+        currency: "NGN",
+        reference: sessionId,
+        note: `NIP:${nibssRef}`,
+      }).catch((e: unknown) => logger.debug({ err: e instanceof Error ? e.message : String(e) }, "[Mojaloop] NIP settlement fire-and-forget"));
+
+      // ── TigerBeetle: record NIP transfer in financial ledger ──
+      tigerbeetleTransfer({
+        debitAccountId: input.senderBankCode,
+        creditAccountId: input.receiverBankCode,
+        amount: input.amount,
+        currency: "NGN",
+        reference: sessionId,
+        transferType: "NIP_TRANSFER",
+      }).catch((e: unknown) => logger.debug({ err: e instanceof Error ? e.message : String(e) }, "[TigerBeetle] NIP ledger fire-and-forget"));
+
       emitMutationEvent(EVENTS.SWIFT_TRANSACTION, { action: "nip_initiate", sessionId, amount: input.amount, amlFlagged, fraudFlagged, structuringRisk, velocityFlagged, ts: new Date().toISOString() }).catch((e: unknown) => logger.debug({ err: e instanceof Error ? e.message : String(e) }, "fire-and-forget failed"));
       return { success: true, sessionId, nibssRef, amlFlagged, fraudFlagged, structuringRisk, velocityFlagged };
     }),
@@ -891,6 +911,26 @@ const paymentsRouter = router({
             `Auto-CTR: RTGS ₦${(input.amount / 100).toLocaleString()} via ${input.senderBankCode}→${input.receiverBankCode}. ${enhancedDueDiligence ? "ENHANCED DUE DILIGENCE REQUIRED (≥₦100M)." : ""} ${velocityFlagged ? "VELOCITY ALERT." : ""}`,
             input.amount]);
       } catch { /* non-fatal */ }
+
+      // ── Mojaloop: initiate RTGS settlement via payment switch ──
+      mojaloopTransfer({
+        payerFsp: input.senderBankCode,
+        payeeFsp: input.receiverBankCode,
+        amount: String(input.amount),
+        currency: "NGN",
+        reference,
+        note: `RTGS:${cbnRef}:${settlementCycle}`,
+      }).catch((e: unknown) => logger.debug({ err: e instanceof Error ? e.message : String(e) }, "[Mojaloop] RTGS settlement fire-and-forget"));
+
+      // ── TigerBeetle: record RTGS transfer in financial ledger ──
+      tigerbeetleTransfer({
+        debitAccountId: input.senderBankCode,
+        creditAccountId: input.receiverBankCode,
+        amount: input.amount,
+        currency: "NGN",
+        reference,
+        transferType: "RTGS_TRANSFER",
+      }).catch((e: unknown) => logger.debug({ err: e instanceof Error ? e.message : String(e) }, "[TigerBeetle] RTGS ledger fire-and-forget"));
 
       emitMutationEvent(EVENTS.SWIFT_TRANSACTION, { action: "rtgs_initiate", reference, amount: input.amount, amlFlagged, enhancedDueDiligence, sanctionsFlagged, velocityFlagged, ts: new Date().toISOString() }).catch((e: unknown) => logger.debug({ err: e instanceof Error ? e.message : String(e) }, "fire-and-forget failed"));
       return { success: true, reference, cbnRef, settlementCycle, amlFlagged, enhancedDueDiligence, velocityFlagged };
