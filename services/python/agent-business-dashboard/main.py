@@ -94,7 +94,7 @@ async def record_metric(request: Request):
     conn = get_db()
     cursor = conn.cursor()
     cursor.execute("""INSERT INTO agent_metrics (agent_id, tx_count, volume, commission, active_customers, float_util, recorded_at)
-                      VALUES (?, ?, ?, ?, ?, ?, NOW())""",
+                      VALUES (%s, %s, %s, %s, %s, %s, NOW())""",
                    (agent_id, body.get("txCount", 0), body.get("volume", 0),
                     body.get("commission", 0), body.get("activeCustomers", 0), body.get("floatUtil", 0)))
     conn.commit()

@@ -97,7 +97,7 @@ async def create_item(request: Request):
         raise HTTPException(status_code=400, detail="Name required")
     conn = get_db()
     cursor = conn.cursor()
-    cursor.execute("INSERT INTO items (name, status, data, created_at) VALUES (?, 'active', ?, NOW())",
+    cursor.execute("INSERT INTO items (name, status, data, created_at) VALUES (%s, 'active', %s, NOW())",
                    (name, str(body)))
     conn.commit()
     item_id = cursor.fetchone()[0]

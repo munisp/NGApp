@@ -6,6 +6,16 @@ Middleware: Redis (session cache), Kafka (voice events)
 """
 import os
 import json
+
+def verify_auth(headers):
+    """Verify Bearer token from Authorization header."""
+    auth = headers.get("Authorization", "")
+    if not auth:
+        return None, (401, '{"error":"missing authorization header"}')
+    if not auth.startswith("Bearer ") or len(auth) < 17:
+        return None, (401, '{"error":"invalid token format"}')
+    return auth[7:], None
+
 import re
 import logging
 from http.server import HTTPServer, BaseHTTPRequestHandler
@@ -92,6 +102,15 @@ class NLUHandler(BaseHTTPRequestHandler):
         return json.loads(self.rfile.read(length)) if length > 0 else {}
 
     def do_GET(self):
+        # Skip auth for health checks
+        if self.path not in ("/health", "/ready", "/metrics"):
+            token, err = verify_auth(dict(self.headers))
+            if err:
+                self.send_response(err[0])
+                self.send_header("Content-Type", "application/json")
+                self.end_headers()
+                self.wfile.write(err[1].encode())
+                return
         if self.path == "/health":
             self._send_json({"status": "healthy", "service": "voice-command-nlu"})
         elif self.path == "/api/v1/languages":
@@ -100,6 +119,13 @@ class NLUHandler(BaseHTTPRequestHandler):
             self._send_json({"error": "Not found"}, 404)
 
     def do_POST(self):
+        token, err = verify_auth(dict(self.headers))
+        if err:
+            self.send_response(err[0])
+            self.send_header("Content-Type", "application/json")
+            self.end_headers()
+            self.wfile.write(err[1].encode())
+            return
         body = self._read_body()
 
         if self.path == "/api/v1/parse":
@@ -170,7 +196,7 @@ init_db()
 def log_audit(action: str, entity_id: str, data: str = ""):
     try:
         conn = get_db()
-        conn.execute("INSERT INTO audit_log (action, entity_id, data) VALUES (?, ?, ?)", (action, entity_id, data))
+        conn.execute("INSERT INTO audit_log (action, entity_id, data) VALUES (%s, %s, %s)", (action, entity_id, data))
         conn.commit()
         conn.close()
     except Exception:

@@ -145,7 +145,7 @@ async def login(request: Request):
         conn.close()
         raise HTTPException(status_code=401, detail="Invalid credentials")
     token = secrets.token_urlsafe(32)
-    cursor.execute("INSERT INTO sessions (user_id, token, role, expires_at) VALUES (?, ?, ?, NOW() + INTERVAL '1 hour')",
+    cursor.execute("INSERT INTO sessions (user_id, token, role, expires_at) VALUES (%s, %s, %s, NOW() + INTERVAL '1 hour')",
                    (user[0], token, user[1]))
     conn.commit()
     conn.close()

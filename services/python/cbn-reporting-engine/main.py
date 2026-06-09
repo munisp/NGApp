@@ -98,7 +98,7 @@ async def generate_report(request: Request):
     conn = get_db()
     cursor = conn.cursor()
     cursor.execute("""INSERT INTO reports (report_type, period, status, generated_at)
-                      VALUES (?, ?, 'generated', NOW())""", (report_type, period))
+                      VALUES (%s, %s, 'generated', NOW())""", (report_type, period))
     conn.commit()
     report_id = cursor.fetchone()[0]
     conn.close()

@@ -112,7 +112,7 @@ async def calculate_interest(request: Request):
     conn = get_db()
     cursor = conn.cursor()
     cursor.execute("""INSERT INTO calculations (principal, rate, tenure_months, model, loan_type, interest, total, monthly_payment, created_at)
-                      VALUES (?, ?, ?, ?, ?, ?, ?, ?, NOW())""",
+                      VALUES (%s, %s, %s, %s, %s, %s, ?, ?, NOW())""",
                    (principal, rate, tenure_months, model, loan_type, round(interest, 2), round(total, 2), round(monthly_payment, 2)))
     conn.commit()
     calc_id = cursor.fetchone()[0]

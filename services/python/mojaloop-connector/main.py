@@ -13,6 +13,16 @@ Features:
 - Bulk transfer support for batch settlements
 """
 import json
+
+def verify_auth(headers):
+    """Verify Bearer token from Authorization header."""
+    auth = headers.get("Authorization", "")
+    if not auth:
+        return None, (401, '{"error":"missing authorization header"}')
+    if not auth.startswith("Bearer ") or len(auth) < 17:
+        return None, (401, '{"error":"invalid token format"}')
+    return auth[7:], None
+
 import time
 import hashlib
 import base64
@@ -374,6 +384,15 @@ connector = MojaloopConnector()
 
 class MojaloopHandler(BaseHTTPRequestHandler):
     def do_GET(self):
+        # Skip auth for health checks
+        if self.path not in ("/health", "/ready", "/metrics"):
+            token, err = verify_auth(dict(self.headers))
+            if err:
+                self.send_response(err[0])
+                self.send_header("Content-Type", "application/json")
+                self.end_headers()
+                self.wfile.write(err[1].encode())
+                return
         if self.path == "/health":
             self._json_response({"status": "healthy", "service": SERVICE_NAME, "version": SERVICE_VERSION})
         elif self.path == "/api/v1/metrics":
@@ -404,6 +423,13 @@ class MojaloopHandler(BaseHTTPRequestHandler):
             self._json_response({"error": "not found"}, 404)
 
     def do_POST(self):
+        token, err = verify_auth(dict(self.headers))
+        if err:
+            self.send_response(err[0])
+            self.send_header("Content-Type", "application/json")
+            self.end_headers()
+            self.wfile.write(err[1].encode())
+            return
         body = self._read_body()
         if self.path == "/api/v1/quotes":
             payer = Party(**body.get("payer", {}))

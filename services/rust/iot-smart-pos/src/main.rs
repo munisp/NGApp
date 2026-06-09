@@ -589,6 +589,24 @@ async fn search_records(
 
 // ── Main ───────────────────────────────────────────────────────────────────────
 
+
+fn verify_auth(headers: &hyper::HeaderMap) -> Result<String, (hyper::StatusCode, String)> {
+    let auth_header = headers
+        .get("authorization")
+        .and_then(|v| v.to_str().ok())
+        .ok_or((
+            hyper::StatusCode::UNAUTHORIZED,
+            r#"{"error":"missing authorization header"}"#.to_string(),
+        ))?;
+    if !auth_header.starts_with("Bearer ") || auth_header.len() < 17 {
+        return Err((
+            hyper::StatusCode::UNAUTHORIZED,
+            r#"{"error":"invalid token format"}"#.to_string(),
+        ));
+    }
+    Ok(auth_header[7..].to_string())
+}
+
 #[tokio::main]
 async fn main() {
     tracing_subscriber::init();

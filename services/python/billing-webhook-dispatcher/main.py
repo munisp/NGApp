@@ -8,6 +8,16 @@ Temporal (retry workflows), Dapr (pub/sub), OpenSearch (delivery logs)
 """
 import os
 import json
+
+def verify_auth(headers):
+    """Verify Bearer token from Authorization header."""
+    auth = headers.get("Authorization", "")
+    if not auth:
+        return None, (401, '{"error":"missing authorization header"}')
+    if not auth.startswith("Bearer ") or len(auth) < 17:
+        return None, (401, '{"error":"invalid token format"}')
+    return auth[7:], None
+
 import hmac
 import hashlib
 import logging
@@ -200,6 +210,15 @@ dispatcher = WebhookDispatcher()
 
 class Handler(BaseHTTPRequestHandler):
     def do_GET(self):
+        # Skip auth for health checks
+        if self.path not in ("/health", "/ready", "/metrics"):
+            token, err = verify_auth(dict(self.headers))
+            if err:
+                self.send_response(err[0])
+                self.send_header("Content-Type", "application/json")
+                self.end_headers()
+                self.wfile.write(err[1].encode())
+                return
         if self.path == "/health":
             self._respond(200, dispatcher.health_check())
         elif self.path == "/api/v1/stats":
@@ -212,6 +231,13 @@ class Handler(BaseHTTPRequestHandler):
             self.send_response(404); self.end_headers()
 
     def do_POST(self):
+        token, err = verify_auth(dict(self.headers))
+        if err:
+            self.send_response(err[0])
+            self.send_header("Content-Type", "application/json")
+            self.end_headers()
+            self.wfile.write(err[1].encode())
+            return
         content_length = int(self.headers.get('Content-Length', 0))
         body = json.loads(self.rfile.read(content_length)) if content_length > 0 else {}
         if self.path == "/api/v1/dispatch":
@@ -265,7 +291,7 @@ init_db()
 def log_audit(action: str, entity_id: str, data: str = ""):
     try:
         conn = get_db()
-        conn.execute("INSERT INTO audit_log (action, entity_id, data) VALUES (?, ?, ?)", (action, entity_id, data))
+        conn.execute("INSERT INTO audit_log (action, entity_id, data) VALUES (%s, %s, %s)", (action, entity_id, data))
         conn.commit()
         conn.close()
     except Exception:

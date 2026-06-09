@@ -53,7 +53,7 @@ class WalletStorage:
         def save_wallet(self, user_id, address, encrypted_pk, hd_path) -> bool:
             try:
                 cursor = self.conn.cursor()
-                cursor.execute("INSERT INTO wallets (user_id, address, encrypted_pk, hd_path) VALUES (?, ?, ?, ?)",
+                cursor.execute("INSERT INTO wallets (user_id, address, encrypted_pk, hd_path) VALUES (%s, %s, %s, %s)",
                                (user_id, address, encrypted_pk, hd_path))
                 self.conn.commit()
                 logging.info(f"Saved wallet for user: {user_id}")

@@ -99,7 +99,7 @@ async def convert_currency(request: Request):
     conn = get_db()
     cursor = conn.cursor()
     cursor.execute("""INSERT INTO conversions (from_currency, to_currency, amount, rate, converted, created_at)
-                      VALUES (?, ?, ?, ?, ?, NOW())""",
+                      VALUES (%s, %s, %s, ?, ?, NOW())""",
                    (from_currency, to_currency, amount, rate, round(converted, 4)))
     conn.commit()
     conn.close()

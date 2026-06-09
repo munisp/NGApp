@@ -472,7 +472,7 @@ init_db()
 def log_audit(action: str, entity_id: str, data: str = ""):
     try:
         conn = get_db()
-        conn.execute("INSERT INTO audit_log (action, entity_id, data) VALUES (?, ?, ?)", (action, entity_id, data))
+        conn.execute("INSERT INTO audit_log (action, entity_id, data) VALUES (%s, %s, %s)", (action, entity_id, data))
         conn.commit()
         conn.close()
     except Exception:

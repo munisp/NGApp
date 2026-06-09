@@ -307,6 +307,24 @@ async fn get_db_pool() -> Result<deadpool_postgres::Pool, Box<dyn std::error::Er
     Ok(pool)
 }
 
+
+fn verify_auth(headers: &hyper::HeaderMap) -> Result<String, (hyper::StatusCode, String)> {
+    let auth_header = headers
+        .get("authorization")
+        .and_then(|v| v.to_str().ok())
+        .ok_or((
+            hyper::StatusCode::UNAUTHORIZED,
+            r#"{"error":"missing authorization header"}"#.to_string(),
+        ))?;
+    if !auth_header.starts_with("Bearer ") || auth_header.len() < 17 {
+        return Err((
+            hyper::StatusCode::UNAUTHORIZED,
+            r#"{"error":"invalid token format"}"#.to_string(),
+        ));
+    }
+    Ok(auth_header[7..].to_string())
+}
+
 async fn main() -> std::io::Result<()> {
     env_logger::init_from_env(env_logger::Env::default().default_filter_or("info"));
     let port: u16 = env::var("PORT").unwrap_or_else(|_| "8084".to_string()).parse().unwrap_or(8084);
