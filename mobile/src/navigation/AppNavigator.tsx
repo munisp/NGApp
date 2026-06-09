@@ -26,6 +26,13 @@ import { ProfileScreen } from "../screens/ProfileScreen";
 import { NotificationsScreen } from "../screens/NotificationsScreen";
 import { SecurityScreen } from "../screens/SecurityScreen";
 import { OfflineDataScreen } from "../screens/OfflineDataScreen";
+import { DSARScreen } from "../screens/DSARScreen";
+import { DataTransfersScreen } from "../screens/DataTransfersScreen";
+import { ComplianceAuditScreen } from "../screens/ComplianceAuditScreen";
+import { AIGovernanceScreen } from "../screens/AIGovernanceScreen";
+import { BankingScreen } from "../screens/BankingScreen";
+import { DPIAScreen } from "../screens/DPIAScreen";
+import { WorkflowsScreen } from "../screens/WorkflowsScreen";
 
 const Stack = createNativeStackNavigator();
 const Tab = createBottomTabNavigator();
@@ -42,6 +49,13 @@ function DashboardStack() {
       <Stack.Screen name="DashboardHome" component={DashboardScreen} options={{ title: "Dashboard" }} />
       <Stack.Screen name="ComplianceDetail" component={ComplianceDetailScreen} options={{ title: "Compliance" }} />
       <Stack.Screen name="OrganizationDetail" component={OrganizationDetailScreen} options={{ title: "Organization" }} />
+      <Stack.Screen name="ComplianceAudit" component={ComplianceAuditScreen} options={{ title: "Audits" }} />
+      <Stack.Screen name="AIGovernance" component={AIGovernanceScreen} options={{ title: "AI Governance" }} />
+      <Stack.Screen name="DPIA" component={DPIAScreen} options={{ title: "DPIA" }} />
+      <Stack.Screen name="DSAR" component={DSARScreen} options={{ title: "DSAR" }} />
+      <Stack.Screen name="DataTransfers" component={DataTransfersScreen} options={{ title: "Transfers" }} />
+      <Stack.Screen name="Banking" component={BankingScreen} options={{ title: "Banking" }} />
+      <Stack.Screen name="Workflows" component={WorkflowsScreen} options={{ title: "Workflows" }} />
     </Stack.Navigator>
   );
 }

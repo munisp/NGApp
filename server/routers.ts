@@ -248,6 +248,7 @@ import {
 import { phase12Router } from "./routers/phase12Features";
 import { phase13Router } from "./routers/phase13Features";
 import { productionReadinessRouter } from "./routers/productionReadiness";
+import { temporalRouter, searchRouter as opensearchRouter, wafRouter, gatewayRouter, authzRouter, kafkaMetricsRouter, ledgerRouter } from "./routers/middlewareWiring";
 import { logger } from "./logger";
 
 export const appRouter = router({
@@ -3376,6 +3377,13 @@ export const appRouter = router({
   phase12: phase12Router,
   phase13: phase13Router,
   productionReadiness: productionReadinessRouter,
+  temporal: temporalRouter,
+  opensearch: opensearchRouter,
+  waf: wafRouter,
+  gateway: gatewayRouter,
+  authz: authzRouter,
+  kafkaMetrics: kafkaMetricsRouter,
+  tigerbeetleLedger: ledgerRouter,
   sectorEvents: router({
     list: protectedProcedure
       .input(z.object({

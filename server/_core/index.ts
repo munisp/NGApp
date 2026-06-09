@@ -75,6 +75,7 @@ const STARTUP_TIME = Date.now();
 import { captureError } from "../errorMonitoring";
 import { startHealthMonitor, stopHealthMonitor } from "../middlewareConnector";
 import { startKafkaConsumer, stopKafkaConsumer } from "../kafkaConsumer";
+import { wafEnforcementMiddleware } from "../wafMiddleware";
 
 process.on("uncaughtException", (err) => {
   captureError(err, "uncaughtException");
@@ -238,6 +239,9 @@ async function startServer() {
   // ── Body parsers ─────────────────────────────────────────────────────────
   app.use(express.json({ limit: "2mb" }));
   app.use(express.urlencoded({ limit: "2mb", extended: true }));
+
+  // ── WAF + API Gateway ────────────────────────────────────────────────────
+  app.use(wafEnforcementMiddleware);      // OpenAppSec IP blocking + APISIX rate limit headers
 
   // ── Security Middleware ───────────────────────────────────────────────────
   app.use(requestIdMiddleware);           // Assign X-Request-ID to every request (SEC-025)
