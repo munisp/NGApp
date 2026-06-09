@@ -175,7 +175,7 @@ export const agentKycDocVaultRouter = router({
       }
       const txAmount =
         typeof input === "object" && "amount" in input
-          ? Number((input as Record<string, unknown>).amount)
+          ? Number((input as any).amount)
           : 0;
       const fees = calculateFee(txAmount, "transfer");
       const commission = calculateCommission(fees.fee, "transfer");
@@ -203,12 +203,12 @@ export const agentKycDocVaultRouter = router({
         await writeAuditLog({
           agentId:
             typeof ctx === "object" && ctx !== null && "user" in ctx
-              ? ((ctx as any).user?.id ?? 0)
+              ? (ctx.user?.id ?? 0)
               : 0,
 
           agentCode:
             typeof ctx === "object" && ctx !== null && "user" in ctx
-              ? ((ctx as any).user?.agentCode ?? "system")
+              ? (ctx.user?.agentCode ?? "system")
               : "system",
 
           action: "MUTATION",
@@ -217,7 +217,7 @@ export const agentKycDocVaultRouter = router({
 
           resourceId:
             typeof input === "object" && input !== null && "id" in input
-              ? String((input as any).id)
+              ? String((input as any).id ?? "new")
               : "new",
 
           status: "success",

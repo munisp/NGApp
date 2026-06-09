@@ -239,9 +239,9 @@ export const agentTrainingGamificationRouter = router({
     .mutation(async ({ input, ctx }) => {
       // ── Enforce STATUS_TRANSITIONS state machine ──
       if (typeof input === "object" && "status" in input) {
-        const newStatus = (input as Record<string, unknown>).status as string;
+        const newStatus = (input as any).status as string;
         const currentStatus =
-          ((input as Record<string, unknown>).currentStatus as string) ||
+          ((input as any).currentStatus as string) ||
           "pending";
         const allowed =
           STATUS_TRANSITIONS[currentStatus as keyof typeof STATUS_TRANSITIONS];
@@ -254,7 +254,7 @@ export const agentTrainingGamificationRouter = router({
       }
       const txAmount =
         typeof input === "object" && "amount" in input
-          ? Number((input as Record<string, unknown>).amount)
+          ? Number((input as any).amount)
           : 0;
       const fees = calculateFee(txAmount, "transfer");
       const commission = calculateCommission(fees.fee, "transfer");

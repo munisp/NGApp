@@ -193,9 +193,9 @@ export const tenantAdminRouter = router({
     .mutation(async ({ input, ctx }) => {
       // ── Enforce STATUS_TRANSITIONS state machine ──
       if (typeof input === "object" && "status" in input) {
-        const newStatus = (input as Record<string, unknown>).status as string;
+        const newStatus = (input as any).status as string;
         const currentStatus =
-          ((input as Record<string, unknown>).currentStatus as string) ||
+          ((input as any).currentStatus as string) ||
           "pending";
         const allowed =
           STATUS_TRANSITIONS[currentStatus as keyof typeof STATUS_TRANSITIONS];
@@ -208,7 +208,7 @@ export const tenantAdminRouter = router({
       }
       const txAmount =
         typeof input === "object" && "amount" in input
-          ? Number((input as Record<string, unknown>).amount)
+          ? Number((input as any).amount)
           : 0;
       const fees = calculateFee(txAmount, "transfer");
       const commission = calculateCommission(fees.fee, "transfer");
@@ -239,12 +239,12 @@ export const tenantAdminRouter = router({
         await writeAuditLog({
           agentId:
             typeof ctx === "object" && ctx !== null && "user" in ctx
-              ? ((ctx as any).user?.id ?? 0)
+              ? (ctx.user?.id ?? 0)
               : 0,
 
           agentCode:
             typeof ctx === "object" && ctx !== null && "user" in ctx
-              ? ((ctx as any).user?.agentCode ?? "system")
+              ? (ctx.user?.agentCode ?? "system")
               : "system",
 
           action: "MUTATION",
@@ -253,7 +253,7 @@ export const tenantAdminRouter = router({
 
           resourceId:
             typeof input === "object" && input !== null && "id" in input
-              ? String((input as any).id)
+              ? String((input as any).id ?? "new")
               : "new",
 
           status: "success",

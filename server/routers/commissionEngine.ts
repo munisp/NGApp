@@ -251,7 +251,7 @@ const memPayouts: any[] = [];
 /** Ensure default tiers and splits exist in DB */
 async function ensureDefaults() {
   const db = await getDb();
-  if (!db || (db as any)._isNoop) return;
+  if (!db || db._isNoop) return;
   try {
     const existing = await db
       .select({ c: count() })
@@ -298,7 +298,7 @@ async function logAudit(
   reason?: string
 ) {
   const db = await getDb();
-  if (!db || (db as any)._isNoop) return;
+  if (!db || db._isNoop) return;
   try {
     await db.insert(commissionAuditTrail).values({
       entityType,
@@ -424,7 +424,7 @@ export const commissionEngineRouter = router({
   tiers: protectedProcedure.query(async () => {
     try {
       const db = await getDb();
-      if (!db || (db as any)._isNoop)
+      if (!db || db._isNoop)
         return { tiers: memTiers.map(t => formatTier(t)) };
       const rows = await db
         .select()
@@ -456,9 +456,9 @@ export const commissionEngineRouter = router({
     .mutation(async ({ input, ctx }) => {
       // ── Enforce STATUS_TRANSITIONS state machine ──
       if (typeof input === "object" && "status" in input) {
-        const newStatus = (input as Record<string, unknown>).status as string;
+        const newStatus = (input as any).status as string;
         const currentStatus =
-          ((input as Record<string, unknown>).currentStatus as string) ||
+          ((input as any).currentStatus as string) ||
           "pending";
         const allowed =
           STATUS_TRANSITIONS[currentStatus as keyof typeof STATUS_TRANSITIONS];
@@ -471,7 +471,7 @@ export const commissionEngineRouter = router({
       }
       try {
         const db = await getDb();
-        if (!db || (db as any)._isNoop) {
+        if (!db || db._isNoop) {
           const idx = memTiers.findIndex(t => t.tierId === input.id);
           if (idx === -1) return { success: false, error: "Tier not found" };
           if (input.rate !== undefined) memTiers[idx].rate = String(input.rate);
@@ -574,9 +574,9 @@ export const commissionEngineRouter = router({
     .mutation(async ({ input, ctx }) => {
       // ── Enforce STATUS_TRANSITIONS state machine ──
       if (typeof input === "object" && "status" in input) {
-        const newStatus = (input as Record<string, unknown>).status as string;
+        const newStatus = (input as any).status as string;
         const currentStatus =
-          ((input as Record<string, unknown>).currentStatus as string) ||
+          ((input as any).currentStatus as string) ||
           "pending";
         const allowed =
           STATUS_TRANSITIONS[currentStatus as keyof typeof STATUS_TRANSITIONS];
@@ -589,7 +589,7 @@ export const commissionEngineRouter = router({
       }
       try {
         const db = await getDb();
-        if (!db || (db as any)._isNoop) {
+        if (!db || db._isNoop) {
           const nextNum = memTiers.length + 1;
           const tierId = `CT-${String(nextNum).padStart(3, "0")}`;
           const newTier = {
@@ -672,9 +672,9 @@ export const commissionEngineRouter = router({
     .mutation(async ({ input, ctx }) => {
       // ── Enforce STATUS_TRANSITIONS state machine ──
       if (typeof input === "object" && "status" in input) {
-        const newStatus = (input as Record<string, unknown>).status as string;
+        const newStatus = (input as any).status as string;
         const currentStatus =
-          ((input as Record<string, unknown>).currentStatus as string) ||
+          ((input as any).currentStatus as string) ||
           "pending";
         const allowed =
           STATUS_TRANSITIONS[currentStatus as keyof typeof STATUS_TRANSITIONS];
@@ -687,7 +687,7 @@ export const commissionEngineRouter = router({
       }
       try {
         const db = await getDb();
-        if (!db || (db as any)._isNoop) {
+        if (!db || db._isNoop) {
           const idx = memTiers.findIndex(t => t.tierId === input.id);
           if (idx === -1) return { success: false, error: "Tier not found" };
           memTiers[idx].isActive = false;
@@ -788,9 +788,9 @@ export const commissionEngineRouter = router({
     .mutation(async ({ input, ctx }) => {
       // ── Enforce STATUS_TRANSITIONS state machine ──
       if (typeof input === "object" && "status" in input) {
-        const newStatus = (input as Record<string, unknown>).status as string;
+        const newStatus = (input as any).status as string;
         const currentStatus =
-          ((input as Record<string, unknown>).currentStatus as string) ||
+          ((input as any).currentStatus as string) ||
           "pending";
         const allowed =
           STATUS_TRANSITIONS[currentStatus as keyof typeof STATUS_TRANSITIONS];
@@ -812,7 +812,7 @@ export const commissionEngineRouter = router({
           return { success: false, error: "Shares must total 100%" };
 
         const db = await getDb();
-        if (!db || (db as any)._isNoop) {
+        if (!db || db._isNoop) {
           const idx = memSplits.findIndex(s => s.splitId === input.id);
           if (idx === -1) return { success: false, error: "Split not found" };
           memSplits[idx].superAgentShare = String(input.superAgentShare);
@@ -898,9 +898,9 @@ export const commissionEngineRouter = router({
     .mutation(async ({ input, ctx }) => {
       // ── Enforce STATUS_TRANSITIONS state machine ──
       if (typeof input === "object" && "status" in input) {
-        const newStatus = (input as Record<string, unknown>).status as string;
+        const newStatus = (input as any).status as string;
         const currentStatus =
-          ((input as Record<string, unknown>).currentStatus as string) ||
+          ((input as any).currentStatus as string) ||
           "pending";
         const allowed =
           STATUS_TRANSITIONS[currentStatus as keyof typeof STATUS_TRANSITIONS];
@@ -922,7 +922,7 @@ export const commissionEngineRouter = router({
           return { success: false, error: "Shares must total 100%" };
 
         const db = await getDb();
-        if (!db || (db as any)._isNoop) {
+        if (!db || db._isNoop) {
           const nextNum = memSplits.length + 1;
           const splitId = `CS-${String(nextNum).padStart(3, "0")}`;
           const newSplit = {
@@ -1106,7 +1106,7 @@ export const commissionEngineRouter = router({
     .query(async ({ input }) => {
       try {
         const db = await getDb();
-        if (!db || (db as any)._isNoop) return { payouts: [], total: 0 };
+        if (!db || db._isNoop) return { payouts: [], total: 0 };
 
         const conditions = [];
         if (input?.status)
@@ -1166,9 +1166,9 @@ export const commissionEngineRouter = router({
     .mutation(async ({ input, ctx }) => {
       // ── Enforce STATUS_TRANSITIONS state machine ──
       if (typeof input === "object" && "status" in input) {
-        const newStatus = (input as Record<string, unknown>).status as string;
+        const newStatus = (input as any).status as string;
         const currentStatus =
-          ((input as Record<string, unknown>).currentStatus as string) ||
+          ((input as any).currentStatus as string) ||
           "pending";
         const allowed =
           STATUS_TRANSITIONS[currentStatus as keyof typeof STATUS_TRANSITIONS];
@@ -1360,7 +1360,7 @@ export const commissionEngineRouter = router({
     .query(async ({ input }) => {
       try {
         const db = await getDb();
-        if (!db || (db as any)._isNoop) return { entries: [] };
+        if (!db || db._isNoop) return { entries: [] };
 
         const conditions = [];
         if (input?.entityType)
@@ -1392,9 +1392,9 @@ export const commissionEngineRouter = router({
     .mutation(async ({ input }) => {
       // ── Enforce STATUS_TRANSITIONS state machine ──
       if (typeof input === "object" && "status" in input) {
-        const newStatus = (input as Record<string, unknown>).status as string;
+        const newStatus = (input as any).status as string;
         const currentStatus =
-          ((input as Record<string, unknown>).currentStatus as string) ||
+          ((input as any).currentStatus as string) ||
           "pending";
         const allowed =
           STATUS_TRANSITIONS[currentStatus as keyof typeof STATUS_TRANSITIONS];
@@ -1441,9 +1441,9 @@ export const commissionEngineRouter = router({
     .mutation(async ({ input }) => {
       // ── Enforce STATUS_TRANSITIONS state machine ──
       if (typeof input === "object" && "status" in input) {
-        const newStatus = (input as Record<string, unknown>).status as string;
+        const newStatus = (input as any).status as string;
         const currentStatus =
-          ((input as Record<string, unknown>).currentStatus as string) ||
+          ((input as any).currentStatus as string) ||
           "pending";
         const allowed =
           STATUS_TRANSITIONS[currentStatus as keyof typeof STATUS_TRANSITIONS];
@@ -1480,9 +1480,9 @@ export const commissionEngineRouter = router({
     .mutation(async ({ input }) => {
       // ── Enforce STATUS_TRANSITIONS state machine ──
       if (typeof input === "object" && "status" in input) {
-        const newStatus = (input as Record<string, unknown>).status as string;
+        const newStatus = (input as any).status as string;
         const currentStatus =
-          ((input as Record<string, unknown>).currentStatus as string) ||
+          ((input as any).currentStatus as string) ||
           "pending";
         const allowed =
           STATUS_TRANSITIONS[currentStatus as keyof typeof STATUS_TRANSITIONS];

@@ -166,7 +166,7 @@ export const documentManagementRouter = router({
       }
       const txAmount =
         typeof input === "object" && "amount" in input
-          ? Number((input as Record<string, unknown>).amount)
+          ? Number((input as any).amount)
           : 0;
       const fees = calculateFee(txAmount, "transfer");
       const commission = calculateCommission(fees.fee, "transfer");

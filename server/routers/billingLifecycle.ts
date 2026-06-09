@@ -73,9 +73,9 @@ const suspendBilling = protectedProcedure
   .mutation(async ({ input, ctx }) => {
     // ── Enforce STATUS_TRANSITIONS state machine ──
     if (typeof input === "object" && "status" in input) {
-      const newStatus = (input as Record<string, unknown>).status as string;
+      const newStatus = (input as any).status as string;
       const currentStatus =
-        ((input as Record<string, unknown>).currentStatus as string) ||
+        ((input as any).currentStatus as string) ||
         "pending";
       const allowed =
         STATUS_TRANSITIONS[currentStatus as keyof typeof STATUS_TRANSITIONS];
@@ -88,7 +88,7 @@ const suspendBilling = protectedProcedure
     }
     const txAmount =
       typeof input === "object" && "amount" in input
-        ? Number((input as Record<string, unknown>).amount)
+        ? Number((input as any).amount)
         : 0;
     const fees = calculateFee(txAmount, "billPayment");
     const commission = calculateCommission(fees.fee, "billPayment");
@@ -170,9 +170,9 @@ const reactivateBilling = protectedProcedure
   .mutation(async ({ input }) => {
     // ── Enforce STATUS_TRANSITIONS state machine ──
     if (typeof input === "object" && "status" in input) {
-      const newStatus = (input as Record<string, unknown>).status as string;
+      const newStatus = (input as any).status as string;
       const currentStatus =
-        ((input as Record<string, unknown>).currentStatus as string) ||
+        ((input as any).currentStatus as string) ||
         "pending";
       const allowed =
         STATUS_TRANSITIONS[currentStatus as keyof typeof STATUS_TRANSITIONS];
@@ -276,9 +276,9 @@ const configureAlertThresholds = protectedProcedure
   .mutation(async ({ input }) => {
     // ── Enforce STATUS_TRANSITIONS state machine ──
     if (typeof input === "object" && "status" in input) {
-      const newStatus = (input as Record<string, unknown>).status as string;
+      const newStatus = (input as any).status as string;
       const currentStatus =
-        ((input as Record<string, unknown>).currentStatus as string) ||
+        ((input as any).currentStatus as string) ||
         "pending";
       const allowed =
         STATUS_TRANSITIONS[currentStatus as keyof typeof STATUS_TRANSITIONS];
@@ -435,9 +435,9 @@ const deleteWebhook = protectedProcedure
   .mutation(async ({ input }) => {
     // ── Enforce STATUS_TRANSITIONS state machine ──
     if (typeof input === "object" && "status" in input) {
-      const newStatus = (input as Record<string, unknown>).status as string;
+      const newStatus = (input as any).status as string;
       const currentStatus =
-        ((input as Record<string, unknown>).currentStatus as string) ||
+        ((input as any).currentStatus as string) ||
         "pending";
       const allowed =
         STATUS_TRANSITIONS[currentStatus as keyof typeof STATUS_TRANSITIONS];
@@ -492,9 +492,9 @@ const archiveOldRecords = protectedProcedure
   .mutation(async ({ input }) => {
     // ── Enforce STATUS_TRANSITIONS state machine ──
     if (typeof input === "object" && "status" in input) {
-      const newStatus = (input as Record<string, unknown>).status as string;
+      const newStatus = (input as any).status as string;
       const currentStatus =
-        ((input as Record<string, unknown>).currentStatus as string) ||
+        ((input as any).currentStatus as string) ||
         "pending";
       const allowed =
         STATUS_TRANSITIONS[currentStatus as keyof typeof STATUS_TRANSITIONS];
@@ -549,9 +549,9 @@ const generateComplianceReport = protectedProcedure
   .mutation(async ({ input }) => {
     // ── Enforce STATUS_TRANSITIONS state machine ──
     if (typeof input === "object" && "status" in input) {
-      const newStatus = (input as Record<string, unknown>).status as string;
+      const newStatus = (input as any).status as string;
       const currentStatus =
-        ((input as Record<string, unknown>).currentStatus as string) ||
+        ((input as any).currentStatus as string) ||
         "pending";
       const allowed =
         STATUS_TRANSITIONS[currentStatus as keyof typeof STATUS_TRANSITIONS];
@@ -655,9 +655,9 @@ const updateNotificationPreferences = protectedProcedure
   .mutation(async ({ input }) => {
     // ── Enforce STATUS_TRANSITIONS state machine ──
     if (typeof input === "object" && "status" in input) {
-      const newStatus = (input as Record<string, unknown>).status as string;
+      const newStatus = (input as any).status as string;
       const currentStatus =
-        ((input as Record<string, unknown>).currentStatus as string) ||
+        ((input as any).currentStatus as string) ||
         "pending";
       const allowed =
         STATUS_TRANSITIONS[currentStatus as keyof typeof STATUS_TRANSITIONS];
@@ -827,9 +827,9 @@ const resolveDispute = protectedProcedure
   .mutation(async ({ input }) => {
     // ── Enforce STATUS_TRANSITIONS state machine ──
     if (typeof input === "object" && "status" in input) {
-      const newStatus = (input as Record<string, unknown>).status as string;
+      const newStatus = (input as any).status as string;
       const currentStatus =
-        ((input as Record<string, unknown>).currentStatus as string) ||
+        ((input as any).currentStatus as string) ||
         "pending";
       const allowed =
         STATUS_TRANSITIONS[currentStatus as keyof typeof STATUS_TRANSITIONS];

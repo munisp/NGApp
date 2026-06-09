@@ -457,9 +457,9 @@ export const settlementRouter = router({
     .mutation(async ({ input }) => {
       // ── Enforce STATUS_TRANSITIONS state machine ──
       if (typeof input === "object" && "status" in input) {
-        const newStatus = (input as Record<string, unknown>).status as string;
+        const newStatus = (input as any).status as string;
         const currentStatus =
-          ((input as Record<string, unknown>).currentStatus as string) ||
+          ((input as any).currentStatus as string) ||
           "pending";
         const allowed =
           STATUS_TRANSITIONS[currentStatus as keyof typeof STATUS_TRANSITIONS];
@@ -495,9 +495,9 @@ export const settlementRouter = router({
     .mutation(async ({ input }) => {
       // ── Enforce STATUS_TRANSITIONS state machine ──
       if (typeof input === "object" && "status" in input) {
-        const newStatus = (input as Record<string, unknown>).status as string;
+        const newStatus = (input as any).status as string;
         const currentStatus =
-          ((input as Record<string, unknown>).currentStatus as string) ||
+          ((input as any).currentStatus as string) ||
           "pending";
         const allowed =
           STATUS_TRANSITIONS[currentStatus as keyof typeof STATUS_TRANSITIONS];
