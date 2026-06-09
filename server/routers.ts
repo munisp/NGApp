@@ -2299,6 +2299,17 @@ export const appRouter = router({
         const breachDeadlineHours = jurisdiction.breachNotificationHours ?? 72;
         const result = await createBreachIncident(input);
         createAuditLog({ userId: ctx.user.id, organizationId: input.organizationId, action: "breach.create", resourceType: "breach_incident", resourceId: result?.id, details: `Breach incident reported: ${input.title}` }).catch((e: unknown) => logger.debug({ err: e instanceof Error ? e.message : String(e) }, "fire-and-forget failed"));
+        // Permify: reporter owns the breach incident, org has viewer access
+        permifyWriteRelationship("breach_incident", String(result?.id ?? 0), "owner", "user", String(ctx.user.id)).catch((e: unknown) => logger.debug({ err: e instanceof Error ? e.message : String(e) }, "permify fire-and-forget"));
+        permifyWriteRelationship("breach_incident", String(result?.id ?? 0), "viewer", "organization", String(input.organizationId)).catch((e: unknown) => logger.debug({ err: e instanceof Error ? e.message : String(e) }, "permify fire-and-forget"));
+        // Temporal: auto-trigger breach-response workflow
+        startWorkflow("breach-response", {
+          workflowId: `breach-main-${result?.id ?? 0}`,
+          taskQueue: "ndsep-breach",
+          input: { breachId: String(result?.id ?? 0), orgId: input.organizationId, severity: input.severity ?? "medium", title: input.title, deadlineHours: breachDeadlineHours, steps: ["containment", "assessment", "ndpc-notification", "individual-notification", "remediation", "post-mortem"] },
+        }).catch((e: unknown) => logger.debug({ err: e instanceof Error ? e.message : String(e) }, "temporal fire-and-forget"));
+        // CQRS command dispatch
+        dispatchCommand({ type: "breach.report", aggregateType: "BreachIncident", aggregateId: String(result?.id ?? 0), payload: { orgId: input.organizationId, severity: input.severity, title: input.title }, metadata: { userId: ctx.user.id, source: "routers.breach.create" } }).catch((e: unknown) => logger.debug({ err: e instanceof Error ? e.message : String(e) }, "cqrs fire-and-forget"));
         // BUSINESS RULE: Start 72-hour NDPC notification countdown (NDPA S.47)
         kafkaProduce("ndsep.breach.detected", `breach-${result?.id}`, {
           breachId: result?.id, orgId: input.organizationId, severity: input.severity ?? "medium",
@@ -2444,6 +2455,9 @@ export const appRouter = router({
         // BUSINESS RULE: Critical risk DPIAs automatically require NDPC consultation (GAID Art. 28)
         const result = await createDpiaAssessment(input);
         createAuditLog({ userId: ctx.user.id, organizationId: input.organizationId, action: "dpia.create", resourceType: "dpia_assessment", resourceId: result?.id, details: `DPIA created: ${input.title}` }).catch((e: unknown) => logger.debug({ err: e instanceof Error ? e.message : String(e) }, "fire-and-forget failed"));
+        // Permify: creator owns the DPIA, org has viewer access
+        permifyWriteRelationship("dpia", String(result?.id ?? 0), "owner", "user", String(ctx.user.id)).catch((e: unknown) => logger.debug({ err: e instanceof Error ? e.message : String(e) }, "permify fire-and-forget"));
+        permifyWriteRelationship("dpia", String(result?.id ?? 0), "viewer", "organization", String(input.organizationId)).catch((e: unknown) => logger.debug({ err: e instanceof Error ? e.message : String(e) }, "permify fire-and-forget"));
         kafkaProduce("ndsep.dpia.submitted", `dpia-${result?.id}`, { dpiaId: result?.id, orgId: input.organizationId, title: input.title, riskLevel: input.riskLevel ?? "medium", jurisdiction: getActiveJurisdiction().code, ts: new Date().toISOString() }).catch((e: unknown) => logger.debug({ err: e instanceof Error ? e.message : String(e) }, "fire-and-forget failed"));
         daprPublish("ndsep.dpia.submitted", { dpiaId: result?.id, orgId: input.organizationId, riskLevel: input.riskLevel ?? "medium" }).catch((e: unknown) => logger.debug({ err: e instanceof Error ? e.message : String(e) }, "fire-and-forget failed"));
         // BUSINESS RULE: High/Critical DPIAs trigger compliance review workflow
@@ -3137,6 +3151,9 @@ export const appRouter = router({
         const result = await createTransferInstrument(input);
         createAuditLog({ userId: ctx.user.id, action: "transfer_instrument.create", resourceType: "transfer_instrument", resourceId: result?.id, details: `Transfer instrument: ${input.name} (${input.instrumentType})` }).catch((e: unknown) => logger.debug({ err: e instanceof Error ? e.message : String(e) }, "fire-and-forget failed"));
         kafkaProduce("ndsep.transfer_instrument.approved", `ti-${result?.id}`, { instrumentId: result?.id, type: input.instrumentType, name: input.name, countries: input.applicableCountries, jurisdiction: getActiveJurisdiction().code, ts: new Date().toISOString() }).catch((e: unknown) => logger.debug({ err: e instanceof Error ? e.message : String(e) }, "fire-and-forget failed"));
+        // Permify: creator owns the transfer instrument, org has viewer access
+        permifyWriteRelationship("transfer_instrument", String(result?.id ?? 0), "owner", "user", String(ctx.user.id)).catch((e: unknown) => logger.debug({ err: e instanceof Error ? e.message : String(e) }, "permify fire-and-forget"));
+        if (input.organizationId) permifyWriteRelationship("transfer_instrument", String(result?.id ?? 0), "viewer", "organization", String(input.organizationId)).catch((e: unknown) => logger.debug({ err: e instanceof Error ? e.message : String(e) }, "permify fire-and-forget"));
         return result;
       }),
     update: adminProcedure

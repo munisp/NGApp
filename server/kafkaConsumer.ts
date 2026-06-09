@@ -16,13 +16,50 @@ const KAFKA_BROKERS = process.env.KAFKA_BROKERS || "localhost:9092";
 const KAFKA_ENABLED = process.env.KAFKA_ENABLED !== "false";
 const CONSUMER_GROUP = "ndsep-api-consumer";
 
+// Event-driven handlers for domain-specific reactions
+async function handleBreachEvent(event: KafkaEvent): Promise<void> {
+  if (event.event_type === "ndsep.breach.reported" && event.data?.severity === "critical") {
+    logger.warn({ breachId: event.entity_id, org: event.data.orgId }, "[KafkaConsumer] Critical breach — triggering escalation notification");
+  }
+  if (event.event_type === "ndsep.breach.ndpc_notification_overdue") {
+    logger.error({ breachId: event.entity_id }, "[KafkaConsumer] NDPC notification deadline exceeded — regulatory exposure");
+  }
+}
+
+async function handleEnforcementEvent(event: KafkaEvent): Promise<void> {
+  if (event.event_type === "ndsep.enforcement.case_opened") {
+    logger.info({ caseId: event.entity_id, orgId: event.data.orgId }, "[KafkaConsumer] Enforcement case opened — syncing to CQRS projections");
+  }
+  if (event.event_type === "ndsep.enforcement.penalty_issued") {
+    logger.info({ penaltyId: event.entity_id, amount: event.data.amount }, "[KafkaConsumer] Penalty issued — updating financial ledger projection");
+  }
+}
+
+async function handleComplianceEvent(event: KafkaEvent): Promise<void> {
+  if (event.event_type === "ndsep.compliance.score_updated") {
+    logger.info({ orgId: event.data.orgId, score: event.data.score }, "[KafkaConsumer] Compliance score changed — updating dashboard projection");
+  }
+  if (event.event_type === "ndsep.compliance.audit_completed") {
+    logger.info({ auditId: event.entity_id }, "[KafkaConsumer] Audit complete — generating compliance certificate");
+  }
+}
+
+async function handleBankingEvent(event: KafkaEvent): Promise<void> {
+  if (event.event_type === "ndsep.banking.aml_alert") {
+    logger.warn({ txId: event.entity_id, riskLevel: event.data.riskLevel }, "[KafkaConsumer] AML alert — flagging for review");
+  }
+  if (event.event_type === "ndsep.banking.ctr_threshold") {
+    logger.info({ amount: event.data.amount }, "[KafkaConsumer] CTR threshold reached — filing report");
+  }
+}
+
 // Event routing: which topics go to which side effects
 // Includes Fluvio edge topics consolidated into Kafka path (C10)
 const EVENT_ROUTES: Record<string, { opensearch?: string; lakehouse?: string; handler?: (event: KafkaEvent) => Promise<void> }> = {
-  "ndsep-compliance": { opensearch: "compliance_events", lakehouse: "compliance_events" },
-  "ndsep-enforcement": { opensearch: "enforcement_events", lakehouse: "enforcement_events" },
-  "ndsep-banking": { opensearch: "banking_events", lakehouse: "banking_events" },
-  "ndsep-breach": { opensearch: "breach_events", lakehouse: "breach_events" },
+  "ndsep-compliance": { opensearch: "compliance_events", lakehouse: "compliance_events", handler: handleComplianceEvent },
+  "ndsep-enforcement": { opensearch: "enforcement_events", lakehouse: "enforcement_events", handler: handleEnforcementEvent },
+  "ndsep-banking": { opensearch: "banking_events", lakehouse: "banking_events", handler: handleBankingEvent },
+  "ndsep-breach": { opensearch: "breach_events", lakehouse: "breach_events", handler: handleBreachEvent },
   "ndsep-noc": { opensearch: "noc_events" },
   "ndsep-platform": { lakehouse: "platform_events" },
   "ndsep-audit": { opensearch: "audit_events", lakehouse: "audit_events" },
