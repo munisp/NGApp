@@ -358,6 +358,101 @@ export const offlinePosModeRouter = router({
       }
     }),
 
+  validateOfflineTransaction: protectedProcedure
+    .input(
+      z.object({
+        amount: z.number().positive(),
+        type: z.enum(["Cash In", "Cash Out", "Transfer", "Airtime", "Bill Payment"]),
+        customerPhone: z.string().optional(),
+      })
+    )
+    .mutation(async ({ input, ctx }) => {
+      try {
+        const session = await getAgentFromCookie(ctx.req);
+        if (!session)
+          throw new TRPCError({ code: "UNAUTHORIZED", message: "Agent session required" });
+
+        const db = (await getDb())!;
+        if (!db) throw new TRPCError({ code: "INTERNAL_SERVER_ERROR" });
+
+        // Get agent tier for CBN limit check
+        const agentRows = await db
+          .select({ tier: agents.tier, floatBalance: agents.floatBalance })
+          .from(agents)
+          .where(eq(agents.id, session.id))
+          .limit(1);
+
+        const tier = agentRows[0]?.tier ?? "Bronze";
+
+        // Check CBN daily limit for the agent
+        const limitCheck = await checkDailyLimit(db, session.id, tier, input.amount);
+        if (!limitCheck.allowed) {
+          await writeAuditLog({
+            agentId: session.id,
+            agentCode: session.agentCode,
+            action: "OFFLINE_TX_CBN_LIMIT_EXCEEDED",
+            resource: "offline_transaction",
+            status: "failure",
+            metadata: {
+              amount: input.amount,
+              type: input.type,
+              todayTotal: limitCheck.todayTotal,
+              dailyLimit: limitCheck.dailyLimit,
+              tier,
+            },
+          });
+
+          throw new TRPCError({
+            code: "BAD_REQUEST",
+            message: `CBN daily limit exceeded. Used: \u20A6${limitCheck.todayTotal.toLocaleString()}, Limit: \u20A6${limitCheck.dailyLimit.toLocaleString()} (${tier} tier)`,
+          });
+        }
+        const tierMultipliers: Record<string, number> = {
+          Bronze: 1, Silver: 1.5, Gold: 2, Platinum: 3,
+        };
+        const multiplier = tierMultipliers[tier] ?? 1;
+        const maxOfflineAmount = OFFLINE_DEFAULTS.maxOfflineAmount * multiplier;
+
+        if (input.amount > maxOfflineAmount) {
+          throw new TRPCError({
+            code: "BAD_REQUEST",
+            message: `Amount \u20A6${input.amount.toLocaleString()} exceeds offline limit \u20A6${maxOfflineAmount.toLocaleString()} for ${tier} tier`,
+          });
+        }
+
+        // Float balance check for debit operations
+        const floatBalance = Number(agentRows[0]?.floatBalance ?? 0);
+        if (["Cash Out", "Transfer", "Airtime", "Bill Payment"].includes(input.type)) {
+          if (floatBalance < input.amount) {
+            throw new TRPCError({
+              code: "BAD_REQUEST",
+              message: `Insufficient float. Balance: \u20A6${floatBalance.toLocaleString()}, Required: \u20A6${input.amount.toLocaleString()}`,
+            });
+          }
+        }
+
+        return {
+          valid: true,
+          amount: input.amount,
+          type: input.type,
+          tier,
+          cbnLimitRemaining: limitCheck.remaining,
+          offlineLimitRemaining: maxOfflineAmount - input.amount,
+          floatAfter:
+            ["Cash Out", "Transfer", "Airtime", "Bill Payment"].includes(input.type)
+              ? floatBalance - input.amount
+              : floatBalance + input.amount,
+        };
+      } catch (error) {
+        if (error instanceof TRPCError) throw error;
+        throw new TRPCError({
+          code: "INTERNAL_SERVER_ERROR",
+          message:
+            error instanceof Error ? error.message : "Internal server error",
+        });
+      }
+    }),
+
   getStats: protectedProcedure.query(async () => {
     const db = (await getDb())!;
     if (!db)

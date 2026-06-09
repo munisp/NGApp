@@ -196,9 +196,11 @@ export const posTerminalFleetRouter = router({
         groupId: z.number().optional(),
         imei: z.string().max(20).optional(),
         simIccid: z.string().max(22).optional(),
+        idempotencyKey: z.string().min(16).max(64),
       })
     )
     .mutation(async ({ input, ctx }) => {
+      return withIdempotency(input.idempotencyKey, async () => {
       // ── Enforce STATUS_TRANSITIONS state machine ──
       if (typeof input === "object" && "status" in input) {
         const newStatus = (input as any).status as string;
@@ -285,6 +287,7 @@ export const posTerminalFleetRouter = router({
             error instanceof Error ? error.message : "Internal server error",
         });
       }
+      });
     }),
 
   assign: protectedProcedure

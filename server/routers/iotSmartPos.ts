@@ -332,6 +332,170 @@ export const iotSmartPosRouter = router({
     }
   }),
 
+  // ── Alert Escalation & Notification ───────────────────────────────────────
+  checkAlerts: protectedProcedure
+    .input(
+      z.object({
+        severityThreshold: z
+          .enum(["low", "medium", "high", "critical"])
+          .default("medium"),
+        autoEscalate: z.boolean().default(true),
+      })
+    )
+    .mutation(async ({ input, ctx }) => {
+      const db = (await getDb())!;
+      if (!db) throw new TRPCError({ code: "INTERNAL_SERVER_ERROR" });
+
+      const SEVERITY_LEVELS: Record<string, number> = {
+        low: 1,
+        medium: 2,
+        high: 3,
+        critical: 4,
+      };
+      const thresholdLevel = SEVERITY_LEVELS[input.severityThreshold] ?? 2;
+
+      // Query devices with active alerts
+      const alertDevices = await db.execute(
+        sql`SELECT id, data, status, agent_id FROM "iot_devices" WHERE (data->>'alert_active')::boolean = true`
+      );
+
+      const alerts: Array<{
+        deviceId: number;
+        alertType: string;
+        severity: string;
+        message: string;
+        agentId: number | null;
+      }> = [];
+
+      for (const row of (alertDevices as any).rows ?? []) {
+        const data =
+          typeof row.data === "string" ? JSON.parse(row.data) : row.data ?? {};
+
+        let severity = "medium";
+        let alertType = "unknown";
+        let message = "Alert triggered";
+
+        // Determine alert severity based on conditions
+        if (data.tamper_detected || row.status === "tampered") {
+          severity = "critical";
+          alertType = "tamper";
+          message = "Device tamper detected — immediate investigation required";
+        } else if (data.battery_level !== undefined && data.battery_level < 10) {
+          severity = "high";
+          alertType = "battery_critical";
+          message = `Battery critically low: ${data.battery_level}%`;
+        } else if (data.battery_level !== undefined && data.battery_level < 25) {
+          severity = "medium";
+          alertType = "battery_low";
+          message = `Battery low: ${data.battery_level}%`;
+        } else if (data.temperature !== undefined && data.temperature > 60) {
+          severity = "high";
+          alertType = "overheating";
+          message = `Device overheating: ${data.temperature}°C`;
+        } else if (data.predicted_failure) {
+          severity = "high";
+          alertType = "predicted_failure";
+          message = "Predictive model indicates imminent failure";
+        } else if (row.status === "offline") {
+          severity = "low";
+          alertType = "offline";
+          message = "Device went offline";
+        }
+
+        const severityLevel = SEVERITY_LEVELS[severity] ?? 2;
+        if (severityLevel >= thresholdLevel) {
+          alerts.push({
+            deviceId: row.id,
+            alertType,
+            severity,
+            message,
+            agentId: row.agent_id,
+          });
+        }
+      }
+
+      // Auto-escalate critical/high alerts
+      let escalatedCount = 0;
+      if (input.autoEscalate) {
+        for (const alert of alerts) {
+          if (alert.severity === "critical" || alert.severity === "high") {
+            await db.execute(
+              sql`UPDATE "iot_devices" SET data = jsonb_set(COALESCE(data, '{}'::jsonb), '{escalated}', 'true'::jsonb), updated_at = NOW() WHERE id = ${alert.deviceId}`
+            );
+            escalatedCount++;
+          }
+        }
+      }
+
+      await writeAuditLog({
+        agentId:
+          typeof ctx === "object" && ctx !== null && "user" in ctx
+            ? (ctx.user?.id ?? 0)
+            : 0,
+        agentCode:
+          typeof ctx === "object" && ctx !== null && "user" in ctx
+            ? (ctx.user?.agentCode ?? "system")
+            : "system",
+        action: "IOT_ALERTS_CHECKED",
+        resource: "iot_devices",
+        status: "success",
+        metadata: {
+          totalAlerts: alerts.length,
+          escalatedCount,
+          severityThreshold: input.severityThreshold,
+          criticalCount: alerts.filter((a) => a.severity === "critical").length,
+          highCount: alerts.filter((a) => a.severity === "high").length,
+        },
+      });
+
+      return {
+        totalAlerts: alerts.length,
+        escalatedCount,
+        alerts: alerts.slice(0, 50),
+        summary: {
+          critical: alerts.filter((a) => a.severity === "critical").length,
+          high: alerts.filter((a) => a.severity === "high").length,
+          medium: alerts.filter((a) => a.severity === "medium").length,
+          low: alerts.filter((a) => a.severity === "low").length,
+        },
+        checkedAt: new Date().toISOString(),
+      };
+    }),
+
+  acknowledgeAlert: protectedProcedure
+    .input(
+      z.object({
+        deviceId: z.number().min(1),
+        resolution: z.string().max(500).optional(),
+      })
+    )
+    .mutation(async ({ input, ctx }) => {
+      const db = (await getDb())!;
+      if (!db) throw new TRPCError({ code: "INTERNAL_SERVER_ERROR" });
+
+      await db.execute(
+        sql`UPDATE "iot_devices" SET data = jsonb_set(jsonb_set(COALESCE(data, '{}'::jsonb), '{alert_active}', 'false'::jsonb), '{escalated}', 'false'::jsonb), updated_at = NOW() WHERE id = ${input.deviceId}`
+      );
+
+      await writeAuditLog({
+        agentId:
+          typeof ctx === "object" && ctx !== null && "user" in ctx
+            ? (ctx.user?.id ?? 0)
+            : 0,
+        agentCode:
+          typeof ctx === "object" && ctx !== null && "user" in ctx
+            ? (ctx.user?.agentCode ?? "system")
+            : "system",
+        action: "IOT_ALERT_ACKNOWLEDGED",
+        resource: "iot_devices",
+        resourceId: String(input.deviceId),
+        status: "success",
+        metadata: { resolution: input.resolution },
+      });
+
+      return { success: true, deviceId: input.deviceId };
+    }),
+
   serviceHealth: protectedProcedure.query(async () => {
     const services = [
       { name: "IoT Smart POS (Go)", url: "http://localhost:8266/health" },
