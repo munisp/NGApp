@@ -3,6 +3,9 @@ Knowledge base and FAQ service
 """
 
 from fastapi import APIRouter, Depends, HTTPException, status
+import sys as _sys2, os as _os2
+_sys2.path.insert(0, _os2.path.join(_os2.path.dirname(_os2.path.abspath(__file__)), ".."))
+from shared.middleware import apply_middleware, ErrorResponse
 
 @router.get("/health")
 async def health_check():

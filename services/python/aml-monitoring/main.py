@@ -11,6 +11,9 @@ Features:
 """
 
 from fastapi import FastAPI, HTTPException, Depends, BackgroundTasks
+import sys as _sys2, os as _os2
+_sys2.path.insert(0, _os2.path.join(_os2.path.dirname(_os2.path.abspath(__file__)), ".."))
+from shared.middleware import apply_middleware, ErrorResponse
 from fastapi.security import HTTPBearer, HTTPAuthorizationCredentials
 from pydantic import BaseModel, Field
 from typing import List, Optional, Dict, Any
@@ -57,6 +60,7 @@ logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
 
 app = FastAPI(title="AML Monitoring Service", version="1.0.0")
+apply_middleware(app, enable_auth=True)
 
 import psycopg2
 import psycopg2.extras

@@ -37,7 +37,7 @@ Real-time bidirectional communication service for Remittance Platform
 from fastapi import FastAPI, WebSocket, WebSocketDisconnect, HTTPException
 from fastapi.middleware.cors import CORSMiddleware
 
-apply_middleware(app)
+apply_middleware(app, enable_auth=True)
 setup_logging("websocket-service")
 app.include_router(metrics_router)
 

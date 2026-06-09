@@ -11,6 +11,9 @@ from typing import Optional, List, Dict, Any
 from contextlib import asynccontextmanager
 
 from fastapi import FastAPI, HTTPException, Depends, Query, Path, Body, Request, status
+import sys as _sys2, os as _os2
+_sys2.path.insert(0, _os2.path.join(_os2.path.dirname(_os2.path.abspath(__file__)), ".."))
+from shared.middleware import apply_middleware, ErrorResponse
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.middleware.gzip import GZipMiddleware
 from fastapi.responses import JSONResponse
@@ -94,6 +97,7 @@ app = FastAPI(
     docs_url="/docs",
     redoc_url="/redoc",
 )
+apply_middleware(app, enable_auth=True)
 
 app.add_middleware(
     CORSMiddleware,

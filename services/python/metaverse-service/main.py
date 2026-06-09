@@ -41,7 +41,7 @@ import redis as _redis
 from fastapi import FastAPI, Header, HTTPException
 from fastapi.middleware.cors import CORSMiddleware
 
-apply_middleware(app)
+apply_middleware(app, enable_auth=True)
 setup_logging("metaverse-service")
 app.include_router(metrics_router)
 

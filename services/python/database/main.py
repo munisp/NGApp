@@ -1,4 +1,7 @@
 from fastapi import FastAPI, Depends, HTTPException, status, Security
+import sys as _sys2, os as _os2
+_sys2.path.insert(0, _os2.path.join(_os2.path.dirname(_os2.path.abspath(__file__)), ".."))
+from shared.middleware import apply_middleware, ErrorResponse
 from fastapi.security import APIKeyHeader
 from fastapi.responses import JSONResponse
 from sqlalchemy.orm import Session
@@ -79,6 +82,7 @@ SessionLocal = sessionmaker(
 Base.metadata.create_all(bind=engine)
 
 app = FastAPI(title=settings.PROJECT_NAME, version=settings.PROJECT_VERSION)
+apply_middleware(app, enable_auth=True)
 
 # API Key authentication
 api_key_header = APIKeyHeader(name="X-API-Key", auto_error=True)

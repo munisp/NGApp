@@ -92,7 +92,7 @@ def log_audit(action: str, entity_id: str, data: str = ""):
 
 from shared.middleware import apply_middleware, ErrorResponse
 from shared.observability import setup_logging, get_logger, metrics_router, MetricsMiddleware
-apply_middleware(app)
+apply_middleware(app, enable_auth=True)
 setup_logging("whatsapp-service")
 app.include_router(metrics_router)
 

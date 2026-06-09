@@ -1,9 +1,13 @@
 import os
 
 from fastapi import FastAPI
+import sys as _sys2, os as _os2
+_sys2.path.insert(0, _os2.path.join(_os2.path.dirname(_os2.path.abspath(__file__)), ".."))
+from shared.middleware import apply_middleware, ErrorResponse
 from datetime import datetime
 
 app = FastAPI(title="kyc-document-verifier")
+apply_middleware(app, enable_auth=True)
 
 import psycopg2
 import psycopg2.extras

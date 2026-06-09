@@ -19,6 +19,9 @@ from enum import Enum
 from typing import Optional
 
 from fastapi import FastAPI, HTTPException
+import sys as _sys2, os as _os2
+_sys2.path.insert(0, _os2.path.join(_os2.path.dirname(_os2.path.abspath(__file__)), ".."))
+from shared.middleware import apply_middleware, ErrorResponse
 from pydantic import BaseModel, Field
 
 # --- Production: Graceful Shutdown ---
@@ -48,6 +51,7 @@ signal.signal(signal.SIGINT, _graceful_shutdown)
 atexit.register(lambda: logging.info("[shutdown] atexit handler called"))
 
 app = FastAPI(title="54Link Data Archival Service", version="1.0.0")
+apply_middleware(app, enable_auth=True)
 
 import psycopg2
 import psycopg2.extras

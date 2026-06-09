@@ -14,6 +14,9 @@ from datetime import datetime, timedelta
 from typing import Optional, List
 from enum import Enum
 from fastapi import FastAPI, HTTPException, Depends, Query, Path
+import sys as _sys2, os as _os2
+_sys2.path.insert(0, _os2.path.join(_os2.path.dirname(_os2.path.abspath(__file__)), ".."))
+from shared.middleware import apply_middleware, ErrorResponse
 from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel, Field
 
@@ -65,6 +68,7 @@ app = FastAPI(
     "transfer, maintenance tracking, insurance, and decommissioning.",
     version="2.0.0",
 )
+apply_middleware(app, enable_auth=True)
 
 app.add_middleware(
     CORSMiddleware,

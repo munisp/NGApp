@@ -36,7 +36,7 @@ Transaction dispute resolution
 from fastapi import FastAPI, HTTPException
 from fastapi.middleware.cors import CORSMiddleware
 
-apply_middleware(app)
+apply_middleware(app, enable_auth=True)
 setup_logging("dispute-resolution")
 app.include_router(metrics_router)
 

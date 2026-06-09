@@ -37,7 +37,7 @@ Provides intelligent question answering over knowledge graphs for banking domain
 from fastapi import FastAPI, HTTPException, BackgroundTasks
 from fastapi.middleware.cors import CORSMiddleware
 
-apply_middleware(app)
+apply_middleware(app, enable_auth=True)
 setup_logging("epr-kgqa-service")
 app.include_router(metrics_router)
 

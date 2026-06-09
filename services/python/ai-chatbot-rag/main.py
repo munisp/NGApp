@@ -16,12 +16,16 @@ from typing import Optional
 
 import asyncpg
 from fastapi import FastAPI
+import sys as _sys2, os as _os2
+_sys2.path.insert(0, _os2.path.join(_os2.path.dirname(_os2.path.abspath(__file__)), ".."))
+from shared.middleware import apply_middleware, ErrorResponse
 from pydantic import BaseModel
 
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger("ai-chatbot-rag")
 
 app = FastAPI(title="54Link AI Support Chatbot", version="1.0.0")
+apply_middleware(app, enable_auth=True)
 
 DATABASE_URL = os.getenv("DATABASE_URL", "postgresql://localhost:5432/agentbanking")
 pool: Optional[asyncpg.Pool] = None

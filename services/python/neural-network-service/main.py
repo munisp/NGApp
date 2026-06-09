@@ -47,7 +47,7 @@ from pathlib import Path
 from fastapi import FastAPI, HTTPException, BackgroundTasks, UploadFile, File
 from fastapi.middleware.cors import CORSMiddleware
 
-apply_middleware(app)
+apply_middleware(app, enable_auth=True)
 setup_logging("neural-network-service")
 app.include_router(metrics_router)
 

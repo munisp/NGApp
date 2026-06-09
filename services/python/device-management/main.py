@@ -1,4 +1,7 @@
 from fastapi import FastAPI, Depends, HTTPException, status, Request, Response
+import sys as _sys2, os as _os2
+_sys2.path.insert(0, _os2.path.join(_os2.path.dirname(_os2.path.abspath(__file__)), ".."))
+from shared.middleware import apply_middleware, ErrorResponse
 from fastapi.security import OAuth2PasswordRequestForm
 from sqlalchemy.orm import Session
 from typing import List
@@ -42,6 +45,7 @@ models.Base.metadata.create_all(bind=engine)
 app = FastAPI(title="Device Management Service",
               description="API for managing devices and device owners in an Remittance Platform.",
               version="1.0.0")
+apply_middleware(app, enable_auth=True)
 
 # Configure logger
 logger.add("file.log", rotation="500 MB", compression="zip", level=settings.LOG_LEVEL)

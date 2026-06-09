@@ -8,6 +8,9 @@ import logging
 from datetime import datetime
 from typing import Optional, Dict, Any, List
 from fastapi import FastAPI, HTTPException, Depends, Request, status
+import sys as _sys2, os as _os2
+_sys2.path.insert(0, _os2.path.join(_os2.path.dirname(_os2.path.abspath(__file__)), ".."))
+from shared.middleware import apply_middleware, ErrorResponse
 from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel, Field
 import asyncpg
@@ -46,6 +49,7 @@ REDIS_URL = os.getenv("REDIS_URL", "redis://localhost:6379/0")
 SETTINGS_CACHE_TTL = int(os.getenv("SETTINGS_CACHE_TTL", "300"))
 
 app = FastAPI(title="Settings Service", version="1.0.0")
+apply_middleware(app, enable_auth=True)
 
 @app.get("/health")
 async def health():

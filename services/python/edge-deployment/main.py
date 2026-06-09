@@ -1,4 +1,7 @@
 from fastapi import FastAPI, Depends, HTTPException, status
+import sys as _sys2, os as _os2
+_sys2.path.insert(0, _os2.path.join(_os2.path.dirname(_os2.path.abspath(__file__)), ".."))
+from shared.middleware import apply_middleware, ErrorResponse
 from prometheus_fastapi_instrumentator import Instrumentator
 from fastapi.security import OAuth2PasswordRequestForm
 from sqlalchemy.orm import Session
@@ -50,6 +53,7 @@ app = FastAPI(
     description="API for managing edge device deployments in the Remittance Platform.",
     version="1.0.0",
 )
+apply_middleware(app, enable_auth=True)
 
 # Instrument the app with Prometheus metrics
 Instrumentator().instrument(app).expose(app, include_in_schema=True, tags=["Metrics"])

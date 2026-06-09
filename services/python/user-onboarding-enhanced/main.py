@@ -2,6 +2,9 @@ from typing import Any, Dict, List, Optional, Union, Tuple
 
 import logging
 from fastapi import FastAPI, Request, status
+import sys as _sys2, os as _os2
+_sys2.path.insert(0, _os2.path.join(_os2.path.dirname(_os2.path.abspath(__file__)), ".."))
+from shared.middleware import apply_middleware, ErrorResponse
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import JSONResponse
 from config import settings
@@ -48,6 +51,7 @@ import psycopg2.extras
 import os
 
 DATABASE_URL = os.environ.get("DATABASE_URL", "postgres://postgres:postgres@localhost:5432/user_onboarding_enhanced")
+apply_middleware(app, enable_auth=True)
 
 def get_db():
     conn = psycopg2.connect(DATABASE_URL)

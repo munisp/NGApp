@@ -35,6 +35,9 @@ from functools import lru_cache
 from decimal import Decimal
 
 from fastapi import FastAPI, HTTPException, Query as QueryParam, Path as PathParam
+import sys as _sys2, os as _os2
+_sys2.path.insert(0, _os2.path.join(_os2.path.dirname(_os2.path.abspath(__file__)), ".."))
+from shared.middleware import apply_middleware, ErrorResponse
 from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel, Field
 import httpx
@@ -117,6 +120,7 @@ app = FastAPI(
     description="Predictive maintenance ML, failure prediction, fleet optimization",
     version="1.0.0",
 )
+apply_middleware(app, enable_auth=True)
 
 app.add_middleware(
     CORSMiddleware,

@@ -8,6 +8,9 @@ import logging
 from datetime import datetime, timedelta
 from typing import Optional, Dict, Any, List
 from fastapi import FastAPI, HTTPException, Depends, Request, Query
+import sys as _sys2, os as _os2
+_sys2.path.insert(0, _os2.path.join(_os2.path.dirname(_os2.path.abspath(__file__)), ".."))
+from shared.middleware import apply_middleware, ErrorResponse
 from fastapi.middleware.cors import CORSMiddleware
 import asyncpg
 import aioredis
@@ -45,6 +48,7 @@ REDIS_URL = os.getenv("REDIS_URL", "redis://localhost:6379/0")
 DASHBOARD_CACHE_TTL = int(os.getenv("DASHBOARD_CACHE_TTL", "30"))
 
 app = FastAPI(title="Dashboard Service", version="1.0.0")
+apply_middleware(app, enable_auth=True)
 app.add_middleware(CORSMiddleware, allow_origins=["*"], allow_methods=["*"], allow_headers=["*"])
 
 from fastapi import APIRouter

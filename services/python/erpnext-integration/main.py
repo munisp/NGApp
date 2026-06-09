@@ -7,6 +7,9 @@ import logging
 from datetime import datetime, date
 from typing import Optional, List, Dict, Any
 from fastapi import FastAPI, HTTPException, Query
+import sys as _sys2, os as _os2
+_sys2.path.insert(0, _os2.path.join(_os2.path.dirname(_os2.path.abspath(__file__)), ".."))
+from shared.middleware import apply_middleware, ErrorResponse
 from fastapi.middleware.cors import CORSMiddleware
 
 # --- Production: Graceful Shutdown ---
@@ -39,6 +42,7 @@ logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
 
 app = FastAPI(title="ERPNext Integration", description="Bidirectional sync with ERPNext ERP for inventory, accounting, and HR data exchange", version="1.0.0")
+apply_middleware(app, enable_auth=True)
 
 import psycopg2
 import psycopg2.extras

@@ -43,6 +43,7 @@ atexit.register(lambda: logging.info("[shutdown] atexit handler called"))
 logger = logging.getLogger(__name__)
 
 sys.path.insert(0, os.path.join(os.path.dirname(__file__), ".."))
+from shared.middleware import apply_middleware, ErrorResponse
 from shared.idempotency import IdempotencyStore, request_hash as _idem_hash_util
 
 _redis_url = os.getenv("REDIS_URL", "redis://localhost:6379/0")
@@ -59,6 +60,7 @@ import psycopg2
 import psycopg2.extras
 
 DATABASE_URL = os.environ.get("DATABASE_URL", "postgres://postgres:postgres@localhost:5432/global_payment_gateway")
+apply_middleware(app, enable_auth=True)
 
 def get_db():
     conn = psycopg2.connect(DATABASE_URL)

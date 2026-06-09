@@ -40,7 +40,7 @@ to verify agent credentials, criminal records, credit history, and references.
 from fastapi import FastAPI, HTTPException, Depends, BackgroundTasks
 from fastapi.middleware.cors import CORSMiddleware
 
-apply_middleware(app)
+apply_middleware(app, enable_auth=True)
 setup_logging("background-check-service")
 app.include_router(metrics_router)
 

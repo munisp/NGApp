@@ -37,7 +37,7 @@ Supports Google Assistant, Alexa, Siri, and custom voice interfaces
 from fastapi import FastAPI, HTTPException, UploadFile, File
 from fastapi.middleware.cors import CORSMiddleware
 
-apply_middleware(app)
+apply_middleware(app, enable_auth=True)
 setup_logging("voice-assistant-service")
 app.include_router(metrics_router)
 

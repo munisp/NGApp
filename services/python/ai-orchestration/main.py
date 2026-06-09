@@ -50,7 +50,7 @@ import pandas as pd
 from fastapi import FastAPI, HTTPException, BackgroundTasks, Depends
 from fastapi.middleware.cors import CORSMiddleware
 
-apply_middleware(app)
+apply_middleware(app, enable_auth=True)
 setup_logging("ai-orchestration-service")
 app.include_router(metrics_router)
 

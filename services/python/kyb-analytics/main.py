@@ -6,6 +6,9 @@ OpenSearch analytics, Fluvio streaming consumer
 Integrations: Lakehouse, OpenSearch, Fluvio, Redis, Kafka, PostgreSQL
 """
 from fastapi import FastAPI, HTTPException, BackgroundTasks
+import sys as _sys2, os as _os2
+_sys2.path.insert(0, _os2.path.join(_os2.path.dirname(_os2.path.abspath(__file__)), ".."))
+from shared.middleware import apply_middleware, ErrorResponse
 from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel, Field
 from typing import Optional, List, Dict, Any
@@ -70,6 +73,7 @@ import psycopg2
 import psycopg2.extras
 
 DATABASE_URL = os.environ.get("DATABASE_URL", "postgres://postgres:postgres@localhost:5432/kyb_analytics")
+apply_middleware(app, enable_auth=True)
 
 def get_db():
     conn = psycopg2.connect(DATABASE_URL)

@@ -20,6 +20,9 @@ from datetime import datetime, timezone
 from typing import Any
 
 from fastapi import FastAPI, HTTPException
+import sys as _sys2, os as _os2
+_sys2.path.insert(0, _os2.path.join(_os2.path.dirname(_os2.path.abspath(__file__)), ".."))
+from shared.middleware import apply_middleware, ErrorResponse
 from pydantic import BaseModel
 
 # --- Production: Graceful Shutdown ---
@@ -57,6 +60,7 @@ OPENSEARCH_PASS = os.getenv("OPENSEARCH_PASS", "admin")
 PORT = int(os.getenv("PORT", "8092"))
 
 app = FastAPI(title="54Link OpenSearch Indexer", version="1.0.0")
+apply_middleware(app, enable_auth=True)
 
 import psycopg2
 import psycopg2.extras

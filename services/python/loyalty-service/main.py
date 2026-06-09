@@ -36,7 +36,7 @@ Customer loyalty and rewards
 from fastapi import FastAPI, HTTPException
 from fastapi.middleware.cors import CORSMiddleware
 
-apply_middleware(app)
+apply_middleware(app, enable_auth=True)
 setup_logging("loyalty-service")
 app.include_router(metrics_router)
 

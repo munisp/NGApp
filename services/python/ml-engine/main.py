@@ -1,6 +1,9 @@
 import logging
 import time
 from fastapi import FastAPI, Depends, HTTPException, Security, Request
+import sys as _sys2, os as _os2
+_sys2.path.insert(0, _os2.path.join(_os2.path.dirname(_os2.path.abspath(__file__)), ".."))
+from shared.middleware import apply_middleware, ErrorResponse
 from sqlalchemy.orm import Session
 from typing import List
 from prometheus_client import generate_latest, CONTENT_TYPE_LATEST
@@ -40,6 +43,7 @@ logging.basicConfig(level=settings.log_level, format='%(asctime)s - %(name)s - %
 logger = logging.getLogger(__name__)
 
 app = FastAPI(title="ML Engine Service", description="Machine Learning Engine for Remittance Platform")
+apply_middleware(app, enable_auth=True)
 
 # Dependency to get the database session
 def get_db():

@@ -363,6 +363,20 @@ async fn handle_get_rules(State(state): State<AppState>) -> Json<serde_json::Val
 }
 
 // ── Main ───────────────────────────────────────────────────────────────────────
+
+// --- PostgreSQL Persistence ---
+async fn get_db_pool() -> Result<deadpool_postgres::Pool, Box<dyn std::error::Error>> {
+    let database_url = std::env::var("DATABASE_URL")
+        .unwrap_or_else(|_| "postgresql://postgres:postgres@localhost:5432/tx_validator".to_string());
+    
+    let config: tokio_postgres::Config = database_url.parse()?;
+    let manager = deadpool_postgres::Manager::new(config, tokio_postgres::NoTls);
+    let pool = deadpool_postgres::Pool::builder(manager)
+        .max_size(16)
+        .build()?;
+    Ok(pool)
+}
+
 #[tokio::main]
 async fn main() -> anyhow::Result<()> {
     dotenvy::dotenv().ok();

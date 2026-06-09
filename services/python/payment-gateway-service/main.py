@@ -6,6 +6,9 @@ FastAPI application for payment gateway integration with support for 13 payment 
 """
 
 from fastapi import FastAPI, Request, status
+import sys as _sys2, os as _os2
+_sys2.path.insert(0, _os2.path.join(_os2.path.dirname(_os2.path.abspath(__file__)), ".."))
+from shared.middleware import apply_middleware, ErrorResponse
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.middleware.gzip import GZipMiddleware
 from fastapi.responses import JSONResponse
@@ -105,6 +108,7 @@ app = FastAPI(
     ## Supported Transaction Types
     
     * Domestic transfers (within Nigeria)
+apply_middleware(app, enable_auth=True)
     * International remittances (54 African countries)
     * Deposits and withdrawals
     * Refunds and reversals

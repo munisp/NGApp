@@ -581,6 +581,20 @@ async fn reconciliation_report(
 
 // ── Main ───────────────────────────────────────────────────────────────────────
 
+
+// --- PostgreSQL Persistence ---
+async fn get_db_pool() -> Result<deadpool_postgres::Pool, Box<dyn std::error::Error>> {
+    let database_url = std::env::var("DATABASE_URL")
+        .unwrap_or_else(|_| "postgresql://postgres:postgres@localhost:5432/payment_split_engine".to_string());
+    
+    let config: tokio_postgres::Config = database_url.parse()?;
+    let manager = deadpool_postgres::Manager::new(config, tokio_postgres::NoTls);
+    let pool = deadpool_postgres::Pool::builder(manager)
+        .max_size(16)
+        .build()?;
+    Ok(pool)
+}
+
 #[tokio::main]
 async fn main() {
     tracing_subscriber::fmt::init();

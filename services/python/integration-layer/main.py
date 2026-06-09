@@ -40,6 +40,7 @@ signal.signal(signal.SIGINT, _graceful_shutdown)
 atexit.register(lambda: logging.info("[shutdown] atexit handler called"))
 
 sys.path.insert(0, os.path.join(os.path.dirname(__file__), ".."))
+from shared.middleware import apply_middleware, ErrorResponse
 from shared.idempotency import IdempotencyStore
 
 _redis_url = os.getenv("REDIS_URL", "redis://localhost:6379/0")
@@ -53,6 +54,7 @@ _idem_store = IdempotencyStore("intlayer-txn", _redis_client)
 models.Base.metadata.create_all(bind=engine)
 
 app = FastAPI(title="Remittance Platform Integration Service")
+apply_middleware(app, enable_auth=True)
 
 @app.on_event("startup")
 async def _start_eviction():

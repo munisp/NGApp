@@ -1,8 +1,12 @@
 
 from fastapi import FastAPI
+import sys as _sys2, os as _os2
+_sys2.path.insert(0, _os2.path.join(_os2.path.dirname(_os2.path.abspath(__file__)), ".."))
+from shared.middleware import apply_middleware, ErrorResponse
 from datetime import datetime
 
 app = FastAPI(title="commission-calculator")
+apply_middleware(app, enable_auth=True)
 
 @app.get("/health")
 async def health_check():

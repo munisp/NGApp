@@ -2,6 +2,9 @@ from typing import Any, Dict, List, Optional, Union, Tuple
 
 import logging
 from fastapi import FastAPI, Request, status
+import sys as _sys2, os as _os2
+_sys2.path.insert(0, _os2.path.join(_os2.path.dirname(_os2.path.abspath(__file__)), ".."))
+from shared.middleware import apply_middleware, ErrorResponse
 from fastapi.responses import JSONResponse
 from fastapi.middleware.cors import CORSMiddleware
 from contextlib import asynccontextmanager
@@ -64,6 +67,7 @@ async def lifespan(app: FastAPI) -> None:
 app = FastAPI(
 
 @app.get("/health")
+apply_middleware(app, enable_auth=True)
 async def health():
     return {"status": "ok", "service": "api-gateway"}
 

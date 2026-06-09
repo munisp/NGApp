@@ -37,7 +37,7 @@ Provides semantic code search and intelligent code recommendations
 from fastapi import FastAPI, HTTPException, BackgroundTasks
 from fastapi.middleware.cors import CORSMiddleware
 
-apply_middleware(app)
+apply_middleware(app, enable_auth=True)
 setup_logging("cocoindex-service")
 app.include_router(metrics_router)
 

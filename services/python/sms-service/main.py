@@ -5,6 +5,9 @@ from typing import Annotated
 
 import jwt
 from fastapi import FastAPI, Depends, HTTPException, status, Request
+import sys as _sys2, os as _os2
+_sys2.path.insert(0, _os2.path.join(_os2.path.dirname(_os2.path.abspath(__file__)), ".."))
+from shared.middleware import apply_middleware, ErrorResponse
 from fastapi.security import OAuth2PasswordBearer, OAuth2PasswordRequestForm
 from sqlalchemy import create_engine, text
 from sqlalchemy.orm import sessionmaker, Session
@@ -68,6 +71,7 @@ app = FastAPI(
     docs_url="/docs",
     redoc_url="/redoc"
 )
+apply_middleware(app, enable_auth=True)
 
 # --- Security (Authentication & Authorization) ---
 pwd_context = CryptContext(schemes=["bcrypt"], deprecated="auto")

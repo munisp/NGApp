@@ -1,4 +1,7 @@
 from fastapi import FastAPI, Depends, HTTPException, status, Security
+import sys as _sys2, os as _os2
+_sys2.path.insert(0, _os2.path.join(_os2.path.dirname(_os2.path.abspath(__file__)), ".."))
+from shared.middleware import apply_middleware, ErrorResponse
 from fastapi.security import OAuth2PasswordBearer, OAuth2PasswordRequestForm
 from sqlalchemy.orm import Session
 from typing import List, Dict
@@ -40,6 +43,7 @@ atexit.register(lambda: logging.info("[shutdown] atexit handler called"))
 # Initialize FastAPI app
 app = FastAPI(
     title=get_settings().app_name,
+apply_middleware(app, enable_auth=True)
     description="Service for managing offline synchronization of remittance data.",
     version="1.0.0",
 )

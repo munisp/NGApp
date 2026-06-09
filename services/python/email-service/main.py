@@ -1,5 +1,8 @@
 
 from fastapi import FastAPI, HTTPException, Depends, status, Security
+import sys as _sys2, os as _os2
+_sys2.path.insert(0, _os2.path.join(_os2.path.dirname(_os2.path.abspath(__file__)), ".."))
+from shared.middleware import apply_middleware, ErrorResponse
 from fastapi.security import OAuth2PasswordBearer, OAuth2PasswordRequestForm
 from pydantic import BaseModel, EmailStr
 from typing import List, Optional
@@ -47,6 +50,7 @@ app = FastAPI(
     description="API for sending and managing emails within the Remittance Platform.",
     version="1.0.0",
 )
+apply_middleware(app, enable_auth=True)
 
 # Load settings
 settings = get_settings()
