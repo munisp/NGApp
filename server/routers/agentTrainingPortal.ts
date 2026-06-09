@@ -252,7 +252,7 @@ const submitQuiz = protectedProcedure
       }
       const [row] = await db
         .insert(agents)
-        .values(input.data || ({} as any))
+        .values(input.data || ({} as Record<string, unknown>))
         .returning();
       return { success: true, ...row, message: "submitQuiz completed" };
     } catch (error) {
@@ -308,7 +308,7 @@ const createCourse = protectedProcedure
       }
       const [row] = await db
         .insert(agents)
-        .values(input.data || ({} as any))
+        .values(input.data || ({} as Record<string, unknown>))
         .returning();
       return { success: true, ...row, message: "createCourse completed" };
     } catch (error) {

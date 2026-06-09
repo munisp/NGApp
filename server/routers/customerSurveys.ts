@@ -218,7 +218,7 @@ const submitSurvey = protectedProcedure
       }
       const [row] = await db
         .insert(customer_journey_events)
-        .values(input.data || ({} as any))
+        .values(input.data || ({} as Record<string, unknown>))
         .returning();
       return { success: true, ...row, message: "submitSurvey completed" };
     } catch (error) {

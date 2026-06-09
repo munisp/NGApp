@@ -233,7 +233,7 @@ const generateReport = protectedProcedure
       }
       const [row] = await db
         .insert(pnlReports)
-        .values(input.data || ({} as any))
+        .values(input.data || ({} as Record<string, unknown>))
         .returning();
       return { success: true, ...row, message: "generateReport completed" };
     } catch (error) {
@@ -289,7 +289,7 @@ const createSchedule = protectedProcedure
       }
       const [row] = await db
         .insert(pnlReports)
-        .values(input.data || ({} as any))
+        .values(input.data || ({} as Record<string, unknown>))
         .returning();
       return { success: true, ...row, message: "createSchedule completed" };
     } catch (error) {

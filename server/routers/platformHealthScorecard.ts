@@ -216,7 +216,7 @@ const acknowledgeAlert = protectedProcedure
       }
       const [row] = await db
         .insert(platform_health_checks)
-        .values(input.data || ({} as any))
+        .values(input.data || ({} as Record<string, unknown>))
         .returning();
       return { success: true, ...row, message: "acknowledgeAlert completed" };
     } catch (error) {

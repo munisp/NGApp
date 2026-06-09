@@ -40,7 +40,7 @@ const STATUS_TRANSITIONS: Record<string, string[]> = {
 async function tryDb() {
   try {
     const db = await getDb();
-    if ((db as any)?._isNoop) return null;
+    if (!!(db && (db as Record<string, unknown>)._isNoop)) return null;
     return db;
   } catch {
     return null;

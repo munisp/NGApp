@@ -254,7 +254,7 @@ const submitFeedback = protectedProcedure
       }
       const [row] = await db
         .insert(tenantFeeOverrides)
-        .values(input.data || ({} as any))
+        .values(input.data || ({} as Record<string, unknown>))
         .returning();
 
       // Double-entry GL journal entry

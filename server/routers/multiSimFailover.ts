@@ -87,7 +87,8 @@ function logOperation(action: string, details: Record<string, unknown>) {
 async function checkDbHealth() {
   try {
     const db = await (await import("../db")).getDb();
-    if ((db as any)?._isNoop) return { connected: false, latencyMs: 0 };
+    if (!!(db && (db as Record<string, unknown>)._isNoop))
+      return { connected: false, latencyMs: 0 };
     const start = Date.now();
     await db
       .select({ val: (await import("drizzle-orm")).sql`1` })

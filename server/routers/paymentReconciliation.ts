@@ -217,7 +217,7 @@ const runReconciliation = protectedProcedure
       }
       const [row] = await db
         .insert(floatReconciliations)
-        .values(input.data || ({} as any))
+        .values(input.data || ({} as Record<string, unknown>))
         .returning();
 
       // Double-entry GL journal entry
@@ -288,7 +288,7 @@ const resolveDiscrepancy = protectedProcedure
       }
       const [row] = await db
         .insert(floatReconciliations)
-        .values(input.data || ({} as any))
+        .values(input.data || ({} as Record<string, unknown>))
         .returning();
       return { success: true, ...row, message: "resolveDiscrepancy completed" };
     } catch (error) {

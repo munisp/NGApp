@@ -253,7 +253,7 @@ const processBatch = protectedProcedure
       }
       const [row] = await db
         .insert(merchantPayouts)
-        .values(input.data || ({} as any))
+        .values(input.data || ({} as Record<string, unknown>))
         .returning();
 
       // Double-entry GL journal entry
@@ -324,7 +324,7 @@ const cancelBatch = protectedProcedure
       }
       const [row] = await db
         .insert(merchantPayouts)
-        .values(input.data || ({} as any))
+        .values(input.data || ({} as Record<string, unknown>))
         .returning();
       return { success: true, ...row, message: "cancelBatch completed" };
     } catch (error) {
