@@ -27,7 +27,7 @@ async function atomicDebit(
 ): Promise<{ id: string; newBalance: number }> {
   const result = await db.execute(
     sql`UPDATE wallet_balances
-        SET balance = (CAST(balance AS DECIMAL(30,8)) - ${amount})::TEXT,
+        SET balance = CAST(balance AS DECIMAL(30,8)) - ${amount},
             updated_at = ${epochSec()}
         WHERE user_id = ${userId}
           AND currency = ${currency}
@@ -56,7 +56,7 @@ async function atomicCredit(
                 ${'tp_' + currency.toLowerCase().replace('-', '_') + '_' + userId.slice(0, 8)},
                 ${CURRENCY_NETWORKS[currency as WalletCurrency] ?? ''}, ${epochSec()}, ${epochSec()})
         ON CONFLICT (user_id, currency)
-        DO UPDATE SET balance = (CAST(wallet_balances.balance AS DECIMAL(30,8)) + ${amount})::TEXT,
+        DO UPDATE SET balance = CAST(wallet_balances.balance AS DECIMAL(30,8)) + ${amount},
                      updated_at = ${epochSec()}`
   );
 }

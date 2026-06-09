@@ -79,7 +79,7 @@ export const meshPaymentsRouter = router({
       // Atomic balance deduction — prevents double-spend under concurrency
       const debitResult = await db.execute(
         sql`UPDATE wallet_balances
-            SET balance = (CAST(balance AS DECIMAL(30,8)) - ${total})::TEXT,
+            SET balance = CAST(balance AS DECIMAL(30,8)) - ${total},
                 updated_at = ${Math.floor(Date.now() / 1000)}
             WHERE user_id = ${String(ctx.user.id)}
               AND currency = ${corridor.fromCurrency}

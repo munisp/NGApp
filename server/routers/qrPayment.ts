@@ -206,7 +206,7 @@ export const qrPaymentRouter = router({
       // Atomic balance deduction — prevents double-spend under concurrency
       const debitResult = await db.execute(
         sql`UPDATE wallet_balances
-            SET balance = (CAST(balance AS DECIMAL(30,8)) - ${amount})::TEXT,
+            SET balance = CAST(balance AS DECIMAL(30,8)) - ${amount},
                 updated_at = ${Math.floor(Date.now() / 1000)}
             WHERE user_id = ${String(ctx.user.id)}
               AND currency = ${input.currency}

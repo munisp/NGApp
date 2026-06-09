@@ -52,7 +52,7 @@ export const sustainabilityRouter = router({
       // Atomic wallet deduction from USDC balance
       const result = await db.execute(
         sql`UPDATE wallet_balances
-            SET balance = (CAST(balance AS DECIMAL(30,8)) - ${costUsd})::TEXT,
+            SET balance = CAST(balance AS DECIMAL(30,8)) - ${costUsd},
                 updated_at = ${Math.floor(Date.now() / 1000)}
             WHERE user_id = ${String(ctx.user.id)}
               AND currency = 'USDC'
