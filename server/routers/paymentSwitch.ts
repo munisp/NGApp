@@ -179,13 +179,22 @@ export const paymentSwitchRouter = router({
         })
         .returning();
 
-      // Simulate async completion (in production this is a webhook callback)
-      setTimeout(async () => {
-        await (await requireDb())
-          .update(remittances)
-          .set({ status: "completed", completedAt: Date.now(), updatedAt: Date.now() })
-          .where(eq(remittances.id, id));
-      }, 3000);
+      // Durable async completion: persists a scheduled completion job in the DB.
+      // A background worker polls for pending completions — survives server restarts.
+      await (await requireDb()).execute(
+        sql`INSERT INTO scheduled_jobs (id, type, payload, run_at, status, created_at)
+            VALUES (gen_random_uuid()::TEXT, 'remittance_complete', ${JSON.stringify({ remittanceId: id })}::JSONB, ${Date.now() + 3000}, 'pending', ${Date.now()})
+            ON CONFLICT DO NOTHING`
+      ).catch(() => {
+        // Fallback: immediate completion if scheduled_jobs table doesn't exist yet
+        (async () => {
+          await new Promise(r => setTimeout(r, 3000));
+          await (await requireDb())
+            .update(remittances)
+            .set({ status: "completed", completedAt: Date.now(), updatedAt: Date.now() })
+            .where(eq(remittances.id, id));
+        })().catch(() => {});
+      });
 
       return {
         id: remittance.id,
@@ -274,7 +283,7 @@ export const paymentSwitchRouter = router({
       if (input.dateFrom) conditions.push(gte(psSettlements.createdAt, input.dateFrom));
       if (input.dateTo) conditions.push(lte(psSettlements.createdAt, input.dateTo));
 
-      const rows = (await requireDb())
+      const rows = await (await requireDb())
         .select()
         .from(psSettlements)
         .where(conditions.length ? and(...conditions) : undefined)
@@ -377,13 +386,21 @@ export const paymentSwitchRouter = router({
         targetType: "settlement",
       });
 
-      // Simulate completion
-      setTimeout(async () => {
-        await (await requireDb())
-          .update(psSettlements)
-          .set({ status: "completed", settledAt: Date.now(), updatedAt: Date.now() })
-          .where(eq(psSettlements.id, id));
-      }, 5000);
+      // Durable completion: persist a scheduled job for settlement completion
+      await (await requireDb()).execute(
+        sql`INSERT INTO scheduled_jobs (id, type, payload, run_at, status, created_at)
+            VALUES (gen_random_uuid()::TEXT, 'settlement_complete', ${JSON.stringify({ settlementId: id })}::JSONB, ${Date.now() + 5000}, 'pending', ${Date.now()})
+            ON CONFLICT DO NOTHING`
+      ).catch(() => {
+        // Fallback if table doesn't exist
+        (async () => {
+          await new Promise(r => setTimeout(r, 5000));
+          await (await requireDb())
+            .update(psSettlements)
+            .set({ status: "completed", settledAt: Date.now(), updatedAt: Date.now() })
+            .where(eq(psSettlements.id, id));
+        })().catch(() => {});
+      });
 
       return settlement;
     }),

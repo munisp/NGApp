@@ -34,72 +34,77 @@ export const merchantRevenueRouter = router({
         .where(eq(establishments.id, input.establishmentId))
         .limit(1);
 
-      if (!est) throw new Error("Establishment not found");
+      if (!est) throw new TRPCError({ code: "NOT_FOUND", message: "Establishment not found" });
       if (est.ownerId !== ctx.user.id && ctx.user.role !== "admin") {
-        throw new Error("Not authorized");
+        throw new TRPCError({ code: "FORBIDDEN", message: "Not authorized" });
       }
 
-      // Total paid QR payments
-      const allPaid = await db
-        .select()
-        .from(qrPaymentTokens)
-        .where(
-          and(
-            eq(qrPaymentTokens.establishmentId, input.establishmentId),
-            eq(qrPaymentTokens.status, "paid")
-          )
-        );
-
-      const totalRevenue = allPaid.reduce(
-        (sum, r) => sum + parseFloat(r.amountUsd ?? "0"),
-        0
-      );
-      const totalTransactions = allPaid.length;
-
-      // Today's revenue
+      // SQL-level aggregation — avoids loading all rows into memory
       const todayStart = new Date();
-      todayStart.setHours(0, 0, 0, 0);
-      const todayPaid = allPaid.filter(
-        (r) => r.paidAt && r.paidAt >= todayStart
-      );
-      const todayRevenue = todayPaid.reduce(
-        (sum, r) => sum + parseFloat(r.amountUsd ?? "0"),
-        0
-      );
-
-      // This week
+      todayStart.setUTCHours(0, 0, 0, 0);
       const weekStart = new Date();
-      weekStart.setDate(weekStart.getDate() - 7);
-      const weekPaid = allPaid.filter(
-        (r) => r.paidAt && r.paidAt >= weekStart
-      );
-      const weekRevenue = weekPaid.reduce(
-        (sum, r) => sum + parseFloat(r.amountUsd ?? "0"),
-        0
-      );
+      weekStart.setUTCDate(weekStart.getUTCDate() - 7);
 
-      // Loyalty points issued
-      const loyaltyRows = await db
-        .select()
+      const [totals] = await db
+        .select({
+          totalRevenue: sql<string>`COALESCE(SUM(CAST(amount_usd AS DECIMAL(20,2))), 0)`,
+          totalTransactions: sql<number>`COUNT(*)`,
+        })
+        .from(qrPaymentTokens)
+        .where(and(
+          eq(qrPaymentTokens.establishmentId, input.establishmentId),
+          eq(qrPaymentTokens.status, "paid")
+        ));
+
+      const [todayTotals] = await db
+        .select({
+          todayRevenue: sql<string>`COALESCE(SUM(CAST(amount_usd AS DECIMAL(20,2))), 0)`,
+          todayTransactions: sql<number>`COUNT(*)`,
+        })
+        .from(qrPaymentTokens)
+        .where(and(
+          eq(qrPaymentTokens.establishmentId, input.establishmentId),
+          eq(qrPaymentTokens.status, "paid"),
+          gte(qrPaymentTokens.paidAt, todayStart)
+        ));
+
+      const [weekTotals] = await db
+        .select({
+          weekRevenue: sql<string>`COALESCE(SUM(CAST(amount_usd AS DECIMAL(20,2))), 0)`,
+          weekTransactions: sql<number>`COUNT(*)`,
+        })
+        .from(qrPaymentTokens)
+        .where(and(
+          eq(qrPaymentTokens.establishmentId, input.establishmentId),
+          eq(qrPaymentTokens.status, "paid"),
+          gte(qrPaymentTokens.paidAt, weekStart)
+        ));
+
+      const totalRevenue = parseFloat(totals?.totalRevenue ?? "0");
+      const totalTransactions = Number(totals?.totalTransactions ?? 0);
+      const todayRevenue = parseFloat(todayTotals?.todayRevenue ?? "0");
+      const weekRevenue = parseFloat(weekTotals?.weekRevenue ?? "0");
+
+      // Loyalty points — SQL aggregation
+      const [loyaltyTotals] = await db
+        .select({
+          totalPointsIssued: sql<number>`COALESCE(SUM(CASE WHEN type = 'earn' THEN points ELSE 0 END), 0)`,
+          totalPointsRedeemed: sql<number>`COALESCE(SUM(CASE WHEN type = 'redeem' THEN points ELSE 0 END), 0)`,
+        })
         .from(loyaltyTransactions)
         .where(eq(loyaltyTransactions.partner, `est:${input.establishmentId}`));
 
-      const totalPointsIssued = loyaltyRows
-        .filter((r) => r.type === "earn")
-        .reduce((sum, r) => sum + r.points, 0);
-
-      const totalPointsRedeemed = loyaltyRows
-        .filter((r) => r.type === "redeem")
-        .reduce((sum, r) => sum + r.points, 0);
+      const totalPointsIssued = Number(loyaltyTotals?.totalPointsIssued ?? 0);
+      const totalPointsRedeemed = Number(loyaltyTotals?.totalPointsRedeemed ?? 0);
 
       return {
         establishment: est,
         totalRevenue: totalRevenue.toFixed(2),
         totalTransactions,
         todayRevenue: todayRevenue.toFixed(2),
-        todayTransactions: todayPaid.length,
+        todayTransactions: Number(todayTotals?.todayTransactions ?? 0),
         weekRevenue: weekRevenue.toFixed(2),
-        weekTransactions: weekPaid.length,
+        weekTransactions: Number(weekTotals?.weekTransactions ?? 0),
         avgTransactionValue:
           totalTransactions > 0
             ? (totalRevenue / totalTransactions).toFixed(2)
@@ -122,9 +127,9 @@ export const merchantRevenueRouter = router({
         .where(eq(establishments.id, input.establishmentId))
         .limit(1);
 
-      if (!est) throw new Error("Establishment not found");
+      if (!est) throw new TRPCError({ code: "NOT_FOUND", message: "Establishment not found" });
       if (est.ownerId !== ctx.user.id && ctx.user.role !== "admin") {
-        throw new Error("Not authorized");
+        throw new TRPCError({ code: "FORBIDDEN", message: "Not authorized" });
       }
 
       const since = new Date();
@@ -173,9 +178,9 @@ export const merchantRevenueRouter = router({
         .where(eq(establishments.id, input.establishmentId))
         .limit(1);
 
-      if (!est) throw new Error("Establishment not found");
+      if (!est) throw new TRPCError({ code: "NOT_FOUND", message: "Establishment not found" });
       if (est.ownerId !== ctx.user.id && ctx.user.role !== "admin") {
-        throw new Error("Not authorized");
+        throw new TRPCError({ code: "FORBIDDEN", message: "Not authorized" });
       }
 
       return db
@@ -224,16 +229,16 @@ export const merchantRevenueRouter = router({
     )
     .mutation(async ({ input, ctx }) => {
       const db = await getDb();
-      if (!db) throw new Error("Database unavailable");
+      if (!db) throw new TRPCError({ code: "INTERNAL_SERVER_ERROR", message: "Database unavailable" });
 
       const [est] = await db
         .select()
         .from(establishments)
         .where(eq(establishments.id, input.establishmentId))
         .limit(1);
-      if (!est) throw new Error("Establishment not found");
+      if (!est) throw new TRPCError({ code: "NOT_FOUND", message: "Establishment not found" });
       if (est.ownerId !== ctx.user.id && ctx.user.role !== "admin") {
-        throw new Error("Not authorized");
+        throw new TRPCError({ code: "FORBIDDEN", message: "Not authorized" });
       }
 
       const conditions: any[] = [
@@ -287,9 +292,9 @@ export const merchantRevenueRouter = router({
         .from(establishments)
         .where(eq(establishments.id, input.establishmentId))
         .limit(1);
-      if (!est) throw new Error("Establishment not found");
+      if (!est) throw new TRPCError({ code: "NOT_FOUND", message: "Establishment not found" });
       if (est.ownerId !== ctx.user.id && ctx.user.role !== "admin") {
-        throw new Error("Not authorized");
+        throw new TRPCError({ code: "FORBIDDEN", message: "Not authorized" });
       }
       const startOfDay = new Date(input.date + "T00:00:00.000Z");
       const endOfDay = new Date(input.date + "T23:59:59.999Z");
@@ -327,9 +332,9 @@ export const merchantRevenueRouter = router({
         .from(establishments)
         .where(eq(establishments.id, input.establishmentId))
         .limit(1);
-      if (!est) throw new Error("Establishment not found");
+      if (!est) throw new TRPCError({ code: "NOT_FOUND", message: "Establishment not found" });
       if (est.ownerId !== ctx.user.id && ctx.user.role !== "admin") {
-        throw new Error("Not authorized");
+        throw new TRPCError({ code: "FORBIDDEN", message: "Not authorized" });
       }
 
       const since = new Date();
@@ -417,21 +422,21 @@ export const merchantRevenueRouter = router({
     }))
     .mutation(async ({ ctx, input }) => {
       const db = await getDb();
-      if (!db) throw new Error("Database unavailable");
+      if (!db) throw new TRPCError({ code: "INTERNAL_SERVER_ERROR", message: "Database unavailable" });
 
       const [deal] = await db
         .select({ id: touristDeals.id, establishmentId: touristDeals.establishmentId, visibilityScore: touristDeals.visibilityScore })
         .from(touristDeals)
         .where(eq(touristDeals.id, input.dealId))
         .limit(1);
-      if (!deal) throw new Error("Deal not found");
+      if (!deal) throw new TRPCError({ code: "NOT_FOUND", message: "Deal not found" });
 
       const [est] = await db
         .select({ ownerId: establishments.ownerId })
         .from(establishments)
         .where(eq(establishments.id, deal.establishmentId))
         .limit(1);
-      if (!est || est.ownerId !== ctx.user.id) throw new Error("Forbidden: not your deal");
+      if (!est || est.ownerId !== ctx.user.id) throw new TRPCError({ code: "FORBIDDEN", message: "Not authorized for this deal" });
 
       const boostedAt = new Date();
       const boostedUntil = new Date(Date.now() + 7 * 24 * 60 * 60 * 1000);
@@ -488,7 +493,7 @@ export const merchantRevenueRouter = router({
         .where(eq(establishments.id, deal.establishmentId))
         .limit(1);
       if (!est || (est.ownerId !== ctx.user.id && ctx.user.role !== "admin")) {
-        throw new Error("Forbidden");
+        throw new TRPCError({ code: "FORBIDDEN", message: "Forbidden" });
       }
 
       if (!deal.boostedAt) {
@@ -582,21 +587,21 @@ export const merchantRevenueRouter = router({
     )
     .mutation(async ({ ctx, input }) => {
       const db = await getDb();
-      if (!db) throw new Error("Database unavailable");
+      if (!db) throw new TRPCError({ code: "INTERNAL_SERVER_ERROR", message: "Database unavailable" });
       // Verify the deal exists
       const [deal] = await db
         .select({ id: touristDeals.id, title: touristDeals.title, establishmentId: touristDeals.establishmentId })
         .from(touristDeals)
         .where(eq(touristDeals.id, input.dealId))
         .limit(1);
-      if (!deal) throw new Error("Deal not found");
+      if (!deal) throw new TRPCError({ code: "NOT_FOUND", message: "Deal not found" });
       // Verify the merchant owns this establishment
       const [est] = await db
         .select({ ownerId: establishments.ownerId })
         .from(establishments)
         .where(eq(establishments.id, deal.establishmentId))
         .limit(1);
-      if (!est || est.ownerId !== ctx.user.id) throw new Error("Not authorised");
+      if (!est || est.ownerId !== ctx.user.id) throw new TRPCError({ code: "FORBIDDEN", message: "Not authorized" });
       const newValidTo = new Date(Date.now() + input.renewDays * 24 * 60 * 60 * 1000);
       await db
         .update(touristDeals)
@@ -629,8 +634,8 @@ export const merchantRevenueRouter = router({
         .from(establishments)
         .where(eq(establishments.id, input.establishmentId))
         .limit(1);
-      if (!est) throw new Error("Establishment not found");
-      if (est.ownerId !== ctx.user.id && ctx.user.role !== "admin") throw new Error("Not authorized");
+      if (!est) throw new TRPCError({ code: "NOT_FOUND", message: "Establishment not found" });
+      if (est.ownerId !== ctx.user.id && ctx.user.role !== "admin") throw new TRPCError({ code: "FORBIDDEN", message: "Not authorized" });
 
       // Fetch all bookings for this establishment
       const allBookings = await db

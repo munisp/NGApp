@@ -4,10 +4,11 @@
  * Uses the wallet tables for balance tracking.
  */
 import { z } from "zod";
+import { TRPCError } from "@trpc/server";
 import { router, protectedProcedure } from "../_core/trpc";
 import { getDb } from "../db";
 import { walletBalances, walletTransactions, meshTransactions } from "../../drizzle/schema";
-import { eq, and, desc } from "drizzle-orm";
+import { eq, and, desc, sql } from "drizzle-orm";
 
 // Supported mesh corridors
 export const MESH_CORRIDORS = [
@@ -36,7 +37,7 @@ export const meshPaymentsRouter = router({
     )
     .query(({ input }) => {
       const corridor = MESH_CORRIDORS.find((c) => c.id === input.corridorId);
-      if (!corridor) throw new Error("Corridor not found");
+      if (!corridor) throw new TRPCError({ code: "NOT_FOUND", message: "Corridor not found" });
       const fee = input.amount * corridor.fee;
       const netAmount = input.amount - fee;
       const receivedAmount = netAmount * corridor.rate;
@@ -68,42 +69,26 @@ export const meshPaymentsRouter = router({
     )
     .mutation(async ({ ctx, input }) => {
       const db = await getDb();
-      if (!db) throw new Error("Database unavailable");
+      if (!db) throw new TRPCError({ code: "INTERNAL_SERVER_ERROR", message: "Database unavailable" });
       const corridor = MESH_CORRIDORS.find((c) => c.id === input.corridorId);
-      if (!corridor) throw new Error("Corridor not found");
+      if (!corridor) throw new TRPCError({ code: "NOT_FOUND", message: "Corridor not found" });
 
-      // Find or create wallet balance for source currency
-      let [wallet] = await db
-        .select()
-        .from(walletBalances)
-        .where(
-          and(
-            eq(walletBalances.userId, String(ctx.user.id)),
-            eq(walletBalances.currency, corridor.fromCurrency)
-          )
-        );
-
-      if (!wallet) {
-        const [newWallet] = await db
-          .insert(walletBalances)
-          .values({ userId: String(ctx.user.id), currency: corridor.fromCurrency, balance: "0" })
-          .returning();
-        wallet = newWallet;
-      }
-
-      const currentBalance = parseFloat(wallet.balance);
       const fee = input.amount * corridor.fee;
       const total = input.amount + fee;
 
-      if (currentBalance < total) {
-        throw new Error(`Insufficient balance. Required: ${total.toFixed(2)} ${corridor.fromCurrency}`);
+      // Atomic balance deduction — prevents double-spend under concurrency
+      const debitResult = await db.execute(
+        sql`UPDATE wallet_balances
+            SET balance = (CAST(balance AS DECIMAL(30,8)) - ${total})::TEXT,
+                updated_at = ${Math.floor(Date.now() / 1000)}
+            WHERE user_id = ${String(ctx.user.id)}
+              AND currency = ${corridor.fromCurrency}
+              AND CAST(balance AS DECIMAL(30,8)) >= ${total}
+            RETURNING id, balance`
+      );
+      if (!(debitResult as any[])[0]) {
+        throw new TRPCError({ code: "BAD_REQUEST", message: `Insufficient balance. Required: ${total.toFixed(2)} ${corridor.fromCurrency}` });
       }
-
-      const newBalance = (currentBalance - total).toFixed(6);
-      await db
-        .update(walletBalances)
-        .set({ balance: newBalance, updatedAt: Math.floor(Date.now() / 1000) })
-        .where(eq(walletBalances.id, wallet.id));
 
       const txRef = `MESH-${Date.now().toString(36).toUpperCase()}`;
       const [tx] = await db

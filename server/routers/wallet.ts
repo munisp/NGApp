@@ -14,6 +14,67 @@ import { stripe } from "../_core/stripe";
 import { onTransactionCreated, onWalletEvent } from "../middleware/lakehouseBridge";
 import { fireAndForget, logger } from "../_core/logger";
 
+/**
+ * Atomically debit a wallet balance. Uses UPDATE ... WHERE balance >= amount
+ * to prevent double-spend and negative balances under concurrency.
+ * Returns the new balance or throws if insufficient funds.
+ */
+async function atomicDebit(
+  db: NonNullable<Awaited<ReturnType<typeof getDb>>>,
+  userId: string,
+  currency: string,
+  amount: number
+): Promise<{ id: string; newBalance: number }> {
+  const result = await db.execute(
+    sql`UPDATE wallet_balances
+        SET balance = (CAST(balance AS DECIMAL(30,8)) - ${amount})::TEXT,
+            updated_at = ${epochSec()}
+        WHERE user_id = ${userId}
+          AND currency = ${currency}
+          AND CAST(balance AS DECIMAL(30,8)) >= ${amount}
+        RETURNING id, balance`
+  );
+  const row = (result as any[])[0];
+  if (!row) {
+    throw new TRPCError({ code: "BAD_REQUEST", message: `Insufficient ${currency} balance.` });
+  }
+  return { id: row.id, newBalance: parseFloat(row.balance) };
+}
+
+/**
+ * Atomically credit a wallet balance. Uses upsert to handle both existing and new wallets.
+ */
+async function atomicCredit(
+  db: NonNullable<Awaited<ReturnType<typeof getDb>>>,
+  userId: string,
+  currency: string,
+  amount: number
+): Promise<void> {
+  await db.execute(
+    sql`INSERT INTO wallet_balances (id, user_id, currency, balance, locked_balance, wallet_address, network, created_at, updated_at)
+        VALUES (gen_random_uuid()::TEXT, ${userId}, ${currency}, ${String(amount)}, '0',
+                ${'tp_' + currency.toLowerCase().replace('-', '_') + '_' + userId.slice(0, 8)},
+                ${CURRENCY_NETWORKS[currency as WalletCurrency] ?? ''}, ${epochSec()}, ${epochSec()})
+        ON CONFLICT (user_id, currency)
+        DO UPDATE SET balance = (CAST(wallet_balances.balance AS DECIMAL(30,8)) + ${amount})::TEXT,
+                     updated_at = ${epochSec()}`
+  );
+}
+
+/**
+ * Check for duplicate transaction by idempotency key. Returns existing txId if found.
+ */
+async function checkIdempotencyKey(
+  db: NonNullable<Awaited<ReturnType<typeof getDb>>>,
+  idempotencyKey: string
+): Promise<string | null> {
+  const result = await db.execute(
+    sql`SELECT id FROM wallet_transactions WHERE reference = ${idempotencyKey} LIMIT 1`
+  );
+  const row = (result as any[])[0];
+  return row?.id ?? null;
+}
+
 /** Epoch seconds for integer timestamp columns */
 const epochSec = () => Math.floor(Date.now() / 1000);
 
@@ -167,6 +228,7 @@ export const walletRouter = router({
       counterpartyAddress: z.string().optional(),
       note: z.string().max(500).optional(),
       biometricToken: z.string().optional(), // Required for high-value transactions
+      idempotencyKey: z.string().uuid().optional(), // Prevents duplicate sends on retry
     }))
     .mutation(async ({ ctx, input }) => {
       const db = await getDb();
@@ -261,23 +323,17 @@ export const walletRouter = router({
           }
         }
       }
-      // Check balance
-      const [bal] = await db
-        .select()
-        .from(walletBalances)
-        .where(and(eq(walletBalances.userId, String(ctx.user.id)), eq(walletBalances.currency, input.currency)));
-      if (!bal || parseFloat(bal.balance as unknown as string) < input.amount) {
-        throw new TRPCError({ code: "BAD_REQUEST", message: "Insufficient balance" });
+      // Idempotency check: if a key is provided, check for duplicate
+      if (input.idempotencyKey) {
+        const existingTxId = await checkIdempotencyKey(db, input.idempotencyKey);
+        if (existingTxId) {
+          return { success: true, txId: existingTxId, fee: input.amount * 0.001, duplicate: true };
+        }
       }
       const fee = input.amount * 0.001; // 0.1% fee
       const total = input.amount + fee;
-      // Deduct balance
-      await db.update(walletBalances)
-        .set({
-          balance: String(parseFloat(bal.balance as unknown as string) - total),
-          updatedAt: epochSec(),
-        })
-        .where(eq(walletBalances.id, bal.id));
+      // Atomic balance deduction — prevents double-spend under concurrency
+      const { id: balId, newBalance } = await atomicDebit(db, String(ctx.user.id), input.currency, total);
       // Create transaction record
       const txId = crypto.randomUUID();
       await db.insert(walletTransactions).values({
@@ -291,12 +347,13 @@ export const walletRouter = router({
         counterparty: input.counterparty,
         counterpartyAddress: input.counterpartyAddress,
         note: input.note,
+        reference: input.idempotencyKey ?? null,
         txHash: `0x${crypto.randomUUID().replace(/-/g, "")}`,
         completedAt: epochSec(),
         createdAt: epochSec(),
       });
       onTransactionCreated({ transaction_id: txId, user_id: ctx.user.id, amount: input.amount, currency: input.currency, payment_method: "wallet", status: "completed" });
-      onWalletEvent({ wallet_id: bal.id, user_id: ctx.user.id, event_type: "send", amount: input.amount, currency: input.currency });
+      onWalletEvent({ wallet_id: balId, user_id: ctx.user.id, event_type: "send", amount: input.amount, currency: input.currency });
       await createAuditLog({
         actorId: ctx.user.id,
         actorName: ctx.user.name || String(ctx.user.id),
@@ -306,7 +363,6 @@ export const walletRouter = router({
         after: { currency: input.currency, amount: input.amount, counterparty: input.counterparty },
       });
       // Check balance alerts after send
-      const newBalance = parseFloat(bal.balance as unknown as string) - total;
       const alerts = await db.select().from(walletBalanceAlerts)
         .where(and(eq(walletBalanceAlerts.userId, String(ctx.user.id)), eq(walletBalanceAlerts.currency, input.currency), eq(walletBalanceAlerts.isActive, true)));
       for (const alert of alerts) {
@@ -405,22 +461,10 @@ export const walletRouter = router({
         }
         _highValueTokens.delete(input.biometricToken);
       }
-      // Check sender balance
-      const [bal] = await db.select().from(walletBalances)
-        .where(and(eq(walletBalances.userId, String(ctx.user.id)), eq(walletBalances.currency, input.fromCurrency)));
-      const currentBal = parseFloat((bal?.balance as unknown as string) ?? "0");
+      // Atomic balance deduction — prevents double-spend under concurrency
       const fee = input.amount * 0.001;
       const totalDeduct = input.amount + fee;
-      if (!bal || currentBal < totalDeduct) {
-        throw new TRPCError({
-          code: "BAD_REQUEST",
-          message: `Insufficient ${input.fromCurrency} balance. Need ${totalDeduct.toFixed(4)}, have ${currentBal.toFixed(4)}.`,
-        });
-      }
-      // Deduct from sender
-      await db.update(walletBalances)
-        .set({ balance: String(currentBal - totalDeduct), updatedAt: epochSec() })
-        .where(eq(walletBalances.id, bal.id));
+      const { id: balId, newBalance } = await atomicDebit(db, String(ctx.user.id), input.fromCurrency, totalDeduct);
       // Record the outbound transaction
       const txId = crypto.randomUUID();
       await db.insert(walletTransactions).values({
@@ -450,7 +494,6 @@ export const walletRouter = router({
         after: { fromCurrency: input.fromCurrency, toCurrency: input.toCurrency, amount: input.amount, convertedAmount, effectiveRate, counterparty: input.counterparty },
       });
       // Check balance alerts after deduction
-      const newBalance = currentBal - totalDeduct;
       const balAlerts = await db.select().from(walletBalanceAlerts)
         .where(and(eq(walletBalanceAlerts.userId, String(ctx.user.id)), eq(walletBalanceAlerts.currency, input.fromCurrency), eq(walletBalanceAlerts.isActive, true)));
       for (const alert of balAlerts) {
@@ -544,6 +587,7 @@ export const walletRouter = router({
       fromCurrency: z.enum(WALLET_CURRENCIES),
       toCurrency: z.enum(WALLET_CURRENCIES),
       amount: z.number().positive(),
+      idempotencyKey: z.string().uuid().optional(),
     }))
     .mutation(async ({ ctx, input }) => {
       const db = await getDb();
@@ -551,44 +595,21 @@ export const walletRouter = router({
       if (input.fromCurrency === input.toCurrency) {
         throw new TRPCError({ code: "BAD_REQUEST", message: "Cannot swap same currency" });
       }
-      // Check balance
-      const [fromBal] = await db
-        .select()
-        .from(walletBalances)
-        .where(and(eq(walletBalances.userId, String(ctx.user.id)), eq(walletBalances.currency, input.fromCurrency)));
-      if (!fromBal || parseFloat(fromBal.balance as unknown as string) < input.amount) {
-        throw new TRPCError({ code: "BAD_REQUEST", message: "Insufficient balance" });
+      // Idempotency check
+      if (input.idempotencyKey) {
+        const existingTxId = await checkIdempotencyKey(db, input.idempotencyKey);
+        if (existingTxId) {
+          return { success: true, txId: existingTxId, toAmount: 0, rate: 1, fee: 0, duplicate: true };
+        }
       }
       // Simulate exchange rate (1:1 for demo)
       const rate = 1.0;
       const toAmount = input.amount * rate;
       const fee = input.amount * 0.002; // 0.2% swap fee
-      // Deduct from
-      await db.update(walletBalances)
-        .set({ balance: String(parseFloat(fromBal.balance as unknown as string) - input.amount - fee), updatedAt: epochSec() })
-        .where(eq(walletBalances.id, fromBal.id));
-      // Credit to
-      let [toBal] = await db
-        .select()
-        .from(walletBalances)
-        .where(and(eq(walletBalances.userId, String(ctx.user.id)), eq(walletBalances.currency, input.toCurrency)));
-      if (!toBal) {
-        await db.insert(walletBalances).values({
-          id: crypto.randomUUID(),
-          userId: String(ctx.user.id),
-          currency: input.toCurrency,
-          balance: String(toAmount),
-          lockedBalance: "0",
-          walletAddress: `tp_${input.toCurrency.toLowerCase().replace("-", "_")}_${String(ctx.user.id).slice(0, 8)}`,
-          network: CURRENCY_NETWORKS[input.toCurrency],
-          createdAt: epochSec(),
-          updatedAt: epochSec(),
-        });
-      } else {
-        await db.update(walletBalances)
-          .set({ balance: String(parseFloat(toBal.balance as unknown as string) + toAmount), updatedAt: epochSec() })
-          .where(eq(walletBalances.id, toBal.id));
-      }
+      // Atomic debit from source — prevents double-spend
+      await atomicDebit(db, String(ctx.user.id), input.fromCurrency, input.amount + fee);
+      // Atomic credit to target
+      await atomicCredit(db, String(ctx.user.id), input.toCurrency, toAmount);
       const txId = crypto.randomUUID();
       await db.insert(walletTransactions).values({
         id: txId,
@@ -600,6 +621,7 @@ export const walletRouter = router({
         amount: String(input.amount),
         toAmount: String(toAmount),
         fee: String(fee),
+        reference: input.idempotencyKey ?? null,
         completedAt: epochSec(),
         createdAt: epochSec(),
       });
@@ -1552,47 +1574,24 @@ export const walletRouter = router({
       const toUsd = APPROX_USD_RATES[input.toCurrency] ?? 1;
       const rate = parseFloat((fromUsd / toUsd).toFixed(8));
       const toAmount = parseFloat((input.fromAmount * rate).toFixed(8));
-      // Check source balance
-      const [srcRow] = await db
-        .select({ balance: walletBalances.balance })
-        .from(walletBalances)
-        .where(and(eq(walletBalances.userId, userId), eq(walletBalances.currency, input.fromCurrency)))
-        .limit(1);
-      const srcBalance = parseFloat(String(srcRow?.balance ?? "0"));
-      if (srcBalance < input.fromAmount) {
-        throw new TRPCError({ code: "BAD_REQUEST", message: `Insufficient ${input.fromCurrency} balance. Available: ${srcBalance}` });
-      }
-      const now = Date.now();
-      const txRef = `CONV-${now}`;
-      // Deduct from source
-      await db
-        .insert(walletBalances)
-        .values({ userId, currency: input.fromCurrency, balance: String(-input.fromAmount), updatedAt: now })
-        .onConflictDoUpdate({
-          target: [walletBalances.userId, walletBalances.currency],
-          set: { balance: sql`${walletBalances.balance} - ${input.fromAmount}`, updatedAt: now },
-        });
-      // Credit target
-      await db
-        .insert(walletBalances)
-        .values({ userId, currency: input.toCurrency, balance: String(toAmount), updatedAt: now })
-        .onConflictDoUpdate({
-          target: [walletBalances.userId, walletBalances.currency],
-          set: { balance: sql`${walletBalances.balance} + ${toAmount}`, updatedAt: now },
-        });
+      const txRef = `CONV-${Date.now()}`;
+      // Atomic debit from source — prevents double-spend
+      await atomicDebit(db, userId, input.fromCurrency, input.fromAmount);
+      // Atomic credit to target
+      await atomicCredit(db, userId, input.toCurrency, toAmount);
       // Record debit transaction
       await db.insert(walletTransactions).values({
         userId,
         fromCurrency: input.fromCurrency,
         toCurrency: input.toCurrency,
-        amount: String(-input.fromAmount),
+        amount: String(input.fromAmount),
         toAmount: String(toAmount),
         type: "swap",
         status: "completed",
         note: `Converted ${input.fromAmount} ${input.fromCurrency} to ${toAmount} ${input.toCurrency} @ ${rate}`,
         reference: txRef,
-        completedAt: Math.floor(now / 1000),
-        createdAt: Math.floor(now / 1000),
+        completedAt: epochSec(),
+        createdAt: epochSec(),
       });
       // Audit log
       await createAuditLog({

@@ -2,10 +2,11 @@
  * Sustainability / Carbon Offsets router
  */
 import { z } from "zod";
+import { TRPCError } from "@trpc/server";
 import { router, protectedProcedure } from "../_core/trpc";
 import { getDb } from "../db";
-import { carbonOffsets } from "../../drizzle/schema";
-import { eq, desc, sum } from "drizzle-orm";
+import { carbonOffsets, walletBalances } from "../../drizzle/schema";
+import { eq, and, desc, sum, sql } from "drizzle-orm";
 
 // Carbon offset projects catalogue (static reference data)
 export const OFFSET_PROJECTS = [
@@ -33,7 +34,7 @@ export const sustainabilityRouter = router({
       .orderBy(desc(carbonOffsets.createdAt));
   }),
 
-  // Purchase a carbon offset
+  // Purchase a carbon offset — deducts from USDC wallet balance
   purchaseOffset: protectedProcedure
     .input(
       z.object({
@@ -44,10 +45,26 @@ export const sustainabilityRouter = router({
     )
     .mutation(async ({ ctx, input }) => {
       const db = await getDb();
-      if (!db) throw new Error("Database unavailable");
+      if (!db) throw new TRPCError({ code: "INTERNAL_SERVER_ERROR", message: "Database unavailable" });
       const project = OFFSET_PROJECTS.find((p) => p.id === input.projectId);
-      if (!project) throw new Error("Project not found");
-      const costUsd = (input.amountTons * project.pricePerTon).toFixed(2);
+      if (!project) throw new TRPCError({ code: "NOT_FOUND", message: "Offset project not found" });
+      const costUsd = parseFloat((input.amountTons * project.pricePerTon).toFixed(2));
+      // Atomic wallet deduction from USDC balance
+      const result = await db.execute(
+        sql`UPDATE wallet_balances
+            SET balance = (CAST(balance AS DECIMAL(30,8)) - ${costUsd})::TEXT,
+                updated_at = ${Math.floor(Date.now() / 1000)}
+            WHERE user_id = ${String(ctx.user.id)}
+              AND currency = 'USDC'
+              AND CAST(balance AS DECIMAL(30,8)) >= ${costUsd}
+            RETURNING id, balance`
+      );
+      if (!(result as any[])[0]) {
+        throw new TRPCError({
+          code: "BAD_REQUEST",
+          message: `Insufficient USDC balance. Need $${costUsd.toFixed(2)} to purchase ${input.amountTons} tons of carbon offsets.`,
+        });
+      }
       const [row] = await db
         .insert(carbonOffsets)
         .values({
@@ -55,7 +72,7 @@ export const sustainabilityRouter = router({
           amount: String(input.amountTons),
           projectName: project.name,
           projectCountry: project.country,
-          costUsd,
+          costUsd: costUsd.toFixed(2),
           vintageYear: input.vintageYear ?? new Date().getFullYear(),
         })
         .returning();

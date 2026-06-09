@@ -1,5 +1,6 @@
 import { z } from "zod";
-import { router, protectedProcedure } from "../_core/trpc";
+import { TRPCError } from "@trpc/server";
+import { router, protectedProcedure, adminProcedure } from "../_core/trpc";
 import {
   createFraudAlert,
   getFraudAlerts,
@@ -34,8 +35,8 @@ export const fraudRouter = router({
       return getFraudAlerts({ since, limit: 50 });
     }),
 
-  // Create a fraud alert (called by GNN engine webhook)
-  create: protectedProcedure
+  // Create a fraud alert (admin only — called by GNN engine webhook or SOC team)
+  create: adminProcedure
     .input(
       z.object({
         transactionId: z.string().optional(),
@@ -57,19 +58,19 @@ export const fraudRouter = router({
       });
     }),
 
-  // Resolve a fraud alert
-  resolve: protectedProcedure
+  // Resolve a fraud alert (admin only)
+  resolve: adminProcedure
     .input(z.object({ id: z.number() }))
     .mutation(async ({ input, ctx }) => {
       return resolveFraudAlert(input.id, ctx.user.id);
     }),
 
-  // Mark as false positive
-  markFalsePositive: protectedProcedure
+  // Mark as false positive (admin only)
+  markFalsePositive: adminProcedure
     .input(z.object({ id: z.number() }))
     .mutation(async ({ input, ctx }) => {
       const db = await import("../db").then((m) => m.getDb());
-      if (!db) throw new Error("Database not available");
+      if (!db) throw new TRPCError({ code: "INTERNAL_SERVER_ERROR", message: "Database not available" });
       const { fraudAlerts } = await import("../../drizzle/schema");
       const { eq } = await import("drizzle-orm");
       return db

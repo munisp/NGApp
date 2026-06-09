@@ -3,6 +3,7 @@
  * Handles QR code generation by restaurants and payment by tourists.
  */
 import { z } from "zod";
+import { TRPCError } from "@trpc/server";
 import { protectedProcedure, router } from "../_core/trpc";
 import { getDb } from "../db";
 import { createUserNotification } from "../db";
@@ -15,7 +16,7 @@ import {
   walletBalances,
   staffInvites,
 } from "../../drizzle/schema";
-import { eq, and, gt, desc } from "drizzle-orm";
+import { eq, and, gt, desc, sql } from "drizzle-orm";
 import { users } from "../../drizzle/schema";
 import crypto from "crypto";
 
@@ -36,7 +37,7 @@ export const qrPaymentRouter = router({
     )
     .mutation(async ({ input, ctx }) => {
       const db = await getDb();
-      if (!db) throw new Error("Database unavailable");
+      if (!db) throw new TRPCError({ code: "INTERNAL_SERVER_ERROR", message: "Database unavailable" });
 
       const [est] = await db
         .select()
@@ -44,9 +45,9 @@ export const qrPaymentRouter = router({
         .where(eq(establishments.id, input.establishmentId))
         .limit(1);
 
-      if (!est) throw new Error("Establishment not found");
+      if (!est) throw new TRPCError({ code: "NOT_FOUND", message: "Establishment not found" });
       if (est.ownerId !== ctx.user.id && ctx.user.role !== "admin") {
-        throw new Error("Not authorized for this establishment");
+        throw new TRPCError({ code: "FORBIDDEN", message: "Not authorized for this establishment" });
       }
 
       const token = generateToken();
@@ -78,7 +79,7 @@ export const qrPaymentRouter = router({
     .input(z.object({ token: z.string() }))
     .query(async ({ input }) => {
       const db = await getDb();
-      if (!db) throw new Error("Database unavailable");
+      if (!db) throw new TRPCError({ code: "INTERNAL_SERVER_ERROR", message: "Database unavailable" });
 
       const [row] = await db
         .select({
@@ -99,7 +100,7 @@ export const qrPaymentRouter = router({
         .where(eq(qrPaymentTokens.token, input.token))
         .limit(1);
 
-      if (!row) throw new Error("QR token not found");
+      if (!row) throw new TRPCError({ code: "NOT_FOUND", message: "QR token not found" });
 
       // Auto-expire
       if (row.expiresAt < new Date() && row.status === "pending") {
@@ -130,7 +131,7 @@ export const qrPaymentRouter = router({
     )
     .mutation(async ({ input, ctx }) => {
       const db = await getDb();
-      if (!db) throw new Error("Database unavailable");
+      if (!db) throw new TRPCError({ code: "INTERNAL_SERVER_ERROR", message: "Database unavailable" });
 
       const [qr] = await db
         .select()
@@ -144,7 +145,7 @@ export const qrPaymentRouter = router({
         )
         .limit(1);
 
-      if (!qr) throw new Error("QR token is invalid, expired, or already used");
+      if (!qr) throw new TRPCError({ code: "BAD_REQUEST", message: "QR token is invalid, expired, or already used" });
 
       // ── Staff permission check ──────────────────────────────────────────────
       // Allow: (1) the establishment owner, (2) accepted staff of the establishment,
@@ -180,7 +181,7 @@ export const qrPaymentRouter = router({
             .limit(1);
 
           if (ownedEst) {
-            throw new Error("You are not authorised to process payments for this establishment. Only the owner or accepted staff members may do so.");
+            throw new TRPCError({ code: "FORBIDDEN", message: "You are not authorised to process payments for this establishment. Only the owner or accepted staff members may do so." });
           }
         }
       }
@@ -198,20 +199,23 @@ export const qrPaymentRouter = router({
         )
         .limit(1);
 
-      if (!walletBal) throw new Error("No wallet balance found for this currency");
+      if (!walletBal) throw new TRPCError({ code: "BAD_REQUEST", message: "No wallet balance found for this currency" });
 
       const amount = parseFloat(input.amountUsd);
-      const balance = parseFloat(walletBal.balance?.toString() ?? "0");
 
-      if (balance < amount) {
-        throw new Error("Insufficient wallet balance");
+      // Atomic balance deduction — prevents double-spend under concurrency
+      const debitResult = await db.execute(
+        sql`UPDATE wallet_balances
+            SET balance = (CAST(balance AS DECIMAL(30,8)) - ${amount})::TEXT,
+                updated_at = ${Math.floor(Date.now() / 1000)}
+            WHERE user_id = ${String(ctx.user.id)}
+              AND currency = ${input.currency}
+              AND CAST(balance AS DECIMAL(30,8)) >= ${amount}
+            RETURNING id, balance`
+      );
+      if (!(debitResult as any[])[0]) {
+        throw new TRPCError({ code: "BAD_REQUEST", message: "Insufficient wallet balance" });
       }
-
-      // Deduct from wallet
-      await db
-        .update(walletBalances)
-        .set({ balance: (balance - amount).toFixed(6) })
-        .where(eq(walletBalances.id, walletBal.id));
 
       // Record wallet transaction
       const txRef = `QR-${qr.id}-${Date.now()}`;
@@ -373,9 +377,9 @@ export const qrPaymentRouter = router({
         .where(eq(establishments.id, input.establishmentId))
         .limit(1);
 
-      if (!est) throw new Error("Establishment not found");
+      if (!est) throw new TRPCError({ code: "NOT_FOUND", message: "Establishment not found" });
       if (est.ownerId !== ctx.user.id && ctx.user.role !== "admin") {
-        throw new Error("Not authorized");
+        throw new TRPCError({ code: "FORBIDDEN", message: "Not authorized" });
       }
 
       return db
@@ -391,14 +395,14 @@ export const qrPaymentRouter = router({
     .input(z.object({ token: z.string().min(1) }))
     .query(async ({ input }) => {
       const db = await getDb();
-      if (!db) throw new Error("Database unavailable");
+      if (!db) throw new TRPCError({ code: "INTERNAL_SERVER_ERROR", message: "Database unavailable" });
       const [payment] = await db
         .select()
         .from(qrPaymentTokens)
         .where(eq(qrPaymentTokens.token, input.token))
         .limit(1);
-      if (!payment) throw new Error("Receipt not found");
-      if (payment.status !== "paid") throw new Error("Payment not completed");
+      if (!payment) throw new TRPCError({ code: "NOT_FOUND", message: "Receipt not found" });
+      if (payment.status !== "paid") throw new TRPCError({ code: "BAD_REQUEST", message: "Payment not completed" });
       const [est] = await db
         .select({ id: establishments.id, name: establishments.name, type: establishments.type, city: establishments.city, country: establishments.country, contactEmail: establishments.contactEmail })
         .from(establishments)
@@ -433,7 +437,7 @@ export const qrPaymentRouter = router({
     .input(z.object({ token: z.string() }))
     .query(async ({ input }) => {
       const db = await getDb();
-      if (!db) throw new Error('Database unavailable');
+      if (!db) throw new TRPCError({ code: "INTERNAL_SERVER_ERROR", message: "Database unavailable" });
       const [row] = await db
         .select({
           id: qrPaymentTokens.id,
@@ -451,7 +455,7 @@ export const qrPaymentRouter = router({
         .innerJoin(establishments, eq(establishments.id, qrPaymentTokens.establishmentId))
         .where(eq(qrPaymentTokens.token, input.token))
         .limit(1);
-      if (!row) throw new Error('QR token not found');
+      if (!row) throw new TRPCError({ code: "NOT_FOUND", message: "QR token not found" });
       if (row.expiresAt < new Date() && row.status === 'pending') {
         await db.update(qrPaymentTokens).set({ status: 'expired' }).where(eq(qrPaymentTokens.id, row.id));
         return { ...row, status: 'expired' };
@@ -467,13 +471,13 @@ export const qrPaymentRouter = router({
     }))
     .mutation(async ({ input, ctx }) => {
       const db = await getDb();
-      if (!db) throw new Error('Database unavailable');
+      if (!db) throw new TRPCError({ code: "INTERNAL_SERVER_ERROR", message: "Database unavailable" });
       const [qr] = await db
         .select()
         .from(qrPaymentTokens)
         .where(and(eq(qrPaymentTokens.token, input.token), eq(qrPaymentTokens.status, 'pending'), gt(qrPaymentTokens.expiresAt, new Date())))
         .limit(1);
-      if (!qr) throw new Error('QR token is invalid, expired, or already used');
+      if (!qr) throw new TRPCError({ code: "BAD_REQUEST", message: "QR token is invalid, expired, or already used" });
       await db.update(qrPaymentTokens)
         .set({ status: 'paid', paidByUserId: ctx.user.id, paidAt: new Date(), amountUsd: input.amountUsd })
         .where(eq(qrPaymentTokens.id, qr.id));

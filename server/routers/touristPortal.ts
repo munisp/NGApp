@@ -264,24 +264,23 @@ export const touristPortalRouter = router({
               message: "This service is not available on the selected date.",
             });
           }
-          const total = avail.totalSlots ?? 0;
-          const booked = avail.bookedSlots ?? 0;
-          if (total > 0 && booked >= total) {
+          // Atomic slot deduction — prevents overbooking under concurrency
+          // Only increments bookedSlots if bookedSlots < totalSlots
+          const result = await db.execute(
+            sql`UPDATE service_availability
+                SET booked_slots = booked_slots + 1, updated_at = NOW()
+                WHERE product_id = ${input.productId}
+                  AND date = ${bookingDateStr}
+                  AND is_blocked = false
+                  AND (total_slots = 0 OR booked_slots < total_slots)
+                RETURNING id`
+          );
+          if (!(result as any[])[0]) {
             throw new TRPCError({
               code: "BAD_REQUEST",
               message: "No slots available on the selected date. Please choose another date.",
             });
           }
-          // Deduct slot atomically
-          await db
-            .update(serviceAvailability)
-            .set({ bookedSlots: booked + 1, updatedAt: new Date() })
-            .where(
-              and(
-                eq(serviceAvailability.productId, input.productId),
-                eq(serviceAvailability.date, bookingDateStr)
-              )
-            );
         }
       }
 
@@ -1474,15 +1473,15 @@ Current date: ${new Date().toLocaleDateString("en-US", { weekday: "long", year: 
     }))
     .mutation(async ({ ctx, input }) => {
       const db = await getDb();
-      if (!db) throw new Error("Database unavailable");
+      if (!db) throw new TRPCError({ code: "INTERNAL_SERVER_ERROR", message: "Database unavailable" });
 
       const [booking] = await db
         .select({ id: touristBookings.id, userId: touristBookings.userId })
         .from(touristBookings)
         .where(eq(touristBookings.id, input.bookingId))
         .limit(1);
-      if (!booking) throw new Error("Booking not found");
-      if (booking.userId !== ctx.user.id) throw new Error("Forbidden");
+      if (!booking) throw new TRPCError({ code: "NOT_FOUND", message: "Booking not found" });
+      if (booking.userId !== ctx.user.id) throw new TRPCError({ code: "FORBIDDEN", message: "Forbidden" });
 
        await db
         .update(touristBookings)

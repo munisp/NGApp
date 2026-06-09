@@ -103,7 +103,7 @@ export const embeddedFinanceRouter = router({
       return { id: row.id, status: row.status, amount: Number(row.amount), currency: row.currency };
     }),
 
-  // Apply for a loan
+  // Apply for a loan (max 3 active loans per user)
   applyForLoan: protectedProcedure
     .input(z.object({
       amount: z.number().positive(),
@@ -115,6 +115,19 @@ export const embeddedFinanceRouter = router({
     .mutation(async ({ ctx, input }) => {
       const db = await getDb();
       if (!db) throw new TRPCError({ code: "INTERNAL_SERVER_ERROR", message: "Database unavailable" });
+      // Max active loans check — prevents over-leveraging
+      const MAX_ACTIVE_LOANS = 3;
+      const activeLoans = await db.execute(
+        sql`SELECT COUNT(*) as cnt FROM finance_requests
+            WHERE user_id = ${ctx.user.id} AND type = 'loan' AND status IN ('under_review', 'approved', 'disbursed')`
+      );
+      const activeLoanCount = Number((activeLoans as any[])[0]?.cnt ?? 0);
+      if (activeLoanCount >= MAX_ACTIVE_LOANS) {
+        throw new TRPCError({
+          code: "FORBIDDEN",
+          message: `Maximum ${MAX_ACTIVE_LOANS} active loans allowed. You currently have ${activeLoanCount} active loan(s). Please repay or close an existing loan before applying for a new one.`,
+        });
+      }
       const interestRate = 0.12; // 12% annual
       const monthlyRate = interestRate / 12;
       const monthlyPayment = (input.amount * monthlyRate * Math.pow(1 + monthlyRate, input.termMonths)) /
