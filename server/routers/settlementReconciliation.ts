@@ -10,7 +10,7 @@ import { getDb, writeAuditLog } from "../db";
 import {
   settlementReconciliation,
   merchantSettlements,
-  transactions,
+  transactions, gl_journal_entries,
   agents,
 } from "../../drizzle/schema";
 import { eq, desc, and, count, gte, lte, sql } from "drizzle-orm";
@@ -229,6 +229,21 @@ export const settlementReconciliationRouter = router({
               })
               .where(eq(settlementReconciliation.id, existing.id))
               .returning();
+
+        // Double-entry GL journal entry
+        await db.insert(gl_journal_entries).values({
+          entryNumber: `JE-${Date.now()}`,
+          description: `settlementReconciliation transaction`,
+          debitAccountId: 2001,
+          creditAccountId: 1001,
+          amount: Math.round(
+            (typeof input === "object" && "amount" in input
+              ? Number((input as any).amount)
+              : 0) * 100,
+          ),
+          currency: "NGN",
+          status: "posted",
+        });
           } else {
             [record] = await db
               .insert(settlementReconciliation)
@@ -240,7 +255,7 @@ export const settlementReconciliationRouter = router({
                 discrepancy: String(discrepancy),
                 status,
               })
-              .returning();
+          .returning();
           }
           results.push(record);
         }
