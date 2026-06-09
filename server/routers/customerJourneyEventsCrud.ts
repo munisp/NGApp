@@ -1,7 +1,7 @@
 // Sprint 87: Event sequencing, funnel analysis, attribution
 import { z } from "zod";
 import { protectedProcedure, router } from "../_core/trpc";
-import { getDb } from "../db";
+import { getDb, writeAuditLog } from "../db";
 import { customerJourneySteps } from "../../drizzle/schema";
 import { eq, desc, and, count, sql, gte, lte } from "drizzle-orm";
 import { TRPCError } from "@trpc/server";
@@ -300,22 +300,11 @@ export const customer_journey_eventsRouter = router({
       })
     )
     .mutation(async ({ input, ctx }) => {
-      const _fees = calculateFee(
-        typeof input === "object" && "amount" in input
-          ? Number((input as Record<string, unknown>).amount)
-          : 0,
-        "transfer"
-      );
-      const _commission = calculateCommission(_fees.fee, "transfer");
-      const _tax = calculateTax(_fees.fee, "vat");
-      auditFinancialAction(
-        "UPDATE",
-        "customerJourneyEventsCrud",
-        "mutation",
-        "Executed customerJourneyEventsCrud mutation"
-      );
-
-      try {
+      const txAmount = typeof input === "object" && "amount" in input ? Number((input as Record<string, unknown>).amount) : 0;
+      const fees = calculateFee(txAmount, "transfer");
+      const commission = calculateCommission(fees.fee, "transfer");
+      const tax = calculateTax(fees.fee, "vat");
+try {
         const db = (await getDb())!;
         const [row] = await db
           .insert(customerJourneySteps)
@@ -349,6 +338,7 @@ export const customer_journey_eventsRouter = router({
               (s: Record<string, unknown>) => s.stage === JOURNEY_STAGES[i - 1]
             )?.count || 0
           : stageCount;
+
       return {
         stage,
         count: stageCount,

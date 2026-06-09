@@ -5,7 +5,7 @@
  */
 import { z } from "zod";
 import { protectedProcedure, router } from "../_core/trpc";
-import { getDb } from "../db";
+import { getDb, writeAuditLog } from "../db";
 import { mqttBridgeConfig } from "../../drizzle/schema";
 import { eq, and, gte, lte, desc, sql, count } from "drizzle-orm";
 import { ENV } from "../_core/env";
@@ -271,22 +271,11 @@ export const mqttBridgeRouter = router({
       })
     )
     .mutation(async ({ input, ctx }) => {
-      const _fees = calculateFee(
-        typeof input === "object" && "amount" in input
-          ? Number((input as Record<string, unknown>).amount)
-          : 0,
-        "transfer"
-      );
-      const _commission = calculateCommission(_fees.fee, "transfer");
-      const _tax = calculateTax(_fees.fee, "vat");
-      auditFinancialAction(
-        "UPDATE",
-        "mqttBridge",
-        "mutation",
-        "Executed mqttBridge mutation"
-      );
-
-      try {
+      const txAmount = typeof input === "object" && "amount" in input ? Number((input as Record<string, unknown>).amount) : 0;
+      const fees = calculateFee(txAmount, "transfer");
+      const commission = calculateCommission(fees.fee, "transfer");
+      const tax = calculateTax(fees.fee, "vat");
+try {
         const db = (await getDb())!;
         if (!db) throw new Error("DB unavailable");
         const existing = await db
@@ -382,6 +371,7 @@ export const mqttBridgeRouter = router({
               .where(eq(mqttBridgeConfig.id, existing[0].id));
           }
         }
+
 
         return {
           success: true,

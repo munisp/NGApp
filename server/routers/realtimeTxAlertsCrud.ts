@@ -1,7 +1,7 @@
 // Sprint 87: Velocity rules, pattern matching, auto-block triggers
 import { z } from "zod";
 import { protectedProcedure, router } from "../_core/trpc";
-import { getDb } from "../db";
+import { getDb, writeAuditLog } from "../db";
 import { realtime_tx_alerts } from "../../drizzle/schema";
 import { eq, desc, and, count, sql, gte, lte } from "drizzle-orm";
 import { TRPCError } from "@trpc/server";
@@ -295,28 +295,35 @@ export const realtime_tx_alertsRouter = router({
       })
     )
     .mutation(async ({ input, ctx }) => {
-      const _fees = calculateFee(
-        typeof input === "object" && "amount" in input
-          ? Number((input as Record<string, unknown>).amount)
-          : 0,
-        "transfer"
-      );
-      const _commission = calculateCommission(_fees.fee, "transfer");
-      const _tax = calculateTax(_fees.fee, "vat");
-      auditFinancialAction(
-        "UPDATE",
-        "realtimeTxAlertsCrud",
-        "mutation",
-        "Executed realtimeTxAlertsCrud mutation"
-      );
-
-      try {
+      const txAmount = typeof input === "object" && "amount" in input ? Number((input as Record<string, unknown>).amount) : 0;
+      const fees = calculateFee(txAmount, "transfer");
+      const commission = calculateCommission(fees.fee, "transfer");
+      const tax = calculateTax(fees.fee, "vat");
+try {
         const db = (await getDb())!;
         const triggers: string[] = [];
         const hour = new Date().getHours();
         if (input.amount > 5000000) triggers.push("large_amount");
         if (hour >= 23 || hour < 5) triggers.push("unusual_hours");
         if (triggers.length === 0)
+          await writeAuditLog({
+
+            agentId: typeof ctx === "object" && ctx !== null && "user" in ctx ? (ctx as any).user?.id ?? 0 : 0,
+
+            agentCode: typeof ctx === "object" && ctx !== null && "user" in ctx ? (ctx as any).user?.agentCode ?? "system" : "system",
+
+            action: "MUTATION",
+
+            resource: "realtimeTxAlertsCrud",
+
+            resourceId: typeof input === "object" && input !== null && "id" in input ? String((input as any).id) : "new",
+
+            status: "success",
+
+            metadata: { input: typeof input === "object" ? input : {} },
+
+          });
+
           return {
             agentId: input.agentId,
             riskLevel: "low",

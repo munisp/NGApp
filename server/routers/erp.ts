@@ -12,7 +12,7 @@
 import { z } from "zod";
 import { protectedProcedure, router } from "../_core/trpc.js";
 import { TRPCError } from "@trpc/server";
-import { getDb } from "../db.js";
+import { getDb, writeAuditLog } from "../db.js";
 import { erpConfig, erpSyncLog, transactions } from "../../drizzle/schema.js";
 import { eq, desc, and, isNull } from "drizzle-orm";
 import axios from "axios";
@@ -231,22 +231,11 @@ export const erpRouter = router({
   saveConfig: protectedProcedure
     .input(ErpConfigInputSchema)
     .mutation(async ({ ctx, input }) => {
-      const _fees = calculateFee(
-        typeof input === "object" && "amount" in input
-          ? Number((input as Record<string, unknown>).amount)
-          : 0,
-        "transfer"
-      );
-      const _commission = calculateCommission(_fees.fee, "transfer");
-      const _tax = calculateTax(_fees.fee, "vat");
-      auditFinancialAction(
-        "UPDATE",
-        "erp",
-        "mutation",
-        "Executed erp mutation"
-      );
-
-      try {
+      const txAmount = typeof input === "object" && "amount" in input ? Number((input as Record<string, unknown>).amount) : 0;
+      const fees = calculateFee(txAmount, "transfer");
+      const commission = calculateCommission(fees.fee, "transfer");
+      const tax = calculateTax(fees.fee, "vat");
+try {
         requireAdmin(ctx);
         const db = (await getDb())!;
         if (!db)

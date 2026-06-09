@@ -1,7 +1,7 @@
 // Sprint 87: Full domain logic — document verification workflow, expiry tracking, compliance scoring
 import { z } from "zod";
 import { protectedProcedure, router } from "../_core/trpc";
-import { getDb } from "../db";
+import { getDb, writeAuditLog } from "../db";
 import { kycDocuments } from "../../drizzle/schema";
 import { eq, desc, and, sql, count } from "drizzle-orm";
 import { TRPCError } from "@trpc/server";
@@ -208,22 +208,11 @@ export const kycDocumentsRouter = router({
       })
     )
     .mutation(async ({ input, ctx }) => {
-      const _fees = calculateFee(
-        typeof input === "object" && "amount" in input
-          ? Number((input as Record<string, unknown>).amount)
-          : 0,
-        "transfer"
-      );
-      const _commission = calculateCommission(_fees.fee, "transfer");
-      const _tax = calculateTax(_fees.fee, "vat");
-      auditFinancialAction(
-        "UPDATE",
-        "kycDocumentsCrud",
-        "mutation",
-        "Executed kycDocumentsCrud mutation"
-      );
-
-      try {
+      const txAmount = typeof input === "object" && "amount" in input ? Number((input as Record<string, unknown>).amount) : 0;
+      const fees = calculateFee(txAmount, "transfer");
+      const commission = calculateCommission(fees.fee, "transfer");
+      const tax = calculateTax(fees.fee, "vat");
+try {
         const db = (await getDb())!;
         // Check for duplicate submission
         const [existing] = await db
@@ -272,6 +261,24 @@ export const kycDocumentsRouter = router({
             status: "pending",
           })
           .returning();
+        await writeAuditLog({
+
+          agentId: typeof ctx === "object" && ctx !== null && "user" in ctx ? (ctx as any).user?.id ?? 0 : 0,
+
+          agentCode: typeof ctx === "object" && ctx !== null && "user" in ctx ? (ctx as any).user?.agentCode ?? "system" : "system",
+
+          action: "MUTATION",
+
+          resource: "kycDocumentsCrud",
+
+          resourceId: typeof input === "object" && input !== null && "id" in input ? String((input as any).id) : "new",
+
+          status: "success",
+
+          metadata: { input: typeof input === "object" ? input : {} },
+
+        });
+
         return { ...row, message: "Document submitted for verification" };
       } catch (error) {
         if (error instanceof TRPCError) throw error;

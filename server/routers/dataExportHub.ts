@@ -1,6 +1,6 @@
 import { z } from "zod";
 import { router, protectedProcedure } from "../_core/trpc";
-import { getDb } from "../db";
+import { getDb, writeAuditLog } from "../db";
 import { eq, desc, sql, count, and, gte, lte } from "drizzle-orm";
 import { data_export_jobs, auditLog } from "../../drizzle/schema";
 import { TRPCError } from "@trpc/server";
@@ -267,22 +267,11 @@ export const dataExportHubRouter = router({
       })
     )
     .mutation(async ({ input, ctx }) => {
-      const _fees = calculateFee(
-        typeof input === "object" && "amount" in input
-          ? Number((input as Record<string, unknown>).amount)
-          : 0,
-        "transfer"
-      );
-      const _commission = calculateCommission(_fees.fee, "transfer");
-      const _tax = calculateTax(_fees.fee, "vat");
-      auditFinancialAction(
-        "UPDATE",
-        "dataExportHub",
-        "mutation",
-        "Executed dataExportHub mutation"
-      );
-
-      try {
+      const txAmount = typeof input === "object" && "amount" in input ? Number((input as Record<string, unknown>).amount) : 0;
+      const fees = calculateFee(txAmount, "transfer");
+      const commission = calculateCommission(fees.fee, "transfer");
+      const tax = calculateTax(fees.fee, "vat");
+try {
         const db = (await getDb())!;
         const [job] = await db
           .insert(data_export_jobs)
@@ -331,6 +320,7 @@ export const dataExportHubRouter = router({
           status: "success",
           metadata: {},
         });
+
         return { success: true };
       } catch (error) {
         if (error instanceof TRPCError) throw error;

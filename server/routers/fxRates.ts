@@ -1,7 +1,7 @@
 // @ts-nocheck
 import { z } from "zod";
 import { router, protectedProcedure } from "../_core/trpc";
-import { getDb } from "../db";
+import { getDb, writeAuditLog } from "../db";
 import { eq, desc, sql, count, and, gte, lte } from "drizzle-orm";
 import { auditLog, systemConfig } from "../../drizzle/schema";
 import { TRPCError } from "@trpc/server";
@@ -249,22 +249,11 @@ export const fxRatesRouter = router({
   updateRates: protectedProcedure
     .input(z.object({ rates: z.record(z.string(), z.number()) }))
     .mutation(async ({ input, ctx }) => {
-      const _fees = calculateFee(
-        typeof input === "object" && "amount" in input
-          ? Number((input as Record<string, unknown>).amount)
-          : 0,
-        "transfer"
-      );
-      const _commission = calculateCommission(_fees.fee, "transfer");
-      const _tax = calculateTax(_fees.fee, "vat");
-      auditFinancialAction(
-        "UPDATE",
-        "fxRates",
-        "mutation",
-        "Executed fxRates mutation"
-      );
-
-      try {
+      const txAmount = typeof input === "object" && "amount" in input ? Number((input as Record<string, unknown>).amount) : 0;
+      const fees = calculateFee(txAmount, "transfer");
+      const commission = calculateCommission(fees.fee, "transfer");
+      const tax = calculateTax(fees.fee, "vat");
+try {
         const db = (await getDb())!;
         await db
           .insert(systemConfig)
@@ -280,6 +269,24 @@ export const fxRatesRouter = router({
           status: "success",
           metadata: { rates: input.rates },
         });
+        await writeAuditLog({
+
+          agentId: typeof ctx === "object" && ctx !== null && "user" in ctx ? (ctx as any).user?.id ?? 0 : 0,
+
+          agentCode: typeof ctx === "object" && ctx !== null && "user" in ctx ? (ctx as any).user?.agentCode ?? "system" : "system",
+
+          action: "MUTATION",
+
+          resource: "fxRates",
+
+          resourceId: typeof input === "object" && input !== null && "id" in input ? String((input as any).id) : "new",
+
+          status: "success",
+
+          metadata: { input: typeof input === "object" ? input : {} },
+
+        });
+
         return { success: true, updatedAt: new Date().toISOString() };
       } catch (error) {
         if (error instanceof TRPCError) throw error;

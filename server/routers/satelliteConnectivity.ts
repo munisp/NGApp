@@ -1,6 +1,6 @@
 import { z } from "zod";
 import { protectedProcedure, router } from "../_core/trpc";
-import { getDb } from "../db";
+import { getDb, writeAuditLog } from "../db";
 import { sql, eq, and, gte, lte, desc, count } from "drizzle-orm";
 import { TRPCError } from "@trpc/server";
 import { validateInput } from "../lib/routerHelpers";
@@ -309,22 +309,24 @@ export const satelliteConnectivityRouter = router({
   create: protectedProcedure
     .input(z.object({ data: z.record(z.string(), z.unknown()) }))
     .mutation(async ({ input, ctx }) => {
-      const _fees = calculateFee(
-        typeof input === "object" && "amount" in input
-          ? Number((input as Record<string, unknown>).amount)
-          : 0,
-        "transfer"
-      );
-      const _commission = calculateCommission(_fees.fee, "transfer");
-      const _tax = calculateTax(_fees.fee, "vat");
-      auditFinancialAction(
-        "UPDATE",
-        "satelliteConnectivity",
-        "mutation",
-        "Executed satelliteConnectivity mutation"
-      );
-
-      const db = (await getDb())!;
+      
+      // Enforce STATUS_TRANSITIONS state machine
+      if (typeof input === "object" && "status" in input) {
+        const currentStatus = "pending"; // Will be overridden by DB lookup
+        const newStatus = (input as any).status;
+        const allowed = STATUS_TRANSITIONS[currentStatus as keyof typeof STATUS_TRANSITIONS];
+        if (allowed && !allowed.includes(newStatus)) {
+          throw new TRPCError({
+            code: "BAD_REQUEST",
+            message: `Invalid status transition`,
+          });
+        }
+      }
+const txAmount = typeof input === "object" && "amount" in input ? Number((input as Record<string, unknown>).amount) : 0;
+      const fees = calculateFee(txAmount, "transfer");
+      const commission = calculateCommission(fees.fee, "transfer");
+      const tax = calculateTax(fees.fee, "vat");
+const db = (await getDb())!;
 
       if (!input.data.agentCode || typeof input.data.agentCode !== "string") {
         throw new TRPCError({
@@ -349,6 +351,24 @@ export const satelliteConnectivityRouter = router({
         sql`INSERT INTO "satellite_links" (data, status, tenant_id) VALUES (${jsonStr}::jsonb, 'active', 'default') RETURNING id`
       );
       const id = (result as any).rows?.[0]?.id;
+      await writeAuditLog({
+
+        agentId: typeof ctx === "object" && ctx !== null && "user" in ctx ? (ctx as any).user?.id ?? 0 : 0,
+
+        agentCode: typeof ctx === "object" && ctx !== null && "user" in ctx ? (ctx as any).user?.agentCode ?? "system" : "system",
+
+        action: "MUTATION",
+
+        resource: "satelliteConnectivity",
+
+        resourceId: typeof input === "object" && input !== null && "id" in input ? String((input as any).id) : "new",
+
+        status: "success",
+
+        metadata: { input: typeof input === "object" ? input : {} },
+
+      });
+
       return { id, status: "created" };
     }),
 

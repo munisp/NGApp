@@ -86,22 +86,11 @@ const runAssessment = protectedProcedure
     })
   )
   .mutation(async ({ input, ctx }) => {
-    const _fees = calculateFee(
-      typeof input === "object" && "amount" in input
-        ? Number((input as Record<string, unknown>).amount)
-        : 0,
-      "transfer"
-    );
-    const _commission = calculateCommission(_fees.fee, "transfer");
-    const _tax = calculateTax(_fees.fee, "vat");
-    auditFinancialAction(
-      "UPDATE",
-      "complianceAutomation",
-      "mutation",
-      "Executed complianceAutomation mutation"
-    );
-
-    try {
+      const txAmount = typeof input === "object" && "amount" in input ? Number((input as Record<string, unknown>).amount) : 0;
+      const fees = calculateFee(txAmount, "transfer");
+      const commission = calculateCommission(fees.fee, "transfer");
+      const tax = calculateTax(fees.fee, "vat");
+try {
       const db = (await getDb())!;
       if (input.id) {
         const [existing] = await db

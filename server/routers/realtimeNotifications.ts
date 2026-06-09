@@ -1,6 +1,6 @@
 import { z } from "zod";
 import { publicProcedure, router, protectedProcedure } from "../_core/trpc";
-import { getDb } from "../db";
+import { getDb, writeAuditLog } from "../db";
 import { eq, desc, and, sql, count, gte, lte } from "drizzle-orm";
 import { notification_logs, auditLog } from "../../drizzle/schema";
 import { TRPCError } from "@trpc/server";
@@ -246,27 +246,34 @@ export const realtimeNotificationsRouter = router({
   markRead: protectedProcedure
     .input(z.object({ id: z.number() }))
     .mutation(async ({ input, ctx }) => {
-      const _fees = calculateFee(
-        typeof input === "object" && "amount" in input
-          ? Number((input as Record<string, unknown>).amount)
-          : 0,
-        "transfer"
-      );
-      const _commission = calculateCommission(_fees.fee, "transfer");
-      const _tax = calculateTax(_fees.fee, "vat");
-      auditFinancialAction(
-        "UPDATE",
-        "realtimeNotifications",
-        "mutation",
-        "Executed realtimeNotifications mutation"
-      );
-
-      try {
+      const txAmount = typeof input === "object" && "amount" in input ? Number((input as Record<string, unknown>).amount) : 0;
+      const fees = calculateFee(txAmount, "transfer");
+      const commission = calculateCommission(fees.fee, "transfer");
+      const tax = calculateTax(fees.fee, "vat");
+try {
         const db = (await getDb())!;
         await db
           .update(notification_logs)
           .set({ status: "read" })
           .where(eq(notification_logs.id, input.id));
+        await writeAuditLog({
+
+          agentId: typeof ctx === "object" && ctx !== null && "user" in ctx ? (ctx as any).user?.id ?? 0 : 0,
+
+          agentCode: typeof ctx === "object" && ctx !== null && "user" in ctx ? (ctx as any).user?.agentCode ?? "system" : "system",
+
+          action: "MUTATION",
+
+          resource: "realtimeNotifications",
+
+          resourceId: typeof input === "object" && input !== null && "id" in input ? String((input as any).id) : "new",
+
+          status: "success",
+
+          metadata: { input: typeof input === "object" ? input : {} },
+
+        });
+
         return { success: true };
       } catch (error) {
         if (error instanceof TRPCError) throw error;

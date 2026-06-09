@@ -1,6 +1,6 @@
 import { z } from "zod";
 import { protectedProcedure, router } from "../_core/trpc";
-import { getDb } from "../db";
+import { getDb, writeAuditLog } from "../db";
 import { eq, count, avg, desc, sql, and, gte, lte } from "drizzle-orm";
 import { guideFeedback } from "../../drizzle/schema";
 import { TRPCError } from "@trpc/server";
@@ -244,22 +244,11 @@ export const guideFeedbackRouter = router({
         .optional()
     )
     .mutation(async ({ input, ctx }) => {
-      const _fees = calculateFee(
-        typeof input === "object" && "amount" in input
-          ? Number((input as Record<string, unknown>).amount)
-          : 0,
-        "transfer"
-      );
-      const _commission = calculateCommission(_fees.fee, "transfer");
-      const _tax = calculateTax(_fees.fee, "vat");
-      auditFinancialAction(
-        "UPDATE",
-        "guideFeedback",
-        "mutation",
-        "Executed guideFeedback mutation"
-      );
-
-      const db = await getDb();
+      const txAmount = typeof input === "object" && "amount" in input ? Number((input as Record<string, unknown>).amount) : 0;
+      const fees = calculateFee(txAmount, "transfer");
+      const commission = calculateCommission(fees.fee, "transfer");
+      const tax = calculateTax(fees.fee, "vat");
+const db = await getDb();
       if (!db || !input) return { success: true };
       await db.insert(guideFeedback).values({
         guideId: input.guideId ?? "general",

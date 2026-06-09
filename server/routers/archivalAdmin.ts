@@ -1,7 +1,7 @@
 import { z } from "zod";
 import { TRPCError } from "@trpc/server";
 import { protectedProcedure, router } from "../_core/trpc";
-import { getDb } from "../db";
+import { getDb, writeAuditLog } from "../db";
 import { auditLog, backupSnapshots } from "../../drizzle/schema";
 import { desc, eq, sql, and, gte, lte, count } from "drizzle-orm";
 import { notifyOwner } from "../_core/notification";
@@ -387,22 +387,11 @@ export const archivalAdminRouter = router({
       })
     )
     .mutation(async ({ input, ctx }) => {
-      const _fees = calculateFee(
-        typeof input === "object" && "amount" in input
-          ? Number((input as Record<string, unknown>).amount)
-          : 0,
-        "transfer"
-      );
-      const _commission = calculateCommission(_fees.fee, "transfer");
-      const _tax = calculateTax(_fees.fee, "vat");
-      auditFinancialAction(
-        "UPDATE",
-        "archivalAdmin",
-        "mutation",
-        "Executed archivalAdmin mutation"
-      );
-
-      const startTime = Date.now();
+      const txAmount = typeof input === "object" && "amount" in input ? Number((input as Record<string, unknown>).amount) : 0;
+      const fees = calculateFee(txAmount, "transfer");
+      const commission = calculateCommission(fees.fee, "transfer");
+      const tax = calculateTax(fees.fee, "vat");
+const startTime = Date.now();
       const job = { id: `archival_${Date.now()}` };
       try {
         const result = await runArchivalJob({
@@ -414,6 +403,24 @@ export const archivalAdminRouter = router({
           title: `Archival Job ${job.id} Completed`,
           content: `Triggered by: ${input.triggeredBy}\nTotal archived: ${result.totalArchived} records\nDuration: ${duration}ms`,
         });
+        await writeAuditLog({
+
+          agentId: typeof ctx === "object" && ctx !== null && "user" in ctx ? (ctx as any).user?.id ?? 0 : 0,
+
+          agentCode: typeof ctx === "object" && ctx !== null && "user" in ctx ? (ctx as any).user?.agentCode ?? "system" : "system",
+
+          action: "MUTATION",
+
+          resource: "archivalAdmin",
+
+          resourceId: typeof input === "object" && input !== null && "id" in input ? String((input as any).id) : "new",
+
+          status: "success",
+
+          metadata: { input: typeof input === "object" ? input : {} },
+
+        });
+
         return {
           success: true as const,
           jobId: job.id,

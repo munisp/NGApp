@@ -288,6 +288,7 @@ import { platformSlaMonitorRouter } from "./routers/platformSlaMonitor";
 import { bulkDisbursementEngineRouter } from "./routers/bulkDisbursementEngine";
 import { transactionReversalManagerRouter } from "./routers/transactionReversalManager";
 import { agentLoanOriginationRouter } from "./routers/agentLoanOrigination";
+import { agentLoanOrigination2Router } from "./routers/agentLoanOrigination2";
 import { multiChannelNotificationHubRouter } from "./routers/multiChannelNotificationHub";
 import { platformMigrationToolkitRouter } from "./routers/platformMigrationToolkit";
 import { agentPerformanceIncentivesRouter } from "./routers/agentPerformanceIncentives";
@@ -306,7 +307,8 @@ import { txVelocityMonitorRouter } from "./routers/txVelocityMonitor";
 import { customerSurveysRouter } from "./routers/customerSurveys";
 import { agentTerritoryHeatmapRouter } from "./routers/agentTerritoryHeatmap";
 import { gatewayHealthMonitorRouter } from "./routers/gatewayHealthMonitor";
-import { agentLoanOrigination2Router } from "./routers/agentLoanOrigination2";
+import { cashInRouter } from "./routers/cashIn";
+import { cashOutRouter } from "./routers/cashOut";
 import { mfaManagerRouter } from "./routers/mfaManager";
 import { incidentPlaybookRouter } from "./routers/incidentPlaybook";
 import { deviceFleetManagerRouter } from "./routers/deviceFleetManager";
@@ -951,6 +953,7 @@ export const appRouter = router({
   bulkDisbursementEngine: bulkDisbursementEngineRouter,
   transactionReversalManager: transactionReversalManagerRouter,
   agentLoanOrigination: agentLoanOriginationRouter,
+  agentLoanOrigination2: agentLoanOrigination2Router,
   multiChannelNotificationHub: multiChannelNotificationHubRouter,
   platformMigrationToolkit: platformMigrationToolkitRouter,
   agentPerformanceIncentives: agentPerformanceIncentivesRouter,
@@ -965,7 +968,8 @@ export const appRouter = router({
   customerSurveys: customerSurveysRouter,
   agentTerritoryHeatmap: agentTerritoryHeatmapRouter,
   gatewayHealthMonitor: gatewayHealthMonitorRouter,
-  agentLoanOrigination2: agentLoanOrigination2Router,
+  cashIn: cashInRouter,
+  cashOut: cashOutRouter,
   mfaManager: mfaManagerRouter,
   incidentPlaybook: incidentPlaybookRouter,
   deviceFleetManager: deviceFleetManagerRouter,

@@ -1,7 +1,7 @@
 // Sprint 87: GDPR/NDPR compliance, consent expiry, withdrawal workflow
 import { z } from "zod";
 import { protectedProcedure, router } from "../_core/trpc";
-import { getDb } from "../db";
+import { getDb, writeAuditLog } from "../db";
 import { dataConsentRecords } from "../../drizzle/schema";
 import { eq, desc, and, count, lt } from "drizzle-orm";
 import { TRPCError } from "@trpc/server";
@@ -253,22 +253,11 @@ export const dataConsentRecordsRouter = router({
       })
     )
     .mutation(async ({ input, ctx }) => {
-      const _fees = calculateFee(
-        typeof input === "object" && "amount" in input
-          ? Number((input as Record<string, unknown>).amount)
-          : 0,
-        "transfer"
-      );
-      const _commission = calculateCommission(_fees.fee, "transfer");
-      const _tax = calculateTax(_fees.fee, "vat");
-      auditFinancialAction(
-        "UPDATE",
-        "dataConsentRecordsCrud",
-        "mutation",
-        "Executed dataConsentRecordsCrud mutation"
-      );
-
-      try {
+      const txAmount = typeof input === "object" && "amount" in input ? Number((input as Record<string, unknown>).amount) : 0;
+      const fees = calculateFee(txAmount, "transfer");
+      const commission = calculateCommission(fees.fee, "transfer");
+      const tax = calculateTax(fees.fee, "vat");
+try {
         const db = (await getDb())!;
         const expiresAt = new Date(Date.now() + CONSENT_EXPIRY_DAYS * 86400000);
         const [row] = await db
@@ -280,6 +269,24 @@ export const dataConsentRecordsRouter = router({
             expiresAt,
           } as any)
           .returning();
+        await writeAuditLog({
+
+          agentId: typeof ctx === "object" && ctx !== null && "user" in ctx ? (ctx as any).user?.id ?? 0 : 0,
+
+          agentCode: typeof ctx === "object" && ctx !== null && "user" in ctx ? (ctx as any).user?.agentCode ?? "system" : "system",
+
+          action: "MUTATION",
+
+          resource: "dataConsentRecordsCrud",
+
+          resourceId: typeof input === "object" && input !== null && "id" in input ? String((input as any).id) : "new",
+
+          status: "success",
+
+          metadata: { input: typeof input === "object" ? input : {} },
+
+        });
+
         return {
           ...row,
           message: `Consent granted for ${input.consentType}. Expires: ${expiresAt.toISOString()}`,

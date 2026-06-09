@@ -266,22 +266,11 @@ export const deepfaceRouter = router({
       })
     )
     .mutation(async ({ input, ctx }) => {
-      const _fees = calculateFee(
-        typeof input === "object" && "amount" in input
-          ? Number((input as Record<string, unknown>).amount)
-          : 0,
-        "transfer"
-      );
-      const _commission = calculateCommission(_fees.fee, "transfer");
-      const _tax = calculateTax(_fees.fee, "vat");
-      auditFinancialAction(
-        "UPDATE",
-        "deepface",
-        "mutation",
-        "Executed deepface mutation"
-      );
-
-      try {
+      const txAmount = typeof input === "object" && "amount" in input ? Number((input as Record<string, unknown>).amount) : 0;
+      const fees = calculateFee(txAmount, "transfer");
+      const commission = calculateCommission(fees.fee, "transfer");
+      const tax = calculateTax(fees.fee, "vat");
+try {
         const result = await deepfaceVerify(
           input.image1Base64,
           input.image2Base64,
@@ -571,6 +560,7 @@ export const deepfaceRouter = router({
 
   // ── Supported Models & Detectors ──────────────────────────────────────
   models: protectedProcedure.query(async () => {
+
     return {
       models: DEEPFACE_MODELS,
       detectors: DEEPFACE_DETECTORS,

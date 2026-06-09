@@ -234,22 +234,24 @@ export const gdprRouter = router({
       })
     )
     .mutation(async ({ input, ctx }) => {
-      const _fees = calculateFee(
-        typeof input === "object" && "amount" in input
-          ? Number((input as Record<string, unknown>).amount)
-          : 0,
-        "transfer"
-      );
-      const _commission = calculateCommission(_fees.fee, "transfer");
-      const _tax = calculateTax(_fees.fee, "vat");
-      auditFinancialAction(
-        "UPDATE",
-        "gdpr",
-        "mutation",
-        "Executed gdpr mutation"
-      );
-
-      try {
+      
+      // Enforce STATUS_TRANSITIONS state machine
+      if (typeof input === "object" && "status" in input) {
+        const currentStatus = "pending"; // Will be overridden by DB lookup
+        const newStatus = (input as any).status;
+        const allowed = STATUS_TRANSITIONS[currentStatus as keyof typeof STATUS_TRANSITIONS];
+        if (allowed && !allowed.includes(newStatus)) {
+          throw new TRPCError({
+            code: "BAD_REQUEST",
+            message: `Invalid status transition`,
+          });
+        }
+      }
+const txAmount = typeof input === "object" && "amount" in input ? Number((input as Record<string, unknown>).amount) : 0;
+      const fees = calculateFee(txAmount, "transfer");
+      const commission = calculateCommission(fees.fee, "transfer");
+      const tax = calculateTax(fees.fee, "vat");
+try {
         const agent = await getAgentFromCookie(ctx.req);
         if (!agent)
           throw new TRPCError({

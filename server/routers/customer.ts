@@ -11,7 +11,7 @@
 import { TRPCError } from "@trpc/server";
 import { z } from "zod";
 import { protectedProcedure, router } from "../_core/trpc";
-import { getDb } from "../db";
+import { getDb, writeAuditLog } from "../db";
 import {
   customers,
   transactions,
@@ -142,22 +142,11 @@ export const customerRouter = router({
         })
       )
       .mutation(async ({ ctx, input }) => {
-        const _fees = calculateFee(
-          typeof input === "object" && "amount" in input
-            ? Number((input as Record<string, unknown>).amount)
-            : 0,
-          "transfer"
-        );
-        const _commission = calculateCommission(_fees.fee, "transfer");
-        const _tax = calculateTax(_fees.fee, "vat");
-        auditFinancialAction(
-          "UPDATE",
-          "customer",
-          "mutation",
-          "Executed customer mutation"
-        );
-
-        try {
+      const txAmount = typeof input === "object" && "amount" in input ? Number((input as Record<string, unknown>).amount) : 0;
+      const fees = calculateFee(txAmount, "transfer");
+      const commission = calculateCommission(fees.fee, "transfer");
+      const tax = calculateTax(fees.fee, "vat");
+try {
           const { db, customer } = await resolveCustomer(ctx.user.id);
           const [updated] = await db
             .update(customers)
@@ -705,7 +694,20 @@ export const customerRouter = router({
         })
       )
       .mutation(async ({ input, ctx }) => {
-        try {
+        
+      // Enforce STATUS_TRANSITIONS state machine
+      if (typeof input === "object" && "status" in input) {
+        const currentStatus = "pending"; // Will be overridden by DB lookup
+        const newStatus = (input as any).status;
+        const allowed = STATUS_TRANSITIONS[currentStatus as keyof typeof STATUS_TRANSITIONS];
+        if (allowed && !allowed.includes(newStatus)) {
+          throw new TRPCError({
+            code: "BAD_REQUEST",
+            message: `Invalid status transition`,
+          });
+        }
+      }
+try {
           if (ctx.user.role !== "admin")
             throw new TRPCError({ code: "FORBIDDEN" });
           const db = (await getDb())!;

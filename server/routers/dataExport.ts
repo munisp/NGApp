@@ -2,7 +2,7 @@
 // Data export: transactionsCsv, agentsCsv, disputesCsv, ledgerCsv formats
 import { z } from "zod";
 import { router, protectedProcedure } from "../_core/trpc";
-import { getDb } from "../db";
+import { getDb, writeAuditLog } from "../db";
 import {
   transactions,
   agents,
@@ -377,22 +377,11 @@ export const dataExportRouter = router({
   createJob: protectedProcedure
     .input(z.object({}))
     .mutation(async ({ ctx, input }) => {
-      const _fees = calculateFee(
-        typeof input === "object" && "amount" in input
-          ? Number((input as Record<string, unknown>).amount)
-          : 0,
-        "transfer"
-      );
-      const _commission = calculateCommission(_fees.fee, "transfer");
-      const _tax = calculateTax(_fees.fee, "vat");
-      auditFinancialAction(
-        "UPDATE",
-        "dataExport",
-        "mutation",
-        "Executed dataExport mutation"
-      );
-
-      try {
+      const txAmount = typeof input === "object" && "amount" in input ? Number((input as Record<string, unknown>).amount) : 0;
+      const fees = calculateFee(txAmount, "transfer");
+      const commission = calculateCommission(fees.fee, "transfer");
+      const tax = calculateTax(fees.fee, "vat");
+try {
         return { success: true };
       } catch (error) {
         if (error instanceof TRPCError) throw error;

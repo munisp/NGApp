@@ -2,7 +2,7 @@
 // Sprint 87: Full domain logic — score calculation, percentile ranking, trend analysis
 import { z } from "zod";
 import { protectedProcedure, router } from "../_core/trpc";
-import { getDb } from "../db";
+import { getDb, writeAuditLog } from "../db";
 import { agentPerformanceScores } from "../../drizzle/schema";
 import { eq, desc, and, sql, count, avg } from "drizzle-orm";
 import { TRPCError } from "@trpc/server";
@@ -268,22 +268,11 @@ export const agentPerformanceScoresRouter = router({
   calculateForAgent: protectedProcedure
     .input(z.object({ agentId: z.number(), period: z.string() }))
     .mutation(async ({ input, ctx }) => {
-      const _fees = calculateFee(
-        typeof input === "object" && "amount" in input
-          ? Number((input as Record<string, unknown>).amount)
-          : 0,
-        "transfer"
-      );
-      const _commission = calculateCommission(_fees.fee, "transfer");
-      const _tax = calculateTax(_fees.fee, "vat");
-      auditFinancialAction(
-        "UPDATE",
-        "agentPerformanceScoresCrud",
-        "mutation",
-        "Executed agentPerformanceScoresCrud mutation"
-      );
-
-      try {
+      const txAmount = typeof input === "object" && "amount" in input ? Number((input as Record<string, unknown>).amount) : 0;
+      const fees = calculateFee(txAmount, "transfer");
+      const commission = calculateCommission(fees.fee, "transfer");
+      const tax = calculateTax(fees.fee, "vat");
+try {
         const db = (await getDb())!;
         // Check if score already exists for this period
         const [existing] = await db
@@ -312,6 +301,24 @@ export const agentPerformanceScoresRouter = router({
             txCount: 150,
           })
           .returning();
+        await writeAuditLog({
+
+          agentId: typeof ctx === "object" && ctx !== null && "user" in ctx ? (ctx as any).user?.id ?? 0 : 0,
+
+          agentCode: typeof ctx === "object" && ctx !== null && "user" in ctx ? (ctx as any).user?.agentCode ?? "system" : "system",
+
+          action: "MUTATION",
+
+          resource: "agentPerformanceScoresCrud",
+
+          resourceId: typeof input === "object" && input !== null && "id" in input ? String((input as any).id) : "new",
+
+          status: "success",
+
+          metadata: { input: typeof input === "object" ? input : {} },
+
+        });
+
         return {
           ...row,
           tier: calculatePerformanceTier(score),

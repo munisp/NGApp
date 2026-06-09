@@ -41,8 +41,7 @@ import {
   agentGeofenceZones,
   geofenceZones,
   deviceLocations,
-  commissionRules,
-} from "../../drizzle/schema";
+  commissionRules, gl_journal_entries} from "../../drizzle/schema";
 import { sendSms, buildConfirmationSms } from "../termii";
 import { getIO } from "../socketSingleton";
 import { floatPlatform, analyticsPlatform } from "../_core/platformClient.js";
@@ -378,22 +377,11 @@ export const transactionsRouter = router({
       })
     )
     .mutation(async ({ input, ctx }) => {
-      const _fees = calculateFee(
-        typeof input === "object" && "amount" in input
-          ? Number((input as Record<string, unknown>).amount)
-          : 0,
-        "transfer"
-      );
-      const _commission = calculateCommission(_fees.fee, "transfer");
-      const _tax = calculateTax(_fees.fee, "vat");
-      auditFinancialAction(
-        "UPDATE",
-        "transactions",
-        "mutation",
-        "Executed transactions mutation"
-      );
-
-      try {
+      const txAmount = typeof input === "object" && "amount" in input ? Number((input as Record<string, unknown>).amount) : 0;
+      const fees = calculateFee(txAmount, "transfer");
+      const commission = calculateCommission(fees.fee, "transfer");
+      const tax = calculateTax(fees.fee, "vat");
+try {
         const agent = (ctx as any).agent ?? (await getAgentFromCookie(ctx.req));
         if (!agent) {
           throw new TRPCError({

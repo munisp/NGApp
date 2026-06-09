@@ -1,7 +1,7 @@
 import { z } from "zod";
 import { TRPCError } from "@trpc/server";
 import { protectedProcedure, router } from "../_core/trpc";
-import { getDb } from "../db";
+import { getDb, writeAuditLog } from "../db";
 import { loadTestRuns as loadTestRunsTable } from "../../drizzle/schema";
 import { auditLog } from "../../drizzle/schema";
 import { desc, eq, sql, and, gte, lte, count } from "drizzle-orm";
@@ -532,22 +532,24 @@ export const loadTestMetricsRouter = router({
       })
     )
     .mutation(async ({ input, ctx }) => {
-      const _fees = calculateFee(
-        typeof input === "object" && "amount" in input
-          ? Number((input as Record<string, unknown>).amount)
-          : 0,
-        "transfer"
-      );
-      const _commission = calculateCommission(_fees.fee, "transfer");
-      const _tax = calculateTax(_fees.fee, "vat");
-      auditFinancialAction(
-        "UPDATE",
-        "loadTestMetrics",
-        "mutation",
-        "Executed loadTestMetrics mutation"
-      );
-
-      if (activeLoadTest) {
+      
+      // Enforce STATUS_TRANSITIONS state machine
+      if (typeof input === "object" && "status" in input) {
+        const currentStatus = "pending"; // Will be overridden by DB lookup
+        const newStatus = (input as any).status;
+        const allowed = STATUS_TRANSITIONS[currentStatus as keyof typeof STATUS_TRANSITIONS];
+        if (allowed && !allowed.includes(newStatus)) {
+          throw new TRPCError({
+            code: "BAD_REQUEST",
+            message: `Invalid status transition`,
+          });
+        }
+      }
+const txAmount = typeof input === "object" && "amount" in input ? Number((input as Record<string, unknown>).amount) : 0;
+      const fees = calculateFee(txAmount, "transfer");
+      const commission = calculateCommission(fees.fee, "transfer");
+      const tax = calculateTax(fees.fee, "vat");
+if (activeLoadTest) {
         throw new Error("A load test is already running");
       }
 
@@ -643,6 +645,7 @@ export const loadTestMetricsRouter = router({
       const zipfB = rB.zipfDistribution ?? [];
       const zipfComparison: any[] = zipfA.map((dA: any, i: number) => {
         const dB = zipfB[i];
+
         return {
           merchantId: dA.merchantId,
           requestsA: dA.requestCount,

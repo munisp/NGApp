@@ -1,7 +1,7 @@
 // Sprint 87: Theme validation, asset management, preview generation
 import { z } from "zod";
 import { protectedProcedure, router } from "../_core/trpc";
-import { getDb } from "../db";
+import { getDb, writeAuditLog } from "../db";
 import { tenantBranding } from "../../drizzle/schema";
 import { eq, desc, count, gte, lte, sql } from "drizzle-orm";
 import { TRPCError } from "@trpc/server";
@@ -330,22 +330,11 @@ export const tenantBrandingRouter = router({
       })
     )
     .mutation(async ({ input, ctx }) => {
-      const _fees = calculateFee(
-        typeof input === "object" && "amount" in input
-          ? Number((input as Record<string, unknown>).amount)
-          : 0,
-        "transfer"
-      );
-      const _commission = calculateCommission(_fees.fee, "transfer");
-      const _tax = calculateTax(_fees.fee, "vat");
-      auditFinancialAction(
-        "UPDATE",
-        "tenantBrandingCrud",
-        "mutation",
-        "Executed tenantBrandingCrud mutation"
-      );
-
-      try {
+      const txAmount = typeof input === "object" && "amount" in input ? Number((input as Record<string, unknown>).amount) : 0;
+      const fees = calculateFee(txAmount, "transfer");
+      const commission = calculateCommission(fees.fee, "transfer");
+      const tax = calculateTax(fees.fee, "vat");
+try {
         const db = (await getDb())!;
         // Validate colors
         const colorFields = [
@@ -390,6 +379,24 @@ export const tenantBrandingRouter = router({
             .set(input)
             .where(eq(tenantBranding.tenantId, input.tenantId))
             .returning();
+          await writeAuditLog({
+
+            agentId: typeof ctx === "object" && ctx !== null && "user" in ctx ? (ctx as any).user?.id ?? 0 : 0,
+
+            agentCode: typeof ctx === "object" && ctx !== null && "user" in ctx ? (ctx as any).user?.agentCode ?? "system" : "system",
+
+            action: "MUTATION",
+
+            resource: "tenantBrandingCrud",
+
+            resourceId: typeof input === "object" && input !== null && "id" in input ? String((input as any).id) : "new",
+
+            status: "success",
+
+            metadata: { input: typeof input === "object" ? input : {} },
+
+          });
+
           return { ...row, message: "Branding updated" };
         }
         const [row] = await db

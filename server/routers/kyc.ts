@@ -14,7 +14,7 @@ import { eq, desc, and, gte, lte, sql, count } from "drizzle-orm";
 import { TRPCError } from "@trpc/server";
 import { router, protectedProcedure, adminProcedure } from "../_core/trpc.js";
 import { getAgentFromCookie } from "../middleware/agentAuth.js";
-import { getDb } from "../db.js";
+import { getDb, writeAuditLog } from "../db.js";
 import { kycSessions } from "../../drizzle/schema.js";
 import { validateInput } from "../lib/routerHelpers";
 
@@ -262,23 +262,30 @@ export const kycRouter = router({
   adminClearCooldown: adminProcedure
     .input(z.object({ userId: z.string().min(1).max(255) }))
     .mutation(async ({ input, ctx }) => {
-      const _fees = calculateFee(
-        typeof input === "object" && "amount" in input
-          ? Number((input as Record<string, unknown>).amount)
-          : 0,
-        "transfer"
-      );
-      const _commission = calculateCommission(_fees.fee, "transfer");
-      const _tax = calculateTax(_fees.fee, "vat");
-      auditFinancialAction(
-        "UPDATE",
-        "kyc",
-        "mutation",
-        "Executed kyc mutation"
-      );
-
-      try {
+      const txAmount = typeof input === "object" && "amount" in input ? Number((input as Record<string, unknown>).amount) : 0;
+      const fees = calculateFee(txAmount, "transfer");
+      const commission = calculateCommission(fees.fee, "transfer");
+      const tax = calculateTax(fees.fee, "vat");
+try {
         const cleared = clearCooldown(input.userId);
+        await writeAuditLog({
+
+          agentId: typeof ctx === "object" && ctx !== null && "user" in ctx ? (ctx as any).user?.id ?? 0 : 0,
+
+          agentCode: typeof ctx === "object" && ctx !== null && "user" in ctx ? (ctx as any).user?.agentCode ?? "system" : "system",
+
+          action: "MUTATION",
+
+          resource: "kyc",
+
+          resourceId: typeof input === "object" && input !== null && "id" in input ? String((input as any).id) : "new",
+
+          status: "success",
+
+          metadata: { input: typeof input === "object" ? input : {} },
+
+        });
+
         return { cleared, userId: input.userId };
       } catch (error) {
         if (error instanceof TRPCError) throw error;

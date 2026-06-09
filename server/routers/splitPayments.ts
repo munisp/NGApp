@@ -7,7 +7,7 @@
 import { z } from "zod";
 import { protectedProcedure, router } from "../_core/trpc";
 import { getDb, writeAuditLog } from "../db";
-import { transactions, agents } from "../../drizzle/schema";
+import { transactions, agents, gl_journal_entries} from "../../drizzle/schema";
 import { eq, sql, and, gte, lte, desc, count } from "drizzle-orm";
 import { TRPCError } from "@trpc/server";
 import { getAgentFromCookie } from "../middleware/agentAuth";
@@ -17,8 +17,8 @@ import {
   validateAmount,
   validateStatusTransition,
   auditFinancialAction,
-  withTransaction,
-} from "../lib/transactionHelper";
+  withTransaction, withIdempotency} from "../lib/transactionHelper";
+
 import {
   calculateFee,
   calculateCommission,
@@ -233,25 +233,15 @@ export const splitPaymentsRouter = router({
         totalAmount: z.number().positive().max(10_000_000),
         splits: z.array(splitItemSchema).min(2).max(10),
         narration: z.string().max(256).optional(),
+        idempotencyKey: z.string().min(16).max(64),
       })
     )
     .mutation(async ({ input, ctx }) => {
-      const _fees = calculateFee(
-        typeof input === "object" && "amount" in input
-          ? Number((input as Record<string, unknown>).amount)
-          : 0,
-        "transfer"
-      );
-      const _commission = calculateCommission(_fees.fee, "transfer");
-      const _tax = calculateTax(_fees.fee, "vat");
-      auditFinancialAction(
-        "UPDATE",
-        "splitPayments",
-        "mutation",
-        "Executed splitPayments mutation"
-      );
-
-      try {
+      const txAmount = typeof input === "object" && "amount" in input ? Number((input as Record<string, unknown>).amount) : 0;
+      const fees = calculateFee(txAmount, "transfer");
+      const commission = calculateCommission(fees.fee, "transfer");
+      const tax = calculateTax(fees.fee, "vat");
+try {
         const session = await getAgentFromCookie(ctx.req);
         if (!session)
           throw new TRPCError({
@@ -321,6 +311,21 @@ export const splitPaymentsRouter = router({
             floatBalance: sql`CAST(${agents.floatBalance} AS numeric) - ${String(input.totalAmount)}`,
           })
           .where(eq(agents.id, session.id));
+
+          // Double-entry journal entry
+          await db.insert(gl_journal_entries).values({
+            entryNumber: `JE-CI-${Date.now()}`,
+            description: `splitPayments transaction`,
+            debitAccountId: 2001,
+            creditAccountId: 1001,
+            amount: Math.round((typeof input === "object" && "amount" in input ? Number((input as any).amount) : 0) * 100),
+            currency: "NGN",
+            referenceType: "transaction",
+            referenceId: groupRef ?? String(Date.now()),
+            postedBy: session?.agentCode ?? "system",
+            status: "posted",
+          });
+
 
         await writeAuditLog({
           agentId: session.id,

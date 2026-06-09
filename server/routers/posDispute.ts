@@ -171,22 +171,11 @@ export const posDisputeRouter = router({
       })
     )
     .mutation(async ({ input, ctx }) => {
-      const _fees = calculateFee(
-        typeof input === "object" && "amount" in input
-          ? Number((input as Record<string, unknown>).amount)
-          : 0,
-        "transfer"
-      );
-      const _commission = calculateCommission(_fees.fee, "transfer");
-      const _tax = calculateTax(_fees.fee, "vat");
-      auditFinancialAction(
-        "UPDATE",
-        "posDispute",
-        "mutation",
-        "Executed posDispute mutation"
-      );
-
-      try {
+      const txAmount = typeof input === "object" && "amount" in input ? Number((input as Record<string, unknown>).amount) : 0;
+      const fees = calculateFee(txAmount, "posTransaction");
+      const commission = calculateCommission(fees.fee, "posTransaction");
+      const tax = calculateTax(fees.fee, "vat");
+try {
         const session = await getAgentFromCookie(ctx.req);
         if (!session)
           throw new TRPCError({

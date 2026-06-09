@@ -2,7 +2,7 @@
 // Sprint 87: Full domain logic — account verification, duplicate detection, primary account management
 import { z } from "zod";
 import { protectedProcedure, router } from "../_core/trpc";
-import { getDb } from "../db";
+import { getDb, writeAuditLog } from "../db";
 import { agentBankAccounts } from "../../drizzle/schema";
 import { eq, desc, and, sql, count } from "drizzle-orm";
 import { TRPCError } from "@trpc/server";
@@ -199,22 +199,11 @@ export const agentBankAccountsRouter = router({
       })
     )
     .mutation(async ({ input, ctx }) => {
-      const _fees = calculateFee(
-        typeof input === "object" && "amount" in input
-          ? Number((input as Record<string, unknown>).amount)
-          : 0,
-        "transfer"
-      );
-      const _commission = calculateCommission(_fees.fee, "transfer");
-      const _tax = calculateTax(_fees.fee, "vat");
-      auditFinancialAction(
-        "UPDATE",
-        "agentBankAccountsCrud",
-        "mutation",
-        "Executed agentBankAccountsCrud mutation"
-      );
-
-      try {
+      const txAmount = typeof input === "object" && "amount" in input ? Number((input as Record<string, unknown>).amount) : 0;
+      const fees = calculateFee(txAmount, "transfer");
+      const commission = calculateCommission(fees.fee, "transfer");
+      const tax = calculateTax(fees.fee, "vat");
+try {
       } catch (error) {
         if (error instanceof TRPCError) throw error;
         throw new TRPCError({
@@ -276,6 +265,24 @@ export const agentBankAccountsRouter = router({
         .insert(agentBankAccounts)
         .values(input as any)
         .returning();
+      await writeAuditLog({
+
+        agentId: typeof ctx === "object" && ctx !== null && "user" in ctx ? (ctx as any).user?.id ?? 0 : 0,
+
+        agentCode: typeof ctx === "object" && ctx !== null && "user" in ctx ? (ctx as any).user?.agentCode ?? "system" : "system",
+
+        action: "MUTATION",
+
+        resource: "agentBankAccountsCrud",
+
+        resourceId: typeof input === "object" && input !== null && "id" in input ? String((input as any).id) : "new",
+
+        status: "success",
+
+        metadata: { input: typeof input === "object" ? input : {} },
+
+      });
+
       return { ...row, maskedAccount: maskAccountNumber(row.accountNumber) };
     }),
   setPrimary: protectedProcedure

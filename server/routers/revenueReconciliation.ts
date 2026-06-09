@@ -5,7 +5,7 @@
 import { z } from "zod";
 import { protectedProcedure, router } from "../_core/trpc";
 import { TRPCError } from "@trpc/server";
-import { getDb } from "../db";
+import { getDb, writeAuditLog } from "../db";
 import { transactions } from "../../drizzle/schema";
 import { eq, desc, count, sql, and, gte, lte } from "drizzle-orm";
 import { validateInput } from "../lib/routerHelpers";
@@ -252,16 +252,11 @@ export const revenueReconciliationRouter = router({
       })
     )
     .mutation(async ({ input, ctx }) => {
-      const _fees = calculateFee(
-        typeof input === "object" && "amount" in input
-          ? Number((input as Record<string, unknown>).amount)
-          : 0,
-        "transfer"
-      );
-      const _commission = calculateCommission(_fees.fee, "transfer");
-      const _tax = calculateTax(_fees.fee, "vat");
-
-      const db = await getDb();
+      const txAmount = typeof input === "object" && "amount" in input ? Number((input as Record<string, unknown>).amount) : 0;
+      const fees = calculateFee(txAmount, "transfer");
+      const commission = calculateCommission(fees.fee, "transfer");
+      const tax = calculateTax(fees.fee, "vat");
+const db = await getDb();
       const since = new Date();
       since.setHours(since.getHours() - input.periodHours);
 
@@ -297,6 +292,33 @@ export const revenueReconciliationRouter = router({
           periodHours: input.periodHours,
         }
       );
+
+      await writeAuditLog({
+
+
+        agentId: typeof ctx === "object" && ctx !== null && "user" in ctx ? (ctx as any).user?.id ?? 0 : 0,
+
+
+        agentCode: typeof ctx === "object" && ctx !== null && "user" in ctx ? (ctx as any).user?.agentCode ?? "system" : "system",
+
+
+        action: "MUTATION",
+
+
+        resource: "revenueReconciliation",
+
+
+        resourceId: typeof input === "object" && input !== null && "id" in input ? String((input as any).id) : "new",
+
+
+        status: "success",
+
+
+        metadata: { input: typeof input === "object" ? input : {} },
+
+
+      });
+
 
       return {
         batchId: "RB-" + Date.now(),

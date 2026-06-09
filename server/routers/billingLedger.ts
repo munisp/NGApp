@@ -3,7 +3,7 @@
  */
 import { z } from "zod";
 import { protectedProcedure, router } from "../_core/trpc";
-import { getDb } from "../db";
+import { getDb, writeAuditLog } from "../db";
 import {
   platformBillingLedger,
   tenantBillingConfig,
@@ -341,6 +341,7 @@ export const billingLedgerRouter = router({
             .select({ total: count() })
             .from(platformBillingLedger)
             .where(where);
+
 
           return {
             entries: rows,

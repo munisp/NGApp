@@ -1,7 +1,7 @@
 import { z } from "zod";
 import { TRPCError } from "@trpc/server";
 import { protectedProcedure, router } from "../_core/trpc";
-import { getDb } from "../db";
+import { getDb, writeAuditLog } from "../db";
 import { auditLog, simOrchestratorConfig } from "../../drizzle/schema";
 import { desc, eq, sql, and, gte, lte, count } from "drizzle-orm";
 import { validateInput } from "../lib/routerHelpers";
@@ -341,22 +341,29 @@ export const carrierSwitchingRouter = router({
   recordSwitch: protectedProcedure
     .input(z.object({ id: z.string().optional() }).optional())
     .mutation(async ({ input, ctx }) => {
-      const _fees = calculateFee(
-        typeof input === "object" && "amount" in input
-          ? Number((input as Record<string, unknown>).amount)
-          : 0,
-        "transfer"
-      );
-      const _commission = calculateCommission(_fees.fee, "transfer");
-      const _tax = calculateTax(_fees.fee, "vat");
-      auditFinancialAction(
-        "UPDATE",
-        "carrierSwitching",
-        "mutation",
-        "Executed carrierSwitching mutation"
-      );
+      const txAmount = typeof input === "object" && "amount" in input ? Number((input as Record<string, unknown>).amount) : 0;
+      const fees = calculateFee(txAmount, "transfer");
+      const commission = calculateCommission(fees.fee, "transfer");
+      const tax = calculateTax(fees.fee, "vat");
+await writeAuditLog({
 
-      return {
+  agentId: typeof ctx === "object" && ctx !== null && "user" in ctx ? (ctx as any).user?.id ?? 0 : 0,
+
+  agentCode: typeof ctx === "object" && ctx !== null && "user" in ctx ? (ctx as any).user?.agentCode ?? "system" : "system",
+
+  action: "MUTATION",
+
+  resource: "carrierSwitching",
+
+  resourceId: typeof input === "object" && input !== null && "id" in input ? String((input as any).id) : "new",
+
+  status: "success",
+
+  metadata: { input: typeof input === "object" ? input : {} },
+
+});
+
+return {
         success: true,
         action: "recordSwitch",
         id: input?.id ?? null,

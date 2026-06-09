@@ -4,7 +4,7 @@ import {
   protectedProcedure,
   router,
 } from "../_core/trpc";
-import { getDb } from "../db";
+import { getDb, writeAuditLog } from "../db";
 import { platformSettings } from "../../drizzle/schema";
 import { sql, eq, desc, count, and, gte, lte } from "drizzle-orm";
 import {
@@ -318,16 +318,11 @@ export const middlewareServiceManagerRouter = router({
   testConnection: protectedProcedure
     .input(z.object({ serviceId: z.string().min(1).max(255) }))
     .mutation(async ({ input, ctx }) => {
-      const _fees = calculateFee(
-        typeof input === "object" && "amount" in input
-          ? Number((input as Record<string, unknown>).amount)
-          : 0,
-        "transfer"
-      );
-      const _commission = calculateCommission(_fees.fee, "transfer");
-      const _tax = calculateTax(_fees.fee, "vat");
-
-      const service = MIDDLEWARE_SERVICES.find(s => s.name === input.serviceId);
+      const txAmount = typeof input === "object" && "amount" in input ? Number((input as Record<string, unknown>).amount) : 0;
+      const fees = calculateFee(txAmount, "transfer");
+      const commission = calculateCommission(fees.fee, "transfer");
+      const tax = calculateTax(fees.fee, "vat");
+const service = MIDDLEWARE_SERVICES.find(s => s.name === input.serviceId);
       const isHealthy = service ? checkServiceHealth(service.name) : false;
 
       if (service) {
@@ -340,6 +335,33 @@ export const middlewareServiceManagerRouter = router({
         input.serviceId,
         `Connection test: ${isHealthy ? "success" : "failed"}`
       );
+
+      await writeAuditLog({
+
+
+        agentId: typeof ctx === "object" && ctx !== null && "user" in ctx ? (ctx as any).user?.id ?? 0 : 0,
+
+
+        agentCode: typeof ctx === "object" && ctx !== null && "user" in ctx ? (ctx as any).user?.agentCode ?? "system" : "system",
+
+
+        action: "MUTATION",
+
+
+        resource: "middlewareServiceManager",
+
+
+        resourceId: typeof input === "object" && input !== null && "id" in input ? String((input as any).id) : "new",
+
+
+        status: "success",
+
+
+        metadata: { input: typeof input === "object" ? input : {} },
+
+
+      });
+
 
       return {
         serviceId: input.serviceId,

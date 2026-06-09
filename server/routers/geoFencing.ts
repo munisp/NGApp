@@ -1,6 +1,6 @@
 import { z } from "zod";
 import { protectedProcedure, router } from "../_core/trpc";
-import { getDb } from "../db";
+import { getDb, writeAuditLog } from "../db";
 import { eq, count, and, sql, gte, lte, desc } from "drizzle-orm";
 import { geofenceZones } from "../../drizzle/schema";
 import { TRPCError } from "@trpc/server";
@@ -213,22 +213,11 @@ export const geoFencingRouter = router({
       })
     )
     .mutation(async ({ input, ctx }) => {
-      const _fees = calculateFee(
-        typeof input === "object" && "amount" in input
-          ? Number((input as Record<string, unknown>).amount)
-          : 0,
-        "transfer"
-      );
-      const _commission = calculateCommission(_fees.fee, "transfer");
-      const _tax = calculateTax(_fees.fee, "vat");
-      auditFinancialAction(
-        "UPDATE",
-        "geoFencing",
-        "mutation",
-        "Executed geoFencing mutation"
-      );
-
-      const db = await getDb();
+      const txAmount = typeof input === "object" && "amount" in input ? Number((input as Record<string, unknown>).amount) : 0;
+      const fees = calculateFee(txAmount, "transfer");
+      const commission = calculateCommission(fees.fee, "transfer");
+      const tax = calculateTax(fees.fee, "vat");
+const db = await getDb();
       if (!db) return { id: "zone-1", name: input.name, created: true };
       const [zone] = await db
         .insert(geofenceZones)

@@ -1,7 +1,7 @@
 // Sprint 87: Widget computation, real-time aggregation, caching
 import { z } from "zod";
 import { protectedProcedure, router } from "../_core/trpc";
-import { getDb } from "../db";
+import { getDb, writeAuditLog } from "../db";
 import { analyticsDashboards } from "../../drizzle/schema";
 import { eq, desc, and, count, gte, lte, sql } from "drizzle-orm";
 import { TRPCError } from "@trpc/server";
@@ -280,22 +280,11 @@ export const analyticsDashboardsRouter = router({
       })
     )
     .mutation(async ({ input, ctx }) => {
-      const _fees = calculateFee(
-        typeof input === "object" && "amount" in input
-          ? Number((input as Record<string, unknown>).amount)
-          : 0,
-        "transfer"
-      );
-      const _commission = calculateCommission(_fees.fee, "transfer");
-      const _tax = calculateTax(_fees.fee, "vat");
-      auditFinancialAction(
-        "UPDATE",
-        "analyticsDashboardsCrud",
-        "mutation",
-        "Executed analyticsDashboardsCrud mutation"
-      );
-
-      try {
+      const txAmount = typeof input === "object" && "amount" in input ? Number((input as Record<string, unknown>).amount) : 0;
+      const fees = calculateFee(txAmount, "transfer");
+      const commission = calculateCommission(fees.fee, "transfer");
+      const tax = calculateTax(fees.fee, "vat");
+try {
         const db = (await getDb())!;
         const [existing] = await db
           .select()
@@ -329,6 +318,7 @@ export const analyticsDashboardsRouter = router({
         await db
           .delete(analyticsDashboards)
           .where(eq(analyticsDashboards.id, input.id));
+
         return { success: true };
       } catch (error) {
         if (error instanceof TRPCError) throw error;

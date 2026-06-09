@@ -178,22 +178,11 @@ const assignTerritory = protectedProcedure
     z.object({ id: z.number(), data: z.record(z.string(), z.any()).optional() })
   )
   .mutation(async ({ input, ctx }) => {
-    const _fees = calculateFee(
-      typeof input === "object" && "amount" in input
-        ? Number((input as Record<string, unknown>).amount)
-        : 0,
-      "transfer"
-    );
-    const _commission = calculateCommission(_fees.fee, "transfer");
-    const _tax = calculateTax(_fees.fee, "vat");
-    auditFinancialAction(
-      "UPDATE",
-      "agentHierarchyTerritory",
-      "mutation",
-      "Executed agentHierarchyTerritory mutation"
-    );
-
-    try {
+      const txAmount = typeof input === "object" && "amount" in input ? Number((input as Record<string, unknown>).amount) : 0;
+      const fees = calculateFee(txAmount, "transfer");
+      const commission = calculateCommission(fees.fee, "transfer");
+      const tax = calculateTax(fees.fee, "vat");
+try {
       const db = (await getDb())!;
       const [existing] = await db
         .select()

@@ -7,7 +7,7 @@
 import { z } from "zod";
 import { protectedProcedure, router } from "../_core/trpc";
 import { getDb, writeAuditLog } from "../db";
-import { transactions, agents } from "../../drizzle/schema";
+import { transactions, agents, gl_journal_entries} from "../../drizzle/schema";
 import { eq, desc, and, sql, gte } from "drizzle-orm";
 import { TRPCError } from "@trpc/server";
 import { getAgentFromCookie } from "../middleware/agentAuth";
@@ -15,14 +15,15 @@ import {
   validateAmount,
   validateStatusTransition,
   auditFinancialAction,
-  withTransaction,
-} from "../lib/transactionHelper";
+  withTransaction, withIdempotency} from "../lib/transactionHelper";
+
 import {
   calculateFee,
   calculateCommission,
   calculateTax,
   calculateLatePenalty,
 } from "../lib/domainCalculations";
+import { checkDailyLimit, KYC_TIER_LIMITS } from "../lib/cbnLimits";
 
 const STATUS_TRANSITIONS: Record<string, string[]> = {
   initiated: ["pending_validation"],
@@ -259,24 +260,10 @@ export const billPaymentsRouter = router({
         amount: z.number().min(0).positive().max(5_000_000),
         customerName: z.string().max(128).optional(),
         customerPhone: z.string().max(20).optional(),
+        idempotencyKey: z.string().min(16).max(64),
       })
     )
     .mutation(async ({ input, ctx }) => {
-      const _fees = calculateFee(
-        typeof input === "object" && "amount" in input
-          ? Number((input as Record<string, unknown>).amount)
-          : 0,
-        "transfer"
-      );
-      const _commission = calculateCommission(_fees.fee, "transfer");
-      const _tax = calculateTax(_fees.fee, "vat");
-      auditFinancialAction(
-        "UPDATE",
-        "billPayments",
-        "mutation",
-        "Executed billPayments mutation"
-      );
-
       try {
         const session = await getAgentFromCookie(ctx.req);
         if (!session)
@@ -338,6 +325,21 @@ export const billPaymentsRouter = router({
             // commission: sql`CAST(${agents.commissionBalance} AS numeric) + ${String(commission)}`, // removed: not in schema
           })
           .where(eq(agents.id, session.id));
+
+          // Double-entry journal entry
+          await db.insert(gl_journal_entries).values({
+            entryNumber: `JE-CI-${Date.now()}`,
+            description: `billPayments transaction`,
+            debitAccountId: 2001,
+            creditAccountId: 1001,
+            amount: Math.round((typeof input === "object" && "amount" in input ? Number((input as any).amount) : 0) * 100),
+            currency: "NGN",
+            referenceType: "transaction",
+            referenceId: ref ?? String(Date.now()),
+            postedBy: session?.agentCode ?? "system",
+            status: "posted",
+          });
+
 
         await writeAuditLog({
           agentId: session.id,

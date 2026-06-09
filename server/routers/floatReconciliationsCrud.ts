@@ -2,7 +2,7 @@
 // Sprint 87: Full domain logic — auto-matching, variance detection, exception handling
 import { z } from "zod";
 import { protectedProcedure, router } from "../_core/trpc";
-import { getDb } from "../db";
+import { getDb, writeAuditLog } from "../db";
 import { floatReconciliations } from "../../drizzle/schema";
 import { eq, desc, and, sql, count, gte, lte } from "drizzle-orm";
 import { TRPCError } from "@trpc/server";
@@ -234,22 +234,11 @@ export const floatReconciliationsRouter = router({
       })
     )
     .mutation(async ({ input, ctx }) => {
-      const _fees = calculateFee(
-        typeof input === "object" && "amount" in input
-          ? Number((input as Record<string, unknown>).amount)
-          : 0,
-        "transfer"
-      );
-      const _commission = calculateCommission(_fees.fee, "transfer");
-      const _tax = calculateTax(_fees.fee, "vat");
-      auditFinancialAction(
-        "UPDATE",
-        "floatReconciliationsCrud",
-        "mutation",
-        "Executed floatReconciliationsCrud mutation"
-      );
-
-      try {
+      const txAmount = typeof input === "object" && "amount" in input ? Number((input as Record<string, unknown>).amount) : 0;
+      const fees = calculateFee(txAmount, "floatTopUp");
+      const commission = calculateCommission(fees.fee, "floatTopUp");
+      const tax = calculateTax(fees.fee, "vat");
+try {
         const db = (await getDb())!;
         const expected = parseFloat(input.expectedBalance);
         const actual = parseFloat(input.actualBalance);
@@ -277,6 +266,24 @@ export const floatReconciliationsRouter = router({
               : input.notes || null,
           })
           .returning();
+        await writeAuditLog({
+
+          agentId: typeof ctx === "object" && ctx !== null && "user" in ctx ? (ctx as any).user?.id ?? 0 : 0,
+
+          agentCode: typeof ctx === "object" && ctx !== null && "user" in ctx ? (ctx as any).user?.agentCode ?? "system" : "system",
+
+          action: "MUTATION",
+
+          resource: "floatReconciliationsCrud",
+
+          resourceId: typeof input === "object" && input !== null && "id" in input ? String((input as any).id) : "new",
+
+          status: "success",
+
+          metadata: { input: typeof input === "object" ? input : {} },
+
+        });
+
         return {
           ...row,
           autoResolved,

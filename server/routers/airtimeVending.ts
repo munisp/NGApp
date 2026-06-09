@@ -8,7 +8,7 @@
 import { z } from "zod";
 import { publicProcedure, protectedProcedure, router } from "../_core/trpc";
 import { getDb, writeAuditLog } from "../db";
-import { transactions, agents, commissionRules } from "../../drizzle/schema";
+import { transactions, agents, commissionRules, gl_journal_entries} from "../../drizzle/schema";
 import { eq, desc, and, sql, gte } from "drizzle-orm";
 import { TRPCError } from "@trpc/server";
 import { getAgentFromCookie } from "../middleware/agentAuth";
@@ -16,14 +16,15 @@ import {
   validateAmount,
   validateStatusTransition,
   auditFinancialAction,
-  withTransaction,
-} from "../lib/transactionHelper";
+  withTransaction, withIdempotency} from "../lib/transactionHelper";
+
 import {
   calculateFee,
   calculateCommission,
   calculateTax,
   calculateLatePenalty,
 } from "../lib/domainCalculations";
+import { checkDailyLimit, KYC_TIER_LIMITS } from "../lib/cbnLimits";
 
 const STATUS_TRANSITIONS: Record<string, string[]> = {
   draft: ["pending_approval"],
@@ -216,24 +217,10 @@ export const airtimeVendingRouter = router({
         phone: z.string().min(11).max(14),
         amount: z.number().min(0).int().min(50).max(50_000),
         provider: z.enum(["MTN", "AIRTEL", "GLO", "9MOBILE"]).optional(),
+        idempotencyKey: z.string().min(16).max(64),
       })
     )
     .mutation(async ({ input, ctx }) => {
-      const _fees = calculateFee(
-        typeof input === "object" && "amount" in input
-          ? Number((input as Record<string, unknown>).amount)
-          : 0,
-        "transfer"
-      );
-      const _commission = calculateCommission(_fees.fee, "transfer");
-      const _tax = calculateTax(_fees.fee, "vat");
-      auditFinancialAction(
-        "UPDATE",
-        "airtimeVending",
-        "mutation",
-        "Executed airtimeVending mutation"
-      );
-
       try {
         const session = await getAgentFromCookie(ctx.req);
         if (!session)
@@ -293,6 +280,21 @@ export const airtimeVendingRouter = router({
             // commission: sql`CAST(${agents.commissionBalance} AS numeric) + ${String(commission)}`, // removed: not in schema
           })
           .where(eq(agents.id, session.id));
+
+          // Double-entry journal entry
+          await db.insert(gl_journal_entries).values({
+            entryNumber: `JE-CI-${Date.now()}`,
+            description: `airtimeVending transaction`,
+            debitAccountId: 2001,
+            creditAccountId: 1001,
+            amount: Math.round((typeof input === "object" && "amount" in input ? Number((input as any).amount) : 0) * 100),
+            currency: "NGN",
+            referenceType: "transaction",
+            referenceId: ref ?? String(Date.now()),
+            postedBy: session?.agentCode ?? "system",
+            status: "posted",
+          });
+
 
         await writeAuditLog({
           agentId: session.id,

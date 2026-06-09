@@ -4,7 +4,7 @@
  */
 import { z } from "zod";
 import { protectedProcedure, router } from "../_core/trpc";
-import { getDb } from "../db";
+import { getDb, writeAuditLog } from "../db";
 import {
   commissionClawbacks,
   commissionAuditTrail,
@@ -224,22 +224,11 @@ export const commissionClawbackRouter = router({
       })
     )
     .mutation(async ({ input, ctx }) => {
-      const _fees = calculateFee(
-        typeof input === "object" && "amount" in input
-          ? Number((input as Record<string, unknown>).amount)
-          : 0,
-        "transfer"
-      );
-      const _commission = calculateCommission(_fees.fee, "transfer");
-      const _tax = calculateTax(_fees.fee, "vat");
-      auditFinancialAction(
-        "UPDATE",
-        "commissionClawback",
-        "mutation",
-        "Executed commissionClawback mutation"
-      );
-
-      try {
+      const txAmount = typeof input === "object" && "amount" in input ? Number((input as Record<string, unknown>).amount) : 0;
+      const fees = calculateFee(txAmount, "commissionPayout");
+      const commission = calculateCommission(fees.fee, "commissionPayout");
+      const tax = calculateTax(fees.fee, "vat");
+try {
       } catch (error) {
         if (error instanceof TRPCError) throw error;
         throw new TRPCError({
@@ -287,6 +276,24 @@ export const commissionClawbackRouter = router({
           `[CommissionClawback] Middleware event failed: ${e instanceof Error ? e.message : String(e)}`
         );
       }
+      await writeAuditLog({
+
+        agentId: typeof ctx === "object" && ctx !== null && "user" in ctx ? (ctx as any).user?.id ?? 0 : 0,
+
+        agentCode: typeof ctx === "object" && ctx !== null && "user" in ctx ? (ctx as any).user?.agentCode ?? "system" : "system",
+
+        action: "MUTATION",
+
+        resource: "commissionClawback",
+
+        resourceId: typeof input === "object" && input !== null && "id" in input ? String((input as any).id) : "new",
+
+        status: "success",
+
+        metadata: { input: typeof input === "object" ? input : {} },
+
+      });
+
       return { success: true, id: clawback.id, message: "Clawback initiated" };
     }),
 

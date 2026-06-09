@@ -1,6 +1,6 @@
 import { z } from "zod";
 import { protectedProcedure, router } from "../_core/trpc";
-import { getDb } from "../db";
+import { getDb, writeAuditLog } from "../db";
 import { transactions } from "../../drizzle/schema";
 import { sql, desc, eq, and, between, gte, lte, count } from "drizzle-orm";
 import { TRPCError } from "@trpc/server";
@@ -197,22 +197,11 @@ export const autoReconciliationEngineRouter = router({
       })
     )
     .mutation(async ({ input, ctx }) => {
-      const _fees = calculateFee(
-        typeof input === "object" && "amount" in input
-          ? Number((input as Record<string, unknown>).amount)
-          : 0,
-        "transfer"
-      );
-      const _commission = calculateCommission(_fees.fee, "transfer");
-      const _tax = calculateTax(_fees.fee, "vat");
-      auditFinancialAction(
-        "UPDATE",
-        "autoReconciliationEngine",
-        "mutation",
-        "Executed autoReconciliationEngine mutation"
-      );
-
-      try {
+      const txAmount = typeof input === "object" && "amount" in input ? Number((input as Record<string, unknown>).amount) : 0;
+      const fees = calculateFee(txAmount, "transfer");
+      const commission = calculateCommission(fees.fee, "transfer");
+      const tax = calculateTax(fees.fee, "vat");
+try {
         const db = (await getDb())!;
         const start = new Date(input.startDate);
         const end = new Date(input.endDate);
@@ -234,6 +223,24 @@ export const autoReconciliationEngineRouter = router({
         const txTotal = Number(txns[0]?.total || 0);
         const floatTotal = Number(floats[0]?.total || 0);
         const variance = Math.abs(txTotal - floatTotal);
+        await writeAuditLog({
+
+          agentId: typeof ctx === "object" && ctx !== null && "user" in ctx ? (ctx as any).user?.id ?? 0 : 0,
+
+          agentCode: typeof ctx === "object" && ctx !== null && "user" in ctx ? (ctx as any).user?.agentCode ?? "system" : "system",
+
+          action: "MUTATION",
+
+          resource: "autoReconciliationEngine",
+
+          resourceId: typeof input === "object" && input !== null && "id" in input ? String((input as any).id) : "new",
+
+          status: "success",
+
+          metadata: { input: typeof input === "object" ? input : {} },
+
+        });
+
         return {
           matched: variance <= input.tolerance * txTotal,
           txTotal,

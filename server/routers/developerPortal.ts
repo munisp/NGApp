@@ -15,7 +15,7 @@ import crypto from "crypto";
 import { TRPCError } from "@trpc/server";
 import { z } from "zod";
 import { eq, and, isNull, desc, gte, count, sql } from "drizzle-orm";
-import { getDb } from "../db";
+import { getDb, writeAuditLog } from "../db";
 import { apiKeys, webhookSecrets, apiKeyUsage } from "../../drizzle/schema";
 import { router, protectedProcedure } from "../_core/trpc";
 import {
@@ -143,22 +143,11 @@ export const developerPortalRouter = router({
       })
     )
     .mutation(async ({ input, ctx }) => {
-      const _fees = calculateFee(
-        typeof input === "object" && "amount" in input
-          ? Number((input as Record<string, unknown>).amount)
-          : 0,
-        "transfer"
-      );
-      const _commission = calculateCommission(_fees.fee, "transfer");
-      const _tax = calculateTax(_fees.fee, "vat");
-      auditFinancialAction(
-        "UPDATE",
-        "developerPortal",
-        "mutation",
-        "Executed developerPortal mutation"
-      );
-
-      try {
+      const txAmount = typeof input === "object" && "amount" in input ? Number((input as Record<string, unknown>).amount) : 0;
+      const fees = calculateFee(txAmount, "transfer");
+      const commission = calculateCommission(fees.fee, "transfer");
+      const tax = calculateTax(fees.fee, "vat");
+try {
         const db = (await getDb())!;
         if (!db)
           throw new TRPCError({
@@ -211,6 +200,33 @@ export const developerPortalRouter = router({
             keyPrefix: apiKeys.keyPrefix,
             createdAt: apiKeys.createdAt,
           });
+
+        await writeAuditLog({
+
+
+          agentId: typeof ctx === "object" && ctx !== null && "user" in ctx ? (ctx as any).user?.id ?? 0 : 0,
+
+
+          agentCode: typeof ctx === "object" && ctx !== null && "user" in ctx ? (ctx as any).user?.agentCode ?? "system" : "system",
+
+
+          action: "MUTATION",
+
+
+          resource: "developerPortal",
+
+
+          resourceId: typeof input === "object" && input !== null && "id" in input ? String((input as any).id) : "new",
+
+
+          status: "success",
+
+
+          metadata: { input: typeof input === "object" ? input : {} },
+
+
+        });
+
 
         return {
           success: true,

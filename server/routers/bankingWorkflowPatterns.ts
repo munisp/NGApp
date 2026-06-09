@@ -1,6 +1,6 @@
 import { z } from "zod";
 import { router, protectedProcedure } from "../_core/trpc";
-import { getDb } from "../db";
+import { getDb, writeAuditLog } from "../db";
 import { eq, desc, sql, count, and, gte, lte } from "drizzle-orm";
 import {
   workflowDefinitions,
@@ -215,22 +215,11 @@ export const bankingWorkflowPatternsRouter = router({
       })
     )
     .mutation(async ({ input, ctx }) => {
-      const _fees = calculateFee(
-        typeof input === "object" && "amount" in input
-          ? Number((input as Record<string, unknown>).amount)
-          : 0,
-        "transfer"
-      );
-      const _commission = calculateCommission(_fees.fee, "transfer");
-      const _tax = calculateTax(_fees.fee, "vat");
-      auditFinancialAction(
-        "UPDATE",
-        "bankingWorkflowPatterns",
-        "mutation",
-        "Executed bankingWorkflowPatterns mutation"
-      );
-
-      try {
+      const txAmount = typeof input === "object" && "amount" in input ? Number((input as Record<string, unknown>).amount) : 0;
+      const fees = calculateFee(txAmount, "transfer");
+      const commission = calculateCommission(fees.fee, "transfer");
+      const tax = calculateTax(fees.fee, "vat");
+try {
         const db = (await getDb())!;
         const [wf] = await db
           .insert(workflowDefinitions)
@@ -267,6 +256,7 @@ export const bankingWorkflowPatternsRouter = router({
       .select({ value: count() })
       .from(workflowInstances)
       .limit(100);
+
     return {
       totalWorkflows: Number(totalDefs.value),
       totalInstances: Number(totalInstances.value),

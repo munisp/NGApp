@@ -1,7 +1,7 @@
 import { z } from "zod";
 import { protectedProcedure, router } from "../_core/trpc";
 import { TRPCError } from "@trpc/server";
-import { getDb } from "../db";
+import { getDb, writeAuditLog } from "../db";
 import { resilientFetch } from "../lib/resilientFetch";
 import { validateInput } from "../lib/routerHelpers";
 
@@ -265,22 +265,11 @@ export const marketplaceRouter = router({
       })
     )
     .mutation(async ({ input, ctx }) => {
-      const _fees = calculateFee(
-        typeof input === "object" && "amount" in input
-          ? Number((input as Record<string, unknown>).amount)
-          : 0,
-        "transfer"
-      );
-      const _commission = calculateCommission(_fees.fee, "transfer");
-      const _tax = calculateTax(_fees.fee, "vat");
-      auditFinancialAction(
-        "UPDATE",
-        "marketplace",
-        "mutation",
-        "Executed marketplace mutation"
-      );
-
-      return mktFetch("/api/v1/connections", "POST", input);
+      const txAmount = typeof input === "object" && "amount" in input ? Number((input as Record<string, unknown>).amount) : 0;
+      const fees = calculateFee(txAmount, "transfer");
+      const commission = calculateCommission(fees.fee, "transfer");
+      const tax = calculateTax(fees.fee, "vat");
+return mktFetch("/api/v1/connections", "POST", input);
     }),
 
   // ─── Product Sync ────────────────────────────────────────────────────────

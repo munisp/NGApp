@@ -292,22 +292,11 @@ export const kycEnforcementRouter = router({
       })
     )
     .mutation(async ({ input, ctx }) => {
-      const _fees = calculateFee(
-        typeof input === "object" && "amount" in input
-          ? Number((input as Record<string, unknown>).amount)
-          : 0,
-        "transfer"
-      );
-      const _commission = calculateCommission(_fees.fee, "transfer");
-      const _tax = calculateTax(_fees.fee, "vat");
-      auditFinancialAction(
-        "UPDATE",
-        "kycEnforcement",
-        "mutation",
-        "Executed kycEnforcement mutation"
-      );
-
-      return serviceCall(
+      const txAmount = typeof input === "object" && "amount" in input ? Number((input as Record<string, unknown>).amount) : 0;
+      const fees = calculateFee(txAmount, "transfer");
+      const commission = calculateCommission(fees.fee, "transfer");
+      const tax = calculateTax(fees.fee, "vat");
+return serviceCall(
         `${KYC_ENFORCEMENT_URL}/api/v1/enforce/account-opening`,
         "POST",
         {
@@ -794,6 +783,7 @@ export const kycEnforcementRouter = router({
         checks[name] = "unreachable";
       }
     }
+
     return { services: checks };
   }),
 });

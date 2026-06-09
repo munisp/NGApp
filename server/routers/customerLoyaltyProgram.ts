@@ -1,6 +1,6 @@
 import { z } from "zod";
 import { router, protectedProcedure } from "../_core/trpc";
-import { getDb } from "../db";
+import { getDb, writeAuditLog } from "../db";
 import { eq, desc, and, sql, count, sum } from "drizzle-orm";
 import { loyaltyHistory, customers, auditLog } from "../../drizzle/schema";
 import { TRPCError } from "@trpc/server";
@@ -190,22 +190,11 @@ export const customerLoyaltyProgramRouter = router({
       })
     )
     .mutation(async ({ input, ctx }) => {
-      const _fees = calculateFee(
-        typeof input === "object" && "amount" in input
-          ? Number((input as Record<string, unknown>).amount)
-          : 0,
-        "transfer"
-      );
-      const _commission = calculateCommission(_fees.fee, "transfer");
-      const _tax = calculateTax(_fees.fee, "vat");
-      auditFinancialAction(
-        "UPDATE",
-        "customerLoyaltyProgram",
-        "mutation",
-        "Executed customerLoyaltyProgram mutation"
-      );
-
-      try {
+      const txAmount = typeof input === "object" && "amount" in input ? Number((input as Record<string, unknown>).amount) : 0;
+      const fees = calculateFee(txAmount, "transfer");
+      const commission = calculateCommission(fees.fee, "transfer");
+      const tax = calculateTax(fees.fee, "vat");
+try {
         const db = (await getDb())!;
         const [entry] = await db
           .insert(loyaltyHistory)
@@ -313,6 +302,7 @@ export const customerLoyaltyProgramRouter = router({
       .select({ value: count() })
       .from(customers)
       .limit(100);
+
     return {
       totalPointsEarned: Number(totalEarned.total ?? 0),
       totalPointsRedeemed: Number(totalRedeemed.total ?? 0),

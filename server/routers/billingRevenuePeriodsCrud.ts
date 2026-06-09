@@ -2,7 +2,7 @@
 // Sprint 87: Full domain logic — period closing workflow, revenue recognition rules
 import { z } from "zod";
 import { protectedProcedure, router } from "../_core/trpc";
-import { getDb } from "../db";
+import { getDb, writeAuditLog } from "../db";
 import { billingRevenuePeriods } from "../../drizzle/schema";
 import { eq, desc, and, sql, count } from "drizzle-orm";
 import { TRPCError } from "@trpc/server";
@@ -223,21 +223,6 @@ export const billingRevenuePeriodsRouter = router({
   closePeriod: protectedProcedure
     .input(z.object({ id: z.number() }))
     .mutation(async ({ input, ctx }) => {
-      const _fees = calculateFee(
-        typeof input === "object" && "amount" in input
-          ? Number((input as Record<string, unknown>).amount)
-          : 0,
-        "transfer"
-      );
-      const _commission = calculateCommission(_fees.fee, "transfer");
-      const _tax = calculateTax(_fees.fee, "vat");
-      auditFinancialAction(
-        "UPDATE",
-        "billingRevenuePeriodsCrud",
-        "mutation",
-        "Executed billingRevenuePeriodsCrud mutation"
-      );
-
       try {
         const db = (await getDb())!;
         const [period] = await db
@@ -268,6 +253,24 @@ export const billingRevenuePeriodsRouter = router({
           .update(billingRevenuePeriods)
           .set({ netPlatformProfit: netProfit.toFixed(2) })
           .where(eq(billingRevenuePeriods.id, input.id));
+        await writeAuditLog({
+
+          agentId: typeof ctx === "object" && ctx !== null && "user" in ctx ? (ctx as any).user?.id ?? 0 : 0,
+
+          agentCode: typeof ctx === "object" && ctx !== null && "user" in ctx ? (ctx as any).user?.agentCode ?? "system" : "system",
+
+          action: "MUTATION",
+
+          resource: "billingRevenuePeriodsCrud",
+
+          resourceId: typeof input === "object" && input !== null && "id" in input ? String((input as any).id) : "new",
+
+          status: "success",
+
+          metadata: { input: typeof input === "object" ? input : {} },
+
+        });
+
         return {
           success: true,
           netProfit: netProfit.toFixed(2),

@@ -10,7 +10,7 @@
 import { TRPCError } from "@trpc/server";
 import { z } from "zod";
 import { protectedProcedure, router } from "../_core/trpc";
-import { getDb } from "../db";
+import { getDb, writeAuditLog } from "../db";
 import {
   tenants,
   agents,
@@ -187,22 +187,11 @@ export const superAdminRouter = router({
         })
       )
       .mutation(async ({ input, ctx }) => {
-        const _fees = calculateFee(
-          typeof input === "object" && "amount" in input
-            ? Number((input as Record<string, unknown>).amount)
-            : 0,
-          "transfer"
-        );
-        const _commission = calculateCommission(_fees.fee, "transfer");
-        const _tax = calculateTax(_fees.fee, "vat");
-        auditFinancialAction(
-          "UPDATE",
-          "superAdmin",
-          "mutation",
-          "Executed superAdmin mutation"
-        );
-
-        try {
+      const txAmount = typeof input === "object" && "amount" in input ? Number((input as Record<string, unknown>).amount) : 0;
+      const fees = calculateFee(txAmount, "transfer");
+      const commission = calculateCommission(fees.fee, "transfer");
+      const tax = calculateTax(fees.fee, "vat");
+try {
           const db = (await getDb())!;
           if (!db) throw new TRPCError({ code: "INTERNAL_SERVER_ERROR" });
           const [existing] = await db

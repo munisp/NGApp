@@ -15,7 +15,7 @@
 import { z } from "zod";
 import { TRPCError } from "@trpc/server";
 import { protectedProcedure, router } from "../_core/trpc";
-import { getDb } from "../db";
+import { getDb, writeAuditLog } from "../db";
 import { systemConfig } from "../../drizzle/schema";
 import { eq, and, gte, lte, desc, sql, count } from "drizzle-orm";
 import { validateInput } from "../lib/routerHelpers";
@@ -297,22 +297,11 @@ export const systemConfigRouter = router({
       })
     )
     .mutation(async ({ ctx, input }) => {
-      const _fees = calculateFee(
-        typeof input === "object" && "amount" in input
-          ? Number((input as Record<string, unknown>).amount)
-          : 0,
-        "transfer"
-      );
-      const _commission = calculateCommission(_fees.fee, "transfer");
-      const _tax = calculateTax(_fees.fee, "vat");
-      auditFinancialAction(
-        "UPDATE",
-        "systemConfig",
-        "mutation",
-        "Executed systemConfig mutation"
-      );
-
-      try {
+      const txAmount = typeof input === "object" && "amount" in input ? Number((input as Record<string, unknown>).amount) : 0;
+      const fees = calculateFee(txAmount, "transfer");
+      const commission = calculateCommission(fees.fee, "transfer");
+      const tax = calculateTax(fees.fee, "vat");
+try {
         if (ctx.user.role !== "admin" && ctx.user.role !== "supervisor") {
           throw new TRPCError({
             code: "FORBIDDEN",

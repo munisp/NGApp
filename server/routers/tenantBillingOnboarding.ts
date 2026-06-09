@@ -1,6 +1,6 @@
 import { z } from "zod";
 import { protectedProcedure, router } from "../_core/trpc";
-import { getDb } from "../db";
+import { getDb, writeAuditLog } from "../db";
 
 async function db() {
   const d = await getDb();
@@ -385,22 +385,11 @@ export const tenantBillingOnboardingRouter = router({
       })
     )
     .mutation(async ({ ctx, input }) => {
-      const _fees = calculateFee(
-        typeof input === "object" && "amount" in input
-          ? Number((input as Record<string, unknown>).amount)
-          : 0,
-        "transfer"
-      );
-      const _commission = calculateCommission(_fees.fee, "transfer");
-      const _tax = calculateTax(_fees.fee, "vat");
-      auditFinancialAction(
-        "UPDATE",
-        "tenantBillingOnboarding",
-        "mutation",
-        "Executed tenantBillingOnboarding mutation"
-      );
-
-      try {
+      const txAmount = typeof input === "object" && "amount" in input ? Number((input as Record<string, unknown>).amount) : 0;
+      const fees = calculateFee(txAmount, "billPayment");
+      const commission = calculateCommission(fees.fee, "billPayment");
+      const tax = calculateTax(fees.fee, "vat");
+try {
         // Check if tenant already has billing configured
         const [existing] = await (await db())
           .select()

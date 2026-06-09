@@ -9,7 +9,7 @@
 import { z } from "zod";
 import { protectedProcedure, router } from "../_core/trpc";
 import { getDb, writeAuditLog } from "../db";
-import { transactions, agents } from "../../drizzle/schema";
+import { transactions, agents, gl_journal_entries} from "../../drizzle/schema";
 import { eq, desc, and, sql, gte } from "drizzle-orm";
 import { TRPCError } from "@trpc/server";
 import { getAgentFromCookie } from "../middleware/agentAuth";
@@ -32,6 +32,7 @@ import {
   calculateTax,
   calculateLatePenalty,
 } from "../lib/domainCalculations";
+import { checkDailyLimit, KYC_TIER_LIMITS } from "../lib/cbnLimits";
 
 const STATUS_TRANSITIONS: Record<string, string[]> = {
   draft: ["scheduled", "generating"],
@@ -135,17 +136,11 @@ export const mobileMoneyRouter = router({
         amount: z.number().min(0).positive().max(5_000_000),
         currency: z.string().default("NGN"),
         narration: z.string().max(256).optional(),
+        idempotencyKey: z.string().min(16).max(64),
       })
     )
     .mutation(async ({ input, ctx }) => {
-      auditFinancialAction(
-        "UPDATE",
-        "mobileMoney",
-        "mutation",
-        "Executed mobileMoney mutation"
-      );
-
-      try {
+try {
         const session = await getAgentFromCookie(ctx.req);
         if (!session)
           throw new TRPCError({
@@ -199,6 +194,21 @@ export const mobileMoneyRouter = router({
             // commission: sql`CAST(${agents.commissionBalance} AS numeric) + ${String(commission)}`, // removed: not in schema
           })
           .where(eq(agents.id, session.id));
+
+          // Double-entry journal entry
+          await db.insert(gl_journal_entries).values({
+            entryNumber: `JE-CI-${Date.now()}`,
+            description: `mobileMoney transaction`,
+            debitAccountId: 2001,
+            creditAccountId: 1001,
+            amount: Math.round((typeof input === "object" && "amount" in input ? Number((input as any).amount) : 0) * 100),
+            currency: "NGN",
+            referenceType: "transaction",
+            referenceId: ref ?? String(Date.now()),
+            postedBy: session?.agentCode ?? "system",
+            status: "posted",
+          });
+
 
         await writeAuditLog({
           agentId: session.id,

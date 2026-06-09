@@ -8,7 +8,7 @@
 import { z } from "zod";
 import { protectedProcedure, router } from "../_core/trpc";
 import { getDb, writeAuditLog } from "../db";
-import { transactions, agents } from "../../drizzle/schema";
+import { transactions, agents, gl_journal_entries} from "../../drizzle/schema";
 import { eq, desc, and, sql, gte } from "drizzle-orm";
 import { TRPCError } from "@trpc/server";
 import { getAgentFromCookie } from "../middleware/agentAuth";
@@ -121,22 +121,11 @@ export const offlineSyncRouter = router({
       })
     )
     .mutation(async ({ input, ctx }) => {
-      const _fees = calculateFee(
-        typeof input === "object" && "amount" in input
-          ? Number((input as Record<string, unknown>).amount)
-          : 0,
-        "transfer"
-      );
-      const _commission = calculateCommission(_fees.fee, "transfer");
-      const _tax = calculateTax(_fees.fee, "vat");
-      auditFinancialAction(
-        "UPDATE",
-        "offlineSync",
-        "mutation",
-        "Executed offlineSync mutation"
-      );
-
-      try {
+      const txAmount = typeof input === "object" && "amount" in input ? Number((input as Record<string, unknown>).amount) : 0;
+      const fees = calculateFee(txAmount, "transfer");
+      const commission = calculateCommission(fees.fee, "transfer");
+      const tax = calculateTax(fees.fee, "vat");
+try {
         const session = await getAgentFromCookie(ctx.req);
         if (!session)
           throw new TRPCError({
@@ -208,6 +197,21 @@ export const offlineSyncRouter = router({
                   floatBalance: sql`CAST(${agents.floatBalance} AS numeric) - ${String(tx.amount)}`,
                 })
                 .where(eq(agents.id, session.id));
+
+          // Double-entry journal entry
+          await db.insert(gl_journal_entries).values({
+            entryNumber: `JE-CI-${Date.now()}`,
+            description: `offlineSync transaction`,
+            debitAccountId: 2001,
+            creditAccountId: 1001,
+            amount: Math.round((typeof input === "object" && "amount" in input ? Number((input as any).amount) : 0) * 100),
+            currency: "NGN",
+            referenceType: "transaction",
+            referenceId: ref ?? String(Date.now()),
+            postedBy: session?.agentCode ?? "system",
+            status: "posted",
+          });
+
             }
             if (tx.type === "Cash In") {
               await db

@@ -5,7 +5,7 @@
  */
 import { z } from "zod";
 import { protectedProcedure, router } from "../_core/trpc";
-import { getDb } from "../db";
+import { getDb, writeAuditLog } from "../db";
 import { disputes, disputeMessages } from "../../drizzle/schema";
 import { eq, desc, count, sql, and, ilike } from "drizzle-orm";
 import { publishEvent, type KafkaTopic } from "../kafkaClient";
@@ -233,22 +233,11 @@ export const txDisputeArbitrationRouter = router({
       })
     )
     .mutation(async ({ input, ctx }) => {
-      const _fees = calculateFee(
-        typeof input === "object" && "amount" in input
-          ? Number((input as Record<string, unknown>).amount)
-          : 0,
-        "transfer"
-      );
-      const _commission = calculateCommission(_fees.fee, "transfer");
-      const _tax = calculateTax(_fees.fee, "vat");
-      auditFinancialAction(
-        "UPDATE",
-        "txDisputeArbitration",
-        "mutation",
-        "Executed txDisputeArbitration mutation"
-      );
-
-      const db = (await getDb())!;
+      const txAmount = typeof input === "object" && "amount" in input ? Number((input as Record<string, unknown>).amount) : 0;
+      const fees = calculateFee(txAmount, "transfer");
+      const commission = calculateCommission(fees.fee, "transfer");
+      const tax = calculateTax(fees.fee, "vat");
+const db = (await getDb())!;
       const numId = parseInt(input.disputeId.replace(/\D/g, "")) || 0;
 
       // Update dispute status
@@ -315,6 +304,33 @@ export const txDisputeArbitrationRouter = router({
       logger.info(
         `[TxDisputeArbitration] Dispute ${numId} resolved: ${input.outcome}`
       );
+
+      await writeAuditLog({
+
+
+        agentId: typeof ctx === "object" && ctx !== null && "user" in ctx ? (ctx as any).user?.id ?? 0 : 0,
+
+
+        agentCode: typeof ctx === "object" && ctx !== null && "user" in ctx ? (ctx as any).user?.agentCode ?? "system" : "system",
+
+
+        action: "MUTATION",
+
+
+        resource: "txDisputeArbitration",
+
+
+        resourceId: typeof input === "object" && input !== null && "id" in input ? String((input as any).id) : "new",
+
+
+        status: "success",
+
+
+        metadata: { input: typeof input === "object" ? input : {} },
+
+
+      });
+
 
       return {
         disputeId: input.disputeId,
