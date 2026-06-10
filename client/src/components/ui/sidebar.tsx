@@ -615,9 +615,9 @@ function SidebarMenuSkeleton({
 }) {
   const width = React.useMemo(() => {
     const widths = [50, 62, 74, 58, 86, 66, 78, 54, 90, 70];
-    const idx = typeof props['data-index'] === 'number' ? props['data-index'] : 0;
-    return `${widths[idx % widths.length]}%`;
-  }, [props]);
+    const idx = className ? className.length % widths.length : 0;
+    return `${widths[idx]}%`;
+  }, [className]);
 
   return (
     <div
