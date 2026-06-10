@@ -1,0 +1,468 @@
+openapi: 3.1.0
+info:
+  title: Payment Switch Platform API
+  description: |
+    Comprehensive payment processing platform API powering domestic payments,
+    card processing, trade finance, government payments, open banking,
+    inbound/outbound remittances, and administrative operations.
+
+    ## Authentication
+    All API endpoints require JWT authentication via Bearer token in the
+    `Authorization` header. Obtain tokens via the `/api/v1/trpc/auth.login`
+    mutation.
+
+    ## API Versioning
+    The current API version is `v1`. Both `/api/v1/trpc/` and `/api/trpc/`
+    are supported. Use the versioned endpoint for forward compatibility.
+    Check `/api/version` for supported versions.
+
+    ## Rate Limiting
+    All API routes are rate-limited. Default: 100 requests per 15-minute window.
+    Sensitive operations (auth, payments) have stricter limits.
+
+    ## tRPC Protocol
+    This API uses tRPC. Queries use GET requests with URL-encoded input.
+    Mutations use POST requests with JSON body. Batch requests are supported
+    via comma-separated procedure names.
+  version: 1.0.0
+  contact:
+    name: Payment Switch Platform Team
+  license:
+    name: MIT
+
+servers:
+  - url: /api/v1/trpc
+    description: Production API (versioned)
+  - url: /api/trpc
+    description: Production API (unversioned, backward-compatible)
+
+tags:
+  - name: Authentication
+    description: Login, registration, session management, 2FA
+  - name: Domestic Payments
+    description: NIP transfers, bill payments, standing orders, NEFT, cheques, mandates
+  - name: Card Processing
+    description: Card tokenization, PCI-DSS compliant card operations
+  - name: Trade Payments
+    description: Letters of credit, trade finance, cross-border trade
+  - name: Government Payments
+    description: TSA collections, tax payments, government disbursements
+  - name: Open Banking
+    description: Consent management, account information, payment initiation (PSD2/Open Banking)
+  - name: Inbound Remittance
+    description: Incoming international transfers, corridor management
+  - name: Outbound Remittance
+    description: Outgoing international transfers, compliance screening, sanctions checks
+  - name: Batch Transfers
+    description: Bulk payment processing, payroll, disbursements
+  - name: Recurring Payments
+    description: Scheduled recurring remittances and standing orders
+  - name: Disputes
+    description: Transaction disputes, chargebacks, resolution workflow
+  - name: Compliance
+    description: AML/KYC checks, regulatory reporting, sanctions screening
+  - name: Audit
+    description: Audit log queries, compliance audit trails
+  - name: Notifications
+    description: Notification delivery, preferences, push/email/SMS
+  - name: Security
+    description: Security settings, trusted devices, session management
+  - name: Webhooks
+    description: Webhook configuration and delivery management
+  - name: Fees
+    description: Fee management, fee schedules, pricing tiers
+  - name: Integrations
+    description: Third-party integration management (Mojaloop, Keycloak, etc.)
+  - name: AI/ML
+    description: AI-powered fraud detection, transaction classification, forecasting
+  - name: Admin
+    description: User management, system configuration, maintenance
+  - name: Resilience
+    description: Circuit breaker status, system health, failover management
+
+paths:
+  /auth.login:
+    post:
+      tags: [Authentication]
+      summary: Login with credentials
+      description: Authenticate with username/password, returns JWT token
+      requestBody:
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [username, password]
+              properties:
+                username:
+                  type: string
+                password:
+                  type: string
+      responses:
+        '200':
+          description: Login successful
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  token:
+                    type: string
+                  user:
+                    $ref: '#/components/schemas/User'
+
+  /twoFactor.setup:
+    post:
+      tags: [Authentication]
+      summary: Set up two-factor authentication
+      description: Generate TOTP secret and QR code for 2FA setup
+      security:
+        - bearerAuth: []
+      responses:
+        '200':
+          description: 2FA setup data returned
+
+  /domesticPayments.list:
+    get:
+      tags: [Domestic Payments]
+      summary: List domestic payment transactions
+      description: Retrieve filtered list of NIP, NEFT, and other domestic payment transactions
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: input
+          in: query
+          schema:
+            type: object
+            properties:
+              type:
+                type: string
+                enum: [nip, neft, rtgs, cheque, mandate]
+              status:
+                type: string
+                enum: [pending, completed, failed, reversed]
+              channel:
+                type: string
+      responses:
+        '200':
+          description: List of domestic payments
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/DomesticPayment'
+
+  /domesticPayments.initiate:
+    post:
+      tags: [Domestic Payments]
+      summary: Initiate a domestic payment
+      description: Create a new NIP instant transfer
+      security:
+        - bearerAuth: []
+      requestBody:
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [amount, currency, sourceAccount, destinationAccount, destinationBank]
+              properties:
+                amount:
+                  type: number
+                currency:
+                  type: string
+                  default: NGN
+                sourceAccount:
+                  type: string
+                destinationAccount:
+                  type: string
+                destinationBank:
+                  type: string
+                narration:
+                  type: string
+      responses:
+        '200':
+          description: Payment initiated successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PaymentResult'
+
+  /cardProcessing.tokenize:
+    post:
+      tags: [Card Processing]
+      summary: Tokenize a payment card
+      description: PCI-DSS compliant card tokenization
+      security:
+        - bearerAuth: []
+      responses:
+        '200':
+          description: Card tokenized successfully
+
+  /tradePayments.list:
+    get:
+      tags: [Trade Payments]
+      summary: List trade payment transactions
+      security:
+        - bearerAuth: []
+      responses:
+        '200':
+          description: List of trade payments
+
+  /governmentPayments.list:
+    get:
+      tags: [Government Payments]
+      summary: List government payment transactions
+      security:
+        - bearerAuth: []
+      responses:
+        '200':
+          description: List of government payments
+
+  /openBanking.getConsents:
+    get:
+      tags: [Open Banking]
+      summary: List active Open Banking consents
+      security:
+        - bearerAuth: []
+      responses:
+        '200':
+          description: List of active consents
+
+  /inboundRemittance.list:
+    get:
+      tags: [Inbound Remittance]
+      summary: List inbound remittance transactions
+      security:
+        - bearerAuth: []
+      responses:
+        '200':
+          description: List of inbound remittances
+
+  /outboundRemittance.list:
+    get:
+      tags: [Outbound Remittance]
+      summary: List outbound remittance transactions
+      security:
+        - bearerAuth: []
+      responses:
+        '200':
+          description: List of outbound remittances
+
+  /batchTransfer.list:
+    get:
+      tags: [Batch Transfers]
+      summary: List batch transfer operations
+      security:
+        - bearerAuth: []
+      responses:
+        '200':
+          description: List of batch transfers
+
+  /recurringRemittance.list:
+    get:
+      tags: [Recurring Payments]
+      summary: List recurring payment schedules
+      security:
+        - bearerAuth: []
+      responses:
+        '200':
+          description: List of recurring schedules
+
+  /dispute.list:
+    get:
+      tags: [Disputes]
+      summary: List transaction disputes
+      security:
+        - bearerAuth: []
+      responses:
+        '200':
+          description: List of disputes
+
+  /complianceReport.list:
+    get:
+      tags: [Compliance]
+      summary: List compliance reports
+      security:
+        - bearerAuth: []
+      responses:
+        '200':
+          description: List of compliance reports
+
+  /auditLog.list:
+    get:
+      tags: [Audit]
+      summary: Query audit log entries
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: input
+          in: query
+          schema:
+            type: object
+            properties:
+              action:
+                type: string
+              userId:
+                type: string
+              startDate:
+                type: string
+                format: date-time
+              endDate:
+                type: string
+                format: date-time
+      responses:
+        '200':
+          description: Audit log entries
+
+  /notification.list:
+    get:
+      tags: [Notifications]
+      summary: List user notifications
+      security:
+        - bearerAuth: []
+      responses:
+        '200':
+          description: List of notifications
+
+  /webhookConfig.list:
+    get:
+      tags: [Webhooks]
+      summary: List webhook configurations
+      security:
+        - bearerAuth: []
+      responses:
+        '200':
+          description: List of webhook configs
+
+  /feeManagement.list:
+    get:
+      tags: [Fees]
+      summary: List fee schedules
+      security:
+        - bearerAuth: []
+      responses:
+        '200':
+          description: List of fee schedules
+
+  /ai.analyzeTransaction:
+    post:
+      tags: [AI/ML]
+      summary: AI-powered transaction analysis
+      description: Uses ML models for fraud scoring, classification, and anomaly detection
+      security:
+        - bearerAuth: []
+      responses:
+        '200':
+          description: Transaction analysis result
+
+  /resilience.status:
+    get:
+      tags: [Resilience]
+      summary: Get circuit breaker and system resilience status
+      security:
+        - bearerAuth: []
+      responses:
+        '200':
+          description: System resilience status
+
+  /api/version:
+    get:
+      summary: Get API version information
+      description: Returns current API version and supported versions
+      responses:
+        '200':
+          description: API version info
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  current:
+                    type: string
+                    example: v1
+                  supported:
+                    type: array
+                    items:
+                      type: string
+                    example: [v1]
+                  deprecated:
+                    type: array
+                    items:
+                      type: string
+                    example: []
+
+components:
+  securitySchemes:
+    bearerAuth:
+      type: http
+      scheme: bearer
+      bearerFormat: JWT
+      description: JWT token obtained from auth.login
+
+  schemas:
+    User:
+      type: object
+      properties:
+        id:
+          type: integer
+        username:
+          type: string
+        email:
+          type: string
+        role:
+          type: string
+          enum: [super_admin, admin, operator, viewer, auditor]
+        firstName:
+          type: string
+        lastName:
+          type: string
+
+    DomesticPayment:
+      type: object
+      properties:
+        id:
+          type: string
+        amount:
+          type: number
+        currency:
+          type: string
+        status:
+          type: string
+          enum: [pending, completed, failed, reversed]
+        type:
+          type: string
+          enum: [nip, neft, rtgs, cheque, mandate]
+        sourceAccount:
+          type: string
+        destinationAccount:
+          type: string
+        narration:
+          type: string
+        createdAt:
+          type: string
+          format: date-time
+
+    PaymentResult:
+      type: object
+      properties:
+        success:
+          type: boolean
+        transactionId:
+          type: string
+        status:
+          type: string
+        message:
+          type: string
+
+    Error:
+      type: object
+      properties:
+        code:
+          type: string
+        message:
+          type: string
+        details:
+          type: object
+
+security:
+  - bearerAuth: []

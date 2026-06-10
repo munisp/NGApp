@@ -1,0 +1,376 @@
+{
+  "dashboard": {
+    "id": null,
+    "uid": "security-overview",
+    "title": "Payment Switch - Security Dashboard",
+    "tags": ["security", "waf", "siem", "threat-intel"],
+    "timezone": "browser",
+    "refresh": "10s",
+    "time": {
+      "from": "now-6h",
+      "to": "now"
+    },
+    "panels": [
+      {
+        "id": 1,
+        "title": "Security Score",
+        "type": "gauge",
+        "gridPos": {"h": 6, "w": 4, "x": 0, "y": 0},
+        "targets": [
+          {
+            "expr": "security_score",
+            "legendFormat": "Score"
+          }
+        ],
+        "fieldConfig": {
+          "defaults": {
+            "min": 0,
+            "max": 100,
+            "thresholds": {
+              "mode": "absolute",
+              "steps": [
+                {"color": "red", "value": 0},
+                {"color": "yellow", "value": 70},
+                {"color": "green", "value": 90}
+              ]
+            },
+            "unit": "percent"
+          }
+        }
+      },
+      {
+        "id": 2,
+        "title": "WAF Requests (Allow/Block)",
+        "type": "stat",
+        "gridPos": {"h": 3, "w": 4, "x": 4, "y": 0},
+        "targets": [
+          {
+            "expr": "sum(rate(openappsec_requests_total{action=\"allow\"}[5m]))",
+            "legendFormat": "Allowed"
+          },
+          {
+            "expr": "sum(rate(openappsec_blocked_requests_total[5m]))",
+            "legendFormat": "Blocked"
+          }
+        ]
+      },
+      {
+        "id": 3,
+        "title": "Blocked IPs",
+        "type": "stat",
+        "gridPos": {"h": 3, "w": 4, "x": 4, "y": 3},
+        "targets": [
+          {
+            "expr": "security_blocked_ips_total",
+            "legendFormat": "Blocked"
+          }
+        ],
+        "fieldConfig": {
+          "defaults": {
+            "thresholds": {
+              "mode": "absolute",
+              "steps": [
+                {"color": "green", "value": 0},
+                {"color": "yellow", "value": 100},
+                {"color": "red", "value": 500}
+              ]
+            }
+          }
+        }
+      },
+      {
+        "id": 4,
+        "title": "SIEM Alerts (Open)",
+        "type": "stat",
+        "gridPos": {"h": 3, "w": 4, "x": 8, "y": 0},
+        "targets": [
+          {
+            "expr": "sum(wazuh_alerts_by_severity{severity=\"critical\"})",
+            "legendFormat": "Critical"
+          },
+          {
+            "expr": "sum(wazuh_alerts_by_severity{severity=\"high\"})",
+            "legendFormat": "High"
+          }
+        ]
+      },
+      {
+        "id": 5,
+        "title": "Active Agents",
+        "type": "stat",
+        "gridPos": {"h": 3, "w": 4, "x": 8, "y": 3},
+        "targets": [
+          {
+            "expr": "wazuh_agents_active",
+            "legendFormat": "Active"
+          },
+          {
+            "expr": "wazuh_agents_total",
+            "legendFormat": "Total"
+          }
+        ]
+      },
+      {
+        "id": 6,
+        "title": "Threat Intel Indicators",
+        "type": "stat",
+        "gridPos": {"h": 3, "w": 4, "x": 12, "y": 0},
+        "targets": [
+          {
+            "expr": "opencti_malicious_ips",
+            "legendFormat": "Malicious IPs"
+          }
+        ]
+      },
+      {
+        "id": 7,
+        "title": "Fraud Indicators",
+        "type": "stat",
+        "gridPos": {"h": 3, "w": 4, "x": 12, "y": 3},
+        "targets": [
+          {
+            "expr": "opencti_fraud_indicators",
+            "legendFormat": "Fraud IOCs"
+          }
+        ]
+      },
+      {
+        "id": 8,
+        "title": "Open Incidents",
+        "type": "stat",
+        "gridPos": {"h": 6, "w": 4, "x": 16, "y": 0},
+        "targets": [
+          {
+            "expr": "sum(security_incidents_open{severity=\"critical\"})",
+            "legendFormat": "Critical"
+          },
+          {
+            "expr": "sum(security_incidents_open{severity=\"high\"})",
+            "legendFormat": "High"
+          },
+          {
+            "expr": "sum(security_incidents_open{severity=\"medium\"})",
+            "legendFormat": "Medium"
+          }
+        ]
+      },
+      {
+        "id": 9,
+        "title": "WAF Rules Active",
+        "type": "stat",
+        "gridPos": {"h": 3, "w": 4, "x": 20, "y": 0},
+        "targets": [
+          {
+            "expr": "openappsec_rules_active",
+            "legendFormat": "Rules"
+          }
+        ]
+      },
+      {
+        "id": 10,
+        "title": "Learning Mode",
+        "type": "stat",
+        "gridPos": {"h": 3, "w": 4, "x": 20, "y": 3},
+        "targets": [
+          {
+            "expr": "openappsec_learning_mode",
+            "legendFormat": "Mode"
+          }
+        ],
+        "fieldConfig": {
+          "defaults": {
+            "mappings": [
+              {"type": "value", "options": {"0": {"text": "BLOCKING", "color": "green"}}},
+              {"type": "value", "options": {"1": {"text": "LEARNING", "color": "yellow"}}}
+            ]
+          }
+        }
+      },
+      {
+        "id": 11,
+        "title": "Attack Types Detected",
+        "type": "piechart",
+        "gridPos": {"h": 8, "w": 8, "x": 0, "y": 6},
+        "targets": [
+          {
+            "expr": "sum(rate(openappsec_attacks_detected_total[1h])) by (type)",
+            "legendFormat": "{{type}}"
+          }
+        ],
+        "options": {
+          "legend": {
+            "displayMode": "table",
+            "placement": "right"
+          }
+        }
+      },
+      {
+        "id": 12,
+        "title": "WAF Blocked Requests Over Time",
+        "type": "timeseries",
+        "gridPos": {"h": 8, "w": 16, "x": 8, "y": 6},
+        "targets": [
+          {
+            "expr": "sum(rate(openappsec_blocked_requests_total[5m])) by (attack_type)",
+            "legendFormat": "{{attack_type}}"
+          }
+        ],
+        "fieldConfig": {
+          "defaults": {
+            "custom": {
+              "lineWidth": 2,
+              "fillOpacity": 30
+            }
+          }
+        }
+      },
+      {
+        "id": 13,
+        "title": "SIEM Alerts by Severity",
+        "type": "timeseries",
+        "gridPos": {"h": 8, "w": 12, "x": 0, "y": 14},
+        "targets": [
+          {
+            "expr": "sum(rate(wazuh_alerts_total[5m])) by (level)",
+            "legendFormat": "Level {{level}}"
+          }
+        ],
+        "fieldConfig": {
+          "defaults": {
+            "custom": {
+              "lineWidth": 2
+            }
+          },
+          "overrides": [
+            {
+              "matcher": {"id": "byRegexp", "options": "Level 1[2-5]"},
+              "properties": [{"id": "color", "value": {"mode": "fixed", "fixedColor": "red"}}]
+            }
+          ]
+        }
+      },
+      {
+        "id": 14,
+        "title": "Vulnerabilities by Severity",
+        "type": "bargauge",
+        "gridPos": {"h": 8, "w": 6, "x": 12, "y": 14},
+        "targets": [
+          {
+            "expr": "wazuh_vulnerabilities{status=\"open\"}",
+            "legendFormat": "{{severity}}"
+          }
+        ],
+        "options": {
+          "orientation": "horizontal",
+          "displayMode": "gradient"
+        }
+      },
+      {
+        "id": 15,
+        "title": "Compliance Scores",
+        "type": "bargauge",
+        "gridPos": {"h": 8, "w": 6, "x": 18, "y": 14},
+        "targets": [
+          {
+            "expr": "wazuh_compliance_score",
+            "legendFormat": "{{framework}}"
+          }
+        ],
+        "fieldConfig": {
+          "defaults": {
+            "min": 0,
+            "max": 100,
+            "thresholds": {
+              "mode": "absolute",
+              "steps": [
+                {"color": "red", "value": 0},
+                {"color": "yellow", "value": 70},
+                {"color": "green", "value": 90}
+              ]
+            }
+          }
+        },
+        "options": {
+          "orientation": "horizontal"
+        }
+      },
+      {
+        "id": 16,
+        "title": "Threat Intelligence - IOCs Blocked",
+        "type": "timeseries",
+        "gridPos": {"h": 6, "w": 12, "x": 0, "y": 22},
+        "targets": [
+          {
+            "expr": "sum(rate(opencti_iocs_blocked_total[5m])) by (type)",
+            "legendFormat": "{{type}}"
+          }
+        ]
+      },
+      {
+        "id": 17,
+        "title": "Threat Actors & Campaigns",
+        "type": "stat",
+        "gridPos": {"h": 6, "w": 6, "x": 12, "y": 22},
+        "targets": [
+          {
+            "expr": "opencti_threat_actors",
+            "legendFormat": "Threat Actors"
+          },
+          {
+            "expr": "opencti_campaigns_active",
+            "legendFormat": "Active Campaigns"
+          }
+        ]
+      },
+      {
+        "id": 18,
+        "title": "Last Threat Intel Sync",
+        "type": "stat",
+        "gridPos": {"h": 6, "w": 6, "x": 18, "y": 22},
+        "targets": [
+          {
+            "expr": "time() - opencti_last_sync_timestamp",
+            "legendFormat": "Seconds Ago"
+          }
+        ],
+        "fieldConfig": {
+          "defaults": {
+            "unit": "s",
+            "thresholds": {
+              "mode": "absolute",
+              "steps": [
+                {"color": "green", "value": 0},
+                {"color": "yellow", "value": 900},
+                {"color": "red", "value": 3600}
+              ]
+            }
+          }
+        }
+      },
+      {
+        "id": 19,
+        "title": "File Integrity Events",
+        "type": "timeseries",
+        "gridPos": {"h": 6, "w": 12, "x": 0, "y": 28},
+        "targets": [
+          {
+            "expr": "sum(rate(wazuh_fim_events_total[5m])) by (action)",
+            "legendFormat": "{{action}}"
+          }
+        ]
+      },
+      {
+        "id": 20,
+        "title": "Suspicious Activity",
+        "type": "timeseries",
+        "gridPos": {"h": 6, "w": 12, "x": 12, "y": 28},
+        "targets": [
+          {
+            "expr": "sum(rate(security_suspicious_activity_total[5m])) by (type)",
+            "legendFormat": "{{type}}"
+          }
+        ]
+      }
+    ]
+  }
+}

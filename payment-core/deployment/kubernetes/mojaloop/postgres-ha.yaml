@@ -1,0 +1,311 @@
+---
+# PostgreSQL High Availability Configuration for Mojaloop
+# Uses CloudNativePG operator for Kubernetes-native HA
+# Replaces MySQL while maintaining Mojaloop compatibility
+
+# CloudNativePG Cluster Definition
+apiVersion: postgresql.cnpg.io/v1
+kind: Cluster
+metadata:
+  name: mojaloop-postgres
+  namespace: payment-switch
+  labels:
+    app: mojaloop-postgres
+    component: database
+spec:
+  instances: 3
+  
+  # PostgreSQL version
+  imageName: ghcr.io/cloudnative-pg/postgresql:15.4
+  
+  # Primary update strategy
+  primaryUpdateStrategy: unsupervised
+  
+  # Storage configuration
+  storage:
+    size: 50Gi
+    storageClass: standard
+  
+  # PostgreSQL configuration
+  postgresql:
+    parameters:
+      # Performance tuning
+      shared_buffers: "1GB"
+      effective_cache_size: "3GB"
+      maintenance_work_mem: "256MB"
+      checkpoint_completion_target: "0.9"
+      wal_buffers: "16MB"
+      default_statistics_target: "100"
+      random_page_cost: "1.1"
+      effective_io_concurrency: "200"
+      work_mem: "16MB"
+      min_wal_size: "1GB"
+      max_wal_size: "4GB"
+      max_worker_processes: "8"
+      max_parallel_workers_per_gather: "4"
+      max_parallel_workers: "8"
+      max_parallel_maintenance_workers: "4"
+      
+      # Connection settings
+      max_connections: "500"
+      
+      # Logging
+      log_statement: "ddl"
+      log_min_duration_statement: "1000"
+      
+      # Replication settings for HA
+      wal_level: "replica"
+      max_wal_senders: "10"
+      max_replication_slots: "10"
+      hot_standby: "on"
+      
+    # Enable pg_stat_statements for monitoring
+    pg_hba:
+      - host all all 10.0.0.0/8 scram-sha-256
+      - host all all 172.16.0.0/12 scram-sha-256
+      - host all all 192.168.0.0/16 scram-sha-256
+  
+  # Bootstrap configuration
+  bootstrap:
+    initdb:
+      database: mojaloop
+      owner: mojaloop
+      secret:
+        name: mojaloop-postgres-credentials
+      postInitSQL:
+        - CREATE DATABASE central_ledger OWNER mojaloop;
+        - CREATE DATABASE account_lookup OWNER mojaloop;
+        - CREATE DATABASE quoting OWNER mojaloop;
+        - CREATE DATABASE central_settlements OWNER mojaloop;
+        - GRANT ALL PRIVILEGES ON DATABASE central_ledger TO mojaloop;
+        - GRANT ALL PRIVILEGES ON DATABASE account_lookup TO mojaloop;
+        - GRANT ALL PRIVILEGES ON DATABASE quoting TO mojaloop;
+        - GRANT ALL PRIVILEGES ON DATABASE central_settlements TO mojaloop;
+  
+  # Backup configuration
+  backup:
+    barmanObjectStore:
+      destinationPath: s3://payment-switch-backups/mojaloop-postgres/
+      s3Credentials:
+        accessKeyId:
+          name: backup-credentials
+          key: aws-access-key-id
+        secretAccessKey:
+          name: backup-credentials
+          key: aws-secret-access-key
+        region:
+          name: backup-credentials
+          key: aws-region
+      wal:
+        compression: gzip
+        maxParallel: 8
+      data:
+        compression: gzip
+    retentionPolicy: "30d"
+  
+  # Monitoring
+  monitoring:
+    enablePodMonitor: true
+  
+  # Resource limits
+  resources:
+    requests:
+      memory: "2Gi"
+      cpu: "1000m"
+    limits:
+      memory: "4Gi"
+      cpu: "2000m"
+  
+  # Affinity for spreading across nodes
+  affinity:
+    enablePodAntiAffinity: true
+    topologyKey: kubernetes.io/hostname
+
+---
+# Scheduled backup
+apiVersion: postgresql.cnpg.io/v1
+kind: ScheduledBackup
+metadata:
+  name: mojaloop-postgres-backup
+  namespace: payment-switch
+spec:
+  schedule: "0 0 */6 * * *"  # Every 6 hours
+  backupOwnerReference: self
+  cluster:
+    name: mojaloop-postgres
+
+---
+# PostgreSQL credentials (managed by ExternalSecrets in production)
+apiVersion: external-secrets.io/v1beta1
+kind: ExternalSecret
+metadata:
+  name: mojaloop-postgres-credentials
+  namespace: payment-switch
+spec:
+  refreshInterval: 1h
+  secretStoreRef:
+    name: vault-backend
+    kind: ClusterSecretStore
+  target:
+    name: mojaloop-postgres-credentials
+    creationPolicy: Owner
+  data:
+    - secretKey: username
+      remoteRef:
+        key: payment-switch/postgres-mojaloop
+        property: username
+    - secretKey: password
+      remoteRef:
+        key: payment-switch/postgres-mojaloop
+        property: password
+
+---
+# Read-write service (points to primary)
+apiVersion: v1
+kind: Service
+metadata:
+  name: mojaloop-postgres-rw
+  namespace: payment-switch
+  labels:
+    app: mojaloop-postgres
+spec:
+  type: ClusterIP
+  ports:
+    - name: postgres
+      port: 5432
+      targetPort: 5432
+  selector:
+    cnpg.io/cluster: mojaloop-postgres
+    role: primary
+
+---
+# Read-only service (points to replicas)
+apiVersion: v1
+kind: Service
+metadata:
+  name: mojaloop-postgres-ro
+  namespace: payment-switch
+  labels:
+    app: mojaloop-postgres
+spec:
+  type: ClusterIP
+  ports:
+    - name: postgres
+      port: 5432
+      targetPort: 5432
+  selector:
+    cnpg.io/cluster: mojaloop-postgres
+    role: replica
+
+---
+# Any instance service (for connection pooling)
+apiVersion: v1
+kind: Service
+metadata:
+  name: mojaloop-postgres
+  namespace: payment-switch
+  labels:
+    app: mojaloop-postgres
+spec:
+  type: ClusterIP
+  ports:
+    - name: postgres
+      port: 5432
+      targetPort: 5432
+  selector:
+    cnpg.io/cluster: mojaloop-postgres
+
+---
+# PgBouncer for connection pooling
+apiVersion: postgresql.cnpg.io/v1
+kind: Pooler
+metadata:
+  name: mojaloop-postgres-pooler
+  namespace: payment-switch
+spec:
+  cluster:
+    name: mojaloop-postgres
+  instances: 3
+  type: rw
+  pgbouncer:
+    poolMode: transaction
+    parameters:
+      max_client_conn: "1000"
+      default_pool_size: "50"
+      min_pool_size: "10"
+      reserve_pool_size: "10"
+      reserve_pool_timeout: "5"
+      max_db_connections: "100"
+      max_user_connections: "100"
+      server_reset_query: "DISCARD ALL"
+      server_check_query: "SELECT 1"
+      server_check_delay: "30"
+      query_timeout: "120"
+      query_wait_timeout: "120"
+      client_idle_timeout: "0"
+      client_login_timeout: "60"
+      autodb_idle_timeout: "3600"
+      dns_max_ttl: "15"
+      dns_nxdomain_ttl: "15"
+
+---
+# PodDisruptionBudget
+apiVersion: policy/v1
+kind: PodDisruptionBudget
+metadata:
+  name: mojaloop-postgres-pdb
+  namespace: payment-switch
+spec:
+  minAvailable: 2
+  selector:
+    matchLabels:
+      cnpg.io/cluster: mojaloop-postgres
+
+---
+# Prometheus monitoring rules
+apiVersion: monitoring.coreos.com/v1
+kind: PrometheusRule
+metadata:
+  name: mojaloop-postgres-alerts
+  namespace: payment-switch
+  labels:
+    prometheus: payment-switch
+spec:
+  groups:
+    - name: mojaloop-postgres
+      rules:
+        - alert: PostgresDown
+          expr: cnpg_collector_up{cluster="mojaloop-postgres"} == 0
+          for: 5m
+          labels:
+            severity: critical
+          annotations:
+            summary: "Mojaloop PostgreSQL cluster is down"
+            description: "PostgreSQL cluster mojaloop-postgres has been down for more than 5 minutes"
+            
+        - alert: PostgresReplicationLag
+          expr: cnpg_pg_replication_lag{cluster="mojaloop-postgres"} > 30
+          for: 5m
+          labels:
+            severity: warning
+          annotations:
+            summary: "PostgreSQL replication lag is high"
+            description: "Replication lag for mojaloop-postgres is {{ $value }} seconds"
+            
+        - alert: PostgresConnectionsHigh
+          expr: cnpg_backends_total{cluster="mojaloop-postgres"} / cnpg_pg_settings_setting{name="max_connections",cluster="mojaloop-postgres"} > 0.8
+          for: 5m
+          labels:
+            severity: warning
+          annotations:
+            summary: "PostgreSQL connections are high"
+            description: "Connection usage for mojaloop-postgres is above 80%"
+            
+        - alert: PostgresStorageHigh
+          expr: cnpg_pg_database_size_bytes{cluster="mojaloop-postgres"} / (50 * 1024 * 1024 * 1024) > 0.8
+          for: 5m
+          labels:
+            severity: warning
+          annotations:
+            summary: "PostgreSQL storage is high"
+            description: "Storage usage for mojaloop-postgres is above 80%"

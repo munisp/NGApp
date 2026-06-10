@@ -1,0 +1,695 @@
+---
+# OpenCTI Threat Intelligence Platform
+# Centralizes, organizes, and shares threat intelligence information
+
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: opencti-config
+  namespace: security
+  labels:
+    app: opencti
+data:
+  config.yml: |
+    app:
+      port: 8080
+      base_path: ''
+      base_url: http://opencti.security.svc.cluster.local:8080
+      request_timeout: 300000
+      session_timeout: 1200000
+      session_cookie: true
+      session_idle_timeout: 3600000
+      admin:
+        email: admin@opencti.io
+        password: ChangeMe
+        token: ChangeMe
+      health_access_key: ChangeMe
+    elasticsearch:
+      url: http://elasticsearch.security.svc.cluster.local:9200
+      username: ''
+      password: ''
+      index_prefix: opencti
+      ssl:
+        reject_unauthorized: true
+    rustfs:
+      endpoint: rustfs.security.svc.cluster.local
+      port: 9000
+      use_ssl: false
+      access_key: ChangeMe
+      secret_key: ChangeMe
+    rabbitmq:
+      hostname: rabbitmq.security.svc.cluster.local
+      port: 5672
+      port_management: 15672
+      management_ssl: false
+      username: guest
+      password: guest
+    redis:
+      hostname: redis.security.svc.cluster.local
+      port: 6379
+      use_ssl: false
+      ca: []
+    smtp:
+      hostname: smtp.example.com
+      port: 25
+      use_ssl: false
+      reject_unauthorized: false
+      username: ''
+      password: ''
+    providers:
+      local:
+        strategy: LocalStrategy
+
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: opencti-platform
+  namespace: security
+  labels:
+    app: opencti
+    component: platform
+spec:
+  replicas: 2
+  selector:
+    matchLabels:
+      app: opencti
+      component: platform
+  template:
+    metadata:
+      labels:
+        app: opencti
+        component: platform
+    spec:
+      affinity:
+        podAntiAffinity:
+          preferredDuringSchedulingIgnoredDuringExecution:
+            - weight: 100
+              podAffinityTerm:
+                labelSelector:
+                  matchLabels:
+                    app: opencti
+                    component: platform
+                topologyKey: kubernetes.io/hostname
+      
+      containers:
+        - name: opencti-platform
+          image: opencti/platform:5.12.0
+          imagePullPolicy: IfNotPresent
+          
+          ports:
+            - name: http
+              containerPort: 8080
+          
+          env:
+            - name: NODE_OPTIONS
+              value: "--max-old-space-size=8192"
+            - name: APP__PORT
+              value: "8080"
+            - name: APP__BASE_URL
+              value: "http://opencti.security.svc.cluster.local:8080"
+            - name: APP__ADMIN__EMAIL
+              value: "admin@opencti.io"
+            - name: APP__ADMIN__PASSWORD
+              value: "ChangeMe"
+            - name: APP__ADMIN__TOKEN
+              value: "ChangeMe"
+            - name: APP__HEALTH_ACCESS_KEY
+              value: "ChangeMe"
+            - name: ELASTICSEARCH__URL
+              value: "http://elasticsearch.security.svc.cluster.local:9200"
+            - name: MINIO__ENDPOINT
+              value: "rustfs.security.svc.cluster.local"
+            - name: MINIO__PORT
+              value: "9000"
+            - name: MINIO__USE_SSL
+              value: "false"
+            - name: MINIO__ACCESS_KEY
+              value: "ChangeMe"
+            - name: MINIO__SECRET_KEY
+              value: "ChangeMe"
+            - name: RABBITMQ__HOSTNAME
+              value: "rabbitmq.security.svc.cluster.local"
+            - name: RABBITMQ__PORT
+              value: "5672"
+            - name: RABBITMQ__USERNAME
+              value: "guest"
+            - name: RABBITMQ__PASSWORD
+              value: "guest"
+            - name: REDIS__HOSTNAME
+              value: "redis.security.svc.cluster.local"
+            - name: REDIS__PORT
+              value: "6379"
+          
+          resources:
+            requests:
+              cpu: 1000m
+              memory: 4Gi
+            limits:
+              cpu: 2000m
+              memory: 8Gi
+          
+          livenessProbe:
+            httpGet:
+              path: /health
+              port: 8080
+            initialDelaySeconds: 180
+            periodSeconds: 10
+            timeoutSeconds: 5
+            failureThreshold: 3
+          
+          readinessProbe:
+            httpGet:
+              path: /health
+              port: 8080
+            initialDelaySeconds: 60
+            periodSeconds: 5
+            timeoutSeconds: 3
+            failureThreshold: 2
+
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: opencti-platform
+  namespace: security
+  labels:
+    app: opencti
+    component: platform
+spec:
+  type: ClusterIP
+  selector:
+    app: opencti
+    component: platform
+  ports:
+    - name: http
+      port: 8080
+      targetPort: 8080
+
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: opencti-external
+  namespace: security
+  labels:
+    app: opencti
+spec:
+  type: LoadBalancer
+  selector:
+    app: opencti
+    component: platform
+  ports:
+    - name: http
+      port: 8080
+      targetPort: 8080
+
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: opencti-worker
+  namespace: security
+  labels:
+    app: opencti
+    component: worker
+spec:
+  replicas: 3
+  selector:
+    matchLabels:
+      app: opencti
+      component: worker
+  template:
+    metadata:
+      labels:
+        app: opencti
+        component: worker
+    spec:
+      containers:
+        - name: opencti-worker
+          image: opencti/worker:5.12.0
+          imagePullPolicy: IfNotPresent
+          
+          env:
+            - name: OPENCTI_URL
+              value: "http://opencti-platform.security.svc.cluster.local:8080"
+            - name: OPENCTI_TOKEN
+              value: "ChangeMe"
+            - name: WORKER_LOG_LEVEL
+              value: "info"
+          
+          resources:
+            requests:
+              cpu: 500m
+              memory: 1Gi
+            limits:
+              cpu: 1000m
+              memory: 2Gi
+
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: opencti-connector-misp
+  namespace: security
+  labels:
+    app: opencti
+    component: connector
+    connector: misp
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: opencti
+      component: connector
+      connector: misp
+  template:
+    metadata:
+      labels:
+        app: opencti
+        component: connector
+        connector: misp
+    spec:
+      containers:
+        - name: connector-misp
+          image: opencti/connector-misp:5.12.0
+          imagePullPolicy: IfNotPresent
+          
+          env:
+            - name: OPENCTI_URL
+              value: "http://opencti-platform.security.svc.cluster.local:8080"
+            - name: OPENCTI_TOKEN
+              value: "ChangeMe"
+            - name: CONNECTOR_ID
+              value: "misp-connector"
+            - name: CONNECTOR_TYPE
+              value: "EXTERNAL_IMPORT"
+            - name: CONNECTOR_NAME
+              value: "MISP"
+            - name: CONNECTOR_SCOPE
+              value: "misp"
+            - name: CONNECTOR_CONFIDENCE_LEVEL
+              value: "15"
+            - name: CONNECTOR_UPDATE_EXISTING_DATA
+              value: "false"
+            - name: CONNECTOR_LOG_LEVEL
+              value: "info"
+            - name: MISP_URL
+              value: "https://misp.example.com"
+            - name: MISP_KEY
+              value: "ChangeMe"
+            - name: MISP_SSL_VERIFY
+              value: "false"
+            - name: MISP_CREATE_REPORTS
+              value: "true"
+            - name: MISP_IMPORT_FROM_DATE
+              value: "2023-01-01"
+            - name: MISP_IMPORT_TAGS
+              value: "opencti"
+            - name: MISP_INTERVAL
+              value: "3"
+          
+          resources:
+            requests:
+              cpu: 200m
+              memory: 512Mi
+            limits:
+              cpu: 500m
+              memory: 1Gi
+
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: opencti-connector-alienvault
+  namespace: security
+  labels:
+    app: opencti
+    component: connector
+    connector: alienvault
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: opencti
+      component: connector
+      connector: alienvault
+  template:
+    metadata:
+      labels:
+        app: opencti
+        component: connector
+        connector: alienvault
+    spec:
+      containers:
+        - name: connector-alienvault
+          image: opencti/connector-alienvault:5.12.0
+          imagePullPolicy: IfNotPresent
+          
+          env:
+            - name: OPENCTI_URL
+              value: "http://opencti-platform.security.svc.cluster.local:8080"
+            - name: OPENCTI_TOKEN
+              value: "ChangeMe"
+            - name: CONNECTOR_ID
+              value: "alienvault-connector"
+            - name: CONNECTOR_TYPE
+              value: "EXTERNAL_IMPORT"
+            - name: CONNECTOR_NAME
+              value: "AlienVault"
+            - name: CONNECTOR_SCOPE
+              value: "alienvault"
+            - name: CONNECTOR_CONFIDENCE_LEVEL
+              value: "15"
+            - name: CONNECTOR_UPDATE_EXISTING_DATA
+              value: "false"
+            - name: CONNECTOR_LOG_LEVEL
+              value: "info"
+            - name: ALIENVAULT_BASE_URL
+              value: "https://otx.alienvault.com"
+            - name: ALIENVAULT_API_KEY
+              value: "ChangeMe"
+            - name: ALIENVAULT_TLP
+              value: "white"
+            - name: ALIENVAULT_CREATE_OBSERVABLES
+              value: "true"
+            - name: ALIENVAULT_CREATE_INDICATORS
+              value: "true"
+            - name: ALIENVAULT_PULSE_START_TIMESTAMP
+              value: "2023-01-01"
+            - name: ALIENVAULT_REPORT_TYPE
+              value: "threat-report"
+            - name: ALIENVAULT_REPORT_STATUS
+              value: "New"
+            - name: ALIENVAULT_GUESS_MALWARE
+              value: "false"
+            - name: ALIENVAULT_GUESS_CVE
+              value: "false"
+            - name: ALIENVAULT_EXCLUDED_PULSE_INDICATOR_TYPES
+              value: "FileHash-MD5,FileHash-SHA1"
+            - name: ALIENVAULT_ENABLE_RELATIONSHIPS
+              value: "true"
+            - name: ALIENVAULT_ENABLE_ATTACK_PATTERNS_INDICATES
+              value: "true"
+            - name: ALIENVAULT_INTERVAL_SEC
+              value: "1800"
+          
+          resources:
+            requests:
+              cpu: 200m
+              memory: 512Mi
+            limits:
+              cpu: 500m
+              memory: 1Gi
+
+---
+# Supporting Services for OpenCTI
+
+apiVersion: apps/v1
+kind: StatefulSet
+metadata:
+  name: elasticsearch
+  namespace: security
+  labels:
+    app: elasticsearch
+spec:
+  serviceName: elasticsearch
+  replicas: 3
+  selector:
+    matchLabels:
+      app: elasticsearch
+  template:
+    metadata:
+      labels:
+        app: elasticsearch
+    spec:
+      affinity:
+        podAntiAffinity:
+          requiredDuringSchedulingIgnoredDuringExecution:
+            - labelSelector:
+                matchLabels:
+                  app: elasticsearch
+              topologyKey: kubernetes.io/hostname
+      
+      containers:
+        - name: elasticsearch
+          image: docker.elastic.co/elasticsearch/elasticsearch:8.11.0
+          imagePullPolicy: IfNotPresent
+          
+          ports:
+            - name: http
+              containerPort: 9200
+            - name: transport
+              containerPort: 9300
+          
+          env:
+            - name: cluster.name
+              value: "opencti-cluster"
+            - name: node.name
+              valueFrom:
+                fieldRef:
+                  fieldPath: metadata.name
+            - name: discovery.seed_hosts
+              value: "elasticsearch-0.elasticsearch,elasticsearch-1.elasticsearch,elasticsearch-2.elasticsearch"
+            - name: cluster.initial_master_nodes
+              value: "elasticsearch-0,elasticsearch-1,elasticsearch-2"
+            - name: ES_JAVA_OPTS
+              value: "-Xms2g -Xmx2g"
+            - name: xpack.security.enabled
+              value: "false"
+          
+          resources:
+            requests:
+              cpu: 1000m
+              memory: 4Gi
+            limits:
+              cpu: 2000m
+              memory: 8Gi
+          
+          volumeMounts:
+            - name: data
+              mountPath: /usr/share/elasticsearch/data
+  
+  volumeClaimTemplates:
+    - metadata:
+        name: data
+      spec:
+        accessModes: ["ReadWriteOnce"]
+        storageClassName: fast-ssd
+        resources:
+          requests:
+            storage: 100Gi
+
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: elasticsearch
+  namespace: security
+  labels:
+    app: elasticsearch
+spec:
+  type: ClusterIP
+  clusterIP: None
+  selector:
+    app: elasticsearch
+  ports:
+    - name: http
+      port: 9200
+      targetPort: 9200
+    - name: transport
+      port: 9300
+      targetPort: 9300
+
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: redis
+  namespace: security
+  labels:
+    app: redis
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: redis
+  template:
+    metadata:
+      labels:
+        app: redis
+    spec:
+      containers:
+        - name: redis
+          image: redis:7.2-alpine
+          imagePullPolicy: IfNotPresent
+          
+          ports:
+            - name: redis
+              containerPort: 6379
+          
+          resources:
+            requests:
+              cpu: 200m
+              memory: 512Mi
+            limits:
+              cpu: 500m
+              memory: 1Gi
+
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: redis
+  namespace: security
+  labels:
+    app: redis
+spec:
+  type: ClusterIP
+  selector:
+    app: redis
+  ports:
+    - name: redis
+      port: 6379
+      targetPort: 6379
+
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: rabbitmq
+  namespace: security
+  labels:
+    app: rabbitmq
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: rabbitmq
+  template:
+    metadata:
+      labels:
+        app: rabbitmq
+    spec:
+      containers:
+        - name: rabbitmq
+          image: rabbitmq:3.12-management-alpine
+          imagePullPolicy: IfNotPresent
+          
+          ports:
+            - name: amqp
+              containerPort: 5672
+            - name: management
+              containerPort: 15672
+          
+          resources:
+            requests:
+              cpu: 500m
+              memory: 1Gi
+            limits:
+              cpu: 1000m
+              memory: 2Gi
+
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: rabbitmq
+  namespace: security
+  labels:
+    app: rabbitmq
+spec:
+  type: ClusterIP
+  selector:
+    app: rabbitmq
+  ports:
+    - name: amqp
+      port: 5672
+      targetPort: 5672
+    - name: management
+      port: 15672
+      targetPort: 15672
+
+---
+apiVersion: apps/v1
+kind: StatefulSet
+metadata:
+  name: rustfs
+  namespace: security
+  labels:
+    app: rustfs
+spec:
+  serviceName: rustfs
+  replicas: 1
+  selector:
+    matchLabels:
+      app: rustfs
+  template:
+    metadata:
+      labels:
+        app: rustfs
+    spec:
+      containers:
+        - name: rustfs
+          image: rustfs/rustfs:RELEASE.2023-12-20T01-00-02Z
+          imagePullPolicy: IfNotPresent
+          
+          args:
+            - server
+            - /data
+            - --console-address
+            - ":9001"
+          
+          ports:
+            - name: api
+              containerPort: 9000
+            - name: console
+              containerPort: 9001
+          
+          env:
+            - name: MINIO_ROOT_USER
+              value: "ChangeMe"
+            - name: MINIO_ROOT_PASSWORD
+              value: "ChangeMe"
+          
+          resources:
+            requests:
+              cpu: 500m
+              memory: 1Gi
+            limits:
+              cpu: 1000m
+              memory: 2Gi
+          
+          volumeMounts:
+            - name: data
+              mountPath: /data
+  
+  volumeClaimTemplates:
+    - metadata:
+        name: data
+      spec:
+        accessModes: ["ReadWriteOnce"]
+        storageClassName: fast-ssd
+        resources:
+          requests:
+            storage: 50Gi
+
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: rustfs
+  namespace: security
+  labels:
+    app: rustfs
+spec:
+  type: ClusterIP
+  selector:
+    app: rustfs
+  ports:
+    - name: api
+      port: 9000
+      targetPort: 9000
+    - name: console
+      port: 9001
+      targetPort: 9001

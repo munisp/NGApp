@@ -1,0 +1,9 @@
+{
+  "query": "ALTER TABLE webhook_delivery_logs ADD COLUMN next_retry_at TIMESTAMP NULL;",
+  "command": "mysql --batch --raw --column-names --default-character-set=utf8mb4 --host gateway02.us-east-1.prod.aws.tidbcloud.com --port 4000 --user NzNswwN3cq6gauf.f2a830aed91f --database QvP5TNHY6Ni4vrN3ohqE9a --execute ALTER TABLE webhook_delivery_logs ADD COLUMN next_retry_at TIMESTAMP NULL;",
+  "rows": [],
+  "messages": [],
+  "stdout": "",
+  "stderr": "",
+  "execution_time_ms": 408
+}

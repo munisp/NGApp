@@ -1,0 +1,308 @@
+version: '3.8'
+
+# Local Development Environment for Payment Switch
+# Run with: docker-compose -f docker-compose.dev.yaml up -d
+
+services:
+  # Message Queue
+  kafka:
+    image: confluentinc/cp-kafka:7.5.0
+    hostname: kafka
+    container_name: payment-switch-kafka
+    ports:
+      - "9092:9092"
+      - "9101:9101"
+    environment:
+      KAFKA_NODE_ID: 1
+      KAFKA_LISTENER_SECURITY_PROTOCOL_MAP: 'CONTROLLER:PLAINTEXT,PLAINTEXT:PLAINTEXT,PLAINTEXT_HOST:PLAINTEXT'
+      KAFKA_ADVERTISED_LISTENERS: 'PLAINTEXT://kafka:29092,PLAINTEXT_HOST://localhost:9092'
+      KAFKA_OFFSETS_TOPIC_REPLICATION_FACTOR: 1
+      KAFKA_GROUP_INITIAL_REBALANCE_DELAY_MS: 0
+      KAFKA_TRANSACTION_STATE_LOG_MIN_ISR: 1
+      KAFKA_TRANSACTION_STATE_LOG_REPLICATION_FACTOR: 1
+      KAFKA_JMX_PORT: 9101
+      KAFKA_JMX_HOSTNAME: localhost
+      KAFKA_PROCESS_ROLES: 'broker,controller'
+      KAFKA_CONTROLLER_QUORUM_VOTERS: '1@kafka:29093'
+      KAFKA_LISTENERS: 'PLAINTEXT://kafka:29092,CONTROLLER://kafka:29093,PLAINTEXT_HOST://0.0.0.0:9092'
+      KAFKA_INTER_BROKER_LISTENER_NAME: 'PLAINTEXT'
+      KAFKA_CONTROLLER_LISTENER_NAMES: 'CONTROLLER'
+      KAFKA_LOG_DIRS: '/tmp/kraft-combined-logs'
+      CLUSTER_ID: 'MkU3OEVBNTcwNTJENDM2Qk'
+    healthcheck:
+      test: ["CMD", "kafka-topics", "--bootstrap-server", "localhost:9092", "--list"]
+      interval: 30s
+      timeout: 10s
+      retries: 5
+
+  # Object Storage (S3-compatible)
+  minio:
+    image: minio/minio:latest
+    hostname: minio
+    container_name: payment-switch-minio
+    ports:
+      - "9000:9000"
+      - "9001:9001"
+    environment:
+      MINIO_ROOT_USER: minioadmin
+      MINIO_ROOT_PASSWORD: minioadmin
+    command: server /data --console-address ":9001"
+    volumes:
+      - minio-data:/data
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:9000/minio/health/live"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+
+  # Create MinIO buckets
+  minio-init:
+    image: minio/mc:latest
+    depends_on:
+      minio:
+        condition: service_healthy
+    entrypoint: >
+      /bin/sh -c "
+      mc alias set myminio http://minio:9000 minioadmin minioadmin;
+      mc mb myminio/lakehouse --ignore-existing;
+      mc mb myminio/checkpoints --ignore-existing;
+      mc mb myminio/models --ignore-existing;
+      exit 0;
+      "
+
+  # Cache
+  redis:
+    image: redis:7-alpine
+    hostname: redis
+    container_name: payment-switch-redis
+    ports:
+      - "6379:6379"
+    command: redis-server --appendonly yes
+    volumes:
+      - redis-data:/data
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  # Database
+  postgres:
+    image: postgres:15-alpine
+    hostname: postgres
+    container_name: payment-switch-postgres
+    ports:
+      - "5432:5432"
+    environment:
+      POSTGRES_USER: payment_switch
+      POSTGRES_PASSWORD: payment_switch_dev
+      POSTGRES_DB: payment_switch
+    volumes:
+      - postgres-data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U payment_switch"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  # TigerBeetle (Simulated for dev - use actual TigerBeetle in production)
+  tigerbeetle:
+    image: ghcr.io/tigerbeetle/tigerbeetle:latest
+    hostname: tigerbeetle
+    container_name: payment-switch-tigerbeetle
+    ports:
+      - "3000:3000"
+    command: start --addresses=0.0.0.0:3000 /data/0_0.tigerbeetle
+    volumes:
+      - tigerbeetle-data:/data
+    user: root
+    entrypoint: >
+      /bin/sh -c "
+      if [ ! -f /data/0_0.tigerbeetle ]; then
+        tigerbeetle format --cluster=0 --replica=0 --replica-count=1 /data/0_0.tigerbeetle;
+      fi;
+      exec tigerbeetle start --addresses=0.0.0.0:3000 /data/0_0.tigerbeetle
+      "
+
+  # Lakehouse API
+  lakehouse-api:
+    build:
+      context: ./payment-core/data-integration/lakehouse-api
+      dockerfile: Dockerfile
+    hostname: lakehouse-api
+    container_name: payment-switch-lakehouse-api
+    ports:
+      - "8080:8080"
+    environment:
+      REDIS_URL: redis://redis:6379/0
+      DELTA_BASE_PATH: s3a://lakehouse/delta
+      DEMO_MODE: "true"
+      S3_ENDPOINT: http://minio:9000
+      AWS_ACCESS_KEY_ID: minioadmin
+      AWS_SECRET_ACCESS_KEY: minioadmin
+    depends_on:
+      redis:
+        condition: service_healthy
+      minio:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8080/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+
+  # Admin Dashboard
+  admin-dashboard:
+    build:
+      context: ./admin-dashboard
+      dockerfile: Dockerfile
+    hostname: admin-dashboard
+    container_name: payment-switch-admin-dashboard
+    ports:
+      - "3001:3000"
+    environment:
+      NEXT_PUBLIC_LAKEHOUSE_API_URL: http://localhost:8080
+    depends_on:
+      - lakehouse-api
+
+  # Prometheus (Monitoring)
+  prometheus:
+    image: prom/prometheus:latest
+    hostname: prometheus
+    container_name: payment-switch-prometheus
+    ports:
+      - "9090:9090"
+    volumes:
+      - ./infrastructure/monitoring/prometheus.yml:/etc/prometheus/prometheus.yml
+      - prometheus-data:/prometheus
+    command:
+      - '--config.file=/etc/prometheus/prometheus.yml'
+      - '--storage.tsdb.path=/prometheus'
+      - '--web.enable-lifecycle'
+
+  # Schema Registry (Kafka Schema Management)
+  schema-registry:
+    image: confluentinc/cp-schema-registry:7.5.0
+    hostname: schema-registry
+    container_name: payment-switch-schema-registry
+    ports:
+      - "8081:8081"
+    environment:
+      SCHEMA_REGISTRY_HOST_NAME: schema-registry
+      SCHEMA_REGISTRY_KAFKASTORE_BOOTSTRAP_SERVERS: 'kafka:29092'
+      SCHEMA_REGISTRY_LISTENERS: http://0.0.0.0:8081
+    depends_on:
+      kafka:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8081/subjects"]
+      interval: 30s
+      timeout: 10s
+      retries: 5
+
+  # Keycloak (IAM / OIDC)
+  keycloak:
+    image: quay.io/keycloak/keycloak:23.0
+    hostname: keycloak
+    container_name: payment-switch-keycloak
+    ports:
+      - "8180:8080"
+    environment:
+      KEYCLOAK_ADMIN: admin
+      KEYCLOAK_ADMIN_PASSWORD: admin
+      KC_DB: postgres
+      KC_DB_URL_HOST: postgres
+      KC_DB_URL_DATABASE: keycloak
+      KC_DB_USERNAME: payment_switch
+      KC_DB_PASSWORD: payment_switch_dev
+    command: start-dev
+    depends_on:
+      postgres:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD-SHELL", "exec 3<>/dev/tcp/localhost/8080 && echo -e 'GET /health/ready HTTP/1.1\\r\\nHost: localhost\\r\\n\\r\\n' >&3 && cat <&3 | grep -q '200\\|UP'"]
+      interval: 30s
+      timeout: 10s
+      retries: 10
+
+  # APISIX (API Gateway)
+  apisix:
+    image: apache/apisix:3.7.0-debian
+    hostname: apisix
+    container_name: payment-switch-apisix
+    ports:
+      - "9080:9080"
+      - "9180:9180"
+      - "9443:9443"
+    volumes:
+      - ./config/apisix/config.yaml:/usr/local/apisix/conf/config.yaml:ro
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:9080/apisix/status"]
+      interval: 30s
+      timeout: 10s
+      retries: 5
+
+  # Permify (Authorization)
+  permify:
+    image: ghcr.io/permify/permify:latest
+    hostname: permify
+    container_name: payment-switch-permify
+    ports:
+      - "3476:3476"
+      - "3478:3478"
+    command: serve
+    healthcheck:
+      test: ["CMD", "wget", "--spider", "-q", "http://localhost:3476/healthz"]
+      interval: 30s
+      timeout: 10s
+      retries: 5
+
+  # OpenSearch (Search & Analytics)
+  opensearch:
+    image: opensearchproject/opensearch:2.11.0
+    hostname: opensearch
+    container_name: payment-switch-opensearch
+    ports:
+      - "9200:9200"
+      - "9600:9600"
+    environment:
+      discovery.type: single-node
+      DISABLE_INSTALL_DEMO_CONFIG: "true"
+      DISABLE_SECURITY_PLUGIN: "true"
+      OPENSEARCH_JAVA_OPTS: "-Xms512m -Xmx512m"
+    volumes:
+      - opensearch-data:/usr/share/opensearch/data
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:9200/_cluster/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 5
+
+  # Grafana (Dashboards)
+  grafana:
+    image: grafana/grafana:latest
+    hostname: grafana
+    container_name: payment-switch-grafana
+    ports:
+      - "3002:3000"
+    environment:
+      GF_SECURITY_ADMIN_USER: admin
+      GF_SECURITY_ADMIN_PASSWORD: admin
+      GF_USERS_ALLOW_SIGN_UP: "false"
+    volumes:
+      - grafana-data:/var/lib/grafana
+    depends_on:
+      - prometheus
+
+volumes:
+  minio-data:
+  redis-data:
+  postgres-data:
+  tigerbeetle-data:
+  prometheus-data:
+  grafana-data:
+  opensearch-data:
+
+networks:
+  default:
+    name: payment-switch-network

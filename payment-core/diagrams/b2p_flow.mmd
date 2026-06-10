@@ -1,0 +1,25 @@
+sequenceDiagram
+    participant Company as Company (HR System)
+    participant Batch as Batch Processing Service
+    participant Gateway as Payment Gateway
+    participant Fraud as Fraud Detection
+    participant Workflow as Workflow Orchestrator (Parent)
+    participant Child as Child Workflows
+    participant Settlement as Settlement Service
+    participant Notify as Notification Service
+    participant Employees as Employees
+    
+    Company->>Batch: Upload Salary Batch File
+    Batch->>Gateway: Parse & Create Payment Requests
+    Gateway->>Fraud: Screen Each Payment
+    Fraud-->>Gateway: All Payments Approved
+    Gateway->>Workflow: Start Parent Workflow
+    Workflow->>Child: Create Child Workflows (100 employees)
+    Child->>Settlement: Process Individual Payments
+    Settlement-->>Child: Payments Recorded
+    Child-->>Workflow: All Children Completed
+    Workflow-->>Gateway: Batch Processing Complete
+    Gateway->>Notify: Send Notifications
+    Notify->>Employees: SMS: Salary Credited
+    Gateway-->>Batch: Success Response
+    Batch-->>Company: Batch Processed Successfully

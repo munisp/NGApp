@@ -1,0 +1,1 @@
+ALTER TABLE `api_key_webhooks` ADD `final_failure_notification_url` text;

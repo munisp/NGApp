@@ -1,0 +1,177 @@
+# OpenAppSec WAF Configuration for Payment Switch Platform
+# Provides Web Application Firewall protection for payment endpoints
+
+policies:
+  - name: payment-switch-policy
+    mode: prevent-learn
+    practices:
+      - web-attacks
+      - snort-signatures
+    triggers:
+      - log
+      - web-body
+
+practices:
+  - name: web-attacks
+    web-attacks:
+      override-mode: prevent-learn
+      minimum-confidence: medium
+      max-body-size-kb: 1000
+      max-header-size-bytes: 8192
+      max-object-depth: 40
+      max-url-size-bytes: 32768
+      protections:
+        csrf-enabled: true
+        error-disclosure-enabled: true
+        open-redirect-enabled: true
+        non-valid-http-methods: true
+
+  - name: snort-signatures
+    snort-signatures:
+      override-mode: prevent-learn
+      files:
+        - /etc/cp/conf/snort_rules/*.rules
+
+triggers:
+  - name: log
+    log:
+      address: stdout
+      format: json-formatted
+      verbosity: extended
+
+  - name: web-body
+    web-body:
+      max-size-kb: 1000
+
+assets:
+  - name: payment-api
+    asset-type: web-api
+    urls:
+      - "http://*/api/*"
+      - "https://*/api/*"
+    practices:
+      - web-attacks
+      - snort-signatures
+    triggers:
+      - log
+      - web-body
+    trusted-sources:
+      source-identifiers:
+        - identifier: X-Forwarded-For
+          values:
+            - "10.0.0.0/8"
+            - "172.16.0.0/12"
+            - "192.168.0.0/16"
+
+  - name: admin-portal
+    asset-type: web-application
+    urls:
+      - "http://*/admin/*"
+      - "https://*/admin/*"
+    practices:
+      - web-attacks
+      - snort-signatures
+    triggers:
+      - log
+      - web-body
+
+  - name: keycloak-auth
+    asset-type: web-application
+    urls:
+      - "http://*/auth/*"
+      - "https://*/auth/*"
+    practices:
+      - web-attacks
+    triggers:
+      - log
+
+exceptions:
+  - name: health-checks
+    match:
+      url: "/health"
+      method: GET
+    action: accept
+
+  - name: metrics
+    match:
+      url: "/metrics"
+      method: GET
+    action: accept
+
+  - name: apisix-status
+    match:
+      url: "/apisix/status"
+      method: GET
+    action: accept
+
+custom-rules:
+  - name: block-sql-injection
+    condition:
+      - type: parameter
+        key: "*"
+        value: "(?i)(union.*select|select.*from|insert.*into|delete.*from|drop.*table|update.*set)"
+    action: reject
+    log: true
+
+  - name: block-xss
+    condition:
+      - type: parameter
+        key: "*"
+        value: "(?i)(<script|javascript:|on\\w+\\s*=)"
+    action: reject
+    log: true
+
+  - name: block-path-traversal
+    condition:
+      - type: url
+        value: "(\\.\\./|\\.\\.\\\\)"
+    action: reject
+    log: true
+
+  - name: rate-limit-login
+    condition:
+      - type: url
+        value: "/api/auth/login"
+      - type: method
+        value: POST
+    rate-limit:
+      requests: 10
+      interval: 60
+    action: reject
+    log: true
+
+  - name: rate-limit-api
+    condition:
+      - type: url
+        value: "/api/.*"
+    rate-limit:
+      requests: 1000
+      interval: 60
+    action: reject
+    log: true
+
+  - name: block-sensitive-files
+    condition:
+      - type: url
+        value: "(?i)\\.(env|git|svn|htaccess|htpasswd|config|ini|log|bak|backup|sql|db)$"
+    action: reject
+    log: true
+
+  - name: require-content-type
+    condition:
+      - type: method
+        value: "POST|PUT|PATCH"
+      - type: header
+        key: Content-Type
+        value: "^$"
+    action: reject
+    log: true
+
+logging:
+  default-log-level: info
+  extended-logging:
+    url-path: true
+    url-query: true
+    http-headers: true
+    request-body: false
+    response-body: false

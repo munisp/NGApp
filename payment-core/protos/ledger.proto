@@ -1,0 +1,149 @@
+syntax = "proto3";
+
+package ledger;
+
+option go_package = "github.com/payment-switch/go-services/pkg/grpc/ledger";
+
+import "google/protobuf/timestamp.proto";
+
+// Ledger Service - High-performance gRPC service for TigerBeetle ledger operations
+service LedgerService {
+  // CreateAccount creates a new account in the ledger
+  rpc CreateAccount(CreateAccountRequest) returns (CreateAccountResponse);
+  
+  // CreateAccounts creates multiple accounts in a batch
+  rpc CreateAccounts(CreateAccountsRequest) returns (CreateAccountsResponse);
+  
+  // CreateTransfer creates a new transfer between accounts
+  rpc CreateTransfer(CreateTransferRequest) returns (CreateTransferResponse);
+  
+  // CreateTransfers creates multiple transfers in a batch
+  rpc CreateTransfers(CreateTransfersRequest) returns (CreateTransfersResponse);
+  
+  // GetAccountBalance retrieves the balance of an account
+  rpc GetAccountBalance(GetAccountBalanceRequest) returns (GetAccountBalanceResponse);
+  
+  // GetAccountBalances retrieves balances for multiple accounts
+  rpc GetAccountBalances(GetAccountBalancesRequest) returns (GetAccountBalancesResponse);
+  
+  // SyncBalanceToPostgres synchronizes an account balance to PostgreSQL
+  rpc SyncBalanceToPostgres(SyncBalanceRequest) returns (SyncBalanceResponse);
+}
+
+// Account represents a ledger account
+message Account {
+  string account_id = 1;
+  string participant_id = 2;
+  string currency = 3;
+  uint32 ledger = 4;
+  uint32 code = 5;
+  uint32 flags = 6;
+}
+
+// Transfer represents a ledger transfer
+message Transfer {
+  string transfer_id = 1;
+  string transaction_id = 2;
+  string debit_account_id = 3;
+  string credit_account_id = 4;
+  string amount = 5;  // Decimal amount as string (e.g., "10.50")
+  string currency = 6;
+  uint32 ledger = 7;
+  uint32 code = 8;
+  uint32 flags = 9;
+}
+
+// Balance represents account balance information
+message Balance {
+  string account_id = 1;
+  string available_balance = 2;  // Decimal amount as string
+  string pending_balance = 3;    // Decimal amount as string
+  string total_balance = 4;      // Decimal amount as string
+  google.protobuf.Timestamp last_updated = 5;
+}
+
+// CreateAccountRequest
+message CreateAccountRequest {
+  Account account = 1;
+}
+
+// CreateAccountResponse
+message CreateAccountResponse {
+  bool success = 1;
+  string message = 2;
+  string tigerbeetle_account_id = 3;
+}
+
+// CreateAccountsRequest
+message CreateAccountsRequest {
+  repeated Account accounts = 1;
+}
+
+// CreateAccountsResponse
+message CreateAccountsResponse {
+  bool success = 1;
+  string message = 2;
+  int32 created_count = 3;
+}
+
+// CreateTransferRequest
+message CreateTransferRequest {
+  Transfer transfer = 1;
+}
+
+// CreateTransferResponse
+message CreateTransferResponse {
+  bool success = 1;
+  string message = 2;
+  string tigerbeetle_transfer_id = 3;
+  google.protobuf.Timestamp completed_at = 4;
+}
+
+// CreateTransfersRequest
+message CreateTransfersRequest {
+  repeated Transfer transfers = 1;
+}
+
+// CreateTransfersResponse
+message CreateTransfersResponse {
+  bool success = 1;
+  string message = 2;
+  int32 created_count = 3;
+}
+
+// GetAccountBalanceRequest
+message GetAccountBalanceRequest {
+  string account_id = 1;
+}
+
+// GetAccountBalanceResponse
+message GetAccountBalanceResponse {
+  bool success = 1;
+  string message = 2;
+  Balance balance = 3;
+}
+
+// GetAccountBalancesRequest
+message GetAccountBalancesRequest {
+  repeated string account_ids = 1;
+}
+
+// GetAccountBalancesResponse
+message GetAccountBalancesResponse {
+  bool success = 1;
+  string message = 2;
+  repeated Balance balances = 3;
+}
+
+// SyncBalanceRequest
+message SyncBalanceRequest {
+  string account_id = 1;
+  string participant_id = 2;
+  string currency = 3;
+}
+
+// SyncBalanceResponse
+message SyncBalanceResponse {
+  bool success = 1;
+  string message = 2;
+}

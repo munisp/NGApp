@@ -1,0 +1,407 @@
+---
+# Dapr Configuration for Go Ledger Service
+# Enables service mesh capabilities, observability, and resilience patterns
+
+apiVersion: dapr.io/v1alpha1
+kind: Component
+metadata:
+  name: ledger-statestore
+  namespace: payment-switch
+spec:
+  type: state.redis
+  version: v1
+  metadata:
+    - name: redisHost
+      value: redis-master.payment-switch:6379
+    - name: redisPassword
+      secretKeyRef:
+        name: redis-secret
+        key: password
+    - name: enableTLS
+      value: "false"
+    - name: maxRetries
+      value: "3"
+    - name: maxRetryBackoff
+      value: "2s"
+    - name: ttlInSeconds
+      value: "3600"
+
+---
+apiVersion: dapr.io/v1alpha1
+kind: Component
+metadata:
+  name: ledger-pubsub
+  namespace: payment-switch
+spec:
+  type: pubsub.kafka
+  version: v1
+  metadata:
+    - name: brokers
+      value: kafka.payment-switch:9092
+    - name: consumerGroup
+      value: ledger-service-group
+    - name: clientId
+      value: ledger-service
+    - name: authType
+      value: none
+    - name: maxMessageBytes
+      value: "1048576"
+    - name: version
+      value: "2.8.0"
+
+---
+apiVersion: dapr.io/v1alpha1
+kind: Component
+metadata:
+  name: ledger-secretstore
+  namespace: payment-switch
+spec:
+  type: secretstores.kubernetes
+  version: v1
+  metadata:
+    - name: vaultName
+      value: payment-switch
+
+---
+apiVersion: dapr.io/v1alpha1
+kind: Configuration
+metadata:
+  name: ledger-service-config
+  namespace: payment-switch
+spec:
+  # Tracing configuration
+  tracing:
+    samplingRate: "1"
+    zipkin:
+      endpointAddress: "http://zipkin.monitoring:9411/api/v2/spans"
+  
+  # Metrics configuration
+  metric:
+    enabled: true
+  
+  # mTLS configuration
+  mtls:
+    enabled: true
+    workloadCertTTL: "24h"
+    allowedClockSkew: "15m"
+  
+  # Access control
+  accessControl:
+    defaultAction: deny
+    trustDomain: "payment-switch"
+    policies:
+      - appId: workflow-orchestrator
+        defaultAction: allow
+        trustDomain: "payment-switch"
+        namespace: "payment-switch"
+        operations:
+          - name: /ledger.LedgerService/CreateAccount
+            httpVerb: ["POST"]
+            action: allow
+          - name: /ledger.LedgerService/CreateTransfer
+            httpVerb: ["POST"]
+            action: allow
+          - name: /ledger.LedgerService/GetAccountBalance
+            httpVerb: ["GET"]
+            action: allow
+          - name: /ledger.LedgerService/SyncBalanceToPostgres
+            httpVerb: ["POST"]
+            action: allow
+      
+      - appId: payment-gateway
+        defaultAction: allow
+        trustDomain: "payment-switch"
+        namespace: "payment-switch"
+        operations:
+          - name: /ledger.LedgerService/GetAccountBalance
+            httpVerb: ["GET"]
+            action: allow
+      
+      - appId: settlement-service
+        defaultAction: allow
+        trustDomain: "payment-switch"
+        namespace: "payment-switch"
+        operations:
+          - name: /ledger.LedgerService/CreateTransfer
+            httpVerb: ["POST"]
+            action: allow
+          - name: /ledger.LedgerService/GetAccountBalance
+            httpVerb: ["GET"]
+            action: allow
+  
+  # API logging
+  apiLogging:
+    enabled: true
+    obfuscateURLs: false
+    omitHealthChecks: true
+
+---
+apiVersion: dapr.io/v1alpha1
+kind: Resiliency
+metadata:
+  name: ledger-service-resiliency
+  namespace: payment-switch
+spec:
+  policies:
+    # Timeout policies
+    timeouts:
+      general: 5s
+      ledger-operation: 30s
+      balance-check: 10s
+    
+    # Retry policies
+    retries:
+      retryForever:
+        policy: constant
+        duration: 5s
+        maxRetries: -1
+      
+      retryThreeTimes:
+        policy: exponential
+        maxInterval: 30s
+        maxRetries: 3
+      
+      retryFiveTimes:
+        policy: exponential
+        maxInterval: 60s
+        maxRetries: 5
+    
+    # Circuit breaker policies
+    circuitBreakers:
+      simpleCB:
+        maxRequests: 1
+        interval: 30s
+        timeout: 60s
+        trip: consecutiveFailures >= 5
+      
+      aggressiveCB:
+        maxRequests: 1
+        interval: 10s
+        timeout: 30s
+        trip: consecutiveFailures >= 3
+  
+  targets:
+    apps:
+      workflow-orchestrator:
+        timeout: general
+        retry: retryThreeTimes
+        circuitBreaker: simpleCB
+      
+      payment-gateway:
+        timeout: general
+        retry: retryThreeTimes
+        circuitBreaker: simpleCB
+    
+    components:
+      ledger-statestore:
+        outbound:
+          timeout: general
+          retry: retryFiveTimes
+          circuitBreaker: simpleCB
+      
+      ledger-pubsub:
+        outbound:
+          timeout: general
+          retry: retryForever
+          circuitBreaker: aggressiveCB
+
+---
+apiVersion: dapr.io/v1alpha1
+kind: Subscription
+metadata:
+  name: ledger-balance-sync-subscription
+  namespace: payment-switch
+spec:
+  topic: balance-sync-requests
+  route: /sync-balance
+  pubsubname: ledger-pubsub
+  metadata:
+    rawPayload: "true"
+  scopes:
+    - ledger-service
+
+---
+apiVersion: dapr.io/v1alpha1
+kind: Subscription
+metadata:
+  name: ledger-transfer-subscription
+  namespace: payment-switch
+spec:
+  topic: transfer-requests
+  route: /process-transfer
+  pubsubname: ledger-pubsub
+  metadata:
+    rawPayload: "true"
+  scopes:
+    - ledger-service
+
+---
+# Service-to-Service invocation policy
+apiVersion: dapr.io/v1alpha1
+kind: HTTPEndpoint
+metadata:
+  name: ledger-service-endpoint
+  namespace: payment-switch
+spec:
+  baseUrl: http://ledger-service.payment-switch:50051
+  headers:
+    - name: Content-Type
+      value: application/grpc
+  scopes:
+    - workflow-orchestrator
+    - payment-gateway
+    - settlement-service
+
+---
+# Rate limiting configuration
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: ledger-service-ratelimit
+  namespace: payment-switch
+  labels:
+    app: ledger-service
+data:
+  ratelimit.yaml: |
+    domain: ledger-service
+    descriptors:
+      # Global rate limit
+      - key: global
+        rate_limit:
+          unit: second
+          requests_per_unit: 10000
+      
+      # Per-client rate limit
+      - key: client_id
+        rate_limit:
+          unit: second
+          requests_per_unit: 1000
+      
+      # Per-operation rate limits
+      - key: operation
+        value: CreateTransfer
+        rate_limit:
+          unit: second
+          requests_per_unit: 5000
+      
+      - key: operation
+        value: GetAccountBalance
+        rate_limit:
+          unit: second
+          requests_per_unit: 8000
+      
+      - key: operation
+        value: CreateAccount
+        rate_limit:
+          unit: second
+          requests_per_unit: 500
+
+---
+# Observability - Distributed tracing
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: ledger-service-tracing
+  namespace: payment-switch
+  labels:
+    app: ledger-service
+data:
+  tracing.yaml: |
+    tracing:
+      enabled: true
+      samplingRate: 1.0
+      exporters:
+        - type: zipkin
+          endpoint: http://zipkin.monitoring:9411/api/v2/spans
+        - type: jaeger
+          endpoint: http://jaeger-collector.monitoring:14268/api/traces
+      attributes:
+        service.name: ledger-service
+        service.version: v1.0.0
+        deployment.environment: production
+        service.namespace: payment-switch
+
+---
+# Observability - Metrics
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: ledger-service-metrics
+  namespace: payment-switch
+  labels:
+    app: ledger-service
+data:
+  metrics.yaml: |
+    metrics:
+      enabled: true
+      port: 9090
+      path: /metrics
+      exporters:
+        - type: prometheus
+      custom_metrics:
+        - name: ledger_transfers_total
+          type: counter
+          description: Total number of transfers processed
+          labels:
+            - status
+            - currency
+        
+        - name: ledger_transfer_duration_seconds
+          type: histogram
+          description: Transfer processing duration in seconds
+          buckets: [0.001, 0.005, 0.01, 0.05, 0.1, 0.5, 1.0, 5.0]
+          labels:
+            - status
+        
+        - name: ledger_account_balance_requests_total
+          type: counter
+          description: Total number of balance check requests
+          labels:
+            - status
+        
+        - name: tigerbeetle_connection_pool_size
+          type: gauge
+          description: Current size of TigerBeetle connection pool
+        
+        - name: postgres_connection_pool_size
+          type: gauge
+          description: Current size of PostgreSQL connection pool
+
+---
+# Health check configuration
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: ledger-service-health
+  namespace: payment-switch
+  labels:
+    app: ledger-service
+data:
+  health.yaml: |
+    health:
+      liveness:
+        enabled: true
+        path: /healthz
+        port: 50051
+        initialDelaySeconds: 30
+        periodSeconds: 10
+        timeoutSeconds: 5
+        failureThreshold: 3
+      
+      readiness:
+        enabled: true
+        path: /ready
+        port: 50051
+        initialDelaySeconds: 10
+        periodSeconds: 5
+        timeoutSeconds: 3
+        failureThreshold: 2
+      
+      startup:
+        enabled: true
+        path: /startup
+        port: 50051
+        initialDelaySeconds: 0
+        periodSeconds: 5
+        timeoutSeconds: 3
+        failureThreshold: 30

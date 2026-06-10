@@ -1,0 +1,56 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: vault-agent-config
+  namespace: payment-switch
+data:
+  vault-agent-config.hcl: |
+    exit_after_auth = true
+
+    auto_auth {
+      method "kubernetes" {
+        mount_path = "auth/kubernetes"
+        config = {
+          role = "payment-switch"
+        }
+      }
+      sink "file" {
+        config = {
+          path = "/home/vault/.vault-token"
+        }
+      }
+    }
+
+    template {
+      destination = "/vault/secrets/database.env"
+      contents = <<EOT
+    {{ with secret "database/creds/payment-switch-rw" }}
+    DATABASE_URL=postgresql://{{ .Data.username }}:{{ .Data.password }}@postgres:5432/payment_switch?sslmode=require
+    {{ end }}
+    EOT
+    }
+
+    template {
+      destination = "/vault/secrets/api-keys.env"
+      contents = <<EOT
+    {{ with secret "payment-switch/data/api-keys" }}
+    SENDGRID_API_KEY={{ .Data.data.sendgrid_api_key }}
+    TWILIO_AUTH_TOKEN={{ .Data.data.twilio_auth_token }}
+    KEYCLOAK_CLIENT_SECRET={{ .Data.data.keycloak_client_secret }}
+    {{ end }}
+    EOT
+    }
+---
+apiVersion: v1
+kind: ServiceAccount
+metadata:
+  name: payment-switch-api
+  namespace: payment-switch
+  annotations:
+    vault.hashicorp.com/agent-inject: "true"
+    vault.hashicorp.com/role: "payment-switch"
+    vault.hashicorp.com/agent-inject-secret-database: "database/creds/payment-switch-rw"
+    vault.hashicorp.com/agent-inject-template-database: |
+      {{ with secret "database/creds/payment-switch-rw" -}}
+      postgresql://{{ .Data.username }}:{{ .Data.password }}@postgres:5432/payment_switch?sslmode=require
+      {{- end }}

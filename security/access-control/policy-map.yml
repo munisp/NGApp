@@ -1,0 +1,493 @@
+# Access Control Policy Map
+# Maps roles to permissions for PayGate Payment Switch
+# Used by Permify for fine-grained authorization
+
+metadata:
+  organization: PayGate
+  version: "1.0"
+  last_updated: "2025-12-30"
+  owner: Security Team
+
+# Role Definitions
+roles:
+  # Super Administrator - Full system access
+  super_admin:
+    description: "Full system access with all permissions"
+    inherits: []
+    permissions:
+      - "*"
+    constraints:
+      mfa_required: true
+      session_timeout_minutes: 15
+      ip_whitelist_required: true
+
+  # Security Administrator - Security configuration
+  security_admin:
+    description: "Security configuration and audit access"
+    inherits: []
+    permissions:
+      - "security:*"
+      - "audit:read"
+      - "audit:export"
+      - "users:read"
+      - "users:create"
+      - "users:update"
+      - "users:disable"
+      - "roles:*"
+      - "policies:*"
+      - "incidents:*"
+      - "compliance:read"
+    constraints:
+      mfa_required: true
+      session_timeout_minutes: 30
+
+  # Compliance Officer - Compliance monitoring
+  compliance_officer:
+    description: "Compliance monitoring and reporting"
+    inherits: []
+    permissions:
+      - "audit:read"
+      - "audit:export"
+      - "compliance:*"
+      - "reports:read"
+      - "reports:generate"
+      - "risks:read"
+      - "risks:assess"
+      - "incidents:read"
+      - "assets:read"
+      - "policies:read"
+    constraints:
+      mfa_required: true
+      session_timeout_minutes: 60
+
+  # Operations Manager - Day-to-day operations
+  operations_manager:
+    description: "Operations management and monitoring"
+    inherits:
+      - operations
+    permissions:
+      - "transactions:approve"
+      - "settlements:approve"
+      - "participants:create"
+      - "participants:update"
+      - "limits:update"
+      - "alerts:acknowledge"
+      - "incidents:create"
+      - "incidents:update"
+    constraints:
+      mfa_required: true
+      session_timeout_minutes: 60
+
+  # Operations - Standard operations access
+  operations:
+    description: "Day-to-day operations"
+    inherits: []
+    permissions:
+      - "transactions:read"
+      - "transactions:create"
+      - "settlements:read"
+      - "participants:read"
+      - "monitoring:read"
+      - "alerts:read"
+      - "reports:read"
+      - "dashboard:read"
+    constraints:
+      mfa_required: false
+      session_timeout_minutes: 120
+
+  # Finance - Financial operations
+  finance:
+    description: "Financial operations and reporting"
+    inherits: []
+    permissions:
+      - "transactions:read"
+      - "settlements:read"
+      - "settlements:create"
+      - "settlements:approve"
+      - "reconciliation:*"
+      - "reports:read"
+      - "reports:generate"
+      - "accounts:read"
+      - "ledger:read"
+    constraints:
+      mfa_required: true
+      session_timeout_minutes: 60
+
+  # Risk Analyst - Risk management
+  risk_analyst:
+    description: "Risk analysis and fraud prevention"
+    inherits: []
+    permissions:
+      - "fraud:*"
+      - "risks:*"
+      - "transactions:read"
+      - "transactions:flag"
+      - "transactions:block"
+      - "alerts:*"
+      - "reports:read"
+      - "reports:generate"
+      - "monitoring:read"
+    constraints:
+      mfa_required: true
+      session_timeout_minutes: 60
+
+  # KYC/KYB Analyst - Customer verification
+  kyc_analyst:
+    description: "KYC/KYB verification and review"
+    inherits: []
+    permissions:
+      - "kyc:*"
+      - "kyb:*"
+      - "customers:read"
+      - "customers:update"
+      - "documents:read"
+      - "documents:verify"
+      - "sanctions:check"
+      - "reports:read"
+    constraints:
+      mfa_required: true
+      session_timeout_minutes: 60
+
+  # Developer - Development access
+  developer:
+    description: "Development and testing access"
+    inherits: []
+    permissions:
+      - "sandbox:*"
+      - "api:read"
+      - "api:test"
+      - "logs:read"
+      - "metrics:read"
+      - "documentation:read"
+    constraints:
+      mfa_required: false
+      session_timeout_minutes: 240
+      environment_restriction: ["sandbox", "development"]
+
+  # Support - Customer support
+  support:
+    description: "Customer support access"
+    inherits: []
+    permissions:
+      - "transactions:read"
+      - "customers:read"
+      - "tickets:*"
+      - "disputes:read"
+      - "disputes:create"
+      - "disputes:update"
+      - "reports:read"
+    constraints:
+      mfa_required: false
+      session_timeout_minutes: 120
+
+  # Read Only - View-only access
+  read_only:
+    description: "Read-only access to non-sensitive data"
+    inherits: []
+    permissions:
+      - "dashboard:read"
+      - "reports:read"
+      - "monitoring:read"
+    constraints:
+      mfa_required: false
+      session_timeout_minutes: 240
+
+  # API Consumer - External API access
+  api_consumer:
+    description: "External API consumer access"
+    inherits: []
+    permissions:
+      - "api:payments:create"
+      - "api:payments:read"
+      - "api:transfers:create"
+      - "api:transfers:read"
+      - "api:accounts:read"
+      - "api:webhooks:manage"
+    constraints:
+      mfa_required: false
+      rate_limit_per_minute: 1000
+      ip_whitelist_required: true
+
+  # Participant Admin - Financial institution admin
+  participant_admin:
+    description: "Financial institution administrator"
+    inherits: []
+    permissions:
+      - "participant:self:*"
+      - "transactions:self:read"
+      - "settlements:self:read"
+      - "users:self:*"
+      - "reports:self:read"
+      - "api:self:*"
+    constraints:
+      mfa_required: true
+      session_timeout_minutes: 60
+      tenant_isolation: true
+
+# Resource Definitions
+resources:
+  transactions:
+    description: "Payment transactions"
+    actions:
+      - read
+      - create
+      - update
+      - approve
+      - reject
+      - flag
+      - block
+      - reverse
+    sensitivity: confidential
+
+  settlements:
+    description: "Settlement batches"
+    actions:
+      - read
+      - create
+      - approve
+      - reject
+      - execute
+    sensitivity: confidential
+
+  participants:
+    description: "Financial institution participants"
+    actions:
+      - read
+      - create
+      - update
+      - disable
+      - delete
+    sensitivity: confidential
+
+  users:
+    description: "System users"
+    actions:
+      - read
+      - create
+      - update
+      - disable
+      - delete
+      - reset_password
+      - assign_role
+    sensitivity: restricted
+
+  roles:
+    description: "Security roles"
+    actions:
+      - read
+      - create
+      - update
+      - delete
+      - assign
+    sensitivity: restricted
+
+  audit:
+    description: "Audit logs"
+    actions:
+      - read
+      - export
+    sensitivity: restricted
+
+  compliance:
+    description: "Compliance data"
+    actions:
+      - read
+      - update
+      - report
+    sensitivity: confidential
+
+  risks:
+    description: "Risk assessments"
+    actions:
+      - read
+      - create
+      - assess
+      - treat
+      - accept
+    sensitivity: confidential
+
+  incidents:
+    description: "Security incidents"
+    actions:
+      - read
+      - create
+      - update
+      - resolve
+      - close
+    sensitivity: confidential
+
+  fraud:
+    description: "Fraud detection"
+    actions:
+      - read
+      - configure
+      - review
+      - action
+    sensitivity: confidential
+
+  kyc:
+    description: "KYC verification"
+    actions:
+      - read
+      - create
+      - verify
+      - approve
+      - reject
+    sensitivity: restricted
+
+  kyb:
+    description: "KYB verification"
+    actions:
+      - read
+      - create
+      - verify
+      - approve
+      - reject
+    sensitivity: restricted
+
+  security:
+    description: "Security configuration"
+    actions:
+      - read
+      - configure
+      - audit
+    sensitivity: restricted
+
+  policies:
+    description: "Access policies"
+    actions:
+      - read
+      - create
+      - update
+      - delete
+      - enforce
+    sensitivity: restricted
+
+  api:
+    description: "API access"
+    actions:
+      - read
+      - test
+      - payments:create
+      - payments:read
+      - transfers:create
+      - transfers:read
+      - accounts:read
+      - webhooks:manage
+    sensitivity: internal
+
+  sandbox:
+    description: "Sandbox environment"
+    actions:
+      - read
+      - create
+      - test
+      - reset
+    sensitivity: internal
+
+  dashboard:
+    description: "Dashboard access"
+    actions:
+      - read
+    sensitivity: internal
+
+  reports:
+    description: "Reports"
+    actions:
+      - read
+      - generate
+      - export
+    sensitivity: confidential
+
+  monitoring:
+    description: "System monitoring"
+    actions:
+      - read
+      - configure
+    sensitivity: internal
+
+  alerts:
+    description: "System alerts"
+    actions:
+      - read
+      - acknowledge
+      - configure
+    sensitivity: internal
+
+# Permify Schema (for sync)
+permify_schema: |
+  entity user {}
+  
+  entity role {
+    relation member @user
+    relation parent @role
+    
+    permission view = member or parent->view
+  }
+  
+  entity organization {
+    relation admin @user
+    relation member @user
+    relation owner @user
+    
+    permission manage = admin or owner
+    permission view = member or admin or owner
+  }
+  
+  entity resource {
+    relation owner @organization
+    relation viewer @user @role#member
+    relation editor @user @role#member
+    relation admin @user @role#member
+    
+    permission view = viewer or editor or admin or owner->manage
+    permission edit = editor or admin or owner->manage
+    permission delete = admin or owner->manage
+    permission manage = admin or owner->manage
+  }
+  
+  entity transaction {
+    relation organization @organization
+    relation creator @user
+    relation approver @user
+    
+    permission view = organization->view or creator
+    permission approve = approver and not creator
+    permission reverse = organization->manage
+  }
+  
+  entity settlement {
+    relation organization @organization
+    relation creator @user
+    relation approver @user
+    
+    permission view = organization->view or creator
+    permission approve = approver and not creator
+    permission execute = organization->manage
+  }
+
+# Sync Configuration
+sync:
+  keycloak:
+    enabled: true
+    realm: paygate
+    sync_interval_minutes: 5
+    role_mapping:
+      super_admin: "realm-admin"
+      security_admin: "security-admin"
+      compliance_officer: "compliance"
+      operations_manager: "ops-manager"
+      operations: "operations"
+      finance: "finance"
+      risk_analyst: "risk"
+      kyc_analyst: "kyc"
+      developer: "developer"
+      support: "support"
+      read_only: "viewer"
+      api_consumer: "api-client"
+      participant_admin: "participant-admin"
+
+  permify:
+    enabled: true
+    endpoint: "permify.security.svc.cluster.local:3476"
+    sync_interval_minutes: 1

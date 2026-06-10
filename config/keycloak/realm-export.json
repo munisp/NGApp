@@ -1,0 +1,310 @@
+{
+  "id": "payment-switch",
+  "realm": "payment-switch",
+  "displayName": "Payment Switch Platform",
+  "displayNameHtml": "<div class=\"kc-logo-text\"><span>Payment Switch</span></div>",
+  "enabled": true,
+  "sslRequired": "external",
+  "registrationAllowed": false,
+  "loginWithEmailAllowed": true,
+  "duplicateEmailsAllowed": false,
+  "resetPasswordAllowed": true,
+  "editUsernameAllowed": false,
+  "bruteForceProtected": true,
+  "permanentLockout": false,
+  "maxFailureWaitSeconds": 900,
+  "minimumQuickLoginWaitSeconds": 60,
+  "waitIncrementSeconds": 60,
+  "quickLoginCheckMilliSeconds": 1000,
+  "maxDeltaTimeSeconds": 43200,
+  "failureFactor": 5,
+  "passwordPolicy": "length(12) upperCase(1) lowerCase(1) digits(1) specialChars(1) notUsername",
+  "defaultSignatureAlgorithm": "RS256",
+  "accessTokenLifespan": 300,
+  "accessTokenLifespanForImplicitFlow": 900,
+  "ssoSessionIdleTimeout": 1800,
+  "ssoSessionMaxLifespan": 36000,
+  "offlineSessionIdleTimeout": 2592000,
+  "offlineSessionMaxLifespanEnabled": false,
+  "accessCodeLifespan": 60,
+  "accessCodeLifespanUserAction": 300,
+  "accessCodeLifespanLogin": 1800,
+  "actionTokenGeneratedByAdminLifespan": 43200,
+  "actionTokenGeneratedByUserLifespan": 300,
+  "roles": {
+    "realm": [
+      {
+        "name": "admin",
+        "description": "Platform administrator with full access",
+        "composite": true,
+        "composites": {
+          "realm": ["operator", "auditor", "merchant_admin"]
+        }
+      },
+      {
+        "name": "operator",
+        "description": "Platform operator with operational access",
+        "composite": true,
+        "composites": {
+          "realm": ["auditor"]
+        }
+      },
+      {
+        "name": "auditor",
+        "description": "Read-only access for compliance and audit",
+        "composite": false
+      },
+      {
+        "name": "merchant_admin",
+        "description": "Merchant administrator",
+        "composite": true,
+        "composites": {
+          "realm": ["merchant_user"]
+        }
+      },
+      {
+        "name": "merchant_user",
+        "description": "Merchant user with limited access",
+        "composite": false
+      },
+      {
+        "name": "participant",
+        "description": "Financial institution participant",
+        "composite": false
+      },
+      {
+        "name": "api_client",
+        "description": "API client for machine-to-machine communication",
+        "composite": false
+      }
+    ],
+    "client": {
+      "payment-switch-portal": [
+        {
+          "name": "portal_admin",
+          "description": "Portal administrator"
+        },
+        {
+          "name": "portal_user",
+          "description": "Portal user"
+        }
+      ],
+      "payment-switch-api": [
+        {
+          "name": "api_read",
+          "description": "Read-only API access"
+        },
+        {
+          "name": "api_write",
+          "description": "Read-write API access"
+        },
+        {
+          "name": "api_admin",
+          "description": "Full API access"
+        }
+      ]
+    }
+  },
+  "groups": [
+    {
+      "name": "Platform Administrators",
+      "path": "/Platform Administrators",
+      "realmRoles": ["admin"]
+    },
+    {
+      "name": "Platform Operators",
+      "path": "/Platform Operators",
+      "realmRoles": ["operator"]
+    },
+    {
+      "name": "Auditors",
+      "path": "/Auditors",
+      "realmRoles": ["auditor"]
+    },
+    {
+      "name": "Merchants",
+      "path": "/Merchants",
+      "subGroups": [
+        {
+          "name": "Merchant Admins",
+          "path": "/Merchants/Merchant Admins",
+          "realmRoles": ["merchant_admin"]
+        },
+        {
+          "name": "Merchant Users",
+          "path": "/Merchants/Merchant Users",
+          "realmRoles": ["merchant_user"]
+        }
+      ]
+    },
+    {
+      "name": "Participants",
+      "path": "/Participants",
+      "realmRoles": ["participant"]
+    }
+  ],
+  "clients": [
+    {
+      "clientId": "payment-switch-portal",
+      "name": "Payment Switch Portal",
+      "description": "Web portal for Payment Switch administration",
+      "enabled": true,
+      "clientAuthenticatorType": "client-secret",
+      "redirectUris": [
+        "http://localhost:3000/*",
+        "http://localhost:3001/*",
+        "https://*.payment-switch.local/*"
+      ],
+      "webOrigins": [
+        "http://localhost:3000",
+        "http://localhost:3001",
+        "https://*.payment-switch.local"
+      ],
+      "publicClient": true,
+      "protocol": "openid-connect",
+      "standardFlowEnabled": true,
+      "implicitFlowEnabled": false,
+      "directAccessGrantsEnabled": false,
+      "serviceAccountsEnabled": false,
+      "authorizationServicesEnabled": false,
+      "fullScopeAllowed": true,
+      "defaultClientScopes": [
+        "web-origins",
+        "acr",
+        "profile",
+        "roles",
+        "email"
+      ],
+      "optionalClientScopes": [
+        "address",
+        "phone",
+        "offline_access",
+        "microprofile-jwt"
+      ],
+      "protocolMappers": [
+        {
+          "name": "realm-roles",
+          "protocol": "openid-connect",
+          "protocolMapper": "oidc-usermodel-realm-role-mapper",
+          "consentRequired": false,
+          "config": {
+            "multivalued": "true",
+            "userinfo.token.claim": "true",
+            "id.token.claim": "true",
+            "access.token.claim": "true",
+            "claim.name": "realm_access.roles",
+            "jsonType.label": "String"
+          }
+        }
+      ]
+    },
+    {
+      "clientId": "payment-switch-api",
+      "name": "Payment Switch API",
+      "description": "Backend API for Payment Switch services",
+      "enabled": true,
+      "clientAuthenticatorType": "client-secret",
+      "secret": "payment-switch-api-secret-dev-only",
+      "redirectUris": [],
+      "webOrigins": [],
+      "publicClient": false,
+      "protocol": "openid-connect",
+      "standardFlowEnabled": false,
+      "implicitFlowEnabled": false,
+      "directAccessGrantsEnabled": false,
+      "serviceAccountsEnabled": true,
+      "authorizationServicesEnabled": true,
+      "fullScopeAllowed": true,
+      "defaultClientScopes": [
+        "web-origins",
+        "acr",
+        "profile",
+        "roles",
+        "email"
+      ]
+    },
+    {
+      "clientId": "apisix-gateway",
+      "name": "APISIX API Gateway",
+      "description": "APISIX gateway for token introspection",
+      "enabled": true,
+      "clientAuthenticatorType": "client-secret",
+      "secret": "apisix-gateway-secret-dev-only",
+      "redirectUris": [],
+      "webOrigins": [],
+      "publicClient": false,
+      "protocol": "openid-connect",
+      "standardFlowEnabled": false,
+      "implicitFlowEnabled": false,
+      "directAccessGrantsEnabled": false,
+      "serviceAccountsEnabled": true,
+      "authorizationServicesEnabled": false,
+      "fullScopeAllowed": false
+    }
+  ],
+  "users": [
+    {
+      "username": "admin",
+      "enabled": true,
+      "emailVerified": true,
+      "firstName": "Platform",
+      "lastName": "Administrator",
+      "email": "admin@payment-switch.local",
+      "credentials": [
+        {
+          "type": "password",
+          "value": "CHANGE_ME_IN_PRODUCTION",
+          "temporary": true
+        }
+      ],
+      "realmRoles": ["admin"],
+      "clientRoles": {
+        "payment-switch-portal": ["portal_admin"],
+        "payment-switch-api": ["api_admin"]
+      }
+    }
+  ],
+  "scopeMappings": [
+    {
+      "client": "payment-switch-portal",
+      "roles": ["admin", "operator", "auditor", "merchant_admin", "merchant_user", "participant"]
+    }
+  ],
+  "clientScopeMappings": {
+    "payment-switch-api": [
+      {
+        "client": "payment-switch-portal",
+        "roles": ["api_read", "api_write", "api_admin"]
+      }
+    ]
+  },
+  "smtpServer": {},
+  "eventsEnabled": true,
+  "eventsListeners": ["jboss-logging"],
+  "enabledEventTypes": [
+    "LOGIN",
+    "LOGIN_ERROR",
+    "LOGOUT",
+    "LOGOUT_ERROR",
+    "REGISTER",
+    "REGISTER_ERROR",
+    "CODE_TO_TOKEN",
+    "CODE_TO_TOKEN_ERROR",
+    "CLIENT_LOGIN",
+    "CLIENT_LOGIN_ERROR",
+    "REFRESH_TOKEN",
+    "REFRESH_TOKEN_ERROR",
+    "VALIDATE_ACCESS_TOKEN",
+    "VALIDATE_ACCESS_TOKEN_ERROR",
+    "INTROSPECT_TOKEN",
+    "INTROSPECT_TOKEN_ERROR",
+    "UPDATE_PROFILE",
+    "UPDATE_PASSWORD",
+    "SEND_RESET_PASSWORD",
+    "RESET_PASSWORD",
+    "IMPERSONATE",
+    "CUSTOM_REQUIRED_ACTION"
+  ],
+  "adminEventsEnabled": true,
+  "adminEventsDetailsEnabled": true
+}

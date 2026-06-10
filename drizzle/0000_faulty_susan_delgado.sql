@@ -1,0 +1,1 @@
+-- Migration 0000: Initial setup (already applied)

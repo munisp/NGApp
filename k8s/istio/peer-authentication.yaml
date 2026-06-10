@@ -1,0 +1,42 @@
+apiVersion: security.istio.io/v1beta1
+kind: PeerAuthentication
+metadata:
+  name: default
+  namespace: payment-switch
+spec:
+  mtls:
+    mode: STRICT
+---
+apiVersion: security.istio.io/v1beta1
+kind: AuthorizationPolicy
+metadata:
+  name: payment-api-auth
+  namespace: payment-switch
+spec:
+  selector:
+    matchLabels:
+      app: payment-switch-api
+  action: ALLOW
+  rules:
+    - from:
+        - source:
+            principals:
+              - "cluster.local/ns/payment-switch/sa/payment-switch-web"
+              - "cluster.local/ns/payment-switch/sa/admin-dashboard"
+              - "cluster.local/ns/istio-system/sa/istio-ingressgateway-service-account"
+    - to:
+        - operation:
+            paths: ["/api/trpc/*"]
+            methods: ["GET", "POST"]
+---
+apiVersion: security.istio.io/v1beta1
+kind: AuthorizationPolicy
+metadata:
+  name: deny-all-default
+  namespace: payment-switch
+spec:
+  action: DENY
+  rules:
+    - from:
+        - source:
+            notNamespaces: ["payment-switch", "istio-system", "monitoring"]

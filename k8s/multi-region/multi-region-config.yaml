@@ -1,0 +1,86 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: multi-region-config
+  namespace: payment-switch
+data:
+  regions.json: |
+    {
+      "primary": {
+        "name": "ng-lagos-1",
+        "provider": "aws",
+        "region": "af-south-1",
+        "zones": ["af-south-1a", "af-south-1b", "af-south-1c"],
+        "role": "primary",
+        "database": {
+          "host": "pg-primary.ng-lagos-1.internal",
+          "port": 5432,
+          "replication": "synchronous"
+        }
+      },
+      "secondary": [
+        {
+          "name": "ng-abuja-1",
+          "provider": "aws",
+          "region": "af-south-1",
+          "role": "hot-standby",
+          "database": {
+            "host": "pg-replica.ng-abuja-1.internal",
+            "port": 5432,
+            "replication": "streaming"
+          }
+        },
+        {
+          "name": "uk-london-1",
+          "provider": "aws",
+          "region": "eu-west-2",
+          "role": "read-replica",
+          "purpose": "remittance-corridor-uk",
+          "database": {
+            "host": "pg-replica.uk-london-1.internal",
+            "port": 5432,
+            "replication": "async"
+          }
+        },
+        {
+          "name": "us-east-1",
+          "provider": "aws",
+          "region": "us-east-1",
+          "role": "read-replica",
+          "purpose": "remittance-corridor-us",
+          "database": {
+            "host": "pg-replica.us-east-1.internal",
+            "port": 5432,
+            "replication": "async"
+          }
+        }
+      ],
+      "failover": {
+        "automatic": true,
+        "healthCheckInterval": "10s",
+        "failoverTimeout": "30s",
+        "minHealthyReplicas": 1
+      },
+      "routing": {
+        "strategy": "geo-proximity",
+        "stickySession": true,
+        "crossRegionTimeout": "5s"
+      }
+    }
+---
+apiVersion: networking.istio.io/v1beta1
+kind: ServiceEntry
+metadata:
+  name: cross-region-services
+  namespace: payment-switch
+spec:
+  hosts:
+    - "pg-replica.uk-london-1.internal"
+    - "pg-replica.us-east-1.internal"
+    - "pg-replica.ng-abuja-1.internal"
+  location: MESH_EXTERNAL
+  ports:
+    - number: 5432
+      name: postgres
+      protocol: TCP
+  resolution: DNS

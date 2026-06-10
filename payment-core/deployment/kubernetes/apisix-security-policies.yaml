@@ -1,0 +1,628 @@
+---
+# APISIX Security Policies and Rate Limiting Configuration
+# Advanced security policies, OPA integration, and rate limiting
+
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: opa-policies
+  namespace: apisix
+  labels:
+    app: opa
+data:
+  payment-authorization.rego: |
+    package payment.authorization
+    
+    import future.keywords.if
+    import future.keywords.in
+    
+    default allow = false
+    
+    # Allow payment processing for authenticated users with valid roles
+    allow if {
+      input.method == "POST"
+      input.path == "/api/v1/payments/process"
+      has_valid_token
+      has_payment_role
+      not_rate_limited
+    }
+    
+    # Allow payment status queries for authenticated users
+    allow if {
+      input.method == "GET"
+      startswith(input.path, "/api/v1/payments/status/")
+      has_valid_token
+      has_query_role
+    }
+    
+    # Check if user has valid JWT token
+    has_valid_token if {
+      token := input.headers.authorization
+      startswith(token, "Bearer ")
+      jwt_payload := io.jwt.decode(trim_prefix(token, "Bearer "))[1]
+      jwt_payload.exp > time.now_ns() / 1000000000
+    }
+    
+    # Check if user has payment processing role
+    has_payment_role if {
+      token := input.headers.authorization
+      jwt_payload := io.jwt.decode(trim_prefix(token, "Bearer "))[1]
+      "payment:process" in jwt_payload.roles
+    }
+    
+    # Check if user has query role
+    has_query_role if {
+      token := input.headers.authorization
+      jwt_payload := io.jwt.decode(trim_prefix(token, "Bearer "))[1]
+      "payment:query" in jwt_payload.roles
+    }
+    
+    # Check if request is not rate limited
+    not_rate_limited if {
+      input.rate_limit.current < input.rate_limit.max
+    }
+    
+    # Deny reasons
+    reason["invalid_token"] if {
+      not has_valid_token
+    }
+    
+    reason["insufficient_permissions"] if {
+      has_valid_token
+      not has_payment_role
+      not has_query_role
+    }
+    
+    reason["rate_limit_exceeded"] if {
+      input.rate_limit.current >= input.rate_limit.max
+    }
+
+  fraud-detection-policy.rego: |
+    package fraud.detection
+    
+    import future.keywords.if
+    
+    default allow = true
+    default risk_score = 0
+    
+    # High risk indicators
+    risk_score = 100 if {
+      is_high_risk_country
+    }
+    
+    risk_score = 80 if {
+      is_suspicious_amount
+    }
+    
+    risk_score = 60 if {
+      is_unusual_velocity
+    }
+    
+    risk_score = 40 if {
+      is_new_payee
+    }
+    
+    # Block if risk score is too high
+    allow = false if {
+      risk_score >= 80
+    }
+    
+    # High risk countries
+    is_high_risk_country if {
+      input.transaction.payer.country in ["KP", "IR", "SY"]
+    }
+    
+    # Suspicious amount patterns
+    is_suspicious_amount if {
+      amount := to_number(input.transaction.amount)
+      amount > 10000
+      amount < 10100
+    }
+    
+    # Unusual transaction velocity
+    is_unusual_velocity if {
+      input.transaction.velocity.count_1h > 50
+    }
+    
+    # New payee (first transaction)
+    is_new_payee if {
+      input.transaction.payee.transaction_count == 0
+    }
+
+  compliance-policy.rego: |
+    package compliance
+    
+    import future.keywords.if
+    
+    default compliant = true
+    
+    # PCI-DSS compliance checks
+    pci_dss_compliant if {
+      has_encrypted_connection
+      has_valid_certificate
+      not_storing_sensitive_data
+    }
+    
+    # GDPR compliance checks
+    gdpr_compliant if {
+      has_consent
+      has_data_protection
+      has_right_to_erasure
+    }
+    
+    # Overall compliance
+    compliant if {
+      pci_dss_compliant
+      gdpr_compliant
+    }
+    
+    has_encrypted_connection if {
+      input.connection.protocol == "https"
+    }
+    
+    has_valid_certificate if {
+      input.connection.certificate.valid == true
+    }
+    
+    not_storing_sensitive_data if {
+      not contains(input.request.body, "cvv")
+      not contains(input.request.body, "pin")
+    }
+    
+    has_consent if {
+      input.user.consent.given == true
+    }
+    
+    has_data_protection if {
+      input.user.data_protection.enabled == true
+    }
+    
+    has_right_to_erasure if {
+      input.user.rights.erasure == true
+    }
+
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: opa
+  namespace: apisix
+  labels:
+    app: opa
+spec:
+  replicas: 3
+  selector:
+    matchLabels:
+      app: opa
+  template:
+    metadata:
+      labels:
+        app: opa
+    spec:
+      containers:
+        - name: opa
+          image: openpolicyagent/opa:latest
+          args:
+            - "run"
+            - "--server"
+            - "--addr=0.0.0.0:8181"
+            - "--log-level=info"
+            - "/policies"
+          ports:
+            - name: http
+              containerPort: 8181
+          resources:
+            requests:
+              cpu: 200m
+              memory: 256Mi
+            limits:
+              cpu: 500m
+              memory: 512Mi
+          livenessProbe:
+            httpGet:
+              path: /health
+              port: 8181
+            initialDelaySeconds: 10
+            periodSeconds: 10
+          readinessProbe:
+            httpGet:
+              path: /health?bundle=true
+              port: 8181
+            initialDelaySeconds: 5
+            periodSeconds: 5
+          volumeMounts:
+            - name: policies
+              mountPath: /policies
+      volumes:
+        - name: policies
+          configMap:
+            name: opa-policies
+
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: opa
+  namespace: apisix
+  labels:
+    app: opa
+spec:
+  type: ClusterIP
+  selector:
+    app: opa
+  ports:
+    - name: http
+      port: 8181
+      targetPort: 8181
+
+---
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: rate-limit-config
+  namespace: apisix
+  labels:
+    app: rate-limit
+data:
+  config.yaml: |
+    domain: payment-switch
+    descriptors:
+      # Global rate limits
+      - key: global
+        rate_limit:
+          unit: second
+          requests_per_unit: 50000
+      
+      # Per-client rate limits
+      - key: client_id
+        rate_limit:
+          unit: second
+          requests_per_unit: 5000
+      
+      # Per-endpoint rate limits
+      - key: endpoint
+        value: /api/v1/payments/process
+        descriptors:
+          - key: client_id
+            rate_limit:
+              unit: second
+              requests_per_unit: 3000
+      
+      - key: endpoint
+        value: /api/v1/payments/status
+        descriptors:
+          - key: client_id
+            rate_limit:
+              unit: second
+              requests_per_unit: 5000
+      
+      - key: endpoint
+        value: /api/v1/fraud/check
+        descriptors:
+          - key: client_id
+            rate_limit:
+              unit: second
+              requests_per_unit: 2000
+      
+      # Tier-based rate limits
+      - key: tier
+        value: premium
+        rate_limit:
+          unit: second
+          requests_per_unit: 10000
+      
+      - key: tier
+        value: standard
+        rate_limit:
+          unit: second
+          requests_per_unit: 5000
+      
+      - key: tier
+        value: basic
+        rate_limit:
+          unit: second
+          requests_per_unit: 1000
+
+---
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: security-headers-config
+  namespace: apisix
+  labels:
+    app: apisix
+data:
+  headers.yaml: |
+    # Security headers to be added to all responses
+    response_headers:
+      # Prevent clickjacking
+      X-Frame-Options: DENY
+      
+      # Prevent MIME type sniffing
+      X-Content-Type-Options: nosniff
+      
+      # Enable XSS protection
+      X-XSS-Protection: "1; mode=block"
+      
+      # Strict Transport Security
+      Strict-Transport-Security: "max-age=31536000; includeSubDomains; preload"
+      
+      # Content Security Policy
+      Content-Security-Policy: "default-src 'self'; script-src 'self' 'unsafe-inline'; style-src 'self' 'unsafe-inline'; img-src 'self' data:; font-src 'self'; connect-src 'self'; frame-ancestors 'none'"
+      
+      # Referrer Policy
+      Referrer-Policy: "strict-origin-when-cross-origin"
+      
+      # Permissions Policy
+      Permissions-Policy: "geolocation=(), microphone=(), camera=()"
+      
+      # Remove server header
+      Server: ""
+
+---
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: waf-rules-config
+  namespace: apisix
+  labels:
+    app: apisix
+data:
+  waf-rules.yaml: |
+    # Custom WAF rules
+    rules:
+      # SQL Injection protection
+      - id: 1001
+        phase: request
+        pattern: "(union|select|insert|update|delete|drop|create|alter|exec|execute|script|javascript|eval|expression)"
+        action: deny
+        severity: critical
+        message: "SQL Injection attempt detected"
+      
+      # XSS protection
+      - id: 1002
+        phase: request
+        pattern: "(<script|javascript:|onerror=|onload=|onclick=)"
+        action: deny
+        severity: high
+        message: "XSS attempt detected"
+      
+      # Path traversal protection
+      - id: 1003
+        phase: request
+        pattern: "(\\.\\.[\\/\\\\]|\\.\\.%2[fF])"
+        action: deny
+        severity: high
+        message: "Path traversal attempt detected"
+      
+      # Command injection protection
+      - id: 1004
+        phase: request
+        pattern: "(;\\s*rm\\s+|;\\s*cat\\s+|;\\s*wget\\s+|;\\s*curl\\s+|\\|\\s*nc\\s+)"
+        action: deny
+        severity: critical
+        message: "Command injection attempt detected"
+      
+      # File upload protection
+      - id: 1005
+        phase: request
+        pattern: "(\\.exe|\\.bat|\\.cmd|\\.sh|\\.php|\\.jsp|\\.asp)"
+        action: deny
+        severity: high
+        message: "Suspicious file upload detected"
+      
+      # Large payload protection
+      - id: 1006
+        phase: request
+        condition: "request.body.size > 1048576"
+        action: deny
+        severity: medium
+        message: "Request body too large"
+      
+      # Suspicious user agents
+      - id: 1007
+        phase: request
+        pattern: "(sqlmap|nikto|nmap|masscan|acunetix|burp|metasploit)"
+        action: deny
+        severity: high
+        message: "Suspicious user agent detected"
+
+---
+apiVersion: apisix.apache.org/v2
+kind: ApisixPluginConfig
+metadata:
+  name: enhanced-security-config
+  namespace: payment-switch
+spec:
+  plugins:
+    - name: opa
+      enable: true
+      config:
+        host: http://opa.apisix:8181
+        policy: payment/authorization
+        with_route: true
+        with_service: true
+        with_consumer: true
+    
+    - name: response-rewrite
+      enable: true
+      config:
+        headers:
+          set:
+            X-Frame-Options: DENY
+            X-Content-Type-Options: nosniff
+            X-XSS-Protection: "1; mode=block"
+            Strict-Transport-Security: "max-age=31536000; includeSubDomains"
+            Content-Security-Policy: "default-src 'self'"
+            Referrer-Policy: "strict-origin-when-cross-origin"
+          remove:
+            - Server
+            - X-Powered-By
+    
+    - name: limit-req
+      enable: true
+      config:
+        rate: 500
+        burst: 1000
+        key_type: var
+        key: remote_addr
+        rejected_code: 429
+        rejected_msg: "Rate limit exceeded - too many requests"
+    
+    - name: limit-conn
+      enable: true
+      config:
+        conn: 100
+        burst: 50
+        default_conn_delay: 0.1
+        key_type: var
+        key: remote_addr
+        rejected_code: 503
+        rejected_msg: "Connection limit exceeded"
+    
+    - name: uri-blocker
+      enable: true
+      config:
+        block_rules:
+          - ".*\\.env$"
+          - ".*\\.git.*"
+          - ".*\\.svn.*"
+          - ".*/admin/.*"
+          - ".*/phpmyadmin/.*"
+          - ".*/wp-admin/.*"
+    
+    - name: csrf
+      enable: true
+      config:
+        key: edd1c9f034335f136f87ad84b625c8f1
+        expires: 7200
+    
+    - name: authz-casbin
+      enable: true
+      config:
+        model_path: /opt/apisix/conf/casbin/model.conf
+        policy_path: /opt/apisix/conf/casbin/policy.csv
+        username: user
+
+---
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: casbin-config
+  namespace: apisix
+  labels:
+    app: apisix
+data:
+  model.conf: |
+    [request_definition]
+    r = sub, obj, act
+    
+    [policy_definition]
+    p = sub, obj, act
+    
+    [role_definition]
+    g = _, _
+    
+    [policy_effect]
+    e = some(where (p.eft == allow))
+    
+    [matchers]
+    m = g(r.sub, p.sub) && r.obj == p.obj && r.act == p.act
+  
+  policy.csv: |
+    p, admin, /api/v1/payments/*, *
+    p, user, /api/v1/payments/process, POST
+    p, user, /api/v1/payments/status/*, GET
+    p, service, /api/v1/fraud/check, POST
+    p, service, /ledger.LedgerService/*, POST
+    
+    g, payment-gateway, service
+    g, workflow-orchestrator, service
+    g, external-client, user
+
+---
+apiVersion: networking.k8s.io/v1
+kind: NetworkPolicy
+metadata:
+  name: apisix-network-policy
+  namespace: apisix
+  labels:
+    app: apisix
+spec:
+  podSelector:
+    matchLabels:
+      app: apisix
+  policyTypes:
+    - Ingress
+    - Egress
+  ingress:
+    # Allow external traffic
+    - from:
+        - namespaceSelector: {}
+      ports:
+        - protocol: TCP
+          port: 9080
+        - protocol: TCP
+          port: 9443
+    # Allow admin traffic from same namespace
+    - from:
+        - podSelector: {}
+      ports:
+        - protocol: TCP
+          port: 9180
+  egress:
+    # Allow traffic to payment-switch namespace
+    - to:
+        - namespaceSelector:
+            matchLabels:
+              name: payment-switch
+      ports:
+        - protocol: TCP
+          port: 8080
+        - protocol: TCP
+          port: 50051
+        - protocol: TCP
+          port: 50052
+        - protocol: TCP
+          port: 50053
+    # Allow traffic to openappsec
+    - to:
+        - namespaceSelector:
+            matchLabels:
+              name: openappsec
+      ports:
+        - protocol: TCP
+          port: 8080
+    # Allow traffic to OPA
+    - to:
+        - podSelector:
+            matchLabels:
+              app: opa
+      ports:
+        - protocol: TCP
+          port: 8181
+    # Allow traffic to etcd
+    - to:
+        - podSelector:
+            matchLabels:
+              app: apisix-etcd
+      ports:
+        - protocol: TCP
+          port: 2379
+    # Allow DNS
+    - to:
+        - namespaceSelector: {}
+          podSelector:
+            matchLabels:
+              k8s-app: kube-dns
+      ports:
+        - protocol: UDP
+          port: 53
+    # Allow monitoring
+    - to:
+        - namespaceSelector:
+            matchLabels:
+              name: monitoring
+      ports:
+        - protocol: TCP
+          port: 9411

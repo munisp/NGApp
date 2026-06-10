@@ -1,0 +1,268 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: flink-delta-config
+  namespace: flink
+data:
+  KAFKA_BOOTSTRAP_SERVERS: "kafka.kafka:9092"
+  S3_ENDPOINT: "http://minio.lakehouse:9000"
+  CHECKPOINT_PATH: "s3a://lakehouse/checkpoints/flink"
+  DELTA_BASE_PATH: "s3a://lakehouse/delta"
+  FLINK_PROPERTIES: |
+    jobmanager.rpc.address: flink-jobmanager
+    taskmanager.numberOfTaskSlots: 4
+    parallelism.default: 4
+    state.backend: rocksdb
+    state.checkpoints.dir: s3a://lakehouse/checkpoints/flink
+    state.savepoints.dir: s3a://lakehouse/savepoints/flink
+    execution.checkpointing.interval: 60000
+    execution.checkpointing.mode: EXACTLY_ONCE
+    execution.checkpointing.min-pause: 30000
+    execution.checkpointing.timeout: 120000
+    execution.checkpointing.max-concurrent-checkpoints: 1
+    execution.checkpointing.tolerable-failed-checkpoints: 3
+    fs.s3a.endpoint: http://minio.lakehouse:9000
+    fs.s3a.path.style.access: true
+    fs.s3a.impl: org.apache.hadoop.fs.s3a.S3AFileSystem
+---
+apiVersion: external-secrets.io/v1beta1
+kind: ExternalSecret
+metadata:
+  name: flink-s3-credentials
+  namespace: flink
+spec:
+  refreshInterval: 1h
+  secretStoreRef:
+    name: vault-backend
+    kind: ClusterSecretStore
+  target:
+    name: flink-s3-credentials
+    creationPolicy: Owner
+  data:
+    - secretKey: AWS_ACCESS_KEY_ID
+      remoteRef:
+        key: payment-switch/lakehouse
+        property: s3_access_key
+    - secretKey: AWS_SECRET_ACCESS_KEY
+      remoteRef:
+        key: payment-switch/lakehouse
+        property: s3_secret_key
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: flink-jobmanager
+  namespace: flink
+  labels:
+    app: flink
+    component: jobmanager
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: flink
+      component: jobmanager
+  template:
+    metadata:
+      labels:
+        app: flink
+        component: jobmanager
+      annotations:
+        prometheus.io/scrape: "true"
+        prometheus.io/port: "9249"
+    spec:
+      containers:
+        - name: jobmanager
+          image: flink:1.18-scala_2.12-java11
+          args: ["jobmanager"]
+          ports:
+            - containerPort: 6123
+              name: rpc
+            - containerPort: 6124
+              name: blob-server
+            - containerPort: 8081
+              name: webui
+            - containerPort: 9249
+              name: metrics
+          envFrom:
+            - configMapRef:
+                name: flink-delta-config
+            - secretRef:
+                name: flink-s3-credentials
+          env:
+            - name: FLINK_PROPERTIES
+              valueFrom:
+                configMapKeyRef:
+                  name: flink-delta-config
+                  key: FLINK_PROPERTIES
+          resources:
+            requests:
+              cpu: "500m"
+              memory: "2Gi"
+            limits:
+              cpu: "2000m"
+              memory: "4Gi"
+          volumeMounts:
+            - name: flink-config
+              mountPath: /opt/flink/conf
+            - name: delta-jars
+              mountPath: /opt/flink/lib/delta
+      volumes:
+        - name: flink-config
+          configMap:
+            name: flink-delta-config
+        - name: delta-jars
+          emptyDir: {}
+      initContainers:
+        - name: download-delta-jars
+          image: curlimages/curl:latest
+          command:
+            - sh
+            - -c
+            - |
+              curl -L -o /jars/delta-flink-3.0.0.jar https://repo1.maven.org/maven2/io/delta/delta-flink/3.0.0/delta-flink-3.0.0.jar
+              curl -L -o /jars/delta-standalone_2.12-3.0.0.jar https://repo1.maven.org/maven2/io/delta/delta-standalone_2.12/3.0.0/delta-standalone_2.12-3.0.0.jar
+              curl -L -o /jars/flink-parquet-1.18.0.jar https://repo1.maven.org/maven2/org/apache/flink/flink-parquet/1.18.0/flink-parquet-1.18.0.jar
+          volumeMounts:
+            - name: delta-jars
+              mountPath: /jars
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: flink-taskmanager
+  namespace: flink
+  labels:
+    app: flink
+    component: taskmanager
+spec:
+  replicas: 3
+  selector:
+    matchLabels:
+      app: flink
+      component: taskmanager
+  template:
+    metadata:
+      labels:
+        app: flink
+        component: taskmanager
+      annotations:
+        prometheus.io/scrape: "true"
+        prometheus.io/port: "9249"
+    spec:
+      containers:
+        - name: taskmanager
+          image: flink:1.18-scala_2.12-java11
+          args: ["taskmanager"]
+          ports:
+            - containerPort: 6122
+              name: rpc
+            - containerPort: 9249
+              name: metrics
+          envFrom:
+            - configMapRef:
+                name: flink-delta-config
+            - secretRef:
+                name: flink-s3-credentials
+          env:
+            - name: FLINK_PROPERTIES
+              valueFrom:
+                configMapKeyRef:
+                  name: flink-delta-config
+                  key: FLINK_PROPERTIES
+          resources:
+            requests:
+              cpu: "1000m"
+              memory: "4Gi"
+            limits:
+              cpu: "4000m"
+              memory: "8Gi"
+          volumeMounts:
+            - name: flink-config
+              mountPath: /opt/flink/conf
+            - name: delta-jars
+              mountPath: /opt/flink/lib/delta
+      volumes:
+        - name: flink-config
+          configMap:
+            name: flink-delta-config
+        - name: delta-jars
+          emptyDir: {}
+      initContainers:
+        - name: download-delta-jars
+          image: curlimages/curl:latest
+          command:
+            - sh
+            - -c
+            - |
+              curl -L -o /jars/delta-flink-3.0.0.jar https://repo1.maven.org/maven2/io/delta/delta-flink/3.0.0/delta-flink-3.0.0.jar
+              curl -L -o /jars/delta-standalone_2.12-3.0.0.jar https://repo1.maven.org/maven2/io/delta/delta-standalone_2.12/3.0.0/delta-standalone_2.12-3.0.0.jar
+              curl -L -o /jars/flink-parquet-1.18.0.jar https://repo1.maven.org/maven2/org/apache/flink/flink-parquet/1.18.0/flink-parquet-1.18.0.jar
+          volumeMounts:
+            - name: delta-jars
+              mountPath: /jars
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: flink-jobmanager
+  namespace: flink
+spec:
+  type: ClusterIP
+  ports:
+    - name: rpc
+      port: 6123
+    - name: blob-server
+      port: 6124
+    - name: webui
+      port: 8081
+  selector:
+    app: flink
+    component: jobmanager
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: flink-jobmanager-rest
+  namespace: flink
+spec:
+  type: ClusterIP
+  ports:
+    - name: rest
+      port: 8081
+      targetPort: 8081
+  selector:
+    app: flink
+    component: jobmanager
+---
+apiVersion: batch/v1
+kind: Job
+metadata:
+  name: flink-delta-lake-job
+  namespace: flink
+spec:
+  template:
+    spec:
+      restartPolicy: OnFailure
+      containers:
+        - name: flink-job-submitter
+          image: flink:1.18-scala_2.12-java11
+          command:
+            - /opt/flink/bin/flink
+            - run
+            - -d
+            - -m
+            - flink-jobmanager:8081
+            - /opt/flink/jobs/delta-lake-streaming-job.jar
+          envFrom:
+            - configMapRef:
+                name: flink-delta-config
+            - secretRef:
+                name: flink-s3-credentials
+          volumeMounts:
+            - name: job-jar
+              mountPath: /opt/flink/jobs
+      volumes:
+        - name: job-jar
+          configMap:
+            name: flink-job-jar

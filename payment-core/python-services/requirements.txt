@@ -1,0 +1,27 @@
+# Shared Python service dependencies
+fastapi>=0.109.0
+uvicorn>=0.27.0
+pydantic>=2.5.0
+httpx>=0.26.0
+redis>=5.0.0
+prometheus-client>=0.20.0
+psycopg2-binary>=2.9.9
+sqlalchemy>=2.0.0
+python-dotenv>=1.0.0
+structlog>=24.1.0
+
+# AI/ML dependencies
+torch>=2.1.0
+xgboost>=2.0.0
+lightgbm>=4.2.0
+scikit-learn>=1.4.0
+numpy>=1.26.0
+pandas>=2.1.0
+prophet>=1.1.5
+pymc>=5.10.0
+art>=1.17.0
+
+# Data integration
+delta-spark>=3.1.0
+pyspark>=3.5.0
+confluent-kafka>=2.3.0

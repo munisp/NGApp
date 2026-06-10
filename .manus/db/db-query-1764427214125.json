@@ -1,0 +1,22 @@
+{
+  "query": "SHOW TABLES LIKE '%remit%'",
+  "command": "mysql --batch --raw --column-names --default-character-set=utf8mb4 --host gateway02.us-east-1.prod.aws.tidbcloud.com --port 4000 --user NzNswwN3cq6gauf.f2a830aed91f --database QvP5TNHY6Ni4vrN3ohqE9a --execute SHOW TABLES LIKE '%remit%'",
+  "rows": [
+    {
+      "Tables_in_QvP5TNHY6Ni4vrN3ohqE9a (%remit%)": "bank_accounts_remittance"
+    },
+    {
+      "Tables_in_QvP5TNHY6Ni4vrN3ohqE9a (%remit%)": "remittance_timeline"
+    },
+    {
+      "Tables_in_QvP5TNHY6Ni4vrN3ohqE9a (%remit%)": "remittance_webhooks"
+    },
+    {
+      "Tables_in_QvP5TNHY6Ni4vrN3ohqE9a (%remit%)": "remittances"
+    }
+  ],
+  "messages": [],
+  "stdout": "Tables_in_QvP5TNHY6Ni4vrN3ohqE9a (%remit%)\nbank_accounts_remittance\nremittance_timeline\nremittance_webhooks\nremittances\n",
+  "stderr": "",
+  "execution_time_ms": 94
+}

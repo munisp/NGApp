@@ -1,0 +1,35 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: vault-auto-unseal-config
+  namespace: payment-switch
+data:
+  vault-unseal.hcl: |
+    seal "awskms" {
+      region     = "af-south-1"
+      kms_key_id = "VAULT_KMS_KEY_ID"
+    }
+
+    storage "postgresql" {
+      connection_url = "postgresql://vault:VAULT_DB_PASS@postgres-ha:5432/vault?sslmode=require"
+      table          = "vault_kv_store"
+      ha_enabled     = true
+      ha_table       = "vault_ha_locks"
+    }
+
+    listener "tcp" {
+      address     = "0.0.0.0:8200"
+      tls_disable = false
+      tls_cert_file = "/vault/tls/tls.crt"
+      tls_key_file  = "/vault/tls/tls.key"
+    }
+
+    api_addr     = "https://vault.payment-switch.svc:8200"
+    cluster_addr = "https://vault.payment-switch.svc:8201"
+
+    ui = true
+
+    telemetry {
+      prometheus_retention_time = "30s"
+      disable_hostname         = true
+    }
