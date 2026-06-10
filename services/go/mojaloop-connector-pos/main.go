@@ -13,6 +13,7 @@ import (
 	"strings"
 	"os"
 	"time"
+	"strconv"
 )
 
 type TransferRequest struct {
@@ -41,6 +42,22 @@ func healthHandler(w http.ResponseWriter, r *http.Request) {
 	json.NewEncoder(w).Encode(map[string]string{"status": "healthy", "service": "mojaloop-connector-pos"})
 }
 
+// Fee configuration from environment
+var feeRate = getEnvFloat("MOJALOOP_FEE_RATE", 0.01)
+var feeMinimum = getEnvFloat("MOJALOOP_FEE_MINIMUM", 10.0)
+
+func getEnvFloat(key string, defaultVal float64) float64 {
+	v := os.Getenv(key)
+	if v == "" {
+		return defaultVal
+	}
+	f, err := strconv.ParseFloat(v, 64)
+	if err != nil {
+		return defaultVal
+	}
+	return f
+}
+
 func quoteHandler(w http.ResponseWriter, r *http.Request) {
 	if r.Method != http.MethodPost {
 		http.Error(w, "Method not allowed", http.StatusMethodNotAllowed)
@@ -52,9 +69,9 @@ func quoteHandler(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	fee := req.Amount * 0.01
-	if fee < 10 {
-		fee = 10
+	fee := req.Amount * feeRate
+	if fee < feeMinimum {
+		fee = feeMinimum
 	}
 
 	w.Header().Set("Content-Type", "application/json")

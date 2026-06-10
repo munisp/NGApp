@@ -4,9 +4,12 @@ OpenSearch Integration Client
 Search and analytics engine for the remittance platform
 """
 
+import os
 from opensearchpy import OpenSearch
-from typing import Dict, List
+from typing import Any, Dict, List
 import json
+
+_VERIFY_CERTS = os.getenv("OPENSEARCH_VERIFY_CERTS", "true").lower() not in ("0", "false", "no")
 
 class OpenSearchIntegration:
     """OpenSearch integration for logging and analytics"""
@@ -16,8 +19,8 @@ class OpenSearchIntegration:
             hosts=hosts,
             http_auth=auth,
             use_ssl=True,
-            verify_certs=False,
-            ssl_show_warn=False
+            verify_certs=_VERIFY_CERTS,
+            ssl_show_warn=_VERIFY_CERTS
         )
     
     def create_index(self, index_name: str, mappings: Dict = None) -> Dict[str, Any]:
@@ -86,7 +89,7 @@ class OpenSearchIntegration:
 if __name__ == "__main__":
     client = OpenSearchIntegration(
         hosts=['https://localhost:9200'],
-        auth=('admin', 'Admin@123')
+        auth=(os.getenv('OPENSEARCH_USER', ''), os.getenv('OPENSEARCH_PASS', ''))
     )
     
     # Create transactions index

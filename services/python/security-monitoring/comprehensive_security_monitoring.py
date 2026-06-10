@@ -210,7 +210,7 @@ def get_db():
 async def get_wazuh_token() -> Optional[str]:
     """Get Wazuh authentication token"""
     try:
-        async with httpx.AsyncClient(verify=False) as client:
+        async with httpx.AsyncClient(verify=os.getenv('TLS_VERIFY', 'true').lower() not in ('0', 'false', 'no')) as client:
             response = await client.post(
                 f"{WAZUH_API_URL}/security/user/authenticate",
                 auth=(WAZUH_USERNAME, WAZUH_PASSWORD),
@@ -219,13 +219,13 @@ async def get_wazuh_token() -> Optional[str]:
             response.raise_for_status()
             return response.json()["data"]["token"]
     except Exception as e:
-        print(f"Wazuh authentication failed: {e}")
+        logging.error("Wazuh authentication failed: %s", e)
         return None
 
 async def fetch_wazuh_alerts(token: str, hours: int = 1) -> List[Dict]:
     """Fetch alerts from Wazuh"""
     try:
-        async with httpx.AsyncClient(verify=False) as client:
+        async with httpx.AsyncClient(verify=os.getenv('TLS_VERIFY', 'true').lower() not in ('0', 'false', 'no')) as client:
             response = await client.get(
                 f"{WAZUH_API_URL}/alerts",
                 headers={"Authorization": f"Bearer {token}"},
@@ -235,7 +235,7 @@ async def fetch_wazuh_alerts(token: str, hours: int = 1) -> List[Dict]:
             response.raise_for_status()
             return response.json().get("data", {}).get("affected_items", [])
     except Exception as e:
-        print(f"Failed to fetch Wazuh alerts: {e}")
+        logging.error("Failed to fetch Wazuh alerts: %s", e)
         return []
 
 async def fetch_opencti_indicators() -> List[Dict]:

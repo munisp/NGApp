@@ -55,8 +55,9 @@ logging.basicConfig(level=logging.INFO, format="%(asctime)s [%(levelname)s] %(me
 logger = logging.getLogger("opensearch-indexer")
 
 OPENSEARCH_URL = os.getenv("OPENSEARCH_URL", "http://localhost:9200")
-OPENSEARCH_USER = os.getenv("OPENSEARCH_USER", "admin")
-OPENSEARCH_PASS = os.getenv("OPENSEARCH_PASS", "admin")
+OPENSEARCH_USER = os.getenv("OPENSEARCH_USER", "")
+OPENSEARCH_PASS = os.getenv("OPENSEARCH_PASS", "")
+_TLS_VERIFY = os.getenv("TLS_VERIFY", "true").lower() not in ("0", "false", "no")
 PORT = int(os.getenv("PORT", "8092"))
 
 app = FastAPI(title="54Link OpenSearch Indexer", version="1.0.0")
@@ -134,7 +135,7 @@ async def os_request(method: str, path: str, body: dict | None = None) -> dict:
     auth = (OPENSEARCH_USER, OPENSEARCH_PASS)
 
     try:
-        async with httpx.AsyncClient(verify=False, timeout=30.0) as client:
+        async with httpx.AsyncClient(verify=_TLS_VERIFY, timeout=30.0) as client:
             if method == "GET":
                 resp = await client.get(url, auth=auth)
             elif method == "POST":
@@ -164,7 +165,7 @@ async def bulk_index(index: str, documents: list[dict]) -> dict:
     bulk_body = "\n".join(lines) + "\n"
 
     try:
-        async with httpx.AsyncClient(verify=False, timeout=60.0) as client:
+        async with httpx.AsyncClient(verify=_TLS_VERIFY, timeout=60.0) as client:
             resp = await client.post(
                 f"{OPENSEARCH_URL}/_bulk",
                 content=bulk_body,
@@ -278,7 +279,7 @@ async def health():
     os_healthy = False
     try:
         import httpx
-        async with httpx.AsyncClient(verify=False, timeout=5.0) as client:
+        async with httpx.AsyncClient(verify=_TLS_VERIFY, timeout=5.0) as client:
             resp = await client.get(
                 f"{OPENSEARCH_URL}/_cluster/health",
                 auth=(OPENSEARCH_USER, OPENSEARCH_PASS),

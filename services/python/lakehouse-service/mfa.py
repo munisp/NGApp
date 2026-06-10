@@ -237,7 +237,7 @@ def example_mfa_setup():
     mfa_setup = MFAManager.setup_mfa(username)
     
     print("=== MFA Setup ===")
-    print(f"Secret: {mfa_setup.secret}")
+    print("MFA secret configured (hidden for security)")
     print(f"Manual Entry Key: {mfa_setup.manual_entry_key}")
     print(f"\nBackup Codes (save these securely!):")
     for i, code in enumerate(mfa_setup.backup_codes, 1):

@@ -744,7 +744,7 @@ if __name__ == "__main__":
     async def example() -> None:
         # Create link token
         link_token = await service.create_plaid_link_token("user_123")
-        print(f"Link token: {link_token}")
+        print("Link token created successfully (hidden for security)")
         
         # After user completes Plaid Link, exchange public token
         # access_token_data = await service.exchange_plaid_public_token("user_123", "public-sandbox-xxx")

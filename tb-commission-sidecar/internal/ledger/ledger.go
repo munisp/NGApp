@@ -1,15 +1,20 @@
-// Package ledger implements a SQLite-backed double-entry ledger
-// for commission, settlement, and refund operations.
-// Bridges Node.js application to TigerBeetle with offline-first durability.
+// Package ledger implements a double-entry ledger for commission,
+// settlement, and refund operations. Supports two backends:
+//   - SQLite (default, offline-first for POS terminals)
+//   - PostgreSQL (production, set DATABASE_URL env var)
+// Bridges Node.js application to TigerBeetle with local durability.
 package ledger
 
 import (
 	"database/sql"
 	"encoding/json"
 	"fmt"
+	"os"
+	"strings"
 	"sync"
 	"time"
 
+	_ "github.com/lib/pq"
 	_ "github.com/mattn/go-sqlite3"
 )
 
@@ -43,18 +48,69 @@ type Ledger struct {
 	mu sync.RWMutex
 }
 
+// New creates a Ledger backed by PostgreSQL (if DATABASE_URL is set)
+// or SQLite (fallback, using dbPath).
 func New(dbPath string) (*Ledger, error) {
-	db, err := sql.Open("sqlite3", dbPath+"?_journal_mode=WAL&_synchronous=NORMAL&_busy_timeout=5000")
-	if err != nil {
-		return nil, fmt.Errorf("open db: %w", err)
+	pgURL := os.Getenv("DATABASE_URL")
+	var db *sql.DB
+	var err error
+	var isPostgres bool
+
+	if pgURL != "" && strings.HasPrefix(pgURL, "postgres") {
+		db, err = sql.Open("postgres", pgURL)
+		if err != nil {
+			return nil, fmt.Errorf("open postgres: %w", err)
+		}
+		db.SetMaxOpenConns(25)
+		db.SetMaxIdleConns(5)
+		db.SetConnMaxLifetime(5 * time.Minute)
+		isPostgres = true
+	} else {
+		db, err = sql.Open("sqlite3", dbPath+"?_journal_mode=WAL&_synchronous=NORMAL&_busy_timeout=5000")
+		if err != nil {
+			return nil, fmt.Errorf("open sqlite: %w", err)
+		}
 	}
-	if err := migrate(db); err != nil {
+
+	if err := migrate(db, isPostgres); err != nil {
 		return nil, fmt.Errorf("migrate: %w", err)
 	}
 	return &Ledger{db: db}, nil
 }
 
-func migrate(db *sql.DB) error {
+func migrate(db *sql.DB, isPostgres bool) error {
+	if isPostgres {
+		_, err := db.Exec(`
+			CREATE TABLE IF NOT EXISTS transfers (
+				id BIGSERIAL PRIMARY KEY,
+				debit_account TEXT NOT NULL,
+				credit_account TEXT NOT NULL,
+				amount BIGINT NOT NULL CHECK(amount > 0),
+				ledger INT NOT NULL,
+				code INT NOT NULL,
+				reference TEXT NOT NULL,
+				transfer_type INT NOT NULL,
+				metadata JSONB,
+				synced_to_tb BOOLEAN DEFAULT FALSE,
+				tb_transfer_id TEXT,
+				created_at TIMESTAMPTZ DEFAULT NOW()
+			);
+			CREATE INDEX IF NOT EXISTS idx_transfers_reference ON transfers(reference);
+			CREATE INDEX IF NOT EXISTS idx_transfers_debit ON transfers(debit_account);
+			CREATE INDEX IF NOT EXISTS idx_transfers_credit ON transfers(credit_account);
+			CREATE INDEX IF NOT EXISTS idx_transfers_synced ON transfers(synced_to_tb);
+			CREATE INDEX IF NOT EXISTS idx_transfers_type ON transfers(transfer_type);
+
+			CREATE TABLE IF NOT EXISTS account_balances (
+				account_id TEXT PRIMARY KEY,
+				debit_total BIGINT DEFAULT 0,
+				credit_total BIGINT DEFAULT 0,
+				updated_at TIMESTAMPTZ DEFAULT NOW()
+			);
+		`)
+		return err
+	}
+	// SQLite backend (offline-first POS terminals)
 	_, err := db.Exec(`
 		CREATE TABLE IF NOT EXISTS transfers (
 			id INTEGER PRIMARY KEY AUTOINCREMENT,

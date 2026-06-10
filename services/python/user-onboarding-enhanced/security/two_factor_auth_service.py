@@ -533,7 +533,7 @@ async def example_usage() -> None:
     print(f"Setup result: {setup_result}")
     
     if setup_result['success']:
-        print(f"\nSecret (for manual entry): {setup_result['secret']}")
+        print("\n2FA secret configured (hidden for security)")
         print(f"Recovery codes: {setup_result['recovery_codes']}")
         print(f"\nScan this QR code with Google Authenticator:")
         print(f"QR Code URL: {setup_result['qr_code_url'][:100]}...")

@@ -435,7 +435,7 @@ async def example_usage() -> None:
     
     # Hash password
     hashed = service.hash_password(password)
-    print(f"Hashed password: {hashed}")
+    print("Password hashed successfully (hidden for security)")
     
     # Verify password
     is_valid = service.verify_password(password, hashed)
