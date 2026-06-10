@@ -154,7 +154,10 @@ export const documentManagementRouter = router({
       // Enforce STATUS_TRANSITIONS state machine
       if (typeof input === "object" && "verified" in input) {
         const currentStatus = "pending"; // Will be overridden by DB lookup
-        const newStatus = ("verified" in input ? String((input as Record<string, unknown>).verified) : undefined);
+        const newStatus =
+          "verified" in input
+            ? String((input as Record<string, unknown>).verified)
+            : undefined;
         const allowed =
           STATUS_TRANSITIONS[currentStatus as keyof typeof STATUS_TRANSITIONS];
         if (newStatus && allowed && !allowed.includes(newStatus)) {
@@ -166,7 +169,9 @@ export const documentManagementRouter = router({
       }
       const txAmount =
         typeof input === "object" && "amount" in input
-          ? Number("amount" in input ? (input as Record<string, unknown>).amount : 0)
+          ? Number(
+              "amount" in input ? (input as Record<string, unknown>).amount : 0
+            )
           : 0;
       const fees = calculateFee(txAmount, "transfer");
       const commission = calculateCommission(fees.fee, "transfer");

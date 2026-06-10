@@ -140,7 +140,11 @@ export const customerRouter = router({
       .mutation(async ({ ctx, input }) => {
         const txAmount =
           typeof input === "object" && "amount" in input
-            ? Number("amount" in input ? (input as Record<string, unknown>).amount : 0)
+            ? Number(
+                "amount" in input
+                  ? (input as Record<string, unknown>).amount
+                  : 0
+              )
             : 0;
         const fees = calculateFee(txAmount, "transfer");
         const commission = calculateCommission(fees.fee, "transfer");
@@ -696,7 +700,10 @@ export const customerRouter = router({
         // Enforce STATUS_TRANSITIONS state machine
         if (typeof input === "object" && "status" in input) {
           const currentStatus = "pending"; // Will be overridden by DB lookup
-          const newStatus = "status" in input ? String((input as Record<string, unknown>).status) : "";
+          const newStatus =
+            "status" in input
+              ? String((input as Record<string, unknown>).status)
+              : "";
           const allowed =
             STATUS_TRANSITIONS[
               currentStatus as keyof typeof STATUS_TRANSITIONS

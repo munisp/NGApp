@@ -457,9 +457,14 @@ export const settlementRouter = router({
     .mutation(async ({ input }) => {
       // ── Enforce STATUS_TRANSITIONS state machine ──
       if (typeof input === "object" && "status" in input) {
-        const newStatus = ("status" in input ? String((input as Record<string, unknown>).status) : "");
+        const newStatus =
+          "status" in input
+            ? String((input as Record<string, unknown>).status)
+            : "";
         const currentStatus =
-          ("currentStatus" in input ? String((input as Record<string, unknown>).currentStatus) : "pending");
+          "currentStatus" in input
+            ? String((input as Record<string, unknown>).currentStatus)
+            : "pending";
         const allowed =
           STATUS_TRANSITIONS[currentStatus as keyof typeof STATUS_TRANSITIONS];
         if (allowed && !allowed.includes(newStatus)) {
@@ -494,9 +499,14 @@ export const settlementRouter = router({
     .mutation(async ({ input }) => {
       // ── Enforce STATUS_TRANSITIONS state machine ──
       if (typeof input === "object" && "status" in input) {
-        const newStatus = ("status" in input ? String((input as Record<string, unknown>).status) : "");
+        const newStatus =
+          "status" in input
+            ? String((input as Record<string, unknown>).status)
+            : "";
         const currentStatus =
-          ("currentStatus" in input ? String((input as Record<string, unknown>).currentStatus) : "pending");
+          "currentStatus" in input
+            ? String((input as Record<string, unknown>).currentStatus)
+            : "pending";
         const allowed =
           STATUS_TRANSITIONS[currentStatus as keyof typeof STATUS_TRANSITIONS];
         if (allowed && !allowed.includes(newStatus)) {

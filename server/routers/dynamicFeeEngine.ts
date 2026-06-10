@@ -95,7 +95,11 @@ export const dynamicFeeEngineRouter = router({
         if (!db) return { items: [], total: 0 };
         const conditions = [];
         if (input.txType) conditions.push(eq(feeRules.txType, input.txType));
-        if (("channel" in input ? String((input as Record<string, unknown>).channel) : undefined))
+        if (
+          "channel" in input
+            ? String((input as Record<string, unknown>).channel)
+            : undefined
+        )
           conditions.push(eq((feeRules as any).channel, input.channel));
         // @ts-expect-error auto-fix
         if (input.isActive !== undefined)
@@ -153,9 +157,14 @@ export const dynamicFeeEngineRouter = router({
     .mutation(async ({ input, ctx }) => {
       // ── Enforce STATUS_TRANSITIONS state machine ──
       if (typeof input === "object" && "status" in input) {
-        const newStatus = ("status" in input ? String((input as Record<string, unknown>).status) : "");
+        const newStatus =
+          "status" in input
+            ? String((input as Record<string, unknown>).status)
+            : "";
         const currentStatus =
-          ("currentStatus" in input ? String((input as Record<string, unknown>).currentStatus) : "pending");
+          "currentStatus" in input
+            ? String((input as Record<string, unknown>).currentStatus)
+            : "pending";
         const allowed =
           STATUS_TRANSITIONS[currentStatus as keyof typeof STATUS_TRANSITIONS];
         if (allowed && !allowed.includes(newStatus)) {
@@ -167,7 +176,9 @@ export const dynamicFeeEngineRouter = router({
       }
       const txAmount =
         typeof input === "object" && "amount" in input
-          ? Number("amount" in input ? (input as Record<string, unknown>).amount : 0)
+          ? Number(
+              "amount" in input ? (input as Record<string, unknown>).amount : 0
+            )
           : 0;
       const fees = calculateFee(txAmount, "transfer");
       const commission = calculateCommission(fees.fee, "transfer");
@@ -204,7 +215,11 @@ export const dynamicFeeEngineRouter = router({
           creditAccountId: 1001,
           amount: Math.round(
             (typeof input === "object" && "amount" in input
-              ? Number("amount" in input ? (input as Record<string, unknown>).amount : 0)
+              ? Number(
+                  "amount" in input
+                    ? (input as Record<string, unknown>).amount
+                    : 0
+                )
               : 0) * 100
           ),
           currency: "NGN",
@@ -234,7 +249,9 @@ export const dynamicFeeEngineRouter = router({
 
           resourceId:
             typeof input === "object" && input !== null && "id" in input
-              ? String("id" in input ? (input as Record<string, unknown>).id : "new")
+              ? String(
+                  "id" in input ? (input as Record<string, unknown>).id : "new"
+                )
               : "new",
 
           status: "success",
@@ -341,18 +358,28 @@ export const dynamicFeeEngineRouter = router({
         };
         switch (rule.feeType) {
           case "flat":
-            fee = parseFloat(String((rule as Record<string, unknown>).flatAmount || "0"));
+            fee = parseFloat(
+              String((rule as Record<string, unknown>).flatAmount || "0")
+            );
             break;
           case "percentage":
             fee =
               (input.amount *
-                parseFloat(String((rule as Record<string, unknown>).percentageRate || "0"))) /
+                parseFloat(
+                  String(
+                    (rule as Record<string, unknown>).percentageRate || "0"
+                  )
+                )) /
               100;
             break;
           case "capped_percentage":
             fee =
               (input.amount *
-                parseFloat(String((rule as Record<string, unknown>).percentageRate || "0"))) /
+                parseFloat(
+                  String(
+                    (rule as Record<string, unknown>).percentageRate || "0"
+                  )
+                )) /
               100;
             const minFee = parseFloat(String(rule.minFee || "0"));
             const maxFee = parseFloat(String(rule.maxFee || "999999999"));
@@ -361,7 +388,9 @@ export const dynamicFeeEngineRouter = router({
             break;
           case "tiered":
             if ((rule as Record<string, unknown>).tiers) {
-              const tiers = JSON.parse(String((rule as Record<string, unknown>).tiers));
+              const tiers = JSON.parse(
+                String((rule as Record<string, unknown>).tiers)
+              );
               for (const tier of tiers) {
                 if (
                   input.amount >= tier.minAmount &&
@@ -466,18 +495,28 @@ export const dynamicFeeEngineRouter = router({
           let fee = 0;
           switch (rule.feeType) {
             case "flat":
-              fee = parseFloat(String((rule as Record<string, unknown>).flatAmount || "0"));
+              fee = parseFloat(
+                String((rule as Record<string, unknown>).flatAmount || "0")
+              );
               break;
             case "percentage":
               fee =
                 (amount *
-                  parseFloat(String((rule as Record<string, unknown>).percentageRate || "0"))) /
+                  parseFloat(
+                    String(
+                      (rule as Record<string, unknown>).percentageRate || "0"
+                    )
+                  )) /
                 100;
               break;
             case "capped_percentage":
               fee =
                 (amount *
-                  parseFloat(String((rule as Record<string, unknown>).percentageRate || "0"))) /
+                  parseFloat(
+                    String(
+                      (rule as Record<string, unknown>).percentageRate || "0"
+                    )
+                  )) /
                 100;
               fee = Math.max(
                 parseFloat(String(rule.minFee || "0")),
@@ -486,7 +525,9 @@ export const dynamicFeeEngineRouter = router({
               break;
             case "tiered":
               if ((rule as Record<string, unknown>).tiers) {
-                const tiers = JSON.parse(String((rule as Record<string, unknown>).tiers));
+                const tiers = JSON.parse(
+                  String((rule as Record<string, unknown>).tiers)
+                );
                 for (const tier of tiers) {
                   if (amount >= tier.minAmount && amount <= tier.maxAmount) {
                     fee =

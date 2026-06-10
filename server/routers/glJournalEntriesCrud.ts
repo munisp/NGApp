@@ -143,7 +143,9 @@ export const gl_journal_entriesRouter = router({
     .mutation(async ({ input, ctx }) => {
       const txAmount =
         typeof input === "object" && "amount" in input
-          ? Number("amount" in input ? (input as Record<string, unknown>).amount : 0)
+          ? Number(
+              "amount" in input ? (input as Record<string, unknown>).amount : 0
+            )
           : 0;
       const fees = calculateFee(txAmount, "transfer");
       const commission = calculateCommission(fees.fee, "transfer");
@@ -182,7 +184,9 @@ export const gl_journal_entriesRouter = router({
 
           resourceId:
             typeof input === "object" && input !== null && "id" in input
-              ? String("id" in input ? (input as Record<string, unknown>).id : "new")
+              ? String(
+                  "id" in input ? (input as Record<string, unknown>).id : "new"
+                )
               : "new",
 
           status: "success",

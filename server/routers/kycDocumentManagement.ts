@@ -134,9 +134,14 @@ const approve = protectedProcedure
   .mutation(async ({ input, ctx }) => {
     // ── Enforce STATUS_TRANSITIONS state machine ──
     if (typeof input === "object" && "status" in input) {
-      const newStatus = ("status" in input ? String((input as Record<string, unknown>).status) : "");
+      const newStatus =
+        "status" in input
+          ? String((input as Record<string, unknown>).status)
+          : "";
       const currentStatus =
-        ("currentStatus" in input ? String((input as Record<string, unknown>).currentStatus) : "pending");
+        "currentStatus" in input
+          ? String((input as Record<string, unknown>).currentStatus)
+          : "pending";
       const allowed =
         STATUS_TRANSITIONS[currentStatus as keyof typeof STATUS_TRANSITIONS];
       if (allowed && !allowed.includes(newStatus)) {
@@ -148,7 +153,9 @@ const approve = protectedProcedure
     }
     const txAmount =
       typeof input === "object" && "amount" in input
-        ? Number("amount" in input ? (input as Record<string, unknown>).amount : 0)
+        ? Number(
+            "amount" in input ? (input as Record<string, unknown>).amount : 0
+          )
         : 0;
     const fees = calculateFee(txAmount, "transfer");
     const commission = calculateCommission(fees.fee, "transfer");
@@ -197,9 +204,14 @@ const reject = protectedProcedure
   .mutation(async ({ input }) => {
     // ── Enforce STATUS_TRANSITIONS state machine ──
     if (typeof input === "object" && "status" in input) {
-      const newStatus = ("status" in input ? String((input as Record<string, unknown>).status) : "");
+      const newStatus =
+        "status" in input
+          ? String((input as Record<string, unknown>).status)
+          : "";
       const currentStatus =
-        ("currentStatus" in input ? String((input as Record<string, unknown>).currentStatus) : "pending");
+        "currentStatus" in input
+          ? String((input as Record<string, unknown>).currentStatus)
+          : "pending";
       const allowed =
         STATUS_TRANSITIONS[currentStatus as keyof typeof STATUS_TRANSITIONS];
       if (allowed && !allowed.includes(newStatus)) {

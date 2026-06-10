@@ -100,7 +100,9 @@ export const wearablePaymentsRouter = router({
       const result = await db.execute(
         sql`SELECT COUNT(*) as cnt FROM "wearable_devices"`
       );
-      total = Number(((result as { rows?: Array<{ cnt?: number }> }).rows ?? [])[0]?.cnt ?? 0);
+      total = Number(
+        ((result as { rows?: Array<{ cnt?: number }> }).rows ?? [])[0]?.cnt ?? 0
+      );
 
       const [activeRes, balanceRes, txnRes, agentRes] = await Promise.all([
         db
@@ -124,7 +126,8 @@ export const wearablePaymentsRouter = router({
           )
           .catch(() => ({ rows: [{ cnt: 0 }] })),
       ]);
-      const activeResult = ((activeRes as { rows?: Array<{ cnt?: number }> }).rows ?? [])[0]?.cnt;
+      const activeResult = ((activeRes as { rows?: Array<{ cnt?: number }> })
+        .rows ?? [])[0]?.cnt;
       const balanceResult = (balanceRes as any).rows?.[0]?.total;
       const txnResult = (txnRes as any).rows?.[0]?.cnt;
       const agentResult = (agentRes as any).rows?.[0]?.cnt;
@@ -167,7 +170,9 @@ export const wearablePaymentsRouter = router({
           sql`SELECT COUNT(*) as cnt FROM "wearable_devices"`
         );
         return {
-          items: (((result as { rows?: Record<string, unknown>[] }).rows) ?? []).map((row) => ({
+          items: (
+            (result as { rows?: Record<string, unknown>[] }).rows ?? []
+          ).map(row => ({
             id: row.id,
             ...((typeof row.data === "string"
               ? JSON.parse(row.data)
@@ -176,7 +181,10 @@ export const wearablePaymentsRouter = router({
             createdAt: row.created_at,
             agentId: row.agent_id,
           })),
-          total: Number(((countResult as { rows?: Array<{ cnt?: number }> }).rows ?? [])[0]?.cnt ?? 0),
+          total: Number(
+            ((countResult as { rows?: Array<{ cnt?: number }> }).rows ?? [])[0]
+              ?.cnt ?? 0
+          ),
         };
       } catch {
         return { items: [] as unknown[], total: 0 };
@@ -189,7 +197,10 @@ export const wearablePaymentsRouter = router({
       // Enforce STATUS_TRANSITIONS state machine
       if (typeof input === "object" && "status" in input) {
         const currentStatus = "pending"; // Will be overridden by DB lookup
-        const newStatus = "status" in input ? String((input as Record<string, unknown>).status) : "";
+        const newStatus =
+          "status" in input
+            ? String((input as Record<string, unknown>).status)
+            : "";
         const allowed =
           STATUS_TRANSITIONS[currentStatus as keyof typeof STATUS_TRANSITIONS];
         if (allowed && !allowed.includes(newStatus)) {
@@ -201,7 +212,9 @@ export const wearablePaymentsRouter = router({
       }
       const txAmount =
         typeof input === "object" && "amount" in input
-          ? Number("amount" in input ? (input as Record<string, unknown>).amount : 0)
+          ? Number(
+              "amount" in input ? (input as Record<string, unknown>).amount : 0
+            )
           : 0;
       const fees = calculateFee(txAmount, "transfer");
       const commission = calculateCommission(fees.fee, "transfer");
@@ -233,7 +246,8 @@ export const wearablePaymentsRouter = router({
       const result = await db.execute(
         sql`INSERT INTO "wearable_devices" (data, status, tenant_id) VALUES (${jsonStr}::jsonb, 'active', 'default') RETURNING id`
       );
-      const id = ((result as { rows?: Array<{ id?: unknown }> }).rows ?? [])[0]?.id;
+      const id = ((result as { rows?: Array<{ id?: unknown }> }).rows ?? [])[0]
+        ?.id;
       await writeAuditLog({
         agentId:
           typeof ctx === "object" && ctx !== null && "user" in ctx
@@ -251,7 +265,9 @@ export const wearablePaymentsRouter = router({
 
         resourceId:
           typeof input === "object" && input !== null && "id" in input
-            ? String("id" in input ? (input as Record<string, unknown>).id : "new")
+            ? String(
+                "id" in input ? (input as Record<string, unknown>).id : "new"
+              )
             : "new",
 
         status: "success",
@@ -273,7 +289,8 @@ export const wearablePaymentsRouter = router({
       if (!((result as { rows?: unknown[] }).rows ?? []).length) {
         throw new TRPCError({ code: "NOT_FOUND", message: "Record not found" });
       }
-      const row = ((result as { rows?: Record<string, unknown>[] }).rows ?? [])[0] ?? {};
+      const row =
+        ((result as { rows?: Record<string, unknown>[] }).rows ?? [])[0] ?? {};
       return {
         id: row.id,
         ...((typeof row.data === "string" ? JSON.parse(row.data) : row.data) ||
@@ -312,7 +329,10 @@ export const wearablePaymentsRouter = router({
         sql`SELECT status, COUNT(*) as cnt FROM "wearable_devices" GROUP BY status`
       );
       const byStatus = Object.fromEntries(
-        (((result as { rows?: Array<{ status: string; cnt: number }> }).rows) ?? []).map((r) => [r.status, Number(r.cnt)])
+        (
+          (result as { rows?: Array<{ status: string; cnt: number }> }).rows ??
+          []
+        ).map(r => [r.status, Number(r.cnt)])
       );
       return {
         byStatus,
