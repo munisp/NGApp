@@ -133,7 +133,7 @@ const _txPatterns = {
   atomicBatch: async <T>(ops: (() => Promise<T>)[]): Promise<T[]> => {
     return withTransaction(async () => {
       const results: T[] = [];
-      for (const op of ops) results.push(await op());
+      results.push(...(await Promise.all(ops.map((op) => op()))));
       return results;
     });
   },
@@ -182,7 +182,15 @@ export const simOrchestratorRouter = router({
           .limit(1);
 
         const expectedKey =
-          config[0]?.apiKey ?? "54link-sim-orchestrator-default-key";
+          config[0]?.apiKey ??
+          process.env.SIM_ORCHESTRATOR_API_KEY;
+        if (!expectedKey) {
+          throw new TRPCError({
+            code: "INTERNAL_SERVER_ERROR",
+            message:
+              "SIM orchestrator API key not configured. Set SIM_ORCHESTRATOR_API_KEY env var or configure per-terminal.",
+          });
+        }
         if (input.apiKey !== expectedKey) {
           throw new TRPCError({
             code: "UNAUTHORIZED",
@@ -457,11 +465,7 @@ export const simOrchestratorRouter = router({
           .default(
             "https://api.54link.io/api/trpc/simOrchestrator.ingestProbe"
           ),
-        apiKey: z
-          .string()
-          .min(8)
-          .max(128)
-          .default("54link-sim-orchestrator-default-key"),
+        apiKey: z.string().min(8).max(128),
         enabled: z.boolean().default(true),
       })
     )
@@ -636,9 +640,9 @@ export const simOrchestratorRouter = router({
           .where(eq(simOrchestratorConfig.terminalId, input.terminalId))
           .limit(1);
 
-        const defaultKey = "54link-sim-orchestrator-default-key";
-        const expectedKey = cfg?.apiKey ?? defaultKey;
-        if (input.apiKey !== expectedKey) {
+        const expectedKey =
+          cfg?.apiKey ?? process.env.SIM_ORCHESTRATOR_API_KEY;
+        if (!expectedKey || input.apiKey !== expectedKey) {
           throw new TRPCError({
             code: "UNAUTHORIZED",
             message: "Invalid API key",

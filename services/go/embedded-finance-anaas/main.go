@@ -39,6 +39,24 @@ import (
 	_ "github.com/lib/pq"
 )
 
+// allowedTables prevents SQL injection via table name interpolation.
+var allowedTables = map[string]bool{
+	"devices": true, "alerts": true, "telemetry": true, "firmware": true,
+	"disbursements": true, "batches": true, "recipients": true, "schedules": true,
+	"terminals": true, "transactions": true, "agents": true, "settlements": true,
+	"leases": true, "disputes": true, "commands": true, "events": true,
+	"configs": true, "sessions": true, "policies": true, "claims": true,
+	"notifications": true, "audit_log": true, "jobs": true, "tasks": true,
+}
+
+func validateTableName(table string) string {
+	if !allowedTables[table] {
+		panic(fmt.Sprintf("disallowed table name: %q", table))
+	}
+	return table
+}
+
+
 // ── Configuration ──────────────────────────────────────────────────────────────
 
 type Config struct {
@@ -478,7 +496,7 @@ func (s *DataStore) Insert(table string, data map[string]interface{}) (int64, er
 	jsonData, _ := json.Marshal(data)
 	var id int64
 	err := s.db.QueryRow(
-		fmt.Sprintf("INSERT INTO %s (data, status, tenant_id) VALUES ($1, $2, $3) RETURNING id", table),
+		fmt.Sprintf("INSERT INTO %s (data, status, tenant_id) VALUES ($1, $2, $3) RETURNING id", validateTableName(table)),
 		jsonData, data["status"], data["tenant_id"],
 	).Scan(&id)
 	if err != nil {
@@ -514,9 +532,9 @@ func (s *DataStore) List(table string, limit, offset int) ([]map[string]interfac
 		return items[offset:end], total, nil
 	}
 	var total int
-	s.db.QueryRow(fmt.Sprintf("SELECT COUNT(*) FROM %s", table)).Scan(&total)
+	s.db.QueryRow(fmt.Sprintf("SELECT COUNT(*) FROM %s", validateTableName(table))).Scan(&total)
 	rows, err := s.db.Query(
-		fmt.Sprintf("SELECT id, data, status, created_at FROM %s ORDER BY created_at DESC LIMIT $1 OFFSET $2", table),
+		fmt.Sprintf("SELECT id, data, status, created_at FROM %s ORDER BY created_at DESC LIMIT $1 OFFSET $2", validateTableName(table)),
 		limit, offset,
 	)
 	if err != nil {
@@ -558,7 +576,7 @@ func (s *DataStore) GetByID(table string, id int64) (map[string]interface{}, err
 	var status string
 	var createdAt time.Time
 	err := s.db.QueryRow(
-		fmt.Sprintf("SELECT data, status, created_at FROM %s WHERE id = $1", table), id,
+		fmt.Sprintf("SELECT data, status, created_at FROM %s WHERE id = $1", validateTableName(table)), id,
 	).Scan(&data, &status, &createdAt)
 	if err != nil {
 		return nil, err
@@ -585,7 +603,7 @@ func (s *DataStore) UpdateStatus(table string, id int64, status string) error {
 		return nil
 	}
 	_, err := s.db.Exec(
-		fmt.Sprintf("UPDATE %s SET status = $1, updated_at = NOW() WHERE id = $2", table), status, id,
+		fmt.Sprintf("UPDATE %s SET status = $1, updated_at = NOW() WHERE id = $2", validateTableName(table)), status, id,
 	)
 	return err
 }
@@ -607,8 +625,8 @@ func (s *DataStore) GetStats(table string) map[string]interface{} {
 		}
 	}
 	var total, active int
-	s.db.QueryRow(fmt.Sprintf("SELECT COUNT(*) FROM %s", table)).Scan(&total)
-	s.db.QueryRow(fmt.Sprintf("SELECT COUNT(*) FROM %s WHERE status = 'active'", table)).Scan(&active)
+	s.db.QueryRow(fmt.Sprintf("SELECT COUNT(*) FROM %s", validateTableName(table))).Scan(&total)
+	s.db.QueryRow(fmt.Sprintf("SELECT COUNT(*) FROM %s WHERE status = 'active'", validateTableName(table))).Scan(&active)
 	return map[string]interface{}{
 		"total": total, "active": active,
 		"recent": int(math.Min(float64(total), 50)),

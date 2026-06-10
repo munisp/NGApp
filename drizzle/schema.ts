@@ -2201,9 +2201,7 @@ export const simOrchestratorConfig = pgTable(
     relayEndpoint: varchar("relayEndpoint", { length: 256 })
       .notNull()
       .default("https://api.54link.io/api/trpc/simOrchestrator.ingestProbe"),
-    apiKey: varchar("apiKey", { length: 128 })
-      .notNull()
-      .default("54link-sim-orchestrator-default-key"),
+    apiKey: varchar("apiKey", { length: 128 }).notNull(),
     enabled: boolean("enabled").notNull().default(true),
     createdAt: timestamp("createdAt").defaultNow().notNull(),
     updatedAt: timestamp("updatedAt").defaultNow().notNull(),
@@ -4704,17 +4702,24 @@ export type BiometricAuditEvent = typeof biometricAuditEvents.$inferSelect;
 export type NewBiometricAuditEvent = typeof biometricAuditEvents.$inferInsert;
 
 // ─── Receipt Templates ────────────────────────────────────────────────────────
-export const receiptTemplates = pgTable("receipt_templates", {
-  id: serial("id").primaryKey(),
-  name: varchar("name", { length: 128 }).notNull(),
-  channel: varchar("channel", { length: 32 }).notNull().default("print"),
-  bodyTemplate: text("bodyTemplate").notNull(),
-  headerTemplate: text("headerTemplate"),
-  footerTemplate: text("footerTemplate"),
-  isDefault: boolean("isDefault").default(false).notNull(),
-  createdAt: timestamp("createdAt").defaultNow().notNull(),
-  updatedAt: timestamp("updatedAt").defaultNow().notNull(),
-});
+export const receiptTemplates = pgTable(
+  "receipt_templates",
+  {
+    id: serial("id").primaryKey(),
+    name: varchar("name", { length: 128 }).notNull(),
+    channel: varchar("channel", { length: 32 }).notNull().default("print"),
+    bodyTemplate: text("bodyTemplate").notNull(),
+    headerTemplate: text("headerTemplate"),
+    footerTemplate: text("footerTemplate"),
+    isDefault: boolean("isDefault").default(false).notNull(),
+    createdAt: timestamp("createdAt").defaultNow().notNull(),
+    updatedAt: timestamp("updatedAt").defaultNow().notNull(),
+  },
+  t => ({
+    channelIdx: index("receipt_tmpl_channel_idx").on(t.channel),
+    isDefaultIdx: index("receipt_tmpl_isDefault_idx").on(t.isDefault),
+  })
+);
 export type ReceiptTemplate = typeof receiptTemplates.$inferSelect;
 
 // ─── Guide Feedback ───────────────────────────────────────────────────────────
@@ -5278,35 +5283,51 @@ export const idempotencyKeys = pgTable(
 );
 
 // ─── Insurance Policies Table ──────────────────────────────────────────────
-export const insurance_policies = pgTable("insurance_policies", {
-  id: serial("id").primaryKey(),
-  policyNumber: varchar("policy_number", { length: 64 }).notNull().unique(),
-  agentId: integer("agent_id").notNull(),
-  productId: varchar("product_id", { length: 64 }).notNull(),
-  productName: varchar("product_name", { length: 128 }).notNull(),
-  category: varchar("category", { length: 64 }).notNull(),
-  monthlyPremium: integer("monthly_premium").notNull(),
-  coverageAmount: integer("coverage_amount").notNull(),
-  status: varchar("status", { length: 32 }).default("active").notNull(),
-  beneficiaryName: varchar("beneficiary_name", { length: 128 }).notNull(),
-  beneficiaryPhone: varchar("beneficiary_phone", { length: 20 }).notNull(),
-  startDate: varchar("start_date", { length: 16 }).notNull(),
-  waitingPeriodEnds: varchar("waiting_period_ends", { length: 16 }),
-  createdAt: timestamp("created_at").defaultNow().notNull(),
-});
+export const insurance_policies = pgTable(
+  "insurance_policies",
+  {
+    id: serial("id").primaryKey(),
+    policyNumber: varchar("policy_number", { length: 64 }).notNull().unique(),
+    agentId: integer("agent_id").notNull(),
+    productId: varchar("product_id", { length: 64 }).notNull(),
+    productName: varchar("product_name", { length: 128 }).notNull(),
+    category: varchar("category", { length: 64 }).notNull(),
+    monthlyPremium: integer("monthly_premium").notNull(),
+    coverageAmount: integer("coverage_amount").notNull(),
+    status: varchar("status", { length: 32 }).default("active").notNull(),
+    beneficiaryName: varchar("beneficiary_name", { length: 128 }).notNull(),
+    beneficiaryPhone: varchar("beneficiary_phone", { length: 20 }).notNull(),
+    startDate: varchar("start_date", { length: 16 }).notNull(),
+    waitingPeriodEnds: varchar("waiting_period_ends", { length: 16 }),
+    createdAt: timestamp("created_at").defaultNow().notNull(),
+  },
+  t => ({
+    agentIdIdx: index("ins_policy_agentId_idx").on(t.agentId),
+    statusIdx: index("ins_policy_status_idx").on(t.status),
+    categoryIdx: index("ins_policy_category_idx").on(t.category),
+  })
+);
 
 // ─── Insurance Claims Table ────────────────────────────────────────────────
-export const insurance_claims = pgTable("insurance_claims", {
-  id: serial("id").primaryKey(),
-  claimNumber: varchar("claim_number", { length: 64 }).notNull().unique(),
-  policyNumber: varchar("policy_number", { length: 64 }).notNull(),
-  agentId: integer("agent_id").notNull(),
-  claimType: varchar("claim_type", { length: 128 }).notNull(),
-  description: text("description").notNull(),
-  amount: integer("amount").notNull(),
-  status: varchar("status", { length: 32 }).default("submitted").notNull(),
-  evidenceUrls: json("evidence_urls").default([]),
-  adjudicationNotes: text("adjudication_notes"),
-  resolvedAt: timestamp("resolved_at"),
-  createdAt: timestamp("created_at").defaultNow().notNull(),
-});
+export const insurance_claims = pgTable(
+  "insurance_claims",
+  {
+    id: serial("id").primaryKey(),
+    claimNumber: varchar("claim_number", { length: 64 }).notNull().unique(),
+    policyNumber: varchar("policy_number", { length: 64 }).notNull(),
+    agentId: integer("agent_id").notNull(),
+    claimType: varchar("claim_type", { length: 128 }).notNull(),
+    description: text("description").notNull(),
+    amount: integer("amount").notNull(),
+    status: varchar("status", { length: 32 }).default("submitted").notNull(),
+    evidenceUrls: json("evidence_urls").default([]),
+    adjudicationNotes: text("adjudication_notes"),
+    resolvedAt: timestamp("resolved_at"),
+    createdAt: timestamp("created_at").defaultNow().notNull(),
+  },
+  t => ({
+    agentIdIdx: index("ins_claim_agentId_idx").on(t.agentId),
+    statusIdx: index("ins_claim_status_idx").on(t.status),
+    policyNumberIdx: index("ins_claim_policyNumber_idx").on(t.policyNumber),
+  })
+);

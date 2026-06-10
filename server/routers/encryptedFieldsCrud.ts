@@ -35,9 +35,21 @@ const STATUS_TRANSITIONS: Record<string, string[]> = {
 };
 
 const ENCRYPTION_ALGORITHM = "aes-256-gcm";
+const ENCRYPTION_SALT =
+  process.env.ENCRYPTION_SALT || crypto.randomBytes(16).toString("hex");
+const ENCRYPTION_SECRET = process.env.JWT_SECRET;
+if (
+  !ENCRYPTION_SECRET &&
+  process.env.NODE_ENV !== "development" &&
+  process.env.NODE_ENV !== "test"
+) {
+  throw new Error(
+    "[SECURITY] JWT_SECRET must be set for encrypted field operations in production"
+  );
+}
 const KEY = crypto.scryptSync(
-  process.env.JWT_SECRET || "default-key-for-dev",
-  "salt",
+  ENCRYPTION_SECRET || "dev-only-key-not-for-production",
+  ENCRYPTION_SALT,
   32
 );
 
@@ -117,7 +129,7 @@ const _txPatterns = {
   atomicBatch: async <T>(ops: (() => Promise<T>)[]): Promise<T[]> => {
     return withTransaction(async () => {
       const results: T[] = [];
-      for (const op of ops) results.push(await op());
+      results.push(...(await Promise.all(ops.map((op) => op()))));
       return results;
     });
   },

@@ -25,11 +25,20 @@ if (
   !isDev &&
   !isTest &&
   (!process.env.JWT_SECRET ||
-    process.env.JWT_SECRET === "pos54link-secret-change-in-production")
+    process.env.JWT_SECRET === "pos54link-secret-change-in-production" ||
+    process.env.JWT_SECRET.length < 32)
 ) {
   console.error(
-    "[SECURITY] FATAL: JWT_SECRET is not set or is using the default value. Set a strong secret in production."
+    "[SECURITY] FATAL: JWT_SECRET is not set, uses a default value, or is too short (min 32 chars). Refusing to start."
   );
+  process.exit(1);
+}
+
+if (!isDev && !isTest && process.env.DEV_AUTH_BYPASS === "true") {
+  console.error(
+    "[SECURITY] FATAL: DEV_AUTH_BYPASS=true is set in production. This is a critical vulnerability. Refusing to start."
+  );
+  process.exit(1);
 }
 
 export type TrpcContext = {
