@@ -149,9 +149,9 @@ export const tenantFeatureToggleRouter = router({
     .mutation(async ({ input, ctx }) => {
       // ── Enforce STATUS_TRANSITIONS state machine ──
       if (typeof input === "object" && "status" in input) {
-        const newStatus = (input as any).status as string;
+        const newStatus = ("status" in input ? String((input as Record<string, unknown>).status) : "");
         const currentStatus =
-          ((input as any).currentStatus as string) || "pending";
+          ("currentStatus" in input ? String((input as Record<string, unknown>).currentStatus) : "pending");
         const allowed =
           STATUS_TRANSITIONS[currentStatus as keyof typeof STATUS_TRANSITIONS];
         if (allowed && !allowed.includes(newStatus)) {
@@ -163,7 +163,7 @@ export const tenantFeatureToggleRouter = router({
       }
       const txAmount =
         typeof input === "object" && "amount" in input
-          ? Number((input as any).amount)
+          ? Number("amount" in input ? (input as Record<string, unknown>).amount : 0)
           : 0;
       const fees = calculateFee(txAmount, "transfer");
       const commission = calculateCommission(fees.fee, "transfer");
@@ -180,7 +180,7 @@ export const tenantFeatureToggleRouter = router({
             rolloutPercentage: input.rolloutPercentage,
             config: input.config ? JSON.stringify(input.config) : null,
             updatedBy: ctx.user?.id,
-          } as any)
+          })
           .returning();
         await writeAuditLog({
           agentId:
@@ -199,7 +199,7 @@ export const tenantFeatureToggleRouter = router({
 
           resourceId:
             typeof input === "object" && input !== null && "id" in input
-              ? String((input as any).id ?? "new")
+              ? String("id" in input ? (input as Record<string, unknown>).id : "new")
               : "new",
 
           status: "success",
@@ -319,7 +319,7 @@ export const tenantFeatureToggleRouter = router({
         if (!db) throw new Error("Database unavailable");
         await db
           .update(tenantFeatureToggles)
-          .set({ enabled: false } as any)
+          .set({ enabled: false })
           .where(eq(tenantFeatureToggles.featureKey, input.featureName));
         return { success: true, killed: input.featureName };
       } catch (error) {

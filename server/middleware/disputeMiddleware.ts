@@ -38,14 +38,25 @@ export async function publishDisputeEvent(params: {
     | "refund.requested"
     | "refund.approved"
     | "refund.processed"
-    | "refund.rejected";
+    | "refund.rejected"
+    | "dispute.created"
+    | "dispute.status_changed"
+    | "dispute.ai.analyzed"
+    | "dispute.ai.accepted"
+    | "dispute.ai.overridden"
+    | "dispute.notification.sent"
+    | "dispute.workflow.created"
+    | "dispute.workflow.status_changed"
+    | "dispute.workflow.escalated"
+    | "dispute.workflow.auto_resolved";
   disputeId?: number;
   refundId?: number;
-  agentId?: number;
+  agentId?: number | string;
   agentCode?: string;
   amount?: number;
   transactionRef?: string;
   metadata?: Record<string, unknown>;
+  [key: string]: unknown;
 }): Promise<void> {
   try {
     const topic: KafkaTopic = params.eventType.startsWith("dispute.")

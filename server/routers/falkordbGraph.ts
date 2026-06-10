@@ -146,7 +146,7 @@ export const falkordbGraphRouter = router({
       const rows = await db
         .select()
         .from(platform_health_checks)
-        .orderBy(desc((platform_health_checks as any).createdAt))
+        .orderBy(desc(platform_health_checks.checkedAt))
         .limit(limit)
         .offset(offset);
       const [totalRow] = await db
@@ -176,7 +176,7 @@ export const falkordbGraphRouter = router({
       const rows = await db
         .select()
         .from(platform_health_checks)
-        .orderBy(desc((platform_health_checks as any).createdAt))
+        .orderBy(desc(platform_health_checks.checkedAt))
         .limit(limit)
         .offset(offset);
       const [totalRow] = await db
@@ -206,7 +206,7 @@ export const falkordbGraphRouter = router({
       const rows = await db
         .select()
         .from(platform_health_checks)
-        .orderBy(desc((platform_health_checks as any).createdAt))
+        .orderBy(desc(platform_health_checks.checkedAt))
         .limit(limit)
         .offset(offset);
       const [totalRow] = await db
@@ -236,7 +236,7 @@ export const falkordbGraphRouter = router({
       const rows = await db
         .select()
         .from(platform_health_checks)
-        .orderBy(desc((platform_health_checks as any).createdAt))
+        .orderBy(desc(platform_health_checks.checkedAt))
         .limit(limit)
         .offset(offset);
       const [totalRow] = await db
@@ -266,7 +266,7 @@ export const falkordbGraphRouter = router({
       const rows = await db
         .select()
         .from(platform_health_checks)
-        .orderBy(desc((platform_health_checks as any).createdAt))
+        .orderBy(desc(platform_health_checks.checkedAt))
         .limit(limit)
         .offset(offset);
       const [totalRow] = await db

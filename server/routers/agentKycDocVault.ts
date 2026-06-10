@@ -163,10 +163,10 @@ export const agentKycDocVaultRouter = router({
       // Enforce STATUS_TRANSITIONS state machine
       if (typeof input === "object" && "verified" in input) {
         const currentStatus = "pending"; // Will be overridden by DB lookup
-        const newStatus = (input as any).verified;
+        const newStatus = ("verified" in input ? String((input as Record<string, unknown>).verified) : undefined);
         const allowed =
           STATUS_TRANSITIONS[currentStatus as keyof typeof STATUS_TRANSITIONS];
-        if (allowed && !allowed.includes(newStatus)) {
+        if (newStatus && allowed && !allowed.includes(newStatus)) {
           throw new TRPCError({
             code: "BAD_REQUEST",
             message: `Invalid status transition`,
@@ -175,7 +175,7 @@ export const agentKycDocVaultRouter = router({
       }
       const txAmount =
         typeof input === "object" && "amount" in input
-          ? Number((input as any).amount)
+          ? Number("amount" in input ? (input as Record<string, unknown>).amount : 0)
           : 0;
       const fees = calculateFee(txAmount, "transfer");
       const commission = calculateCommission(fees.fee, "transfer");
@@ -217,7 +217,7 @@ export const agentKycDocVaultRouter = router({
 
           resourceId:
             typeof input === "object" && input !== null && "id" in input
-              ? String((input as any).id ?? "new")
+              ? String("id" in input ? (input as Record<string, unknown>).id : "new")
               : "new",
 
           status: "success",

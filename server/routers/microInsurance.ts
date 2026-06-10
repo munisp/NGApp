@@ -389,7 +389,7 @@ export const microInsuranceRouter = router({
     const result = await db.execute(
       sql`SELECT claim_number, policy_number, claim_type, amount, status, created_at FROM "insurance_claims" WHERE agent_id = ${session.id} ORDER BY created_at DESC LIMIT 50`
     );
-    return { claims: (result as any).rows ?? [] };
+    return { claims: (result as { rows?: unknown[] }).rows ?? [] };
   }),
 
   listPolicies: protectedProcedure.query(async ({ ctx }) => {
@@ -400,7 +400,7 @@ export const microInsuranceRouter = router({
     const result = await db.execute(
       sql`SELECT policy_number, product_name, category, monthly_premium, coverage_amount, status, start_date, waiting_period_ends FROM "insurance_policies" WHERE agent_id = ${session.id} ORDER BY created_at DESC LIMIT 50`
     );
-    return { policies: (result as any).rows ?? [] };
+    return { policies: (result as { rows?: unknown[] }).rows ?? [] };
   }),
 
   stats: protectedProcedure.query(async ({ ctx }) => {

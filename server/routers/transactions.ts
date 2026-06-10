@@ -382,9 +382,9 @@ export const transactionsRouter = router({
     .mutation(async ({ input, ctx }) => {
       // ── Enforce STATUS_TRANSITIONS state machine ──
       if (typeof input === "object" && "status" in input) {
-        const newStatus = (input as any).status as string;
+        const newStatus = ("status" in input ? String((input as Record<string, unknown>).status) : "");
         const currentStatus =
-          ((input as any).currentStatus as string) || "pending";
+          ("currentStatus" in input ? String((input as Record<string, unknown>).currentStatus) : "pending");
         const allowed =
           STATUS_TRANSITIONS[currentStatus as keyof typeof STATUS_TRANSITIONS];
         if (allowed && !allowed.includes(newStatus)) {
@@ -396,7 +396,7 @@ export const transactionsRouter = router({
       }
       const txAmount =
         typeof input === "object" && "amount" in input
-          ? Number((input as any).amount)
+          ? Number("amount" in input ? (input as Record<string, unknown>).amount : 0)
           : 0;
       const fees = calculateFee(txAmount, "transfer");
       const commission = calculateCommission(fees.fee, "transfer");
@@ -685,7 +685,7 @@ export const transactionsRouter = router({
           const brAmount =
             typeof brCommission === "number"
               ? brCommission
-              : Number((brCommission as any)?.amount ?? 0);
+              : Number((brCommission as { amount?: number } | null)?.amount ?? 0);
           if (brAmount > 0) commission = brAmount;
           // Fraud scoring
           const fraudScore = calculateFraudScore({
@@ -703,7 +703,7 @@ export const transactionsRouter = router({
           const fraudScoreVal =
             typeof fraudScore === "number"
               ? fraudScore
-              : Number((fraudScore as any)?.score ?? 0);
+              : Number((fraudScore as { score?: number } | null)?.score ?? 0);
           if (fraudScoreVal > 0.85) {
             await createFraudAlert({
               agentId: agent.id,
@@ -959,7 +959,7 @@ export const transactionsRouter = router({
               agentId: agent.id,
               status: "committed",
               channel: input.channel ?? "Cash",
-              customerId: (input as any).customerId ?? undefined,
+              customerId: ("customerId" in input ? (input as Record<string, unknown>).customerId : undefined) ?? undefined,
             })
           )
           .catch((e: unknown) =>
@@ -976,8 +976,8 @@ export const transactionsRouter = router({
                 amount: input.amount,
                 type: input.type,
                 customerName: input.customerName ?? null,
-                latitude: (input as any).latitude ?? null,
-                longitude: (input as any).longitude ?? null,
+                latitude: ("latitude" in input ? (input as Record<string, unknown>).latitude : undefined) ?? null,
+                longitude: ("longitude" in input ? (input as Record<string, unknown>).longitude : undefined) ?? null,
                 timestamp: new Date(),
               };
               const result = await detectFraud(fraudCtx);
@@ -2394,7 +2394,7 @@ export const transactionsRouter = router({
         map[row.type].count++;
         map[row.type].volume += Number(row.amount);
       }
-      const total = Object.values(map as any).reduce(
+      const total = Object.values(map as Record<string, unknown>).reduce(
         (s: any, v: any) => s + v.count,
         0
       );

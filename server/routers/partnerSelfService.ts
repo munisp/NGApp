@@ -128,9 +128,9 @@ export const partnerSelfServiceRouter = router({
     .mutation(async ({ input, ctx }) => {
       // ── Enforce STATUS_TRANSITIONS state machine ──
       if (typeof input === "object" && "status" in input) {
-        const newStatus = (input as any).status as string;
+        const newStatus = ("status" in input ? String((input as Record<string, unknown>).status) : "");
         const currentStatus =
-          ((input as any).currentStatus as string) || "pending";
+          ("currentStatus" in input ? String((input as Record<string, unknown>).currentStatus) : "pending");
         const allowed =
           STATUS_TRANSITIONS[currentStatus as keyof typeof STATUS_TRANSITIONS];
         if (allowed && !allowed.includes(newStatus)) {
@@ -142,7 +142,7 @@ export const partnerSelfServiceRouter = router({
       }
       const txAmount =
         typeof input === "object" && "amount" in input
-          ? Number((input as any).amount)
+          ? Number("amount" in input ? (input as Record<string, unknown>).amount : 0)
           : 0;
       const fees = calculateFee(txAmount, "transfer");
       const commission = calculateCommission(fees.fee, "transfer");
@@ -155,7 +155,7 @@ export const partnerSelfServiceRouter = router({
             name: input.name,
             key: "pk_" + crypto.randomUUID().replace(/-/g, ""),
             status: "active",
-          } as any)
+          })
           .returning();
         await db.insert(auditLog).values({
           action: "partner_api_key_created",
@@ -163,7 +163,7 @@ export const partnerSelfServiceRouter = router({
           resourceId: String(key.id),
           status: "success",
           metadata: { name: input.name },
-        } as any);
+        });
         return key;
       } catch (error) {
         if (error instanceof TRPCError) throw error;
@@ -207,7 +207,7 @@ export const partnerSelfServiceRouter = router({
 
           resourceId:
             typeof input === "object" && input !== null && "id" in input
-              ? String((input as any).id ?? "new")
+              ? String("id" in input ? (input as Record<string, unknown>).id : "new")
               : "new",
 
           status: "success",

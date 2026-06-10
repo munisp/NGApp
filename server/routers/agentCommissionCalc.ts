@@ -158,9 +158,9 @@ export const agentCommissionCalcRouter = router({
     .mutation(async ({ input, ctx }) => {
       // ── Enforce STATUS_TRANSITIONS state machine ──
       if (typeof input === "object" && "status" in input) {
-        const newStatus = (input as any).status as string;
+        const newStatus = ("status" in input ? String((input as Record<string, unknown>).status) : "");
         const currentStatus =
-          ((input as any).currentStatus as string) || "pending";
+          ("currentStatus" in input ? String((input as Record<string, unknown>).currentStatus) : "pending");
         const allowed =
           STATUS_TRANSITIONS[currentStatus as keyof typeof STATUS_TRANSITIONS];
         if (allowed && !allowed.includes(newStatus)) {
@@ -193,17 +193,17 @@ export const agentCommissionCalcRouter = router({
       const commission = (input.volume * (rate + bonusRate)) / 100 + flatFee;
       try {
         await publishCommissionEvent({
-          eventType: "commission.calculated" as any,
+          eventType: "commission.calculated",
           agentId: input.agentId,
           volume: input.volume,
           commission,
           tier: tier.name,
-        } as any);
+        });
         await tbRecordCommissionCredit({
           agentId: parseInt(input.agentId.replace(/\D/g, "")) || 0,
           amount: commission,
           referenceId: `CALC-${Date.now()}`,
-        } as any);
+        });
       } catch (e) {
         logger.warn(
           `[AgentCommCalc] Middleware event failed: ${e instanceof Error ? e.message : String(e)}`
@@ -226,7 +226,7 @@ export const agentCommissionCalcRouter = router({
 
         resourceId:
           typeof input === "object" && input !== null && "id" in input
-            ? String((input as any).id ?? "new")
+            ? String("id" in input ? (input as Record<string, unknown>).id : "new")
             : "new",
 
         status: "success",
@@ -315,9 +315,9 @@ export const agentCommissionCalcRouter = router({
     .mutation(async ({ input, ctx }) => {
       // ── Enforce STATUS_TRANSITIONS state machine ──
       if (typeof input === "object" && "status" in input) {
-        const newStatus = (input as any).status as string;
+        const newStatus = ("status" in input ? String((input as Record<string, unknown>).status) : "");
         const currentStatus =
-          ((input as any).currentStatus as string) || "pending";
+          ("currentStatus" in input ? String((input as Record<string, unknown>).currentStatus) : "pending");
         const allowed =
           STATUS_TRANSITIONS[currentStatus as keyof typeof STATUS_TRANSITIONS];
         if (allowed && !allowed.includes(newStatus)) {
@@ -332,7 +332,7 @@ export const agentCommissionCalcRouter = router({
         const payoutIdNum = parseInt(input.payoutId.replace(/\D/g, "")) || 0;
         const [updated] = await db
           .update(commissionPayouts)
-          .set({ status: "approved" } as any)
+          .set({ status: "approved" })
           .where(eq(commissionPayouts.id, payoutIdNum))
           .returning();
 
@@ -344,7 +344,7 @@ export const agentCommissionCalcRouter = router({
           creditAccountId: 1001,
           amount: Math.round(
             (typeof input === "object" && "amount" in input
-              ? Number((input as any).amount)
+              ? Number("amount" in input ? (input as Record<string, unknown>).amount : 0)
               : 0) * 100
           ),
           currency: "NGN",
@@ -362,12 +362,12 @@ export const agentCommissionCalcRouter = router({
           performedBy: ctx.user?.name ?? "system",
           details: JSON.stringify({
             approvedAt: new Date().toISOString(),
-          } as any),
-        } as any);
+          }),
+        });
         try {
           await publishCommissionEvent({
-            eventType: "commission.payout.approved" as any,
-          } as any);
+            eventType: "commission.payout.approved",
+          });
         } catch (e) {
           logger.warn(
             `[AgentCommCalc] Middleware event failed: ${e instanceof Error ? e.message : String(e)}`

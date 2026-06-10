@@ -387,7 +387,7 @@ async function recordLedgerTransfer(
   amount: number
 ) {
   try {
-    await tbCreateTransfer({ debitId, creditId, amount } as any);
+    await tbCreateTransfer({ debitId, creditId, amount });
   } catch {
     // Log but don't block
   }
@@ -455,9 +455,9 @@ export const commissionEngineRouter = router({
     .mutation(async ({ input, ctx }) => {
       // ── Enforce STATUS_TRANSITIONS state machine ──
       if (typeof input === "object" && "status" in input) {
-        const newStatus = (input as any).status as string;
+        const newStatus = ("status" in input ? String((input as Record<string, unknown>).status) : "");
         const currentStatus =
-          ((input as any).currentStatus as string) || "pending";
+          ("currentStatus" in input ? String((input as Record<string, unknown>).currentStatus) : "pending");
         const allowed =
           STATUS_TRANSITIONS[currentStatus as keyof typeof STATUS_TRANSITIONS];
         if (allowed && !allowed.includes(newStatus)) {
@@ -512,7 +512,7 @@ export const commissionEngineRouter = router({
           creditAccountId: 1001,
           amount: Math.round(
             (typeof input === "object" && "amount" in input
-              ? Number((input as any).amount)
+              ? Number("amount" in input ? (input as Record<string, unknown>).amount : 0)
               : 0) * 100
           ),
           currency: "NGN",
@@ -531,7 +531,7 @@ export const commissionEngineRouter = router({
 
         // [Kafka] Publish tier update event
         await publishCommissionEvent({
-          eventType: "commission.tier.updated" as any,
+          eventType: "commission.tier.updated",
           agentId: 0,
           agentCode: "SYSTEM",
           amount: 0,
@@ -572,9 +572,9 @@ export const commissionEngineRouter = router({
     .mutation(async ({ input, ctx }) => {
       // ── Enforce STATUS_TRANSITIONS state machine ──
       if (typeof input === "object" && "status" in input) {
-        const newStatus = (input as any).status as string;
+        const newStatus = ("status" in input ? String((input as Record<string, unknown>).status) : "");
         const currentStatus =
-          ((input as any).currentStatus as string) || "pending";
+          ("currentStatus" in input ? String((input as Record<string, unknown>).currentStatus) : "pending");
         const allowed =
           STATUS_TRANSITIONS[currentStatus as keyof typeof STATUS_TRANSITIONS];
         if (allowed && !allowed.includes(newStatus)) {
@@ -639,7 +639,7 @@ export const commissionEngineRouter = router({
           created
         );
         await publishCommissionEvent({
-          eventType: "commission.tier.created" as any,
+          eventType: "commission.tier.created",
           agentId: 0,
           agentCode: "SYSTEM",
           amount: 0,
@@ -669,9 +669,9 @@ export const commissionEngineRouter = router({
     .mutation(async ({ input, ctx }) => {
       // ── Enforce STATUS_TRANSITIONS state machine ──
       if (typeof input === "object" && "status" in input) {
-        const newStatus = (input as any).status as string;
+        const newStatus = ("status" in input ? String((input as Record<string, unknown>).status) : "");
         const currentStatus =
-          ((input as any).currentStatus as string) || "pending";
+          ("currentStatus" in input ? String((input as Record<string, unknown>).currentStatus) : "pending");
         const allowed =
           STATUS_TRANSITIONS[currentStatus as keyof typeof STATUS_TRANSITIONS];
         if (allowed && !allowed.includes(newStatus)) {
@@ -711,7 +711,7 @@ export const commissionEngineRouter = router({
           { isActive: false }
         );
         await publishCommissionEvent({
-          eventType: "commission.tier.deleted" as any,
+          eventType: "commission.tier.deleted",
           agentId: 0,
           agentCode: "SYSTEM",
           amount: 0,
@@ -784,9 +784,9 @@ export const commissionEngineRouter = router({
     .mutation(async ({ input, ctx }) => {
       // ── Enforce STATUS_TRANSITIONS state machine ──
       if (typeof input === "object" && "status" in input) {
-        const newStatus = (input as any).status as string;
+        const newStatus = ("status" in input ? String((input as Record<string, unknown>).status) : "");
         const currentStatus =
-          ((input as any).currentStatus as string) || "pending";
+          ("currentStatus" in input ? String((input as Record<string, unknown>).currentStatus) : "pending");
         const allowed =
           STATUS_TRANSITIONS[currentStatus as keyof typeof STATUS_TRANSITIONS];
         if (allowed && !allowed.includes(newStatus)) {
@@ -893,9 +893,9 @@ export const commissionEngineRouter = router({
     .mutation(async ({ input, ctx }) => {
       // ── Enforce STATUS_TRANSITIONS state machine ──
       if (typeof input === "object" && "status" in input) {
-        const newStatus = (input as any).status as string;
+        const newStatus = ("status" in input ? String((input as Record<string, unknown>).status) : "");
         const currentStatus =
-          ((input as any).currentStatus as string) || "pending";
+          ("currentStatus" in input ? String((input as Record<string, unknown>).currentStatus) : "pending");
         const allowed =
           STATUS_TRANSITIONS[currentStatus as keyof typeof STATUS_TRANSITIONS];
         if (allowed && !allowed.includes(newStatus)) {
@@ -966,7 +966,7 @@ export const commissionEngineRouter = router({
         );
         await invalidateSplitCache();
         await publishCommissionEvent({
-          eventType: "commission.split.created" as any,
+          eventType: "commission.split.created",
           agentId: 0,
           agentCode: "SYSTEM",
           amount: 0,
@@ -1160,9 +1160,9 @@ export const commissionEngineRouter = router({
     .mutation(async ({ input, ctx }) => {
       // ── Enforce STATUS_TRANSITIONS state machine ──
       if (typeof input === "object" && "status" in input) {
-        const newStatus = (input as any).status as string;
+        const newStatus = ("status" in input ? String((input as Record<string, unknown>).status) : "");
         const currentStatus =
-          ((input as any).currentStatus as string) || "pending";
+          ("currentStatus" in input ? String((input as Record<string, unknown>).currentStatus) : "pending");
         const allowed =
           STATUS_TRANSITIONS[currentStatus as keyof typeof STATUS_TRANSITIONS];
         if (allowed && !allowed.includes(newStatus)) {
@@ -1224,7 +1224,7 @@ export const commissionEngineRouter = router({
 
         // [Kafka] Publish payout approved event
         await publishCommissionEvent({
-          eventType: "commission.payout.approved" as any,
+          eventType: "commission.payout.approved",
           agentId: payout.agentId,
           agentCode: payout.agentCode,
           amount: parseFloat(payout.amount as string),
@@ -1385,9 +1385,9 @@ export const commissionEngineRouter = router({
     .mutation(async ({ input }) => {
       // ── Enforce STATUS_TRANSITIONS state machine ──
       if (typeof input === "object" && "status" in input) {
-        const newStatus = (input as any).status as string;
+        const newStatus = ("status" in input ? String((input as Record<string, unknown>).status) : "");
         const currentStatus =
-          ((input as any).currentStatus as string) || "pending";
+          ("currentStatus" in input ? String((input as Record<string, unknown>).currentStatus) : "pending");
         const allowed =
           STATUS_TRANSITIONS[currentStatus as keyof typeof STATUS_TRANSITIONS];
         if (allowed && !allowed.includes(newStatus)) {
@@ -1433,9 +1433,9 @@ export const commissionEngineRouter = router({
     .mutation(async ({ input }) => {
       // ── Enforce STATUS_TRANSITIONS state machine ──
       if (typeof input === "object" && "status" in input) {
-        const newStatus = (input as any).status as string;
+        const newStatus = ("status" in input ? String((input as Record<string, unknown>).status) : "");
         const currentStatus =
-          ((input as any).currentStatus as string) || "pending";
+          ("currentStatus" in input ? String((input as Record<string, unknown>).currentStatus) : "pending");
         const allowed =
           STATUS_TRANSITIONS[currentStatus as keyof typeof STATUS_TRANSITIONS];
         if (allowed && !allowed.includes(newStatus)) {
@@ -1471,9 +1471,9 @@ export const commissionEngineRouter = router({
     .mutation(async ({ input }) => {
       // ── Enforce STATUS_TRANSITIONS state machine ──
       if (typeof input === "object" && "status" in input) {
-        const newStatus = (input as any).status as string;
+        const newStatus = ("status" in input ? String((input as Record<string, unknown>).status) : "");
         const currentStatus =
-          ((input as any).currentStatus as string) || "pending";
+          ("currentStatus" in input ? String((input as Record<string, unknown>).currentStatus) : "pending");
         const allowed =
           STATUS_TRANSITIONS[currentStatus as keyof typeof STATUS_TRANSITIONS];
         if (allowed && !allowed.includes(newStatus)) {

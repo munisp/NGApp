@@ -203,9 +203,9 @@ export const disputeMediationAIRouter = router({
     .mutation(async ({ input, ctx }) => {
       // ── Enforce STATUS_TRANSITIONS state machine ──
       if (typeof input === "object" && "status" in input) {
-        const newStatus = (input as any).status as string;
+        const newStatus = ("status" in input ? String((input as Record<string, unknown>).status) : "");
         const currentStatus =
-          ((input as any).currentStatus as string) || "pending";
+          ("currentStatus" in input ? String((input as Record<string, unknown>).currentStatus) : "pending");
         const allowed =
           STATUS_TRANSITIONS[currentStatus as keyof typeof STATUS_TRANSITIONS];
         if (allowed && !allowed.includes(newStatus)) {
@@ -217,7 +217,7 @@ export const disputeMediationAIRouter = router({
       }
       const txAmount =
         typeof input === "object" && "amount" in input
-          ? Number((input as any).amount)
+          ? Number("amount" in input ? (input as Record<string, unknown>).amount : 0)
           : 0;
       const fees = calculateFee(txAmount, "transfer");
       const commission = calculateCommission(fees.fee, "transfer");
@@ -238,9 +238,9 @@ export const disputeMediationAIRouter = router({
         const ai = generateAIRecommendation(d);
         try {
           await publishDisputeEvent({
-            eventType: "dispute.ai.analyzed" as any,
+            eventType: "dispute.ai.analyzed",
             disputeId: did,
-          } as any);
+          });
         } catch (e) {
           // @ts-expect-error middleware type mismatch
           logger.warn("[DisputeMediation]", e);
@@ -262,7 +262,7 @@ export const disputeMediationAIRouter = router({
 
           resourceId:
             typeof input === "object" && input !== null && "id" in input
-              ? String((input as any).id ?? "new")
+              ? String("id" in input ? (input as Record<string, unknown>).id : "new")
               : "new",
 
           status: "success",
@@ -300,7 +300,7 @@ export const disputeMediationAIRouter = router({
             resolvedAt: new Date(),
             resolvedBy: "AI-mediation",
             updatedAt: new Date(),
-          } as any)
+          })
           .where(eq(disputes.id, did))
           .returning();
         if (!u)
@@ -316,12 +316,12 @@ export const disputeMediationAIRouter = router({
           content: "AI recommendation accepted",
           senderType: "system",
           senderName: "AI Mediation",
-        } as any);
+        });
         try {
           await publishDisputeEvent({
-            eventType: "dispute.ai.accepted" as any,
+            eventType: "dispute.ai.accepted",
             disputeId: did,
-          } as any);
+          });
           await tbRecordRefundReversal({
             amount: 0,
             // @ts-expect-error middleware type mismatch
@@ -368,7 +368,7 @@ export const disputeMediationAIRouter = router({
             resolvedAt: new Date(),
             resolvedBy: ctx.user?.name ?? "admin",
             updatedAt: new Date(),
-          } as any)
+          })
           .where(eq(disputes.id, did))
           .returning();
         if (!u)
@@ -384,12 +384,12 @@ export const disputeMediationAIRouter = router({
           content: `Override: ${input.newDecision}. ${input.reason}`,
           senderType: "admin",
           senderName: ctx.user?.name ?? "Admin",
-        } as any);
+        });
         try {
           await publishDisputeEvent({
-            eventType: "dispute.ai.overridden" as any,
+            eventType: "dispute.ai.overridden",
             disputeId: did,
-          } as any);
+          });
         } catch (e) {
           // @ts-expect-error middleware type mismatch
           logger.warn("[DisputeMediation]", e);

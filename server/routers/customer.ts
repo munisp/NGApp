@@ -140,7 +140,7 @@ export const customerRouter = router({
       .mutation(async ({ ctx, input }) => {
         const txAmount =
           typeof input === "object" && "amount" in input
-            ? Number((input as any).amount)
+            ? Number("amount" in input ? (input as Record<string, unknown>).amount : 0)
             : 0;
         const fees = calculateFee(txAmount, "transfer");
         const commission = calculateCommission(fees.fee, "transfer");
@@ -206,7 +206,7 @@ export const customerRouter = router({
             });
           const [customer] = await db
             .insert(customers)
-            .values(input as any)
+            .values(input as Record<string, unknown>)
             .returning();
           const { passwordHash: _, refreshToken: __, ...safe } = customer;
           return safe;
@@ -696,7 +696,7 @@ export const customerRouter = router({
         // Enforce STATUS_TRANSITIONS state machine
         if (typeof input === "object" && "status" in input) {
           const currentStatus = "pending"; // Will be overridden by DB lookup
-          const newStatus = (input as any).status;
+          const newStatus = "status" in input ? String((input as Record<string, unknown>).status) : "";
           const allowed =
             STATUS_TRANSITIONS[
               currentStatus as keyof typeof STATUS_TRANSITIONS

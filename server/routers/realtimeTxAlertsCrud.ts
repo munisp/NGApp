@@ -182,9 +182,9 @@ export const realtime_tx_alertsRouter = router({
     .mutation(async ({ input, ctx }) => {
       // ── Enforce STATUS_TRANSITIONS state machine ──
       if (typeof input === "object" && "status" in input) {
-        const newStatus = (input as any).status as string;
+        const newStatus = ("status" in input ? String((input as Record<string, unknown>).status) : "");
         const currentStatus =
-          ((input as any).currentStatus as string) || "pending";
+          ("currentStatus" in input ? String((input as Record<string, unknown>).currentStatus) : "pending");
         const allowed =
           STATUS_TRANSITIONS[currentStatus as keyof typeof STATUS_TRANSITIONS];
         if (allowed && !allowed.includes(newStatus)) {
@@ -196,7 +196,7 @@ export const realtime_tx_alertsRouter = router({
       }
       const txAmount =
         typeof input === "object" && "amount" in input
-          ? Number((input as any).amount)
+          ? Number("amount" in input ? (input as Record<string, unknown>).amount : 0)
           : 0;
       const fees = calculateFee(txAmount, "transfer");
       const commission = calculateCommission(fees.fee, "transfer");
@@ -225,7 +225,7 @@ export const realtime_tx_alertsRouter = router({
 
             resourceId:
               typeof input === "object" && input !== null && "id" in input
-                ? String((input as any).id ?? "new")
+                ? String("id" in input ? (input as Record<string, unknown>).id : "new")
                 : "new",
 
             status: "success",
@@ -253,7 +253,7 @@ export const realtime_tx_alertsRouter = router({
             amount: input.amount.toString(),
             txType: input.txType,
             status: "active",
-          } as any)
+          })
           .returning();
         return {
           ...alert,
@@ -278,7 +278,7 @@ export const realtime_tx_alertsRouter = router({
         const db = (await getDb())!;
         await db
           .update(realtime_tx_alerts)
-          .set({ metadata: "dismissed", acknowledged: true } as any)
+          .set({ metadata: "dismissed", acknowledged: true })
           .where(eq(realtime_tx_alerts.id, input.id));
         return { success: true, message: "Alert dismissed" };
       } catch (error) {

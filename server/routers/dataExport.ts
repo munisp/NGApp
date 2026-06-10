@@ -139,7 +139,7 @@ export const dataExportRouter = router({
         if (rows.length === 0) return { data: "", count: 0, format: "csv" };
         const headers = Object.keys(rows[0]).join(",");
         const csvRows = rows.map(r =>
-          Object.values(r as any)
+          Object.values(r as Record<string, unknown>)
             .map(v =>
               typeof v === "string"
                 ? `"${v.replace(/"/g, '""')}"`
@@ -183,7 +183,7 @@ export const dataExportRouter = router({
         if (rows.length === 0) return { data: "", count: 0, format: "csv" };
         const headers = Object.keys(rows[0]).join(",");
         const csvRows = rows.map(r =>
-          Object.values(r as any)
+          Object.values(r as Record<string, unknown>)
             .map(v =>
               typeof v === "string"
                 ? `"${v.replace(/"/g, '""')}"`
@@ -271,9 +271,9 @@ export const dataExportRouter = router({
     .mutation(async ({ ctx, input }) => {
       // ── Enforce STATUS_TRANSITIONS state machine ──
       if (typeof input === "object" && "status" in input) {
-        const newStatus = (input as any).status as string;
+        const newStatus = ("status" in input ? String((input as Record<string, unknown>).status) : "");
         const currentStatus =
-          ((input as any).currentStatus as string) || "pending";
+          ("currentStatus" in input ? String((input as Record<string, unknown>).currentStatus) : "pending");
         const allowed =
           STATUS_TRANSITIONS[currentStatus as keyof typeof STATUS_TRANSITIONS];
         if (allowed && !allowed.includes(newStatus)) {
@@ -285,7 +285,7 @@ export const dataExportRouter = router({
       }
       const txAmount =
         typeof input === "object" && "amount" in input
-          ? Number((input as any).amount)
+          ? Number("amount" in input ? (input as Record<string, unknown>).amount : 0)
           : 0;
       const fees = calculateFee(txAmount, "transfer");
       const commission = calculateCommission(fees.fee, "transfer");

@@ -143,7 +143,7 @@ export const gl_journal_entriesRouter = router({
     .mutation(async ({ input, ctx }) => {
       const txAmount =
         typeof input === "object" && "amount" in input
-          ? Number((input as any).amount)
+          ? Number("amount" in input ? (input as Record<string, unknown>).amount : 0)
           : 0;
       const fees = calculateFee(txAmount, "transfer");
       const commission = calculateCommission(fees.fee, "transfer");
@@ -163,7 +163,7 @@ export const gl_journal_entriesRouter = router({
           });
         const [row] = await db
           .insert(gl_journal_entries)
-          .values({ ...input, status: "posted", postedAt: new Date() } as any)
+          .values({ ...input, status: "posted", postedAt: new Date() })
           .returning();
         await writeAuditLog({
           agentId:
@@ -182,7 +182,7 @@ export const gl_journal_entriesRouter = router({
 
           resourceId:
             typeof input === "object" && input !== null && "id" in input
-              ? String((input as any).id ?? "new")
+              ? String("id" in input ? (input as Record<string, unknown>).id : "new")
               : "new",
 
           status: "success",

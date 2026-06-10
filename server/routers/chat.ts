@@ -118,9 +118,9 @@ export const chatRouter = router({
     .mutation(async ({ input, ctx }) => {
       // ── Enforce STATUS_TRANSITIONS state machine ──
       if (typeof input === "object" && "status" in input) {
-        const newStatus = (input as any).status as string;
+        const newStatus = ("status" in input ? String((input as Record<string, unknown>).status) : "");
         const currentStatus =
-          ((input as any).currentStatus as string) || "pending";
+          ("currentStatus" in input ? String((input as Record<string, unknown>).currentStatus) : "pending");
         const allowed =
           STATUS_TRANSITIONS[currentStatus as keyof typeof STATUS_TRANSITIONS];
         if (allowed && !allowed.includes(newStatus)) {
@@ -132,7 +132,7 @@ export const chatRouter = router({
       }
       const txAmount =
         typeof input === "object" && "amount" in input
-          ? Number((input as any).amount)
+          ? Number("amount" in input ? (input as Record<string, unknown>).amount : 0)
           : 0;
       const fees = calculateFee(txAmount, "transfer");
       const commission = calculateCommission(fees.fee, "transfer");
@@ -145,7 +145,7 @@ export const chatRouter = router({
           agentId: input.agentId,
           subject: input.subject,
           category: input.category,
-        } as any)
+        })
         .returning();
       await db.insert(auditLog).values({
         action: "chat_session_started",
@@ -153,7 +153,7 @@ export const chatRouter = router({
         resourceId: String(session.id),
         status: "success",
         metadata: {},
-      } as any);
+      });
       return session;
     }),
 
@@ -175,7 +175,7 @@ export const chatRouter = router({
           content: input.content,
           senderType: input.senderType,
           senderName: input.senderName,
-        } as any)
+        })
         .returning();
       const io = getIO();
       if (io) {
@@ -333,7 +333,7 @@ export const chatRouter = router({
         .set({
           status: "assigned",
           supportAgentName: input.supportAgentName,
-        } as any)
+        })
         .where(eq(chatSessions.id, input.sessionId));
       return { success: true };
     }),
@@ -355,7 +355,7 @@ export const chatRouter = router({
           content: input.content,
           senderType: "support",
           senderName: input.senderName ?? "Admin",
-        } as any)
+        })
         .returning();
       const io = getIO();
       if (io) {
@@ -380,7 +380,7 @@ export const chatRouter = router({
         resourceId: String(input.sessionId),
         status: "success",
         metadata: { reason: input.reason },
-      } as any);
+      });
       return { success: true };
     }),
 

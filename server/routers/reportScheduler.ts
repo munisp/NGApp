@@ -144,9 +144,9 @@ const createSchedule = protectedProcedure
   .mutation(async ({ input, ctx }) => {
     // ── Enforce STATUS_TRANSITIONS state machine ──
     if (typeof input === "object" && "status" in input) {
-      const newStatus = (input as any).status as string;
+      const newStatus = ("status" in input ? String((input as Record<string, unknown>).status) : "");
       const currentStatus =
-        ((input as any).currentStatus as string) || "pending";
+        ("currentStatus" in input ? String((input as Record<string, unknown>).currentStatus) : "pending");
       const allowed =
         STATUS_TRANSITIONS[currentStatus as keyof typeof STATUS_TRANSITIONS];
       if (allowed && !allowed.includes(newStatus)) {
@@ -158,7 +158,7 @@ const createSchedule = protectedProcedure
     }
     const txAmount =
       typeof input === "object" && "amount" in input
-        ? Number((input as any).amount)
+        ? Number("amount" in input ? (input as Record<string, unknown>).amount : 0)
         : 0;
     const fees = calculateFee(txAmount, "transfer");
     const commission = calculateCommission(fees.fee, "transfer");
@@ -185,7 +185,7 @@ const createSchedule = protectedProcedure
       }
       const [row] = await db
         .insert(pnlReports)
-        .values((input.data || {}) as any)
+        .values((input.data || {}) as Record<string, unknown>)
         .returning();
       return { success: true, ...row, message: "createSchedule completed" };
     } catch (error) {
@@ -204,9 +204,9 @@ const updateSchedule = protectedProcedure
   .mutation(async ({ input }) => {
     // ── Enforce STATUS_TRANSITIONS state machine ──
     if (typeof input === "object" && "status" in input) {
-      const newStatus = (input as any).status as string;
+      const newStatus = ("status" in input ? String((input as Record<string, unknown>).status) : "");
       const currentStatus =
-        ((input as any).currentStatus as string) || "pending";
+        ("currentStatus" in input ? String((input as Record<string, unknown>).currentStatus) : "pending");
       const allowed =
         STATUS_TRANSITIONS[currentStatus as keyof typeof STATUS_TRANSITIONS];
       if (allowed && !allowed.includes(newStatus)) {
@@ -258,9 +258,9 @@ const deleteSchedule = protectedProcedure
   .mutation(async ({ input }) => {
     // ── Enforce STATUS_TRANSITIONS state machine ──
     if (typeof input === "object" && "status" in input) {
-      const newStatus = (input as any).status as string;
+      const newStatus = ("status" in input ? String((input as Record<string, unknown>).status) : "");
       const currentStatus =
-        ((input as any).currentStatus as string) || "pending";
+        ("currentStatus" in input ? String((input as Record<string, unknown>).currentStatus) : "pending");
       const allowed =
         STATUS_TRANSITIONS[currentStatus as keyof typeof STATUS_TRANSITIONS];
       if (allowed && !allowed.includes(newStatus)) {
@@ -303,9 +303,9 @@ const runNow = protectedProcedure
   .mutation(async ({ input }) => {
     // ── Enforce STATUS_TRANSITIONS state machine ──
     if (typeof input === "object" && "status" in input) {
-      const newStatus = (input as any).status as string;
+      const newStatus = ("status" in input ? String((input as Record<string, unknown>).status) : "");
       const currentStatus =
-        ((input as any).currentStatus as string) || "pending";
+        ("currentStatus" in input ? String((input as Record<string, unknown>).currentStatus) : "pending");
       const allowed =
         STATUS_TRANSITIONS[currentStatus as keyof typeof STATUS_TRANSITIONS];
       if (allowed && !allowed.includes(newStatus)) {
@@ -337,7 +337,7 @@ const runNow = protectedProcedure
       }
       const [row] = await db
         .insert(pnlReports)
-        .values((input.data || {}) as any)
+        .values((input.data || {}) as Record<string, unknown>)
         .returning();
       return { success: true, ...row, message: "runNow completed" };
     } catch (error) {
@@ -356,9 +356,9 @@ const toggleSchedule = protectedProcedure
   .mutation(async ({ input }) => {
     // ── Enforce STATUS_TRANSITIONS state machine ──
     if (typeof input === "object" && "status" in input) {
-      const newStatus = (input as any).status as string;
+      const newStatus = ("status" in input ? String((input as Record<string, unknown>).status) : "");
       const currentStatus =
-        ((input as any).currentStatus as string) || "pending";
+        ("currentStatus" in input ? String((input as Record<string, unknown>).currentStatus) : "pending");
       const allowed =
         STATUS_TRANSITIONS[currentStatus as keyof typeof STATUS_TRANSITIONS];
       if (allowed && !allowed.includes(newStatus)) {
@@ -408,9 +408,9 @@ const triggerNow = protectedProcedure
   .mutation(async ({ input }) => {
     // ── Enforce STATUS_TRANSITIONS state machine ──
     if (typeof input === "object" && "status" in input) {
-      const newStatus = (input as any).status as string;
+      const newStatus = ("status" in input ? String((input as Record<string, unknown>).status) : "");
       const currentStatus =
-        ((input as any).currentStatus as string) || "pending";
+        ("currentStatus" in input ? String((input as Record<string, unknown>).currentStatus) : "pending");
       const allowed =
         STATUS_TRANSITIONS[currentStatus as keyof typeof STATUS_TRANSITIONS];
       if (allowed && !allowed.includes(newStatus)) {
@@ -442,7 +442,7 @@ const triggerNow = protectedProcedure
       }
       const [row] = await db
         .insert(pnlReports)
-        .values((input.data || {}) as any)
+        .values((input.data || {}) as Record<string, unknown>)
         .returning();
       return { success: true, ...row, message: "triggerNow completed" };
     } catch (error) {

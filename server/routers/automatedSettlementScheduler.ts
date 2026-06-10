@@ -210,9 +210,9 @@ export const automatedSettlementSchedulerRouter = router({
     .mutation(async ({ input, ctx }) => {
       // ── Enforce STATUS_TRANSITIONS state machine ──
       if (typeof input === "object" && "status" in input) {
-        const newStatus = (input as any).status as string;
+        const newStatus = ("status" in input ? String((input as Record<string, unknown>).status) : "");
         const currentStatus =
-          ((input as any).currentStatus as string) || "pending";
+          ("currentStatus" in input ? String((input as Record<string, unknown>).currentStatus) : "pending");
         const allowed =
           STATUS_TRANSITIONS[currentStatus as keyof typeof STATUS_TRANSITIONS];
         if (allowed && !allowed.includes(newStatus)) {
@@ -224,7 +224,7 @@ export const automatedSettlementSchedulerRouter = router({
       }
       const txAmount =
         typeof input === "object" && "amount" in input
-          ? Number((input as any).amount)
+          ? Number("amount" in input ? (input as Record<string, unknown>).amount : 0)
           : 0;
       const fees = calculateFee(txAmount, "settlement");
       const commission = calculateCommission(fees.fee, "settlement");
@@ -245,9 +245,9 @@ export const automatedSettlementSchedulerRouter = router({
         scheduleState.push(ns);
         try {
           await publishSettlementEvent({
-            eventType: "settlement.schedule.created" as any,
+            eventType: "settlement.schedule.created",
             batchId: ns.id,
-          } as any);
+          });
         } catch (e) {
           // @ts-expect-error auto-fix
           logger.warn("[SettlementScheduler] Middleware:", e);
@@ -269,7 +269,7 @@ export const automatedSettlementSchedulerRouter = router({
 
           resourceId:
             typeof input === "object" && input !== null && "id" in input
-              ? String((input as any).id ?? "new")
+              ? String("id" in input ? (input as Record<string, unknown>).id : "new")
               : "new",
 
           status: "success",
@@ -309,7 +309,7 @@ export const automatedSettlementSchedulerRouter = router({
             eventType: `settlement.schedule.${input.action}d`,
             batchId: input.scheduleId,
             data: { by: ctx.user?.id },
-          } as any);
+          });
         } catch (e) {
           // @ts-expect-error auto-fix
           logger.warn("[SettlementScheduler] Middleware:", e);
@@ -352,14 +352,14 @@ export const automatedSettlementSchedulerRouter = router({
           discrepancyCount: 0,
           processedBy: ctx.user?.id ?? null,
           processedAt: new Date(),
-        } as any);
+        });
         s.lastRun = Date.now();
         s.totalRuns += 1;
         try {
           await publishSettlementEvent({
-            eventType: "settlement.schedule.manual_trigger" as any,
+            eventType: "settlement.schedule.manual_trigger",
             batchId: batchRef,
-          } as any);
+          });
           // @ts-expect-error middleware type mismatch
           await tbRecordSettlementTransfer({
             batchId: batchRef,

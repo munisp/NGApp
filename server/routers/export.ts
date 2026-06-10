@@ -304,7 +304,7 @@ export const exportRouter = router({
           }
         }
 
-        return Object.values(summary as any).sort(
+        return Object.values(summary as Record<string, unknown>).sort(
           (a: any, b: any) => b.totalVolume - a.totalVolume
         );
       } catch (error) {

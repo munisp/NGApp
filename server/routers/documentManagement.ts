@@ -154,10 +154,10 @@ export const documentManagementRouter = router({
       // Enforce STATUS_TRANSITIONS state machine
       if (typeof input === "object" && "verified" in input) {
         const currentStatus = "pending"; // Will be overridden by DB lookup
-        const newStatus = (input as any).verified;
+        const newStatus = ("verified" in input ? String((input as Record<string, unknown>).verified) : undefined);
         const allowed =
           STATUS_TRANSITIONS[currentStatus as keyof typeof STATUS_TRANSITIONS];
-        if (allowed && !allowed.includes(newStatus)) {
+        if (newStatus && allowed && !allowed.includes(newStatus)) {
           throw new TRPCError({
             code: "BAD_REQUEST",
             message: `Invalid status transition`,
@@ -166,7 +166,7 @@ export const documentManagementRouter = router({
       }
       const txAmount =
         typeof input === "object" && "amount" in input
-          ? Number((input as any).amount)
+          ? Number("amount" in input ? (input as Record<string, unknown>).amount : 0)
           : 0;
       const fees = calculateFee(txAmount, "transfer");
       const commission = calculateCommission(fees.fee, "transfer");
@@ -181,7 +181,7 @@ export const documentManagementRouter = router({
             documentNumber: input.documentNumber,
             status: "pending",
             expiryDate: input.expiryDate ? new Date(input.expiryDate) : null,
-          } as any)
+          })
           .returning();
         await db.insert(auditLog).values({
           action: "document_uploaded",
@@ -192,7 +192,7 @@ export const documentManagementRouter = router({
             agentId: input.agentId,
             documentType: input.documentType,
           },
-        } as any);
+        });
         return doc;
       } catch (error) {
         if (error instanceof TRPCError) throw error;

@@ -240,9 +240,9 @@ export const settlementNettingEngineRouter = router({
     .mutation(async ({ input, ctx }) => {
       // ── Enforce STATUS_TRANSITIONS state machine ──
       if (typeof input === "object" && "status" in input) {
-        const newStatus = (input as any).status as string;
+        const newStatus = ("status" in input ? String((input as Record<string, unknown>).status) : "");
         const currentStatus =
-          ((input as any).currentStatus as string) || "pending";
+          ("currentStatus" in input ? String((input as Record<string, unknown>).currentStatus) : "pending");
         const allowed =
           STATUS_TRANSITIONS[currentStatus as keyof typeof STATUS_TRANSITIONS];
         if (allowed && !allowed.includes(newStatus)) {
@@ -254,7 +254,7 @@ export const settlementNettingEngineRouter = router({
       }
       const txAmount =
         typeof input === "object" && "amount" in input
-          ? Number((input as any).amount)
+          ? Number("amount" in input ? (input as Record<string, unknown>).amount : 0)
           : 0;
       const fees = calculateFee(txAmount, "settlement");
       const commission = calculateCommission(fees.fee, "settlement");
@@ -314,7 +314,7 @@ export const settlementNettingEngineRouter = router({
 
         resourceId:
           typeof input === "object" && input !== null && "id" in input
-            ? String((input as any).id ?? "new")
+            ? String("id" in input ? (input as Record<string, unknown>).id : "new")
             : "new",
 
         status: "success",
@@ -338,7 +338,7 @@ export const settlementNettingEngineRouter = router({
       try {
         await db
           .update(merchantSettlements)
-          .set({ status: "settled", settledAt: new Date() } as any)
+          .set({ status: "settled", settledAt: new Date() })
           .where(eq(merchantSettlements.id, numId));
       } catch (e) {
         // @ts-expect-error middleware type mismatch

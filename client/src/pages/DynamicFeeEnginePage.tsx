@@ -461,7 +461,7 @@ export default function DynamicFeeEnginePage() {
                     };
                     // @ts-ignore Sprint 85 — Sprint 85: pre-existing type mismatch from router/page interface
                     if (editRule)
-                      updateMutation.mutate({ id: editRule.id, ...data });
+                      updateMutation.mutate({ ruleId: editRule.id, ...data });
                     // @ts-ignore Sprint 85 — Sprint 85: pre-existing type mismatch from router/page interface
                     else createMutation.mutate(data);
                   }}

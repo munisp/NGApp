@@ -38,13 +38,18 @@ export async function publishSettlementEvent(params: {
     | "settlement.reconciliation.started"
     | "settlement.reconciliation.completed"
     | "settlement.netting.calculated"
-    | "settlement.disbursement.initiated";
+    | "settlement.disbursement.initiated"
+    | "settlement.schedule.created"
+    | "settlement.schedule.manual_trigger"
+    | "settlement.schedule.paused"
+    | "settlement.schedule.resumed";
   batchId?: string;
-  agentId?: number;
+  agentId?: number | string;
   agentCode?: string;
   amount?: number;
   currency?: string;
   metadata?: Record<string, unknown>;
+  [key: string]: unknown;
 }): Promise<void> {
   try {
     const published = await publishEvent(

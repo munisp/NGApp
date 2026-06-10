@@ -35,21 +35,30 @@ export async function publishCommissionEvent(params: {
     | "commission.credited"
     | "commission.cascade.completed"
     | "commission.payout.requested"
-    | "commission.split.updated";
+    | "commission.split.updated"
+    | "commission.calculated"
+    | "commission.payout.approved"
+    | "commission.clawback.initiated"
+    | "commission.clawback.applied"
+    | "commission.tier.created"
+    | "commission.tier.updated"
+    | "commission.tier.deleted"
+    | "commission.split.created";
   transactionId?: number;
   transactionRef?: string;
-  agentId: number;
-  agentCode: string;
-  amount: number;
+  agentId?: number | string;
+  agentCode?: string;
+  amount?: number;
   currency?: string;
   hierarchyLevel?: number;
   metadata?: Record<string, unknown>;
+  [key: string]: unknown;
 }): Promise<void> {
   try {
     // publishEvent(topic, key, payload, metadata) — positional args
     const published = await publishEvent(
       COMMISSION_KAFKA_TOPIC,
-      params.agentCode,
+      params.agentCode ?? "system",
       {
         eventType: params.eventType,
         timestamp: new Date().toISOString(),
@@ -166,13 +175,15 @@ export async function setCachedHierarchyChain(
 // ── TigerBeetle: Double-Entry Commission Ledger ─────────────────────────
 // Uses the existing tbClient.ts which talks to the TB sidecar at ENV.tbSidecarUrl
 export async function tbRecordCommissionCredit(params: {
-  transactionId: number;
-  transactionRef: string;
+  transactionId?: number;
+  transactionRef?: string;
   agentId: number;
-  agentCode: string;
+  agentCode?: string;
   amount: number;
-  entryType: "direct" | "hierarchy_split";
-  hierarchyLevel: number;
+  entryType?: "direct" | "hierarchy_split";
+  hierarchyLevel?: number;
+  referenceId?: string;
+  [key: string]: unknown;
 }): Promise<{ transferId: string; syncStatus: string } | null> {
   try {
     const req: TBTransferRequest = {

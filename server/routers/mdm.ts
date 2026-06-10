@@ -221,7 +221,7 @@ export const mdmRouter = router({
       // Enforce STATUS_TRANSITIONS state machine
       if (typeof input === "object" && "status" in input) {
         const currentStatus = "pending"; // Will be overridden by DB lookup
-        const newStatus = (input as any).status;
+        const newStatus = "status" in input ? String((input as Record<string, unknown>).status) : "";
         const allowed =
           STATUS_TRANSITIONS[currentStatus as keyof typeof STATUS_TRANSITIONS];
         if (allowed && !allowed.includes(newStatus)) {
@@ -233,7 +233,7 @@ export const mdmRouter = router({
       }
       const txAmount =
         typeof input === "object" && "amount" in input
-          ? Number((input as any).amount)
+          ? Number("amount" in input ? (input as Record<string, unknown>).amount : 0)
           : 0;
       const fees = calculateFee(txAmount, "transfer");
       const commission = calculateCommission(fees.fee, "transfer");
@@ -417,7 +417,7 @@ export const mdmRouter = router({
       summary[row.status] = row.count;
     }
     // @ts-expect-error middleware type mismatch
-    summary.total = Object.values(summary as any).reduce(
+    summary.total = Object.values(summary as Record<string, unknown>).reduce(
       (a: any, b: any) => a + b,
       0
     );

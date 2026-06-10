@@ -188,9 +188,9 @@ export const customerLoyaltyProgramRouter = router({
     .mutation(async ({ input, ctx }) => {
       // ── Enforce STATUS_TRANSITIONS state machine ──
       if (typeof input === "object" && "status" in input) {
-        const newStatus = (input as any).status as string;
+        const newStatus = ("status" in input ? String((input as Record<string, unknown>).status) : "");
         const currentStatus =
-          ((input as any).currentStatus as string) || "pending";
+          ("currentStatus" in input ? String((input as Record<string, unknown>).currentStatus) : "pending");
         const allowed =
           STATUS_TRANSITIONS[currentStatus as keyof typeof STATUS_TRANSITIONS];
         if (allowed && !allowed.includes(newStatus)) {
@@ -202,7 +202,7 @@ export const customerLoyaltyProgramRouter = router({
       }
       const txAmount =
         typeof input === "object" && "amount" in input
-          ? Number((input as any).amount)
+          ? Number("amount" in input ? (input as Record<string, unknown>).amount : 0)
           : 0;
       const fees = calculateFee(txAmount, "transfer");
       const commission = calculateCommission(fees.fee, "transfer");
@@ -216,7 +216,7 @@ export const customerLoyaltyProgramRouter = router({
             points: input.points,
             type: "earned",
             description: input.reason,
-          } as any)
+          })
           .returning();
         await db.insert(auditLog).values({
           action: "loyalty_points_earned",
@@ -224,7 +224,7 @@ export const customerLoyaltyProgramRouter = router({
           resourceId: String(entry.id),
           status: "success",
           metadata: { customerId: input.customerId, points: input.points },
-        } as any);
+        });
         return entry;
       } catch (error) {
         if (error instanceof TRPCError) throw error;
@@ -276,7 +276,7 @@ export const customerLoyaltyProgramRouter = router({
             points: -input.points,
             type: "redeemed",
             description: input.reward,
-          } as any)
+          })
           .returning();
         await db.insert(auditLog).values({
           action: "loyalty_points_redeemed",
@@ -288,7 +288,7 @@ export const customerLoyaltyProgramRouter = router({
             points: input.points,
             reward: input.reward,
           },
-        } as any);
+        });
         return entry;
       } catch (error) {
         if (error instanceof TRPCError) throw error;

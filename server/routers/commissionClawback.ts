@@ -184,9 +184,9 @@ export const commissionClawbackRouter = router({
     .mutation(async ({ input, ctx }) => {
       // ── Enforce STATUS_TRANSITIONS state machine ──
       if (typeof input === "object" && "status" in input) {
-        const newStatus = (input as any).status as string;
+        const newStatus = ("status" in input ? String((input as Record<string, unknown>).status) : "");
         const currentStatus =
-          ((input as any).currentStatus as string) || "pending";
+          ("currentStatus" in input ? String((input as Record<string, unknown>).currentStatus) : "pending");
         const allowed =
           STATUS_TRANSITIONS[currentStatus as keyof typeof STATUS_TRANSITIONS];
         if (allowed && !allowed.includes(newStatus)) {
@@ -198,7 +198,7 @@ export const commissionClawbackRouter = router({
       }
       const txAmount =
         typeof input === "object" && "amount" in input
-          ? Number((input as any).amount)
+          ? Number("amount" in input ? (input as Record<string, unknown>).amount : 0)
           : 0;
       const fees = calculateFee(txAmount, "commissionPayout");
       const commission = calculateCommission(fees.fee, "commissionPayout");
@@ -222,7 +222,7 @@ export const commissionClawbackRouter = router({
           clawbackAmount: String(input.amount),
           cascadeLevel: "agent",
           status: "pending",
-        } as any)
+        })
         .returning();
 
       // Double-entry GL journal entry
@@ -233,7 +233,7 @@ export const commissionClawbackRouter = router({
         creditAccountId: 1001,
         amount: Math.round(
           (typeof input === "object" && "amount" in input
-            ? Number((input as any).amount)
+            ? Number("amount" in input ? (input as Record<string, unknown>).amount : 0)
             : 0) * 100
         ),
         currency: "NGN",
@@ -247,20 +247,20 @@ export const commissionClawbackRouter = router({
         details: JSON.stringify({
           reason: input.reason,
           amount: input.amount,
-        } as any),
-      } as any);
+        }),
+      });
       try {
         await publishCommissionEvent({
-          eventType: "commission.clawback.initiated" as any,
+          eventType: "commission.clawback.initiated",
           clawbackId: clawback.id,
           agentId: input.agentId,
           amount: input.amount,
-        } as any);
+        });
         await tbRecordCommissionCredit({
           agentId: input.agentId,
           amount: -input.amount,
           referenceId: `CLB-${clawback.id}`,
-        } as any);
+        });
       } catch (e) {
         logger.warn(
           `[CommissionClawback] Middleware event failed: ${e instanceof Error ? e.message : String(e)}`
@@ -283,7 +283,7 @@ export const commissionClawbackRouter = router({
 
         resourceId:
           typeof input === "object" && input !== null && "id" in input
-            ? String((input as any).id ?? "new")
+            ? String("id" in input ? (input as Record<string, unknown>).id : "new")
             : "new",
 
         status: "success",
@@ -301,7 +301,7 @@ export const commissionClawbackRouter = router({
         const db = (await getDb())!;
         const [updated] = await db
           .update(commissionClawbacks)
-          .set({ status: "applied", appliedAt: new Date() } as any)
+          .set({ status: "applied", appliedAt: new Date() })
           .where(eq(commissionClawbacks.id, input.id))
           .returning();
         if (!updated)
@@ -316,12 +316,12 @@ export const commissionClawbackRouter = router({
           performedBy: ctx.user?.name ?? "system",
           details: JSON.stringify({
             appliedAt: new Date().toISOString(),
-          } as any),
-        } as any);
+          }),
+        });
         try {
           await publishCommissionEvent({
-            eventType: "commission.clawback.applied" as any,
-          } as any);
+            eventType: "commission.clawback.applied",
+          });
         } catch (e) {
           logger.warn(
             `[CommissionClawback] Middleware event failed: ${e instanceof Error ? e.message : String(e)}`
@@ -345,7 +345,7 @@ export const commissionClawbackRouter = router({
         const db = (await getDb())!;
         const [updated] = await db
           .update(commissionClawbacks)
-          .set({ status: "failed" } as any)
+          .set({ status: "failed" })
           .where(eq(commissionClawbacks.id, input.id))
           .returning();
         if (!updated)
@@ -358,8 +358,8 @@ export const commissionClawbackRouter = router({
           entityType: "clawback",
           entityId: String(input.id),
           performedBy: ctx.user?.name ?? "system",
-          details: JSON.stringify({ reason: input.reason } as any),
-        } as any);
+          details: JSON.stringify({ reason: input.reason }),
+        });
         return { success: true, message: "Dispute filed" };
       } catch (error) {
         if (error instanceof TRPCError) throw error;

@@ -232,7 +232,7 @@ export const healthCheckRouter = router({
     }
 
     const overallHealthy = checks.database?.status === "healthy";
-    const healthyCount = Object.values(checks as any).filter(
+    const healthyCount = Object.values(checks as Record<string, unknown>).filter(
       // @ts-expect-error middleware type mismatch
       c => c.status === "healthy"
     ).length;

@@ -73,7 +73,7 @@ export async function recordBillingAudit(params: {
       userAgent: ctx.userAgent || null,
       sessionId: ctx.sessionId || null,
       notificationSent: false,
-    } as any)
+    })
     .returning();
 
   // 2. Publish to Kafka (billing.audit.* topic) if configured

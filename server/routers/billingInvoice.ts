@@ -161,9 +161,9 @@ export const billingInvoiceRouter = router({
     .mutation(async ({ input, ctx }) => {
       // ── Enforce STATUS_TRANSITIONS state machine ──
       if (typeof input === "object" && "status" in input) {
-        const newStatus = (input as any).status as string;
+        const newStatus = ("status" in input ? String((input as Record<string, unknown>).status) : "");
         const currentStatus =
-          ((input as any).currentStatus as string) || "pending";
+          ("currentStatus" in input ? String((input as Record<string, unknown>).currentStatus) : "pending");
         const allowed =
           STATUS_TRANSITIONS[currentStatus as keyof typeof STATUS_TRANSITIONS];
         if (allowed && !allowed.includes(newStatus)) {
@@ -175,7 +175,7 @@ export const billingInvoiceRouter = router({
       }
       const txAmount =
         typeof input === "object" && "amount" in input
-          ? Number((input as any).amount)
+          ? Number("amount" in input ? (input as Record<string, unknown>).amount : 0)
           : 0;
       const fees = calculateFee(txAmount, "billPayment");
       const commission = calculateCommission(fees.fee, "billPayment");
@@ -263,11 +263,11 @@ export const billingInvoiceRouter = router({
           if (subConfig?.perAgentFee) {
             lineItems.push({
               description: "Monthly agent subscription",
-              quantity: (subConfig as any).agentCount || 10,
-              unitPrice: (subConfig as any).perAgentFee,
+              quantity: (subConfig as Record<string, unknown>).agentCount || 10,
+              unitPrice: (subConfig as Record<string, unknown>).perAgentFee,
               total:
-                ((subConfig as any).agentCount || 10) *
-                (subConfig as any).perAgentFee,
+                ((subConfig as Record<string, unknown>).agentCount || 10) *
+                (subConfig as Record<string, unknown>).perAgentFee,
               category: "subscription",
             });
           }
@@ -341,7 +341,7 @@ export const billingInvoiceRouter = router({
 
           resourceId:
             typeof input === "object" && input !== null && "id" in input
-              ? String((input as any).id ?? "new")
+              ? String("id" in input ? (input as Record<string, unknown>).id : "new")
               : "new",
 
           status: "success",

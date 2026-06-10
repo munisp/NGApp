@@ -113,7 +113,7 @@ export const openBankingApiRouter = router({
       const result = await db.execute(
         sql`SELECT COUNT(*) as cnt FROM "open_banking_partners"`
       );
-      total = Number((result as any).rows?.[0]?.cnt ?? 0);
+      total = Number(((result as { rows?: Array<{ cnt?: number }> }).rows ?? [])[0]?.cnt ?? 0);
 
       const [activeRes, todayRes, revenueRes] = await Promise.all([
         db
@@ -132,9 +132,9 @@ export const openBankingApiRouter = router({
           )
           .catch(() => ({ rows: [{ revenue: 0 }] })),
       ]);
-      const activeResult = (activeRes as any).rows?.[0]?.cnt;
-      const todayResult = (todayRes as any).rows?.[0]?.cnt;
-      const revenueResult = (revenueRes as any).rows?.[0]?.revenue;
+      const activeResult = ((activeRes as { rows?: Array<{ cnt?: number }> }).rows ?? [])[0]?.cnt;
+      const todayResult = (todayRes as { rows?: { cnt?: number }[] }).rows?.[0]?.cnt;
+      const revenueResult = ((revenueRes as { rows?: Array<{ revenue?: number }> }).rows ?? [])[0]?.revenue;
       return {
         totalPartners: total,
         activeKeys: Number(activeResult ?? 0),
@@ -174,7 +174,7 @@ export const openBankingApiRouter = router({
           sql`SELECT COUNT(*) as cnt FROM "open_banking_partners"`
         );
         return {
-          items: ((result as any).rows ?? []).map((row: any) => ({
+          items: (((result as { rows?: Record<string, unknown>[] }).rows) ?? []).map((row) => ({
             id: row.id,
             ...((typeof row.data === "string"
               ? JSON.parse(row.data)
@@ -183,10 +183,10 @@ export const openBankingApiRouter = router({
             createdAt: row.created_at,
             agentId: row.agent_id,
           })),
-          total: Number((countResult as any).rows?.[0]?.cnt ?? 0),
+          total: Number(((countResult as { rows?: Array<{ cnt?: number }> }).rows ?? [])[0]?.cnt ?? 0),
         };
       } catch {
-        return { items: [] as any[], total: 0 };
+        return { items: [] as unknown[], total: 0 };
       }
     }),
 
@@ -196,7 +196,7 @@ export const openBankingApiRouter = router({
       // Enforce STATUS_TRANSITIONS state machine
       if (typeof input === "object" && "status" in input) {
         const currentStatus = "pending"; // Will be overridden by DB lookup
-        const newStatus = (input as any).status;
+        const newStatus = "status" in input ? String((input as Record<string, unknown>).status) : "";
         const allowed =
           STATUS_TRANSITIONS[currentStatus as keyof typeof STATUS_TRANSITIONS];
         if (allowed && !allowed.includes(newStatus)) {
@@ -208,7 +208,7 @@ export const openBankingApiRouter = router({
       }
       const txAmount =
         typeof input === "object" && "amount" in input
-          ? Number((input as any).amount)
+          ? Number("amount" in input ? (input as Record<string, unknown>).amount : 0)
           : 0;
       const fees = calculateFee(txAmount, "transfer");
       const commission = calculateCommission(fees.fee, "transfer");
@@ -237,7 +237,7 @@ export const openBankingApiRouter = router({
       const result = await db.execute(
         sql`INSERT INTO "open_banking_partners" (data, status, tenant_id) VALUES (${jsonStr}::jsonb, 'active', 'default') RETURNING id`
       );
-      const id = (result as any).rows?.[0]?.id;
+      const id = ((result as { rows?: Array<{ id?: unknown }> }).rows ?? [])[0]?.id;
       await writeAuditLog({
         agentId:
           typeof ctx === "object" && ctx !== null && "user" in ctx
@@ -255,7 +255,7 @@ export const openBankingApiRouter = router({
 
         resourceId:
           typeof input === "object" && input !== null && "id" in input
-            ? String((input as any).id ?? "new")
+            ? String("id" in input ? (input as Record<string, unknown>).id : "new")
             : "new",
 
         status: "success",
@@ -274,10 +274,10 @@ export const openBankingApiRouter = router({
       const result = await db.execute(
         sql`SELECT id, data, status, created_at, agent_id, metadata FROM "open_banking_partners" WHERE id = ${recordId}`
       );
-      if (!(result as any).rows?.length) {
+      if (!((result as { rows?: unknown[] }).rows ?? []).length) {
         throw new TRPCError({ code: "NOT_FOUND", message: "Record not found" });
       }
-      const row: any = (result as any).rows[0];
+      const row = ((result as { rows?: Record<string, unknown>[] }).rows ?? [])[0] ?? {};
       return {
         id: row.id,
         ...((typeof row.data === "string" ? JSON.parse(row.data) : row.data) ||
@@ -316,7 +316,7 @@ export const openBankingApiRouter = router({
         sql`SELECT status, COUNT(*) as cnt FROM "open_banking_partners" GROUP BY status`
       );
       const byStatus = Object.fromEntries(
-        ((result as any).rows ?? []).map((r: any) => [r.status, Number(r.cnt)])
+        (((result as { rows?: Array<{ status: string; cnt: number }> }).rows) ?? []).map((r) => [r.status, Number(r.cnt)])
       );
       return {
         byStatus,
