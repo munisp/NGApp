@@ -520,6 +520,32 @@ async function startServer() {
       );
     } catch (e) { logger.debug({ err: e instanceof Error ? e.message : String(e) }, "[Metrics] gRPC metrics unavailable"); }
 
+    // Kafka consumer metrics
+    try {
+      const kafkaMetrics = (await import("../kafkaConsumer")).getKafkaConsumerMetrics();
+      lines.push(
+        "# HELP ndsep_kafka_messages_received_total Total Kafka messages received",
+        "# TYPE ndsep_kafka_messages_received_total counter",
+        `ndsep_kafka_messages_received_total ${kafkaMetrics.messagesReceived}`,
+        "# HELP ndsep_kafka_messages_processed_total Total Kafka messages processed",
+        "# TYPE ndsep_kafka_messages_processed_total counter",
+        `ndsep_kafka_messages_processed_total ${kafkaMetrics.messagesProcessed}`,
+        "# HELP ndsep_kafka_errors_total Total Kafka consumer errors",
+        "# TYPE ndsep_kafka_errors_total counter",
+        `ndsep_kafka_errors_total ${kafkaMetrics.errors}`,
+        "# HELP ndsep_kafka_consumer_running Whether Kafka consumer is running",
+        "# TYPE ndsep_kafka_consumer_running gauge",
+        `ndsep_kafka_consumer_running ${kafkaMetrics.running ? 1 : 0}`,
+      );
+    } catch (e) { logger.debug({ err: e instanceof Error ? e.message : String(e) }, "[Metrics] Kafka metrics unavailable"); }
+
+    // Platform info
+    lines.push(
+      `# HELP ndsep_info Platform info`,
+      `# TYPE ndsep_info gauge`,
+      `ndsep_info{version="${process.env.npm_package_version ?? "3.0.0"}",node_env="${process.env.NODE_ENV ?? "development"}"} 1`,
+    );
+
     res.setHeader("Content-Type", "text/plain; version=0.0.4");
     res.send(lines.join("\n") + "\n");
   });

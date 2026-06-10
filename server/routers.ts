@@ -1839,7 +1839,21 @@ export const appRouter = router({
       .query(async ({ input }) => listCitizenRequests(input.status as any, input.requestType as any)),
     submit: protectedProcedure
       .input(z.object({ requestType: z.string(), citizenName: z.string(), citizenEmail: z.string(), citizenNin: z.string().optional(), description: z.string() }))
-      .mutation(async ({ input }) => createCitizenRequest(input as any)),
+      .mutation(async ({ input, ctx }) => {
+        const result = await createCitizenRequest(input as any);
+        const reqId = (result as any)?.id ?? 0;
+        // Temporal: auto-trigger DSAR fulfillment workflow (30-day statutory deadline)
+        if (input.requestType === "dsar" || input.requestType === "erasure" || input.requestType === "access") {
+          startWorkflow("dsar-fulfillment", {
+            workflowId: `dsar-${reqId}`,
+            taskQueue: "ndsep-dsar",
+            input: { requestId: String(reqId), requestType: input.requestType, citizenEmail: input.citizenEmail, deadlineDays: 30, steps: ["acknowledge", "identity-verify", "data-locate", "data-compile", "review", "deliver", "close"] },
+          }).catch((e: unknown) => logger.debug({ err: e instanceof Error ? e.message : String(e) }, "temporal fire-and-forget"));
+        }
+        // CQRS command dispatch
+        dispatchCommand({ type: "dsar.fulfill", aggregateType: "CitizenRequest", aggregateId: String(reqId), payload: { requestType: input.requestType, citizenEmail: input.citizenEmail }, metadata: { userId: ctx.user.id, source: "routers.citizenRights.submit" } }).catch((e: unknown) => logger.debug({ err: e instanceof Error ? e.message : String(e) }, "cqrs fire-and-forget"));
+        return result;
+      }),
     update: protectedProcedure
       .input(z.object({ id: z.number(), status: z.string(), responseNotes: z.string().optional() }))
       .mutation(async ({ input, ctx }) => {
@@ -2737,6 +2751,16 @@ export const appRouter = router({
         const result = await createComplianceAuditReturn(input);
         createAuditLog({ userId: ctx.user.id, organizationId: input.organizationId, action: "car.create", resourceType: "compliance_audit_return", resourceId: result?.id, details: `CAR filed for period ${input.auditPeriodStart} to ${input.auditPeriodEnd}` }).catch((e: unknown) => logger.debug({ err: e instanceof Error ? e.message : String(e) }, "fire-and-forget failed"));
         kafkaProduce("ndsep.car.submitted", `car-${result?.id}`, { carId: result?.id, orgId: input.organizationId, periodStart: input.auditPeriodStart, periodEnd: input.auditPeriodEnd, score: input.complianceScore, jurisdiction: getActiveJurisdiction().code, ts: new Date().toISOString() }).catch((e: unknown) => logger.debug({ err: e instanceof Error ? e.message : String(e) }, "fire-and-forget failed"));
+        // Temporal: auto-trigger compliance-audit workflow
+        startWorkflow("compliance-audit", {
+          workflowId: `audit-${result?.id ?? 0}`,
+          taskQueue: "ndsep-compliance",
+          input: { carId: String(result?.id ?? 0), orgId: input.organizationId, periodStart: input.auditPeriodStart, periodEnd: input.auditPeriodEnd, steps: ["document-review", "evidence-gathering", "control-testing", "gap-analysis", "scoring", "report-generation", "recommendation"] },
+        }).catch((e: unknown) => logger.debug({ err: e instanceof Error ? e.message : String(e) }, "temporal fire-and-forget"));
+        // CQRS command dispatch
+        dispatchCommand({ type: "audit.start", aggregateType: "ComplianceAudit", aggregateId: String(result?.id ?? 0), payload: { orgId: input.organizationId, periodStart: input.auditPeriodStart, periodEnd: input.auditPeriodEnd, score: input.complianceScore }, metadata: { userId: ctx.user.id, source: "routers.car.create" } }).catch((e: unknown) => logger.debug({ err: e instanceof Error ? e.message : String(e) }, "cqrs fire-and-forget"));
+        // Permify: org owns the audit return
+        permifyWriteRelationship("compliance_audit", String(result?.id ?? 0), "owner", "organization", String(input.organizationId)).catch((e: unknown) => logger.debug({ err: e instanceof Error ? e.message : String(e) }, "permify fire-and-forget"));
         // BUSINESS RULE: Low compliance scores auto-trigger enforcement review
         if (input.complianceScore !== undefined && input.complianceScore < 50) {
           kafkaProduce("ndsep.car.low_score_alert", `car-low-${result?.id}`, { carId: result?.id, orgId: input.organizationId, score: input.complianceScore, threshold: 50, ts: new Date().toISOString() }).catch((e: unknown) => logger.debug({ err: e instanceof Error ? e.message : String(e) }, "fire-and-forget failed"));

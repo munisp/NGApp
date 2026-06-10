@@ -43,6 +43,7 @@ export type AggregateType =
   | "DPIA"
   | "ConsentRecord"
   | "DSAR"
+  | "CitizenRequest"
   | "KYCRecord"
   | "Certificate"
   | "ThreatEvent"
