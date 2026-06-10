@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import '../services/api_service.dart';
+import '../utils/validators.dart';
 
 class SupportScreen extends StatefulWidget {
   const SupportScreen({super.key});
@@ -72,30 +73,71 @@ class _SupportScreenState extends State<SupportScreen> {
   }
 
   void _showNewTicket(BuildContext context) {
+    final formKey = GlobalKey<FormState>();
     final subjectCtrl = TextEditingController();
     final messageCtrl = TextEditingController();
+    String selectedCategory = 'General';
     showModalBottomSheet(
       context: context,
       isScrollControlled: true,
-      builder: (ctx) => Padding(
-        padding: EdgeInsets.only(bottom: MediaQuery.of(ctx).viewInsets.bottom, left: 16, right: 16, top: 16),
-        child: Column(mainAxisSize: MainAxisSize.min, children: [
-          const Text('New Support Ticket', style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
-          const SizedBox(height: 16),
-          TextField(controller: subjectCtrl, decoration: const InputDecoration(labelText: 'Subject', border: OutlineInputBorder())),
-          const SizedBox(height: 12),
-          TextField(controller: messageCtrl, decoration: const InputDecoration(labelText: 'Describe your issue', border: OutlineInputBorder()), maxLines: 4),
-          const SizedBox(height: 16),
-          SizedBox(width: double.infinity, child: ElevatedButton(
-            onPressed: () async {
-              await _api.createSupportTicket({'subject': subjectCtrl.text, 'message': messageCtrl.text});
-              if (mounted) Navigator.pop(ctx);
-              _loadTickets();
-            },
-            child: const Text('Submit Ticket'),
-          )),
-          const SizedBox(height: 16),
-        ]),
+      builder: (ctx) => StatefulBuilder(
+        builder: (ctx, setSheetState) => Padding(
+          padding: EdgeInsets.only(bottom: MediaQuery.of(ctx).viewInsets.bottom, left: 16, right: 16, top: 16),
+          child: Form(
+            key: formKey,
+            child: Column(mainAxisSize: MainAxisSize.min, children: [
+              const Text('New Support Ticket', style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
+              const SizedBox(height: 16),
+              DropdownButtonFormField<String>(
+                value: selectedCategory,
+                decoration: const InputDecoration(labelText: 'Category', border: OutlineInputBorder()),
+                items: ['General', 'Transaction', 'Account', 'Settlement', 'Technical', 'Compliance']
+                    .map((c) => DropdownMenuItem(value: c, child: Text(c)))
+                    .toList(),
+                onChanged: (v) => setSheetState(() => selectedCategory = v ?? 'General'),
+              ),
+              const SizedBox(height: 12),
+              TextFormField(
+                controller: subjectCtrl,
+                decoration: const InputDecoration(labelText: 'Subject', border: OutlineInputBorder()),
+                validator: (v) {
+                  final base = Validators.required(v, 'Subject');
+                  if (base != null) return base;
+                  if (v!.trim().length < 5) return 'Subject must be at least 5 characters';
+                  if (v.trim().length > 200) return 'Subject must be under 200 characters';
+                  return null;
+                },
+              ),
+              const SizedBox(height: 12),
+              TextFormField(
+                controller: messageCtrl,
+                decoration: const InputDecoration(labelText: 'Describe your issue', border: OutlineInputBorder()),
+                maxLines: 4,
+                validator: (v) {
+                  final base = Validators.required(v, 'Description');
+                  if (base != null) return base;
+                  if (v!.trim().length < 20) return 'Please provide more detail (min 20 characters)';
+                  return null;
+                },
+              ),
+              const SizedBox(height: 16),
+              SizedBox(width: double.infinity, child: ElevatedButton(
+                onPressed: () async {
+                  if (!formKey.currentState!.validate()) return;
+                  await _api.createSupportTicket({
+                    'subject': subjectCtrl.text.trim(),
+                    'message': messageCtrl.text.trim(),
+                    'category': selectedCategory,
+                  });
+                  if (mounted) Navigator.pop(ctx);
+                  _loadTickets();
+                },
+                child: const Text('Submit Ticket'),
+              )),
+              const SizedBox(height: 16),
+            ]),
+          ),
+        ),
       ),
     );
   }

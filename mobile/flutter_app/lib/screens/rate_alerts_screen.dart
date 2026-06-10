@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import '../services/api_service.dart';
+import '../utils/validators.dart';
 
 class RateAlertsScreen extends StatefulWidget {
   const RateAlertsScreen({super.key});
@@ -33,6 +34,7 @@ class _RateAlertsScreenState extends State<RateAlertsScreen> {
   }
 
   void _showCreateAlert() {
+    final formKey = GlobalKey<FormState>();
     final corridorCtrl = TextEditingController();
     final targetRateCtrl = TextEditingController();
     showModalBottomSheet(
@@ -40,30 +42,50 @@ class _RateAlertsScreenState extends State<RateAlertsScreen> {
       isScrollControlled: true,
       builder: (ctx) => Padding(
         padding: EdgeInsets.only(left: 16, right: 16, top: 16, bottom: MediaQuery.of(ctx).viewInsets.bottom + 16),
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            const Text('Create Rate Alert', style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
-            const SizedBox(height: 16),
-            TextField(controller: corridorCtrl, decoration: const InputDecoration(labelText: 'Corridor (e.g. NG-US)', border: OutlineInputBorder())),
-            const SizedBox(height: 12),
-            TextField(controller: targetRateCtrl, decoration: const InputDecoration(labelText: 'Target Rate', border: OutlineInputBorder()), keyboardType: TextInputType.number),
-            const SizedBox(height: 16),
-            SizedBox(
-              width: double.infinity,
-              child: ElevatedButton(
-                onPressed: () async {
-                  await _api.createRateAlert({
-                    'corridor': corridorCtrl.text,
-                    'targetRate': double.tryParse(targetRateCtrl.text) ?? 0,
-                  });
-                  if (context.mounted) Navigator.pop(ctx);
-                  _loadAlerts();
+        child: Form(
+          key: formKey,
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              const Text('Create Rate Alert', style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
+              const SizedBox(height: 16),
+              TextFormField(
+                controller: corridorCtrl,
+                decoration: const InputDecoration(labelText: 'Corridor (e.g. NG-US)', border: OutlineInputBorder()),
+                validator: (v) {
+                  final base = Validators.required(v, 'Corridor');
+                  if (base != null) return base;
+                  final pattern = RegExp(r'^[A-Z]{2}-[A-Z]{2}$');
+                  if (!pattern.hasMatch(v!.trim().toUpperCase())) return 'Use format XX-XX (e.g. NG-US)';
+                  return null;
                 },
-                child: const Text('Create Alert'),
+                textCapitalization: TextCapitalization.characters,
               ),
-            ),
-          ],
+              const SizedBox(height: 12),
+              TextFormField(
+                controller: targetRateCtrl,
+                decoration: const InputDecoration(labelText: 'Target Rate', border: OutlineInputBorder()),
+                keyboardType: TextInputType.number,
+                validator: (v) => Validators.amount(v, min: 0.01, max: 99999),
+              ),
+              const SizedBox(height: 16),
+              SizedBox(
+                width: double.infinity,
+                child: ElevatedButton(
+                  onPressed: () async {
+                    if (!formKey.currentState!.validate()) return;
+                    await _api.createRateAlert({
+                      'corridor': corridorCtrl.text.trim().toUpperCase(),
+                      'targetRate': double.tryParse(targetRateCtrl.text) ?? 0,
+                    });
+                    if (context.mounted) Navigator.pop(ctx);
+                    _loadAlerts();
+                  },
+                  child: const Text('Create Alert'),
+                ),
+              ),
+            ],
+          ),
         ),
       ),
     );
