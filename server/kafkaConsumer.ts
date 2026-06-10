@@ -140,6 +140,11 @@ async function processMessage(topic: string, value: string): Promise<void> {
   } catch (err) {
     metrics.errors++;
     logger.warn({ err: err instanceof Error ? err.message : String(err), topic }, "[KafkaConsumer] Message processing failed");
+    // Route failed messages to DLQ for exponential backoff retry
+    try {
+      const { addToDLQ } = await import("./productionGaps");
+      addToDLQ(topic, `msg-${Date.now()}`, value, err instanceof Error ? err.message : String(err));
+    } catch { /* DLQ module unavailable — message lost */ }
   }
 }
 

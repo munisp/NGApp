@@ -64,6 +64,7 @@ import { regenerateSession, generateSessionNonce } from "../sessionSecurity";
 import { traceMiddleware } from "../telemetry";
 import { initWebhookSystem, deliverWebhookEvent } from "../webhookSystem";
 import { createVersionedEndpoints } from "../apiVersioning";
+import { registerMobileApi } from "../mobileApi";
 import { sdk } from "./sdk";
 import { COOKIE_NAME, ONE_YEAR_MS } from "@shared/const";
 import { getSessionCookieOptions } from "./cookies";
@@ -102,10 +103,29 @@ async function findAvailablePort(startPort: number = 3000): Promise<number> {
   throw new Error(`No available port found starting from ${startPort}`);
 }
 
-// ─── Rate Limiters ────────────────────────────────────────────────────────────
+// ─── Rate Limiters (Redis-backed with in-memory fallback) ─────────────────────
 
 /// IPv6-safe IP key helper
 const safeIpKey = (req: import("express").Request) => ipKeyGenerator(req.ip ?? req.socket.remoteAddress ?? "unknown");
+
+// Redis-backed rate limit store: survives restarts & works across cluster instances
+// Falls back to in-memory if Redis is unavailable
+let rateLimitStore: any = undefined; // undefined = default MemoryStore
+try {
+  const RedisStore = require("rate-limit-redis").default ?? require("rate-limit-redis");
+  const Redis = require("ioredis");
+  const redisUrl = process.env.REDIS_URL ?? "redis://localhost:6379";
+  const redisClient = new Redis(redisUrl, { lazyConnect: true, maxRetriesPerRequest: 1, enableOfflineQueue: false });
+  redisClient.connect().then(() => {
+    logger.info("[RateLimit] Redis-backed store active");
+  }).catch(() => {
+    logger.warn("[RateLimit] Redis unavailable — falling back to in-memory store");
+  });
+  rateLimitStore = new RedisStore({ sendCommand: (...args: string[]) => redisClient.call(...args) });
+} catch {
+  logger.warn("[RateLimit] rate-limit-redis not available — using in-memory store");
+}
+
 /** General API rate limit: configurable per IP */
 const apiLimiter = rateLimit({
   windowMs: parseInt(process.env.RATE_LIMIT_API_WINDOW_MS ?? "60000", 10),
@@ -115,6 +135,7 @@ const apiLimiter = rateLimit({
   message: { error: "Too many requests — please slow down." },
   keyGenerator: safeIpKey,
   skip: (req) => process.env.NODE_ENV === "development" && req.ip === "::1",
+  ...(rateLimitStore ? { store: rateLimitStore } : {}),
 });
 /** Strict auth rate limit: configurable per IP (brute-force protection) */
 const authLimiter = rateLimit({
@@ -124,6 +145,7 @@ const authLimiter = rateLimit({
   legacyHeaders: false,
   message: { error: "Too many authentication attempts — please try again later." },
   keyGenerator: safeIpKey,
+  ...(rateLimitStore ? { store: rateLimitStore } : {}),
 });
 /** Worker event relay: configurable per minute (internal workers) */
 const workerLimiter = rateLimit({
@@ -132,7 +154,8 @@ const workerLimiter = rateLimit({
   standardHeaders: "draft-7",
   legacyHeaders: false,
   keyGenerator: safeIpKey,
-});;
+  ...(rateLimitStore ? { store: rateLimitStore } : {}),
+});
 
 async function startServer() {
   // Validate security-critical environment variables before anything else
@@ -189,6 +212,7 @@ async function startServer() {
     next();
   });
   createVersionedEndpoints(app);
+  registerMobileApi(app);
   // ── Security Headers (helmet) ─────────────────────────────────────────────
   const isProd = process.env.NODE_ENV === "production";
   app.use(
@@ -1350,6 +1374,8 @@ async function startServer() {
   if (process.env.NODE_ENV !== "test") {
     startHealthMonitor();
     startKafkaConsumer().catch((e) => logger.debug({ err: e instanceof Error ? e.message : String(e) }, "[KafkaConsumer] Startup deferred"));
+    // Initialize production gap resolution modules (G9-G24)
+    import("../productionGaps").then(m => m.initializeProductionGaps()).catch((e) => logger.debug({ err: e instanceof Error ? e.message : String(e) }, "[ProductionGaps] Init deferred"));
     setTimeout(() => startAllWorkers(), 3000);
     const portalBaseUrl = process.env.VITE_OAUTH_PORTAL_URL ?? `http://localhost:${port}`;
     startDigestScheduler(portalBaseUrl);

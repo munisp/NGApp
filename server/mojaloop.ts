@@ -172,6 +172,75 @@ export async function mojalookSmokeTest() {
   };
 }
 
+// ─── Participant Management ─────────────────────────────────────────────────
+
+export async function registerParticipant(
+  fspId: string,
+  name: string,
+  currency: string,
+): Promise<{ ok: boolean; data?: unknown }> {
+  const { ok, data } = await mojaRequest("POST", `${MOJALOOP_URL}/participants`, {
+    fspId,
+    name,
+    currency,
+    isActive: true,
+  });
+  return { ok, data: ok ? data : undefined };
+}
+
+export async function getParticipants(): Promise<{ ok: boolean; participants: unknown[] }> {
+  const { ok, data } = await mojaRequest("GET", `${MOJALOOP_URL}/participants`);
+  return { ok, participants: ok && Array.isArray(data) ? data : [] };
+}
+
+// ─── Settlement ─────────────────────────────────────────────────────────────
+
+export async function createSettlement(
+  settlementModelId: string,
+  reason: string,
+): Promise<{ ok: boolean; settlementId?: string; data?: unknown }> {
+  const { ok, data } = await mojaRequest("POST", `${MOJALOOP_URL}/settlements`, {
+    reason,
+    settlementModel: settlementModelId,
+  });
+  const d = data as Record<string, unknown>;
+  return { ok, settlementId: ok ? String(d.id ?? "") : undefined, data: ok ? data : undefined };
+}
+
+export async function getSettlements(state?: string): Promise<{ ok: boolean; settlements: unknown[] }> {
+  const url = state ? `${MOJALOOP_URL}/settlements?state=${state}` : `${MOJALOOP_URL}/settlements`;
+  const { ok, data } = await mojaRequest("GET", url);
+  return { ok, settlements: ok && Array.isArray(data) ? data : [] };
+}
+
+// ─── Hub Account Setup ──────────────────────────────────────────────────────
+
+export async function createHubAccount(
+  type: "HUB_MULTILATERAL_SETTLEMENT" | "HUB_RECONCILIATION",
+  currency: string,
+): Promise<{ ok: boolean; data?: unknown }> {
+  const { ok, data } = await mojaRequest("POST", `${MOJALOOP_URL}/participants/Hub/accounts`, {
+    type,
+    currency,
+  });
+  return { ok, data: ok ? data : undefined };
+}
+
+export async function depositToHub(
+  accountId: string,
+  amount: { amount: string; currency: string },
+  reason: string,
+): Promise<{ ok: boolean }> {
+  const { ok } = await mojaRequest("POST", `${MOJALOOP_URL}/participants/Hub/accounts/${accountId}`, {
+    transferId: `hub-deposit-${Date.now()}`,
+    externalReference: `ndsep-${reason}`,
+    action: "recordFundsIn",
+    reason,
+    amount,
+  });
+  return { ok };
+}
+
 if (MOJALOOP_ENABLED) {
   mojalookHealth().catch(() => {
     logger.warn("[Mojaloop] Not available — payment interoperability degraded");

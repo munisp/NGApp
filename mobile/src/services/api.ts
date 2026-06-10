@@ -5,7 +5,9 @@
  */
 import * as SecureStore from "expo-secure-store";
 
-const API_BASE = process.env.EXPO_PUBLIC_API_URL || "https://api.ndsep.gov.ng";
+// API_BASE is configurable via EXPO_PUBLIC_API_URL environment variable.
+// In development, defaults to localhost; in production builds, must be set explicitly.
+const API_BASE = process.env.EXPO_PUBLIC_API_URL || (__DEV__ ? "http://localhost:3000" : "https://api.ndsep.gov.ng");
 
 interface RequestOptions {
   method?: string;
@@ -167,6 +169,96 @@ class NDSEPApiClient {
   async getEnforcementCases(filters?: { status?: string; sector?: string }) {
     const params = new URLSearchParams(filters as Record<string, string>);
     return this.request(`/api/v2/enforcement/cases?${params}`);
+  }
+
+  // ── Data Transfers ─────────────────────────────────────────────────────────
+
+  async getDataTransfers() {
+    return this.request<Array<{
+      id: number;
+      sourceCountry: string;
+      destinationCountry: string;
+      transferMechanism: string;
+      status: string;
+    }>>("/api/v2/transfers/list");
+  }
+
+  // ── Compliance Audit ───────────────────────────────────────────────────────
+
+  async getComplianceAudits() {
+    return this.request<Array<{
+      id: number;
+      orgId: number;
+      score: number;
+      status: string;
+    }>>("/api/v2/compliance/audits");
+  }
+
+  // ── AI Governance ──────────────────────────────────────────────────────────
+
+  async getAIModels() {
+    return this.request<Array<{
+      id: number;
+      modelName: string;
+      riskLevel: string;
+      complianceStatus: string;
+    }>>("/api/v2/ai-governance/models");
+  }
+
+  // ── Banking ────────────────────────────────────────────────────────────────
+
+  async getBankingTransactions() {
+    return this.request<Array<{
+      id: number;
+      transactionType: string;
+      amount: number;
+      currency: string;
+      status: string;
+    }>>("/api/v2/banking/transactions");
+  }
+
+  // ── DPIA ───────────────────────────────────────────────────────────────────
+
+  async getDPIAList() {
+    return this.request<Array<{
+      id: number;
+      title: string;
+      status: string;
+      riskLevel: string;
+    }>>("/api/v2/dpia/list");
+  }
+
+  // ── Workflows ──────────────────────────────────────────────────────────────
+
+  async getActiveWorkflows() {
+    return this.request<Array<{
+      id: number;
+      workflowType: string;
+      status: string;
+      entityId: string;
+    }>>("/api/v2/workflows/active");
+  }
+
+  // ── DSAR List ──────────────────────────────────────────────────────────────
+
+  async getDSARList() {
+    return this.request<Array<{
+      id: number;
+      citizenName: string;
+      requestType: string;
+      status: string;
+    }>>("/api/v2/dsar/list");
+  }
+
+  // ── Breach List ────────────────────────────────────────────────────────────
+
+  async getBreachList() {
+    return this.request<Array<{
+      id: number;
+      description: string;
+      severity: string;
+      status: string;
+    }>>("/api/v2/breach/list");
   }
 
   // ── Offline Sync ────────────────────────────────────────────────────────────
