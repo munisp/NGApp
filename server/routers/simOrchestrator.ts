@@ -133,7 +133,7 @@ const _txPatterns = {
   atomicBatch: async <T>(ops: (() => Promise<T>)[]): Promise<T[]> => {
     return withTransaction(async () => {
       const results: T[] = [];
-      results.push(...(await Promise.all(ops.map((op) => op()))));
+      results.push(...(await Promise.all(ops.map(op => op()))));
       return results;
     });
   },
@@ -182,8 +182,7 @@ export const simOrchestratorRouter = router({
           .limit(1);
 
         const expectedKey =
-          config[0]?.apiKey ??
-          process.env.SIM_ORCHESTRATOR_API_KEY;
+          config[0]?.apiKey ?? process.env.SIM_ORCHESTRATOR_API_KEY;
         if (!expectedKey) {
           throw new TRPCError({
             code: "INTERNAL_SERVER_ERROR",
@@ -640,8 +639,7 @@ export const simOrchestratorRouter = router({
           .where(eq(simOrchestratorConfig.terminalId, input.terminalId))
           .limit(1);
 
-        const expectedKey =
-          cfg?.apiKey ?? process.env.SIM_ORCHESTRATOR_API_KEY;
+        const expectedKey = cfg?.apiKey ?? process.env.SIM_ORCHESTRATOR_API_KEY;
         if (!expectedKey || input.apiKey !== expectedKey) {
           throw new TRPCError({
             code: "UNAUTHORIZED",

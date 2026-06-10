@@ -5,6 +5,15 @@
  */
 import { useState, useCallback, useMemo } from "react";
 
+function escapeHtml(str: unknown): string {
+  return String(str ?? "")
+    .replace(/&/g, "&amp;")
+    .replace(/</g, "&lt;")
+    .replace(/>/g, "&gt;")
+    .replace(/"/g, "&quot;")
+    .replace(/'/g, "&#39;");
+}
+
 interface BulkOpsOptions<T> {
   items: T[];
   idKey: keyof T;
@@ -141,12 +150,12 @@ export function exportToPdf<T extends Record<string, any>>(
       </style>
     </head>
     <body>
-      <h1>${title}</h1>
-      <div class="meta">Generated: ${new Date().toLocaleString()} | Records: ${data.length}</div>
+      <h1>${escapeHtml(title)}</h1>
+      <div class="meta">Generated: ${escapeHtml(new Date().toLocaleString())} | Records: ${data.length}</div>
       <table>
-        <thead><tr>${cols.map(c => `<th>${String(c.label)}</th>`).join("")}</tr></thead>
+        <thead><tr>${cols.map(c => `<th>${escapeHtml(c.label)}</th>`).join("")}</tr></thead>
         <tbody>
-          ${data.map(row => `<tr>${cols.map(c => `<td>${row[c.key] ?? ""}</td>`).join("")}</tr>`).join("")}
+          ${data.map(row => `<tr>${cols.map(c => `<td>${escapeHtml(row[c.key])}</td>`).join("")}</tr>`).join("")}
         </tbody>
       </table>
       <div class="footer">54Link POS Shell — Confidential</div>

@@ -10,6 +10,15 @@
  * In production, replace each section with the actual PAX/Ingenico SDK calls.
  */
 
+function escapeHtml(str: unknown): string {
+  return String(str ?? "")
+    .replace(/&/g, "&amp;")
+    .replace(/</g, "&lt;")
+    .replace(/>/g, "&gt;")
+    .replace(/"/g, "&quot;")
+    .replace(/'/g, "&#39;");
+}
+
 // ─── Types ────────────────────────────────────────────────────────────────────
 export interface ReceiptData {
   ref: string;
@@ -80,16 +89,16 @@ export const printer = {
           <div>Agency Banking Terminal</div>
           <div class="divider"></div>
         </div>
-        <div class="row"><span>Ref:</span><span>${data.ref}</span></div>
-        <div class="row"><span>Type:</span><span>${data.type}</span></div>
-        <div class="row bold"><span>Amount:</span><span>₦${data.amount.toLocaleString("en-NG", { minimumFractionDigits: 2 })}</span></div>
-        ${data.fee ? `<div class="row"><span>Fee:</span><span>₦${data.fee.toFixed(2)}</span></div>` : ""}
+        <div class="row"><span>Ref:</span><span>${escapeHtml(data.ref)}</span></div>
+        <div class="row"><span>Type:</span><span>${escapeHtml(data.type)}</span></div>
+        <div class="row bold"><span>Amount:</span><span>₦${escapeHtml(data.amount.toLocaleString("en-NG", { minimumFractionDigits: 2 }))}</span></div>
+        ${data.fee ? `<div class="row"><span>Fee:</span><span>₦${escapeHtml(data.fee.toFixed(2))}</span></div>` : ""}
         <div class="divider"></div>
-        ${data.customerName ? `<div class="row"><span>Customer:</span><span>${data.customerName}</span></div>` : ""}
-        ${data.customerPhone ? `<div class="row"><span>Phone:</span><span>${data.customerPhone}</span></div>` : ""}
+        ${data.customerName ? `<div class="row"><span>Customer:</span><span>${escapeHtml(data.customerName)}</span></div>` : ""}
+        ${data.customerPhone ? `<div class="row"><span>Phone:</span><span>${escapeHtml(data.customerPhone)}</span></div>` : ""}
         <div class="divider"></div>
-        <div class="row"><span>Agent:</span><span>${data.agentCode}</span></div>
-        <div class="row"><span>Terminal:</span><span>${data.terminalSerial ?? "N/A"}</span></div>
+        <div class="row"><span>Agent:</span><span>${escapeHtml(data.agentCode)}</span></div>
+        <div class="row"><span>Terminal:</span><span>${escapeHtml(data.terminalSerial ?? "N/A")}</span></div>
         <div class="row"><span>Date:</span><span>${timestamp}</span></div>
         <div class="divider"></div>
         <div class="center bold">TRANSACTION SUCCESSFUL</div>

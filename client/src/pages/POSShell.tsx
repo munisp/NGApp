@@ -73,6 +73,15 @@ type TileCategory =
   | "settings"
   | "communication";
 
+function escapeHtml(str: unknown): string {
+  return String(str ?? "")
+    .replace(/&/g, "&amp;")
+    .replace(/</g, "&lt;")
+    .replace(/>/g, "&gt;")
+    .replace(/"/g, "&quot;")
+    .replace(/'/g, "&#39;");
+}
+
 interface Tile {
   id: string;
   label: string;
@@ -3757,7 +3766,7 @@ function QRPaymentScreen({ onBack }: { onBack: () => void }) {
                           const mins = Math.floor(
                             Math.max(0, qr.expiresAt - now) / 60000
                           );
-                          return `<div class="qr-cell"><div class="amount">&#8358;${qr.amount.toLocaleString("en-NG")}</div>${img}<div class="label">${qr.label}</div><div class="ttl">Valid ~${mins} min</div></div>`;
+                          return `<div class="qr-cell"><div class="amount">&#8358;${escapeHtml(qr.amount.toLocaleString("en-NG"))}</div>${img}<div class="label">${escapeHtml(qr.label)}</div><div class="ttl">Valid ~${mins} min</div></div>`;
                         })
                         .join("");
                       const _agentName = TERMINAL.agentName;
@@ -3765,7 +3774,7 @@ function QRPaymentScreen({ onBack }: { onBack: () => void }) {
                       const _serialNo = TERMINAL.serialNo;
                       const _printDate = new Date().toLocaleString("en-NG");
                       printWin.document.write(
-                        `<!DOCTYPE html><html><head><title>54Link Batch QR — ${_agentCode}</title><style>@page{size:A4;margin:12mm}body{font-family:'Courier New',monospace;background:#fff;color:#000}h1{font-size:13px;margin:0 0 4px;font-weight:bold}.meta{font-size:9px;color:#555;margin-bottom:10px;line-height:1.6}.grid{display:grid;grid-template-columns:repeat(4,1fr);gap:10px}.qr-cell{border:1px solid #bbb;border-radius:6px;padding:8px;text-align:center;page-break-inside:avoid}.amount{font-size:13px;font-weight:bold;margin-bottom:4px;color:#000}.label{font-size:8px;color:#666;margin-top:3px;word-break:break-all}.ttl{font-size:8px;color:#999;margin-top:2px}.agent-footer{font-size:8px;color:#aaa;margin-top:3px;border-top:1px dashed #ddd;padding-top:3px}img{display:block;margin:0 auto}.watermark{position:fixed;bottom:8mm;right:10mm;font-size:8px;color:#ccc;text-align:right}@media print{.watermark{position:fixed}}</style></head><body><h1>54Link Agent Banking — QR Payment Sheet</h1><div class="meta">Agent: <strong>${_agentName}</strong> &nbsp;|&nbsp; Code: <strong>${_agentCode}</strong> &nbsp;|&nbsp; Terminal: <strong>${_serialNo}</strong><br/>Printed: ${_printDate} &nbsp;|&nbsp; ${activeQRs.length} code(s) &nbsp;|&nbsp; Codes expire 15 min after generation</div><div class="grid">${rows}</div><div class="watermark">54Link Agent Banking<br/>${_agentCode} | ${_serialNo}<br/>Printed ${_printDate}</div></body></html>`
+                        `<!DOCTYPE html><html><head><title>54Link Batch QR — ${escapeHtml(_agentCode)}</title><style>@page{size:A4;margin:12mm}body{font-family:'Courier New',monospace;background:#fff;color:#000}h1{font-size:13px;margin:0 0 4px;font-weight:bold}.meta{font-size:9px;color:#555;margin-bottom:10px;line-height:1.6}.grid{display:grid;grid-template-columns:repeat(4,1fr);gap:10px}.qr-cell{border:1px solid #bbb;border-radius:6px;padding:8px;text-align:center;page-break-inside:avoid}.amount{font-size:13px;font-weight:bold;margin-bottom:4px;color:#000}.label{font-size:8px;color:#666;margin-top:3px;word-break:break-all}.ttl{font-size:8px;color:#999;margin-top:2px}.agent-footer{font-size:8px;color:#aaa;margin-top:3px;border-top:1px dashed #ddd;padding-top:3px}img{display:block;margin:0 auto}.watermark{position:fixed;bottom:8mm;right:10mm;font-size:8px;color:#ccc;text-align:right}@media print{.watermark{position:fixed}}</style></head><body><h1>54Link Agent Banking — QR Payment Sheet</h1><div class="meta">Agent: <strong>${escapeHtml(_agentName)}</strong> &nbsp;|&nbsp; Code: <strong>${escapeHtml(_agentCode)}</strong> &nbsp;|&nbsp; Terminal: <strong>${escapeHtml(_serialNo)}</strong><br/>Printed: ${escapeHtml(_printDate)} &nbsp;|&nbsp; ${activeQRs.length} code(s) &nbsp;|&nbsp; Codes expire 15 min after generation</div><div class="grid">${rows}</div><div class="watermark">54Link Agent Banking<br/>${escapeHtml(_agentCode)} | ${escapeHtml(_serialNo)}<br/>Printed ${escapeHtml(_printDate)}</div></body></html>`
                       );
                       printWin.document.close();
                       printWin.focus();
@@ -11667,14 +11676,14 @@ function OfflineResilienceScreen({ onBack }: { onBack: () => void }) {
 <div class="center bold" style="font-size:14px;margin:6px 0 2px">54LINK POS</div>
 <div class="center" style="font-size:10px;color:#555;margin-bottom:6px">OFFLINE USSD RECEIPT</div>
 <div class="divider"></div>
-<div class="row"><span>TYPE</span><span class="bold">${thermalPreviewCode.tx_type.toUpperCase()}</span></div>
-<div class="row"><span>AMOUNT</span><span class="bold">₦${Number(thermalPreviewCode.amount).toLocaleString("en-NG", { minimumFractionDigits: 2 })}</span></div>
-${thermalPreviewCode.carrier_hint ? `<div class="row"><span>CARRIER</span><span class="bold">${thermalPreviewCode.carrier_hint}</span></div>` : ""}
+<div class="row"><span>TYPE</span><span class="bold">${escapeHtml(thermalPreviewCode.tx_type.toUpperCase())}</span></div>
+<div class="row"><span>AMOUNT</span><span class="bold">₦${escapeHtml(Number(thermalPreviewCode.amount).toLocaleString("en-NG", { minimumFractionDigits: 2 }))}</span></div>
+${thermalPreviewCode.carrier_hint ? `<div class="row"><span>CARRIER</span><span class="bold">${escapeHtml(thermalPreviewCode.carrier_hint)}</span></div>` : ""}
 <div class="row"><span>DATE</span><span>${now.toLocaleDateString("en-NG")}</span></div>
 <div class="row"><span>TIME</span><span>${now.toLocaleTimeString("en-NG", { hour: "2-digit", minute: "2-digit" })}</span></div>
 <div class="divider"></div>
-<div class="ussd">${thermalPreviewCode.ussd_string}</div>
-<div class="center" style="font-size:10px;color:#555;white-space:pre-wrap;margin-bottom:6px">${thermalPreviewCode.instructions}</div>
+<div class="ussd">${escapeHtml(thermalPreviewCode.ussd_string)}</div>
+<div class="center" style="font-size:10px;color:#555;white-space:pre-wrap;margin-bottom:6px">${escapeHtml(thermalPreviewCode.instructions)}</div>
 <div class="divider"></div>
 <div class="center" style="font-size:10px;color:#888;margin-bottom:4px">SCAN QR OR DIAL CODE TO COMPLETE</div>
 <div class="center" style="font-size:10px;color:#888">YOUR TRANSACTION OFFLINE</div>

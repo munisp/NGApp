@@ -280,7 +280,7 @@ const _txPatterns = {
   atomicBatch: async <T>(ops: (() => Promise<T>)[]): Promise<T[]> => {
     return withTransaction(async () => {
       const results: T[] = [];
-      results.push(...(await Promise.all(ops.map((op) => op()))));
+      results.push(...(await Promise.all(ops.map(op => op()))));
       return results;
     });
   },
