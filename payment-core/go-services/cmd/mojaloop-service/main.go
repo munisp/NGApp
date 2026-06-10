@@ -9,6 +9,7 @@ import (
 	"os"
 	"os/signal"
 	"strconv"
+	"strings"
 	"syscall"
 	"time"
 
@@ -167,10 +168,25 @@ func loggingMiddleware(next http.Handler) http.Handler {
 }
 
 func corsMiddleware(next http.Handler) http.Handler {
+	var allowed []string
+	if origins := os.Getenv("CORS_ALLOWED_ORIGINS"); origins != "" {
+		allowed = strings.Split(origins, ",")
+	} else {
+		allowed = []string{"https://app.paymentswitch.ng", "https://admin.paymentswitch.ng"}
+	}
+	allowedSet := make(map[string]bool, len(allowed))
+	for _, o := range allowed {
+		allowedSet[strings.TrimSpace(o)] = true
+	}
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		w.Header().Set("Access-Control-Allow-Origin", "*")
+		origin := r.Header.Get("Origin")
+		if allowedSet[origin] {
+			w.Header().Set("Access-Control-Allow-Origin", origin)
+			w.Header().Set("Vary", "Origin")
+		}
 		w.Header().Set("Access-Control-Allow-Methods", "GET, POST, PUT, DELETE, OPTIONS")
 		w.Header().Set("Access-Control-Allow-Headers", "Content-Type, Authorization")
+		w.Header().Set("Access-Control-Allow-Credentials", "true")
 
 		if r.Method == "OPTIONS" {
 			w.WriteHeader(http.StatusOK)

@@ -10,6 +10,9 @@ function validateEnv() {
   }
   
   if (!process.env.JWT_SECRET) {
+    if (process.env.NODE_ENV === "production") {
+      throw new Error("FATAL: JWT_SECRET environment variable is required in production");
+    }
     warnings.push("JWT_SECRET should be set for secure session tokens");
   }
   

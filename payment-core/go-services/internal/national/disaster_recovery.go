@@ -745,7 +745,14 @@ func (drm *DisasterRecoveryManager) getDataChecksums(ctx context.Context, region
 		"settlement_windows",
 	}
 
+	allowedTables := map[string]bool{
+		"transfers": true, "accounts": true, "settlements": true,
+		"participants": true, "positions": true, "settlement_windows": true,
+	}
 	for _, table := range tables {
+		if !allowedTables[table] {
+			continue
+		}
 		if drm.db != nil {
 			var checksum sql.NullString
 			query := fmt.Sprintf("SELECT MD5(STRING_AGG(t::text, '' ORDER BY id)) FROM %s t", table)

@@ -44,8 +44,23 @@ class OAuthService {
     }
   }
 
+  private static readonly ALLOWED_REDIRECT_HOSTS = new Set([
+    'app.paymentswitch.ng',
+    'admin.paymentswitch.ng',
+    'localhost',
+  ]);
+
   private decodeState(state: string): string {
     const redirectUri = atob(state);
+    try {
+      const url = new URL(redirectUri, 'https://app.paymentswitch.ng');
+      if (!OAuthService.ALLOWED_REDIRECT_HOSTS.has(url.hostname)) {
+        throw new Error(`Blocked redirect to untrusted host: ${url.hostname}`);
+      }
+    } catch (e) {
+      if (redirectUri.startsWith('/')) return redirectUri;
+      throw new Error('Invalid redirect URI in OAuth state');
+    }
     return redirectUri;
   }
 
