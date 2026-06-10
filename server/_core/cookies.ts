@@ -39,10 +39,19 @@ export function getSessionCookieOptions(
   //       ? hostname
   //       : undefined;
 
+  const secure = isSecureRequest(req);
+  const sameSiteEnv = process.env.SESSION_COOKIE_SAMESITE;
+  const sameSite: "lax" | "strict" | "none" =
+    sameSiteEnv === "strict" || sameSiteEnv === "lax" || sameSiteEnv === "none"
+      ? sameSiteEnv
+      : secure
+        ? "lax"
+        : "lax";
+
   return {
     httpOnly: true,
     path: "/",
-    sameSite: "none",
-    secure: isSecureRequest(req),
+    sameSite,
+    secure,
   };
 }

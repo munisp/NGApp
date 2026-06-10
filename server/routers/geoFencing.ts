@@ -312,7 +312,7 @@ export const geoFencingRouter = router({
   listZones: protectedProcedure.query(async () => {
     const db = await getDb();
     if (!db) return { zones: [], total: 0 };
-    const zones = await db.select().from(geofenceZones);
+    const zones = await db.select().from(geofenceZones).limit(500);
     return {
       zones: zones.map((z: any) => ({
         id: String(z.id),
