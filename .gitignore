@@ -7,6 +7,10 @@ dist/
 build/
 *.dist
 
+# Private keys (never commit)
+*.key
+**/privkey.pem
+
 # Environment variables
 .env
 .env.local

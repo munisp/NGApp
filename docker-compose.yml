@@ -86,7 +86,7 @@ services:
     command: serve
     environment:
       PERMIFY_DATABASE_ENGINE: postgres
-      PERMIFY_DATABASE_URI: "postgres://ndsep_user:${POSTGRES_PASSWORD:-ndsep_secure_2026}@postgres:5432/ndsep_db"
+      PERMIFY_DATABASE_URI: ${PERMIFY_DATABASE_URI:-postgres://ndsep_user:ndsep_dev@postgres:5432/ndsep_db}
     ports: ["3476:3476", "3478:3478"]
     healthcheck:
       test: ["CMD-SHELL", "wget -qO- http://localhost:3476/healthz || exit 1"]
@@ -217,7 +217,7 @@ services:
       dockerfile: Dockerfile
     ports: ["5000:5000"]
     environment:
-      DATABASE_URL: postgresql://ndsep_user:${POSTGRES_PASSWORD:-ndsep_secure_2026}@postgres:5432/ndsep_db
+      DATABASE_URL: ${DATABASE_URL:-postgresql://ndsep_user:ndsep_dev@postgres:5432/ndsep_db}
       REDIS_URL: redis://redis:6379
       JWT_SECRET: ${JWT_SECRET:-dev-jwt-secret-32-chars-minimum!!}
       NODE_ENV: development
@@ -276,7 +276,7 @@ services:
       dockerfile: dlq-processor/Dockerfile
     ports: ["9090:9090"]
     environment:
-      DATABASE_URL: postgresql://ndsep_user:${POSTGRES_PASSWORD:-ndsep_secure_2026}@postgres:5432/ndsep_db
+      DATABASE_URL: ${DATABASE_URL:-postgresql://ndsep_user:ndsep_dev@postgres:5432/ndsep_db}
       REDIS_URL: redis://redis:6379
     depends_on:
       postgres: { condition: service_healthy }
