@@ -198,7 +198,7 @@ export default function ComplianceEngine() {
             <span className="layer-badge">LAYER 3</span>
             <span className="data-label">OPA · Temporal · Policy Engine · Decision Hub</span>
           </div>
-          <h1 className="text-2xl font-bold tracking-tight">Compliance Engine</h1>
+          <h1 className="text-2xl font-bold">Compliance Engine</h1>
           <p className="text-muted-foreground mono text-sm mt-0.5">Policy enforcement · Residency checks · Cross-border detection · Automated remediation</p>
         </div>
         <Button size="sm" className="gap-1" onClick={() => setShowCreateViolation(true)}><Plus className="h-3.5 w-3.5" /> Log Violation</Button>

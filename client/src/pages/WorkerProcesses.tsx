@@ -147,7 +147,7 @@ export default function WorkerProcesses() {
       {/* Header */}
       <div className="flex items-center justify-between">
         <div>
-          <h1 className="text-2xl font-bold tracking-tight flex items-center gap-2">
+          <h1 className="text-2xl font-bold flex items-center gap-2">
             <Cpu className="h-6 w-6 text-primary" />
             Worker Processes
           </h1>

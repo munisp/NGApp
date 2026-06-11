@@ -78,7 +78,7 @@ export default function NetworkDPI() {
             <span className="layer-badge">LAYER 5</span>
             <span className="data-label">Suricata · nDPI · Zeek · APISIX · OpenAppSec</span>
           </div>
-          <h1 className="text-2xl font-bold tracking-tight">Network DPI & Exfiltration Prevention</h1>
+          <h1 className="text-2xl font-bold">Network DPI & Exfiltration Prevention</h1>
           <p className="text-muted-foreground mono text-sm mt-0.5">Deep packet inspection · Traffic analysis · Signature & anomaly detection · IXP enforcement</p>
         </div>
         <div className="flex items-center gap-2">

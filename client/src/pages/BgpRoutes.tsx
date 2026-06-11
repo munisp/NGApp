@@ -186,7 +186,7 @@ export default function BgpRoutes() {
       {/* Header */}
       <div className="flex items-center justify-between">
         <div>
-          <h1 className="text-2xl font-bold tracking-tight flex items-center gap-2">
+          <h1 className="text-2xl font-bold flex items-center gap-2">
             <Network className="h-6 w-6 text-blue-400" />
             BGP Route Monitor
           </h1>

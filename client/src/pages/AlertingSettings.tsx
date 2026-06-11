@@ -62,7 +62,7 @@ export default function AlertingSettings() {
       {/* Header */}
       <div className="flex items-start justify-between">
         <div>
-          <h1 className="text-2xl font-bold tracking-tight flex items-center gap-2">
+          <h1 className="text-2xl font-bold flex items-center gap-2">
             <Bell className="h-6 w-6 text-primary" />
             Alerting & Notification Settings
           </h1>

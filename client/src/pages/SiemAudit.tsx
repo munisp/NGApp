@@ -99,7 +99,7 @@ export default function SIEMAudit() {
             <span className="layer-badge">LAYER 4</span>
             <span className="data-label">Wazuh · Elastic SIEM · OpenSearch · OpenCTI</span>
           </div>
-          <h1 className="text-2xl font-bold tracking-tight">SIEM & Audit Trail</h1>
+          <h1 className="text-2xl font-bold">SIEM & Audit Trail</h1>
           <p className="text-muted-foreground mono text-sm mt-0.5">Continuous monitoring · Anomaly detection · Threat intelligence · 7-year audit log retention</p>
         </div>
         <div className="flex items-center gap-2">

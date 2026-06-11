@@ -337,7 +337,7 @@ export default function LivenessVerification() {
             <ScanFace className="w-6 h-6 text-primary" />
           </div>
           <div>
-            <h1 className="text-2xl font-bold tracking-tight">Liveness Verification</h1>
+            <h1 className="text-2xl font-bold">Liveness Verification</h1>
             <p className="text-sm text-muted-foreground">
               Biometric face detection, anti-spoofing, and deepfake analysis
             </p>

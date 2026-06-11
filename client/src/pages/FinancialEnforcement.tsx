@@ -214,7 +214,7 @@ export default function FinancialEnforcement() {
             <span className="layer-badge">FINANCIAL</span>
             <span className="data-label">TigerBeetle · Mojaloop · Temporal · Go</span>
           </div>
-          <h1 className="text-2xl font-bold tracking-tight">Financial Enforcement Loop</h1>
+          <h1 className="text-2xl font-bold">Financial Enforcement Loop</h1>
           <p className="text-muted-foreground mono text-sm mt-0.5">Immutable penalty ledger · Automated fine collection · Mojaloop payment switch · TigerBeetle ACID guarantees</p>
         </div>
         <div className="flex items-center gap-2">

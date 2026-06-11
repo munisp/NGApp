@@ -127,7 +127,7 @@ export default function Organizations() {
             <span className="layer-badge">ORG</span>
             <span className="data-label">Organization Registry · Compliance Profiles · Risk Scoring</span>
           </div>
-          <h1 className="text-2xl font-bold tracking-tight">Organization Registry</h1>
+          <h1 className="text-2xl font-bold">Organization Registry</h1>
           <p className="text-muted-foreground mono text-sm mt-0.5">All monitored organizations · Compliance status · Risk profiles · Enforcement history</p>
         </div>
         <div className="flex items-center gap-2">
