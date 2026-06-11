@@ -3,6 +3,7 @@
  * Dependency inventory, vulnerability scan results, CVE tracking
  */
 import { useState } from "react";
+import { Breadcrumbs } from "@/components/Breadcrumbs";
 import { trpc } from "@/lib/trpc";
 import { toast } from "sonner";
 import { Badge } from "@/components/ui/badge";
@@ -51,6 +52,7 @@ export default function SBOMViewer() {
   return (
     <>
       <div className="p-6 space-y-6">
+        <Breadcrumbs items={[{ label: "Security", href: "/security" }, { label: "SBOM Viewer" }]} />
         <div className="flex items-center justify-between">
           <div>
             <h1 className="text-2xl font-bold flex items-center gap-2">

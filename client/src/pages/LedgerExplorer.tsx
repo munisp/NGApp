@@ -1,5 +1,6 @@
 import { trpc } from "@/lib/trpc";
 import { useState, useMemo } from "react";
+import { Breadcrumbs } from "@/components/Breadcrumbs";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -94,6 +95,7 @@ export default function LedgerExplorer() {
 
   return (
     <div className="space-y-6">
+      <Breadcrumbs items={[{ label: "Banking", href: "/banking" }, { label: "Ledger Explorer" }]} />
       {/* Header */}
       <div className="flex items-start justify-between">
         <div>

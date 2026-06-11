@@ -10,6 +10,7 @@
  */
 import { useState } from "react";
 import { useParams, Link } from "wouter";
+import { Breadcrumbs } from "@/components/Breadcrumbs";
 import { toast } from "sonner";
 import { trpc } from "@/lib/trpc";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -327,13 +328,9 @@ export default function SectorComplianceDetail() {
   return (
     <>
       <div className="p-6 space-y-6">
+        <Breadcrumbs items={[{ label: "Sector Compliance", href: "/sector-compliance" }, { label: meta.name }]} />
         {/* Header */}
         <div className="flex items-center gap-4">
-          <Link href="/sector-compliance">
-            <Button variant="ghost" size="sm" className="text-muted-foreground hover:text-foreground">
-              <ArrowLeft className="w-4 h-4 mr-1" />Back
-            </Button>
-          </Link>
           <div className="flex items-center gap-3">
             <div className="p-2 rounded-lg bg-muted">
               <Icon className={`w-6 h-6 ${meta.color}`} />
