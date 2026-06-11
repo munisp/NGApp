@@ -54,7 +54,7 @@ export default function SectorBenchmarkDashboard() {
                 <SelectItem value="90">Last 90 days</SelectItem>
               </SelectContent>
             </Select>
-            <Button variant="outline" onClick={() => refetch()}><RefreshCw className="w-4 h-4" /></Button>
+            <Button variant="outline" onClick={() => refetch()} aria-label="Refresh"><RefreshCw className="w-4 h-4" /></Button>
           </div>
         </div>
 

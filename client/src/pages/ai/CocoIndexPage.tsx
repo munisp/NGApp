@@ -4,6 +4,7 @@ import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { RefreshCw, ArrowLeft, FileText, Clock, Database } from "lucide-react";
 import { Link } from "wouter";
+import { Breadcrumbs } from "@/components/Breadcrumbs";
 import { toast } from "sonner";
 
 export default function CocoIndexPage() {
@@ -16,6 +17,7 @@ export default function CocoIndexPage() {
 
   return (
     <div className="p-6 space-y-6">
+        <Breadcrumbs items={[{ label: "AI Hub", href: "/ai/hub" }, { label: "CocoIndex ETL" }]} />
       <div className="flex items-center gap-3">
         <Link href="/ai/hub"><Button variant="ghost" size="icon" aria-label="Go back"><ArrowLeft className="h-4 w-4" /></Button></Link>
         <RefreshCw className="h-7 w-7 text-yellow-500" />

@@ -6,6 +6,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Search, Database, FileText, ArrowLeft } from "lucide-react";
 import { Link } from "wouter";
+import { Breadcrumbs } from "@/components/Breadcrumbs";
 
 export default function VectorSearchPage() {
   const [query, setQuery] = useState("");
@@ -20,6 +21,7 @@ export default function VectorSearchPage() {
 
   return (
     <div className="p-6 space-y-6">
+        <Breadcrumbs items={[{ label: "AI Hub", href: "/ai/hub" }, { label: "Vector Search" }]} />
       <div className="flex items-center gap-3">
         <Link href="/ai/hub"><Button variant="ghost" size="icon" aria-label="Go back"><ArrowLeft className="h-4 w-4" /></Button></Link>
         <Search className="h-7 w-7 text-blue-500" />

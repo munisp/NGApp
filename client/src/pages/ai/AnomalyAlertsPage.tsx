@@ -4,6 +4,7 @@ import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Zap, ArrowLeft, AlertTriangle, CheckCircle, Search } from "lucide-react";
 import { Link } from "wouter";
+import { Breadcrumbs } from "@/components/Breadcrumbs";
 import { toast } from "sonner";
 
 const SEV_COLORS: Record<string, string> = {
@@ -31,6 +32,7 @@ export default function AnomalyAlertsPage() {
 
   return (
     <div className="p-6 space-y-6">
+        <Breadcrumbs items={[{ label: "AI Hub", href: "/ai/hub" }, { label: "Anomaly Alerts" }]} />
       <div className="flex items-center gap-3">
         <Link href="/ai/hub"><Button variant="ghost" size="icon" aria-label="Go back"><ArrowLeft className="h-4 w-4" /></Button></Link>
         <Zap className="h-7 w-7 text-pink-500" />

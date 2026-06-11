@@ -3,6 +3,7 @@ import { trpc } from "@/lib/trpc";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Printer, CheckCircle, ArrowLeft, ExternalLink, Shield, Loader2 } from "lucide-react";
+import { Breadcrumbs } from "@/components/Breadcrumbs";
 
 function qrDataUrl(text: string): string {
   // Simple QR placeholder — in production use a QR library
@@ -59,6 +60,7 @@ export default function PenaltyReceipt() {
   return (
     <div className="py-6 px-4">
       <div className="max-w-2xl mx-auto">
+        <Breadcrumbs items={[{ label: "Enforcement", href: "/enforcement-cases" }, { label: `Penalty Receipt #${id}` }]} />
         {/* Header actions */}
         <div className="flex items-center justify-between mb-8 print:hidden">
           <Link href="/portal">

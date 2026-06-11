@@ -8,6 +8,7 @@ import { Badge } from "@/components/ui/badge";
 import { Checkbox } from "@/components/ui/checkbox";
 import { toast } from "sonner";
 import { Link } from "wouter";
+import { Breadcrumbs } from "@/components/Breadcrumbs";
 import {
   CheckCircle, ChevronRight, ChevronLeft, Building2,
   Users, FileText, ShieldCheck, Plus, Trash2, AlertCircle,
@@ -203,6 +204,7 @@ export default function DpcoApply() {
         {/* Step 1 — Entity Details */}
         {step === 1 && (
           <div className="space-y-6">
+        <Breadcrumbs items={[{ label: "DPCO", href: "/dpco" }, { label: "Apply" }]} />
             <div>
               <h2 className="text-lg font-semibold text-foreground mb-1">Entity Details</h2>
               <p className="text-sm text-muted-foreground">Provide the legal details of your organisation applying for DPCO accreditation.</p>

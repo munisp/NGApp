@@ -169,7 +169,7 @@ export default function RemediationWorkflows() {
                       Update
                     </Button>
                   )}
-                  <Button size="sm" variant="outline" className="text-xs border-red-800 text-red-400 hover:bg-red-900/30 h-7 w-7 p-0" onClick={() => setDeleteId(w.id)}>
+                  <Button size="sm" variant="outline" className="text-xs border-red-800 text-red-400 hover:bg-red-900/30 h-7 w-7 p-0" onClick={() => setDeleteId(w.id)} aria-label="Delete">
                     <Trash2 className="w-3 h-3" />
                   </Button>
                 </td>

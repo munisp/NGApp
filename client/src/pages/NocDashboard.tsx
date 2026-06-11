@@ -13,6 +13,7 @@ import {
   Workflow, Globe, BarChart3, Timer, TrendingUp,
 } from "lucide-react";
 import { Link } from "wouter";
+import { Breadcrumbs } from "@/components/Breadcrumbs";
 
 // ── Helper ───────────────────────────────────────────────────────────────────
 
@@ -50,6 +51,7 @@ function OverviewTab() {
 
   return (
     <div className="space-y-6">
+        <Breadcrumbs items={[{ label: "Dashboard", href: "/" }, { label: "NOC Dashboard" }]} />
       {/* KPI Cards */}
       <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
         <Card className="bg-slate-800/60 border-slate-700">

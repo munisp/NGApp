@@ -221,7 +221,7 @@ function DpcoAiToolsInner() {
                   <div key={section} className="bg-background/60 border border-border rounded-lg p-4">
                     <div className="flex items-center justify-between mb-2">
                       <h3 className="text-xs font-semibold text-foreground">{section}</h3>
-                      <Button variant="ghost" size="sm" onClick={() => copyToClipboard(content as string)} className="h-6 w-6 p-0 text-muted-foreground hover:text-foreground"><Copy className="w-3 h-3" /></Button>
+                      <Button variant="ghost" size="sm" onClick={() => copyToClipboard(content as string)} className="h-6 w-6 p-0" aria-label="Copy text-muted-foreground hover:text-foreground"><Copy className="w-3 h-3" /></Button>
                     </div>
                     <p className="text-xs text-muted-foreground whitespace-pre-wrap leading-relaxed">{content as string}</p>
                   </div>

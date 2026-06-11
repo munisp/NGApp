@@ -6,6 +6,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Brain, MessageSquare, ArrowLeft, Send, Cpu } from "lucide-react";
 import { Link } from "wouter";
+import { Breadcrumbs } from "@/components/Breadcrumbs";
 
 interface ChatMessage {
   role: "user" | "assistant";
@@ -46,6 +47,7 @@ export default function LLMStudioPage() {
 
   return (
     <div className="p-6 space-y-6">
+        <Breadcrumbs items={[{ label: "AI Hub", href: "/ai/hub" }, { label: "LLM Studio" }]} />
       <div className="flex items-center gap-3">
         <Link href="/ai/hub"><Button variant="ghost" size="icon" aria-label="Go back"><ArrowLeft className="h-4 w-4" /></Button></Link>
         <Brain className="h-7 w-7 text-green-500" />

@@ -78,7 +78,7 @@ export default function CookieConsent() {
                   <td className="p-3">{r.functional_cookies ? <BarChart3 className="w-4 h-4 text-green-400" /> : <span className="text-muted-foreground">-</span>}</td>
                   <td className="p-3 text-muted-foreground text-xs">{r.created_at ? new Date(r.created_at).toLocaleDateString() : "-"}</td>
                   <td className="p-3 text-center">
-                    <Button size="sm" variant="outline" className="text-xs border-red-800 text-red-400 hover:bg-red-900/30 h-7 w-7 p-0" onClick={() => setDeleteId(r.id)}><Trash2 className="w-3 h-3" /></Button>
+                    <Button size="sm" variant="outline" className="text-xs border-red-800 text-red-400 hover:bg-red-900/30 h-7 w-7 p-0" onClick={() => setDeleteId(r.id)} aria-label="Delete"><Trash2 className="w-3 h-3" /></Button>
                   </td>
                 </tr>
               ))}

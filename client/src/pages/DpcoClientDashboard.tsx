@@ -1,6 +1,8 @@
 import { useState } from "react";
 import { useParams, useLocation } from "wouter";
+import { Breadcrumbs } from "@/components/Breadcrumbs";
 import { trpc } from "@/lib/trpc";
+import { PageSkeleton } from "@/components/SkeletonLoaders";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -64,11 +66,7 @@ export default function DpcoClientDashboard() {
 
   if (isLoading) {
     return (
-      <div className="p-8 space-y-4">
-        {[...Array(4)].map((_, i) => (
-          <div key={i} className="h-32 bg-muted animate-pulse rounded-lg" />
-        ))}
-      </div>
+      <div className="p-8"><PageSkeleton /></div>
     );
   }
 

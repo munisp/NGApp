@@ -336,7 +336,7 @@ export default function ComplianceEngine() {
                       <Badge variant="outline" className="mono text-[9px] capitalize">{policy.enforcementMode?.replace("_", " ")}</Badge>
                     </td>
                     <td className="px-4 py-2.5">
-                      <Button variant="ghost" size="sm" className="text-red-400 hover:text-red-300 h-7 w-7 p-0" onClick={() => setDeletePolicyId(policy.id)} disabled={deletePolicy.isPending}>
+                      <Button variant="ghost" size="sm" className="text-red-400 hover:text-red-300 h-7 w-7 p-0" onClick={() => setDeletePolicyId(policy.id)} disabled={deletePolicy.isPending} aria-label="Delete policy">
                         <Trash2 className="w-3.5 h-3.5" />
                       </Button>
                     </td>

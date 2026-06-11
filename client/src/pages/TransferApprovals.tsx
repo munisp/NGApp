@@ -313,8 +313,8 @@ export default function TransferApprovals() {
                           </Button>
                         </>
                       )}
-                      <Button size="sm" variant="outline" className="border-red-800 text-red-400 hover:bg-red-900/30 h-7 w-7 p-0" onClick={() => setDeleteId(t.id)}><Trash2 className="w-3 h-3" /></Button>
-                      <button onClick={() => setExpandedId(isExpanded ? null : t.id)} className="text-muted-foreground hover:text-foreground transition-colors">
+                      <Button size="sm" variant="outline" className="border-red-800 text-red-400 hover:bg-red-900/30 h-7 w-7 p-0" onClick={() => setDeleteId(t.id)} aria-label="Delete transfer"><Trash2 className="w-3 h-3" /></Button>
+                      <button onClick={() => setExpandedId(isExpanded ? null : t.id)} className="text-muted-foreground hover:text-foreground transition-colors" aria-label={isExpanded ? "Collapse" : "Expand"}>
                         {isExpanded ? <ChevronUp className="w-4 h-4" /> : <ChevronDown className="w-4 h-4" />}
                       </button>
                     </div>

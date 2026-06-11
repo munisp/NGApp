@@ -344,9 +344,9 @@ export default function AssetGraph() {
               {Object.keys(TYPE_COLORS).map(t => <SelectItem key={t} value={t}>{t}</SelectItem>)}
             </SelectContent>
           </Select>
-          <Button size="sm" variant="outline" className="border-border" onClick={() => handleZoom(1.3)}><ZoomIn className="w-4 h-4" /></Button>
-          <Button size="sm" variant="outline" className="border-border" onClick={() => handleZoom(0.7)}><ZoomOut className="w-4 h-4" /></Button>
-          <Button size="sm" variant="outline" className="border-border" onClick={() => refetch()}><RefreshCw className="w-4 h-4" /></Button>
+          <Button size="sm" variant="outline" className="border-border" onClick={() => handleZoom(1.3)} aria-label="Zoom in"><ZoomIn className="w-4 h-4" /></Button>
+          <Button size="sm" variant="outline" className="border-border" onClick={() => handleZoom(0.7)} aria-label="Zoom out"><ZoomOut className="w-4 h-4" /></Button>
+          <Button size="sm" variant="outline" className="border-border" onClick={() => refetch()} aria-label="Refresh"><RefreshCw className="w-4 h-4" /></Button>
           <Button size="sm" className="bg-emerald-600 hover:bg-emerald-700 text-foreground" onClick={() => setShowAddDialog(true)}><Plus className="w-4 h-4 mr-1" /> Add Asset</Button>
           {selectedNode && (
             <Button size="sm" variant="outline" className="border-red-700 text-red-400 hover:bg-red-900/20" onClick={() => deleteMutation.mutate({ id: selectedNode.id })} disabled={deleteMutation.isPending}>

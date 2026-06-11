@@ -2,6 +2,7 @@ import React from "react";
 import { useState } from "react";
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from "@/components/ui/alert-dialog";
 import { trpc } from "@/lib/trpc";
+import { PageSkeleton } from "@/components/SkeletonLoaders";
 import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -70,7 +71,7 @@ export default function DpiaAssessments() {
           <Button onClick={() => setShowCreate(true)} className="bg-primary hover:bg-primary/90 text-foreground"><Plus className="w-4 h-4 mr-2" />New DPIA</Button>
         </div>
         <div className="space-y-3">
-          {isLoading ? <div className="text-center py-8 text-muted-foreground/70">Loading...</div>
+          {isLoading ? <PageSkeleton />
           : filtered.length === 0 ? <div className="text-center py-8 text-muted-foreground/70">No DPIA assessments found</div>
           : filtered.map((r: any) => (
             <div key={r.id} className="bg-card border border-border rounded-xl p-4">

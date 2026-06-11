@@ -56,7 +56,7 @@ export default function SectorManagement() {
                 <td className="px-4 py-3 text-muted-foreground text-xs">{s.regulatoryFramework || "—"}</td>
                 <td className="px-4 py-3 text-muted-foreground text-xs">{s.parentId ? <span className="flex items-center gap-1"><ChevronRight className="w-3 h-3" />Sub-sector</span> : "Root"}</td>
                 <td className="px-4 py-3">
-                  <Button variant="ghost" size="sm" className="text-red-400 hover:text-red-300 hover:bg-red-900/20 h-7 w-7 p-0" onClick={() => setDeleteId(s.id)} disabled={deleteMutation.isPending}>
+                  <Button variant="ghost" size="sm" className="text-red-400 hover:text-red-300 hover:bg-red-900/20 h-7 w-7 p-0" onClick={() => setDeleteId(s.id)} disabled={deleteMutation.isPending} aria-label="Delete sector">
                     <Trash2 className="w-3.5 h-3.5" />
                   </Button>
                 </td>

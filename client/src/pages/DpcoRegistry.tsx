@@ -271,7 +271,7 @@ export default function DpcoRegistry() {
                           <ExternalLink className="w-4 h-4" />
                         </a>
                       )}
-                      <Button size="sm" variant="outline" className="text-xs border-red-500/30 text-red-600 hover:bg-red-100 h-7 w-7 p-0" onClick={() => setDeleteId(dpco.id)}><Trash2 className="w-3 h-3" /></Button>
+                      <Button size="sm" variant="outline" className="text-xs border-red-500/30 text-red-600 hover:bg-red-100 h-7 w-7 p-0" onClick={() => setDeleteId(dpco.id)} aria-label="Delete DPCO"><Trash2 className="w-3 h-3" /></Button>
                     </td>
                   </tr>
                 );
