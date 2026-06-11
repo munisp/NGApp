@@ -149,7 +149,7 @@ export default function Phase13ConsentRecords() {
                     {topWithdrawals.map((w) => (
                       <div key={String(w.id)} className="flex items-center justify-between text-xs">
                         <span className="truncate max-w-48">{String(w.name ?? '—')}</span>
-                        <Badge variant="outline" className={Number(w.withdrawal_rate ?? 0) > 30 ? "border-red-300 text-red-700" : ""}>{String(w.withdrawal_rate ?? 0)}%</Badge>
+                        <Badge variant="outline" className={Number(w.withdrawal_rate ?? 0) > 30 ? "border-red-500/30 text-red-700" : ""}>{String(w.withdrawal_rate ?? 0)}%</Badge>
                       </div>
                     ))}
                   </div>

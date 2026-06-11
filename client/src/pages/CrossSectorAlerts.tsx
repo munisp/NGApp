@@ -9,20 +9,20 @@ import { toast } from "sonner";
 import { exportToCsv } from "@/lib/safeExport";
 
 const SECTOR_COLORS: Record<string, string> = {
-  banking: "bg-blue-100 text-blue-800",
-  telecom: "bg-purple-100 text-purple-800",
-  healthcare: "bg-green-100 text-green-800",
-  energy: "bg-orange-100 text-orange-800",
-  insurance: "bg-pink-100 text-pink-800",
-  fintech: "bg-cyan-100 text-cyan-800",
-  ndpa: "bg-red-100 text-red-800",
+  banking: "bg-blue-500/15 text-blue-600 dark:text-blue-400",
+  telecom: "bg-purple-500/15 text-purple-600 dark:text-purple-400",
+  healthcare: "bg-green-500/15 text-green-600 dark:text-green-400",
+  energy: "bg-orange-500/15 text-orange-600 dark:text-orange-400",
+  insurance: "bg-pink-500/15 text-pink-600 dark:text-pink-400",
+  fintech: "bg-cyan-500/15 text-cyan-600 dark:text-cyan-400",
+  ndpa: "bg-red-500/15 text-red-600 dark:text-red-400",
 };
 
 const SEVERITY_COLORS: Record<string, string> = {
-  critical: "bg-red-100 text-red-800 border-red-300",
-  high: "bg-orange-100 text-orange-800 border-orange-300",
-  medium: "bg-yellow-100 text-yellow-800 border-yellow-300",
-  low: "bg-green-100 text-green-800 border-green-300",
+  critical: "bg-red-500/15 text-red-600 dark:text-red-400 border-red-500/30",
+  high: "bg-orange-500/15 text-orange-600 dark:text-orange-400 border-orange-500/30",
+  medium: "bg-yellow-500/15 text-yellow-600 dark:text-yellow-400 border-yellow-500/30",
+  low: "bg-green-500/15 text-green-600 dark:text-green-400 border-green-500/30",
 };
 
 // Cross-sector alerts are derived from violations + enforcement cases across all sectors
@@ -207,7 +207,7 @@ export default function CrossSectorAlerts() {
                     <div className="flex items-center gap-2 flex-wrap">
                       <span className="font-semibold">{alert.org?.name ?? `Organisation #${alert.orgId}`}</span>
                       {alert.isCrossSector && (
-                        <Badge variant="outline" className="text-purple-700 border-purple-300 bg-purple-50">
+                        <Badge variant="outline" className="text-purple-700 border-purple-500/30 bg-purple-50">
                           Multi-Sector
                         </Badge>
                       )}

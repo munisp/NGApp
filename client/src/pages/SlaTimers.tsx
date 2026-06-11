@@ -30,14 +30,14 @@ const REGULATORY_SLAS = [
 ];
 
 const SECTOR_COLORS: Record<string, string> = {
-  NDPA: "bg-red-100 text-red-800",
-  Banking: "bg-blue-100 text-blue-800",
-  Telecom: "bg-purple-100 text-purple-800",
-  Healthcare: "bg-green-100 text-green-800",
-  Energy: "bg-orange-100 text-orange-800",
-  Insurance: "bg-pink-100 text-pink-800",
-  Fintech: "bg-cyan-100 text-cyan-800",
-  DPCO: "bg-indigo-100 text-indigo-800",
+  NDPA: "bg-red-500/15 text-red-600 dark:text-red-400",
+  Banking: "bg-blue-500/15 text-blue-600 dark:text-blue-400",
+  Telecom: "bg-purple-500/15 text-purple-600 dark:text-purple-400",
+  Healthcare: "bg-green-500/15 text-green-600 dark:text-green-400",
+  Energy: "bg-orange-500/15 text-orange-600 dark:text-orange-400",
+  Insurance: "bg-pink-500/15 text-pink-600 dark:text-pink-400",
+  Fintech: "bg-cyan-500/15 text-cyan-600 dark:text-cyan-400",
+  DPCO: "bg-indigo-500/15 text-indigo-600 dark:text-indigo-400",
 };
 
 function formatCountdown(hoursRemaining: number): string {

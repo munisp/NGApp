@@ -7,10 +7,10 @@ import { Link } from "wouter";
 import { toast } from "sonner";
 
 const SEV_COLORS: Record<string, string> = {
-  critical: "bg-red-100 text-red-800 border-red-200",
-  high: "bg-orange-100 text-orange-800 border-orange-200",
-  medium: "bg-yellow-100 text-yellow-800 border-yellow-200",
-  low: "bg-blue-100 text-blue-800 border-blue-200",
+  critical: "bg-red-500/15 text-red-600 dark:text-red-400 border-red-500/20",
+  high: "bg-orange-500/15 text-orange-600 dark:text-orange-400 border-orange-500/20",
+  medium: "bg-yellow-500/15 text-yellow-600 dark:text-yellow-400 border-yellow-500/20",
+  low: "bg-blue-500/15 text-blue-600 dark:text-blue-400 border-blue-500/20",
 };
 
 export default function AnomalyAlertsPage() {

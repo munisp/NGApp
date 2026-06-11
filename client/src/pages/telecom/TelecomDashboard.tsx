@@ -29,17 +29,17 @@ function StatCard({ label, value, sub, color }: { label: string; value: string |
 }
 
 function severityBadge(s: string) {
-  const map: Record<string, string> = { critical: "bg-red-100 text-red-800", high: "bg-orange-100 text-orange-800", medium: "bg-yellow-100 text-yellow-800", low: "bg-blue-100 text-blue-800" };
+  const map: Record<string, string> = { critical: "bg-red-500/15 text-red-600 dark:text-red-400", high: "bg-orange-500/15 text-orange-600 dark:text-orange-400", medium: "bg-yellow-500/15 text-yellow-600 dark:text-yellow-400", low: "bg-blue-500/15 text-blue-600 dark:text-blue-400" };
   return <Badge className={map[s] ?? "bg-muted text-foreground"}>{s}</Badge>;
 }
 
 function statusBadge(s: string) {
   const map: Record<string, string> = {
-    open: "bg-red-100 text-red-800", under_investigation: "bg-yellow-100 text-yellow-800",
-    resolved: "bg-green-100 text-green-800", active: "bg-green-100 text-green-800",
-    pending_renewal: "bg-orange-100 text-orange-800", suspended: "bg-red-100 text-red-800",
-    fulfilled: "bg-green-100 text-green-800", pending: "bg-yellow-100 text-yellow-800",
-    mediation: "bg-blue-100 text-blue-800", filed: "bg-muted text-foreground",
+    open: "bg-red-500/15 text-red-600 dark:text-red-400", under_investigation: "bg-yellow-500/15 text-yellow-600 dark:text-yellow-400",
+    resolved: "bg-green-500/15 text-green-600 dark:text-green-400", active: "bg-green-500/15 text-green-600 dark:text-green-400",
+    pending_renewal: "bg-orange-500/15 text-orange-600 dark:text-orange-400", suspended: "bg-red-500/15 text-red-600 dark:text-red-400",
+    fulfilled: "bg-green-500/15 text-green-600 dark:text-green-400", pending: "bg-yellow-500/15 text-yellow-600 dark:text-yellow-400",
+    mediation: "bg-blue-500/15 text-blue-600 dark:text-blue-400", filed: "bg-muted text-foreground",
   };
   return <Badge className={map[s] ?? "bg-muted text-foreground"}>{s.replace(/_/g, " ")}</Badge>;
 }
@@ -288,7 +288,7 @@ export default function TelecomDashboard() {
                     <td className="px-3 py-2 text-xs">{li.requesting_agency}</td>
                     <td className="px-3 py-2 font-mono text-xs">{li.court_order_ref}</td>
                     <td className="px-3 py-2 text-xs">{li.request_type?.replace(/_/g, " ")}</td>
-                    <td className="px-3 py-2">{li.is_urgent ? <Badge className="bg-red-100 text-red-800">Urgent</Badge> : "No"}</td>
+                    <td className="px-3 py-2">{li.is_urgent ? <Badge className="bg-red-500/15 text-red-600 dark:text-red-400">Urgent</Badge> : "No"}</td>
                     <td className="px-3 py-2">{li.data_retention_days}</td>
                     <td className="px-3 py-2">{statusBadge(li.status)}</td>
                     <td className="px-3 py-2 text-xs">{li.requested_at?.slice(0, 10)}</td>

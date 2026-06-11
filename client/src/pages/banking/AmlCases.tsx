@@ -12,12 +12,12 @@ import { toast } from "sonner";
 import { Search, Plus, AlertTriangle, FileText, TrendingUp, Shield, Filter, X, Activity } from "lucide-react";
 
 const STATUS_COLORS: Record<string, string> = {
-  open: "bg-red-100 text-red-800",
-  under_investigation: "bg-yellow-100 text-yellow-800",
-  escalated: "bg-orange-100 text-orange-800",
-  filed_str: "bg-blue-100 text-blue-800",
-  closed_no_action: "bg-green-100 text-green-800",
-  closed_action_taken: "bg-emerald-100 text-emerald-800",
+  open: "bg-red-500/15 text-red-600 dark:text-red-400",
+  under_investigation: "bg-yellow-500/15 text-yellow-600 dark:text-yellow-400",
+  escalated: "bg-orange-500/15 text-orange-600 dark:text-orange-400",
+  filed_str: "bg-blue-500/15 text-blue-600 dark:text-blue-400",
+  closed_no_action: "bg-green-500/15 text-green-600 dark:text-green-400",
+  closed_action_taken: "bg-emerald-500/15 text-emerald-600 dark:text-emerald-400",
   closed: "bg-muted text-foreground",
 };
 
@@ -225,7 +225,7 @@ export default function AmlCases() {
 
       {/* Collapsible Filter Panel */}
       {showFilters && (
-        <Card className="border-blue-200 bg-blue-50/30">
+        <Card className="border-blue-500/20 bg-blue-50/30">
           <CardHeader className="pb-3">
             <CardTitle className="text-sm text-blue-800">Advanced Filters</CardTitle>
           </CardHeader>
@@ -322,8 +322,8 @@ export default function AmlCases() {
                     <td className="px-4 py-3 font-mono text-xs">{c.case_ref}</td>
                     <td className="px-4 py-3 text-xs font-medium">
                       {c.subject_name}
-                      {c.pep_match ? <Badge className="ml-1 bg-red-100 text-red-700 text-xs">PEP</Badge> : null}
-                      {c.sanctions_match ? <Badge className="ml-1 bg-red-100 text-red-700 text-xs">SANC</Badge> : null}
+                      {c.pep_match ? <Badge className="ml-1 bg-red-500/15 text-red-600 dark:text-red-400 text-xs">PEP</Badge> : null}
+                      {c.sanctions_match ? <Badge className="ml-1 bg-red-500/15 text-red-600 dark:text-red-400 text-xs">SANC</Badge> : null}
                     </td>
                     <td className="px-4 py-3 text-xs">{c.case_type?.replace(/_/g, " ")}</td>
                     <td className="px-4 py-3">
@@ -343,7 +343,7 @@ export default function AmlCases() {
                       </Badge>
                     </td>
                     <td className="px-4 py-3">
-                      {c.str_reference ? <Badge className="bg-blue-100 text-blue-700">Filed</Badge> : <span className="text-muted-foreground">—</span>}
+                      {c.str_reference ? <Badge className="bg-blue-500/15 text-blue-600 dark:text-blue-400">Filed</Badge> : <span className="text-muted-foreground">—</span>}
                     </td>
                     <td className="px-4 py-3 text-xs text-muted-foreground">{c.assigned_to || "Unassigned"}</td>
                     <td className="px-4 py-3 text-xs text-muted-foreground">

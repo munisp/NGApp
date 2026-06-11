@@ -30,10 +30,10 @@ function StatCard({ label, value, sub, color }: { label: string; value: string |
 
 function statusBadge(s: string) {
   const map: Record<string, string> = {
-    active: "bg-green-100 text-green-800", suspended: "bg-red-100 text-red-800",
-    settled: "bg-green-100 text-green-800", approved: "bg-blue-100 text-blue-800",
-    under_investigation: "bg-yellow-100 text-yellow-800", rejected: "bg-red-100 text-red-800",
-    expired: "bg-muted text-foreground", pending: "bg-yellow-100 text-yellow-800",
+    active: "bg-green-500/15 text-green-600 dark:text-green-400", suspended: "bg-red-500/15 text-red-600 dark:text-red-400",
+    settled: "bg-green-500/15 text-green-600 dark:text-green-400", approved: "bg-blue-500/15 text-blue-600 dark:text-blue-400",
+    under_investigation: "bg-yellow-500/15 text-yellow-600 dark:text-yellow-400", rejected: "bg-red-500/15 text-red-600 dark:text-red-400",
+    expired: "bg-muted text-foreground", pending: "bg-yellow-500/15 text-yellow-600 dark:text-yellow-400",
   };
   return <Badge className={map[s] ?? "bg-muted text-foreground"}>{s.replace(/_/g, " ")}</Badge>;
 }
@@ -150,7 +150,7 @@ export default function InsuranceDashboard() {
                     <td className="px-3 py-2">{p.sum_insured_ngn ? fmtNgn(p.sum_insured_ngn) : "—"}</td>
                     <td className="px-3 py-2">{p.annual_premium_ngn ? `₦${fmt(p.annual_premium_ngn)}` : "—"}</td>
                     <td className="px-3 py-2">{p.data_storage_country}</td>
-                    <td className="px-3 py-2">{p.cross_border_reinsurance ? <Badge className="bg-orange-100 text-orange-800">Yes</Badge> : "No"}</td>
+                    <td className="px-3 py-2">{p.cross_border_reinsurance ? <Badge className="bg-orange-500/15 text-orange-600 dark:text-orange-400">Yes</Badge> : "No"}</td>
                     <td className="px-3 py-2">{p.reinsurance_country ?? "—"}</td>
                     <td className="px-3 py-2">{statusBadge(p.status)}</td>
                   </tr>

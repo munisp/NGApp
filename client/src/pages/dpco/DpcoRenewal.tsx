@@ -96,10 +96,10 @@ export default function DpcoRenewal() {
             </div>
             <div className="text-right">
               <Badge className={`text-xs border ${
-                expiryStatus === "expired" ? "bg-red-100 text-red-700 border-red-300" :
-                expiryStatus === "critical" ? "bg-red-100 text-red-700 border-red-300" :
+                expiryStatus === "expired" ? "bg-red-500/15 text-red-600 dark:text-red-400 border-red-500/30" :
+                expiryStatus === "critical" ? "bg-red-500/15 text-red-600 dark:text-red-400 border-red-500/30" :
                 expiryStatus === "warning" ? "bg-amber-500/20 text-amber-300 border-amber-500/30" :
-                "bg-emerald-100 text-emerald-700 border-emerald-300"
+                "bg-emerald-500/15 text-emerald-600 dark:text-emerald-400 border-emerald-500/30"
               }`}>
                 {expiryStatus === "expired" ? "Expired" :
                  expiryStatus === "critical" ? `Expires in ${daysUntilExpiry} days` :

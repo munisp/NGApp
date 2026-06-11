@@ -14,10 +14,10 @@ import { Label } from "@/components/ui/label";
 import { CreditCard, Search, AlertCircle, CheckCircle2, Clock, DollarSign } from "lucide-react";
 
 const statusColor: Record<string, string> = {
-  pending: "bg-yellow-100 text-yellow-800",
-  paid: "bg-green-100 text-green-800",
-  overdue: "bg-red-100 text-red-800",
-  partial: "bg-blue-100 text-blue-800",
+  pending: "bg-yellow-500/15 text-yellow-600 dark:text-yellow-400",
+  paid: "bg-green-500/15 text-green-600 dark:text-green-400",
+  overdue: "bg-red-500/15 text-red-600 dark:text-red-400",
+  partial: "bg-blue-500/15 text-blue-600 dark:text-blue-400",
   waived: "bg-muted text-foreground",
 };
 

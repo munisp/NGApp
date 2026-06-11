@@ -16,19 +16,19 @@ import {
 import { toast } from "sonner";
 
 const severityColor: Record<string, string> = {
-  critical: "bg-red-100 text-red-800",
-  high: "bg-orange-100 text-orange-800",
-  medium: "bg-yellow-100 text-yellow-800",
-  low: "bg-blue-100 text-blue-800",
+  critical: "bg-red-500/15 text-red-600 dark:text-red-400",
+  high: "bg-orange-500/15 text-orange-600 dark:text-orange-400",
+  medium: "bg-yellow-500/15 text-yellow-600 dark:text-yellow-400",
+  low: "bg-blue-500/15 text-blue-600 dark:text-blue-400",
 };
 
 const statusColor: Record<string, string> = {
-  active: "bg-green-100 text-green-800",
-  completed: "bg-green-100 text-green-800",
-  pending: "bg-yellow-100 text-yellow-800",
-  overdue: "bg-red-100 text-red-800",
+  active: "bg-green-500/15 text-green-600 dark:text-green-400",
+  completed: "bg-green-500/15 text-green-600 dark:text-green-400",
+  pending: "bg-yellow-500/15 text-yellow-600 dark:text-yellow-400",
+  overdue: "bg-red-500/15 text-red-600 dark:text-red-400",
   draft: "bg-muted text-foreground",
-  signed: "bg-blue-100 text-blue-800",
+  signed: "bg-blue-500/15 text-blue-600 dark:text-blue-400",
 };
 
 export default function DpcoClientDashboard() {

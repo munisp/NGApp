@@ -10,10 +10,10 @@ import { LineChart, Line, Tooltip, ResponsiveContainer } from "recharts";
 import { toast } from "sonner";
 
 const statusColor: Record<string, string> = {
-  compliant: "bg-emerald-100 text-emerald-800",
-  non_compliant: "bg-red-100 text-red-800",
-  under_review: "bg-amber-100 text-amber-800",
-  remediation: "bg-orange-100 text-orange-800",
+  compliant: "bg-emerald-500/15 text-emerald-600 dark:text-emerald-400",
+  non_compliant: "bg-red-500/15 text-red-600 dark:text-red-400",
+  under_review: "bg-amber-500/15 text-amber-600 dark:text-amber-400",
+  remediation: "bg-orange-500/15 text-orange-600 dark:text-orange-400",
 };
 
 const statusIcon: Record<string, ReactElement> = {
@@ -91,12 +91,12 @@ function LeaderboardRow({ org, expanded, onToggle }: {
           <div className="flex items-center gap-2 flex-wrap">
             <span className="font-medium text-foreground text-sm truncate">{org.name}</span>
             {org.certified && (
-              <Badge className="bg-emerald-100 text-emerald-800 text-[10px] px-1.5 py-0 flex items-center gap-0.5">
+              <Badge className="bg-emerald-500/15 text-emerald-600 dark:text-emerald-400 text-[10px] px-1.5 py-0 flex items-center gap-0.5">
                 <Shield className="h-2.5 w-2.5" /> Certified
               </Badge>
             )}
             {org.agentInstalled && (
-              <Badge className="bg-blue-100 text-blue-800 text-[10px] px-1.5 py-0">Agent</Badge>
+              <Badge className="bg-blue-500/15 text-blue-600 dark:text-blue-400 text-[10px] px-1.5 py-0">Agent</Badge>
             )}
           </div>
           <p className="text-xs text-muted-foreground mt-0.5">{org.sector} · {org.country}</p>
@@ -272,13 +272,13 @@ export default function ComplianceLeaderboard() {
 
       {/* Top 3 podium */}
       {topCertified.length > 0 && (
-        <div className="bg-gradient-to-r from-amber-50 to-yellow-50 border border-amber-200 rounded-xl p-5">
+        <div className="bg-gradient-to-r from-amber-50 to-yellow-50 border border-amber-500/20 rounded-xl p-5">
           <h2 className="text-sm font-semibold text-amber-800 mb-3 flex items-center gap-1">
             <Star className="h-4 w-4" /> Top Certified Organisations
           </h2>
           <div className="flex gap-4 flex-wrap">
             {topCertified.map(org => (
-              <div key={org.id} className="flex items-center gap-2 bg-background border border-amber-200 rounded-lg px-3 py-2 shadow-sm">
+              <div key={org.id} className="flex items-center gap-2 bg-background border border-amber-500/20 rounded-lg px-3 py-2 shadow-sm">
                 <RankBadge rank={org.rank} />
                 <div>
                   <p className="text-sm font-semibold text-foreground">{org.name}</p>

@@ -26,7 +26,7 @@ export default function NotificationCenter() {
       </div>
       <div className="flex items-center gap-3">
         <Badge variant="secondary">{list?.total??0} total</Badge>
-        <Badge className="bg-red-100 text-red-800">{list?.unreadCount??0} unread</Badge>
+        <Badge className="bg-red-500/15 text-red-600 dark:text-red-400">{list?.unreadCount??0} unread</Badge>
       </div>
       <div className="space-y-2">
         {(list?.data??[]).map((n:any)=>{

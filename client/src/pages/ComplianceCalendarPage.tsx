@@ -15,10 +15,10 @@ import { Textarea } from "@/components/ui/textarea";
 import { Calendar, AlertTriangle, Clock, CheckCircle2, Plus } from "lucide-react";
 
 const priorityColor: Record<string, string> = {
-  critical: "bg-red-100 text-red-800",
-  high: "bg-orange-100 text-orange-800",
-  medium: "bg-yellow-100 text-yellow-800",
-  low: "bg-blue-100 text-blue-800",
+  critical: "bg-red-500/15 text-red-600 dark:text-red-400",
+  high: "bg-orange-500/15 text-orange-600 dark:text-orange-400",
+  medium: "bg-yellow-500/15 text-yellow-600 dark:text-yellow-400",
+  low: "bg-blue-500/15 text-blue-600 dark:text-blue-400",
 };
 
 const deadlineTypeLabel: Record<string, string> = {
@@ -125,7 +125,7 @@ export default function ComplianceCalendarPage() {
 
         {/* Overdue alerts */}
         {overdueData.length > 0 && (
-          <div className="border border-red-200 bg-red-50 rounded-lg p-4">
+          <div className="border border-red-500/20 bg-red-50 rounded-lg p-4">
             <h3 className="font-semibold text-red-800 flex items-center gap-2 mb-3">
               <AlertTriangle className="w-4 h-4" />{overdueData.length} Overdue Deadline{overdueData.length > 1 ? 's' : ''}
             </h3>
@@ -136,7 +136,7 @@ export default function ComplianceCalendarPage() {
                     <div className="font-medium text-sm">{d.title}</div>
                     <div className="text-xs text-red-600">{Math.abs(daysUntil(d.due_date))} days overdue</div>
                   </div>
-                  <Badge className="bg-red-100 text-red-800">{deadlineTypeLabel[d.deadline_type] ?? d.deadline_type}</Badge>
+                  <Badge className="bg-red-500/15 text-red-600 dark:text-red-400">{deadlineTypeLabel[d.deadline_type] ?? d.deadline_type}</Badge>
                 </div>
               ))}
             </div>
@@ -173,7 +173,7 @@ export default function ComplianceCalendarPage() {
                       </span>
                     </td>
                     <td className="p-3"><Badge className={priorityColor[d.priority] ?? "bg-muted"}>{d.priority}</Badge></td>
-                    <td className="p-3"><Badge className={d.status === 'completed' ? "bg-green-100 text-green-800" : "bg-yellow-100 text-yellow-800"}>{d.status}</Badge></td>
+                    <td className="p-3"><Badge className={d.status === 'completed' ? "bg-green-500/15 text-green-600 dark:text-green-400" : "bg-yellow-500/15 text-yellow-600 dark:text-yellow-400"}>{d.status}</Badge></td>
                     <td className="p-3">
                       {d.status !== 'completed' && (
                         <Button size="sm" variant="outline" onClick={() => completeMut.mutate({ title: d.title, deadlineType: d.deadline_type, dueDate: d.due_date, priority: d.priority, notes: 'Completed' })} disabled={completeMut.isPending}>

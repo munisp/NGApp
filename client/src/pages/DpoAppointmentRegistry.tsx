@@ -19,7 +19,7 @@ export default function DpoAppointmentRegistry() {
   const orgs = trpc.organizations.list.useQuery({ limit:200 }).data ?? [];
   const createM = trpc.dpoAppointments.create.useMutation({ onSuccess:()=>{ toast.success("DPO appointment registered"); setOpen(false); refetch(); }, onError:(e)=>toast.error((e instanceof Error ? e.message : String(e))) });
   const verifyM = trpc.dpoAppointments.verify.useMutation({ onSuccess:()=>{ toast.success("DPO verified"); refetch(); }, onError:(e)=>toast.error((e instanceof Error ? e.message : String(e))) });
-  const CRED_COLORS: Record<string,string> = { verified:"bg-green-100 text-green-800", pending:"bg-yellow-100 text-yellow-800", expired:"bg-red-100 text-red-800", suspended:"bg-muted text-foreground" };
+  const CRED_COLORS: Record<string,string> = { verified:"bg-green-500/15 text-green-600 dark:text-green-400", pending:"bg-yellow-500/15 text-yellow-600 dark:text-yellow-400", expired:"bg-red-500/15 text-red-600 dark:text-red-400", suspended:"bg-muted text-foreground" };
   return (
     <div className="p-6 space-y-6">
       <div className="flex items-center justify-between">

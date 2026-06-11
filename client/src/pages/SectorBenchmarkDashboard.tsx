@@ -65,7 +65,7 @@ export default function SectorBenchmarkDashboard() {
               <div className="text-xs text-muted-foreground uppercase tracking-wide">{b.sector}</div>
               <div className="text-3xl font-bold mt-1">{Math.round(b.avg_score ?? 0)}<span className="text-sm font-normal text-muted-foreground">/100</span></div>
               <div className="text-xs text-muted-foreground mt-1">{b.org_count} organisations</div>
-              <Badge className={b.avg_score >= 75 ? "bg-green-100 text-green-800 mt-2" : b.avg_score >= 50 ? "bg-yellow-100 text-yellow-800 mt-2" : "bg-red-100 text-red-800 mt-2"}>
+              <Badge className={b.avg_score >= 75 ? "bg-green-500/15 text-green-600 dark:text-green-400 mt-2" : b.avg_score >= 50 ? "bg-yellow-500/15 text-yellow-600 dark:text-yellow-400 mt-2" : "bg-red-500/15 text-red-600 dark:text-red-400 mt-2"}>
                 {b.avg_score >= 75 ? "Compliant" : b.avg_score >= 50 ? "At Risk" : "Non-Compliant"}
               </Badge>
             </div>

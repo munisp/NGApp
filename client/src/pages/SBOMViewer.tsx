@@ -12,10 +12,10 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Package, Shield, AlertTriangle, Search, Download, RefreshCw } from "lucide-react";
 
 const severityColor: Record<string, string> = {
-  critical: "bg-red-100 text-red-800",
-  high: "bg-orange-100 text-orange-800",
-  moderate: "bg-yellow-100 text-yellow-800",
-  low: "bg-blue-100 text-blue-800",
+  critical: "bg-red-500/15 text-red-600 dark:text-red-400",
+  high: "bg-orange-500/15 text-orange-600 dark:text-orange-400",
+  moderate: "bg-yellow-500/15 text-yellow-600 dark:text-yellow-400",
+  low: "bg-blue-500/15 text-blue-600 dark:text-blue-400",
   info: "bg-muted text-foreground",
 };
 
@@ -137,7 +137,7 @@ export default function SBOMViewer() {
                     </td>
                     <td className="p-3"><Badge className={severityColor[v.severity] ?? "bg-muted"}>{v.severity}</Badge></td>
                     <td className="p-3 text-xs max-w-xs truncate">{v.description}</td>
-                    <td className="p-3">{v.fix_available ? <Badge className="bg-green-100 text-green-800">Yes</Badge> : <Badge className="bg-muted text-foreground">No</Badge>}</td>
+                    <td className="p-3">{v.fix_available ? <Badge className="bg-green-500/15 text-green-600 dark:text-green-400">Yes</Badge> : <Badge className="bg-muted text-foreground">No</Badge>}</td>
                   </tr>
                 ))}
               </tbody>

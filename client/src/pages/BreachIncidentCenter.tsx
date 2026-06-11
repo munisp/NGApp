@@ -12,8 +12,8 @@ import { Textarea } from "@/components/ui/textarea";
 import { toast } from "sonner";
 import { AlertTriangle, Clock, CheckCircle, XCircle, Plus, RefreshCw, Shield, Eye } from "lucide-react";
 
-const STATUS_COLORS: Record<string,string> = { detected:"bg-red-100 text-red-800", assessing:"bg-orange-100 text-orange-800", ndpc_notified:"bg-blue-100 text-blue-800", individuals_notified:"bg-purple-100 text-purple-800", contained:"bg-yellow-100 text-yellow-800", resolved:"bg-green-100 text-green-800", closed:"bg-muted text-foreground" };
-const SEV_COLORS: Record<string,string> = { low:"bg-green-100 text-green-800", medium:"bg-yellow-100 text-yellow-800", high:"bg-orange-100 text-orange-800", critical:"bg-red-100 text-red-800" };
+const STATUS_COLORS: Record<string,string> = { detected:"bg-red-500/15 text-red-600 dark:text-red-400", assessing:"bg-orange-500/15 text-orange-600 dark:text-orange-400", ndpc_notified:"bg-blue-500/15 text-blue-600 dark:text-blue-400", individuals_notified:"bg-purple-500/15 text-purple-600 dark:text-purple-400", contained:"bg-yellow-500/15 text-yellow-600 dark:text-yellow-400", resolved:"bg-green-500/15 text-green-600 dark:text-green-400", closed:"bg-muted text-foreground" };
+const SEV_COLORS: Record<string,string> = { low:"bg-green-500/15 text-green-600 dark:text-green-400", medium:"bg-yellow-500/15 text-yellow-600 dark:text-yellow-400", high:"bg-orange-500/15 text-orange-600 dark:text-orange-400", critical:"bg-red-500/15 text-red-600 dark:text-red-400" };
 const WF_STATUS_COLORS: Record<string,string> = { completed:"text-green-600", in_progress:"text-blue-600", overdue:"text-red-600", pending:"text-muted-foreground" };
 
 export default function BreachIncidentCenter() {

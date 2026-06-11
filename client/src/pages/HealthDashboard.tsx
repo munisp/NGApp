@@ -61,9 +61,9 @@ const MIDDLEWARE_SERVICES = [
 
 function StatusBadge({ status }: { status: WorkerStatus["status"] }) {
   const config = {
-    healthy:  { label: "Healthy",  className: "bg-green-100 text-green-700",  icon: <CheckCircle2 className="h-3 w-3" /> },
-    degraded: { label: "Degraded", className: "bg-yellow-100 text-yellow-700", icon: <AlertTriangle className="h-3 w-3" /> },
-    down:     { label: "Down",     className: "bg-red-100 text-red-700",      icon: <XCircle className="h-3 w-3" /> },
+    healthy:  { label: "Healthy",  className: "bg-green-500/15 text-green-600 dark:text-green-400",  icon: <CheckCircle2 className="h-3 w-3" /> },
+    degraded: { label: "Degraded", className: "bg-yellow-500/15 text-yellow-600 dark:text-yellow-400", icon: <AlertTriangle className="h-3 w-3" /> },
+    down:     { label: "Down",     className: "bg-red-500/15 text-red-600 dark:text-red-400",      icon: <XCircle className="h-3 w-3" /> },
     unknown:  { label: "Unknown",  className: "bg-muted text-muted-foreground",    icon: <RefreshCw className="h-3 w-3" /> },
   }[status];
 
@@ -77,10 +77,10 @@ function StatusBadge({ status }: { status: WorkerStatus["status"] }) {
 
 function LanguageBadge({ language }: { language: WorkerStatus["language"] }) {
   const colors: Record<string, string> = {
-    Go:     "bg-cyan-100 text-cyan-700",
-    Rust:   "bg-orange-100 text-orange-700",
-    Python: "bg-blue-100 text-blue-700",
-    Node:   "bg-green-100 text-green-700",
+    Go:     "bg-cyan-500/15 text-cyan-600 dark:text-cyan-400",
+    Rust:   "bg-orange-500/15 text-orange-600 dark:text-orange-400",
+    Python: "bg-blue-500/15 text-blue-600 dark:text-blue-400",
+    Node:   "bg-green-500/15 text-green-600 dark:text-green-400",
   };
   return (
     <span className={`rounded px-1.5 py-0.5 text-xs font-mono font-medium ${colors[language] ?? "bg-muted text-muted-foreground"}`}>

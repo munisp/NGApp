@@ -11,17 +11,17 @@ import { toast } from "sonner";
 import { Plus, Search, Globe, AlertTriangle, CheckCircle } from "lucide-react";
 
 const STATUS_COLORS: Record<string, string> = {
-  active: "bg-green-100 text-green-800",
-  suspended: "bg-yellow-100 text-yellow-800",
-  terminated: "bg-red-100 text-red-800",
-  under_review: "bg-blue-100 text-blue-800",
+  active: "bg-green-500/15 text-green-600 dark:text-green-400",
+  suspended: "bg-yellow-500/15 text-yellow-600 dark:text-yellow-400",
+  terminated: "bg-red-500/15 text-red-600 dark:text-red-400",
+  under_review: "bg-blue-500/15 text-blue-600 dark:text-blue-400",
 };
 
 const RISK_COLORS: Record<string, string> = {
-  low: "bg-green-100 text-green-700",
-  medium: "bg-yellow-100 text-yellow-700",
-  high: "bg-orange-100 text-orange-700",
-  very_high: "bg-red-100 text-red-700",
+  low: "bg-green-500/15 text-green-600 dark:text-green-400",
+  medium: "bg-yellow-500/15 text-yellow-600 dark:text-yellow-400",
+  high: "bg-orange-500/15 text-orange-600 dark:text-orange-400",
+  very_high: "bg-red-500/15 text-red-600 dark:text-red-400",
 };
 
 const CURRENCIES = ["USD","EUR","GBP","JPY","CHF","CAD","AUD","CNY","NGN","ZAR","GHS","KES"] as const;

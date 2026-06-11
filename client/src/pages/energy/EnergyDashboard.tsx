@@ -26,15 +26,15 @@ function StatCard({ label, value, sub, color }: { label: string; value: string |
 
 function statusBadge(s: string) {
   const map: Record<string, string> = {
-    active: "bg-green-100 text-green-800", suspended: "bg-red-100 text-red-800",
-    revoked: "bg-red-100 text-red-800", pending: "bg-yellow-100 text-yellow-800",
-    submitted: "bg-blue-100 text-blue-800", draft: "bg-muted text-foreground",
+    active: "bg-green-500/15 text-green-600 dark:text-green-400", suspended: "bg-red-500/15 text-red-600 dark:text-red-400",
+    revoked: "bg-red-500/15 text-red-600 dark:text-red-400", pending: "bg-yellow-500/15 text-yellow-600 dark:text-yellow-400",
+    submitted: "bg-blue-500/15 text-blue-600 dark:text-blue-400", draft: "bg-muted text-foreground",
   };
   return <Badge className={map[s] ?? "bg-muted text-foreground"}>{s.replace(/_/g, " ")}</Badge>;
 }
 
 function severityBadge(s: string) {
-  const map: Record<string, string> = { critical: "bg-red-100 text-red-800", high: "bg-orange-100 text-orange-800", medium: "bg-yellow-100 text-yellow-800", low: "bg-blue-100 text-blue-800" };
+  const map: Record<string, string> = { critical: "bg-red-500/15 text-red-600 dark:text-red-400", high: "bg-orange-500/15 text-orange-600 dark:text-orange-400", medium: "bg-yellow-500/15 text-yellow-600 dark:text-yellow-400", low: "bg-blue-500/15 text-blue-600 dark:text-blue-400" };
   return <Badge className={map[s] ?? "bg-muted text-foreground"}>{s}</Badge>;
 }
 
@@ -191,9 +191,9 @@ export default function EnergyDashboard() {
                     <td className="px-3 py-2">{fmt(e.affected_customers ?? 0)}</td>
                     <td className="px-3 py-2">{e.duration_minutes ? `${e.duration_minutes}m` : "—"}</td>
                     <td className="px-3 py-2">{e.power_loss_mw ? `${e.power_loss_mw} MW` : "—"}</td>
-                    <td className="px-3 py-2">{e.scada_data_exported ? <Badge className="bg-orange-100 text-orange-800">Yes</Badge> : "No"}</td>
+                    <td className="px-3 py-2">{e.scada_data_exported ? <Badge className="bg-orange-500/15 text-orange-600 dark:text-orange-400">Yes</Badge> : "No"}</td>
                     <td className="px-3 py-2 text-xs">{e.export_destination ?? "—"}</td>
-                    <td className="px-3 py-2">{e.data_localisation_violation ? <Badge className="bg-red-100 text-red-800">VIOLATION</Badge> : <Badge className="bg-green-100 text-green-800">OK</Badge>}</td>
+                    <td className="px-3 py-2">{e.data_localisation_violation ? <Badge className="bg-red-500/15 text-red-600 dark:text-red-400">VIOLATION</Badge> : <Badge className="bg-green-500/15 text-green-600 dark:text-green-400">OK</Badge>}</td>
                     <td className="px-3 py-2">{e.reported_to_nerc ? <CheckCircle className="h-4 w-4 text-green-600" /> : <XCircle className="h-4 w-4 text-red-500" />}</td>
                     <td className="px-3 py-2 text-xs">{fmtDate(e.occurred_at, 16)}</td>
                   </tr>

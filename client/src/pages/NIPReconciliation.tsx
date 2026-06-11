@@ -9,10 +9,10 @@ import { RefreshCw, Activity, AlertTriangle, CheckCircle2, TrendingUp } from "lu
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from "recharts";
 
 const STATUS_COLORS: Record<string, string> = {
-  completed: "bg-green-100 text-green-700 border-green-200",
-  initiated: "bg-yellow-100 text-yellow-700 border-yellow-200",
-  failed: "bg-red-100 text-red-700 border-red-200",
-  reversed: "bg-orange-100 text-orange-700 border-orange-200",
+  completed: "bg-green-500/15 text-green-600 dark:text-green-400 border-green-500/20",
+  initiated: "bg-yellow-500/15 text-yellow-600 dark:text-yellow-400 border-yellow-500/20",
+  failed: "bg-red-500/15 text-red-600 dark:text-red-400 border-red-500/20",
+  reversed: "bg-orange-500/15 text-orange-600 dark:text-orange-400 border-orange-500/20",
 };
 
 function formatNaira(amount: number) {
@@ -172,8 +172,8 @@ export default function NIPReconciliation() {
                         </Badge>
                       </td>
                       <td className="py-2 px-3">
-                        {tx.aml_flagged && <Badge className="text-xs bg-orange-100 text-orange-700 border-orange-200 mr-1">AML</Badge>}
-                        {tx.fraud_flagged && <Badge className="text-xs bg-red-100 text-red-700 border-red-200">Fraud</Badge>}
+                        {tx.aml_flagged && <Badge className="text-xs bg-orange-500/15 text-orange-600 dark:text-orange-400 border-orange-500/20 mr-1">AML</Badge>}
+                        {tx.fraud_flagged && <Badge className="text-xs bg-red-500/15 text-red-600 dark:text-red-400 border-red-500/20">Fraud</Badge>}
                       </td>
                       <td className="py-2 px-3 text-muted-foreground">
                         {new Date(tx.initiated_at).toLocaleTimeString()}

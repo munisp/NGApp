@@ -12,11 +12,11 @@ import { toast } from "sonner";
 import { Search, Plus, ExternalLink, AlertTriangle, CheckCircle, XCircle, Clock, Building2, RefreshCw , Trash2 } from "lucide-react";
 
 const STATUS_COLORS: Record<string, string> = {
-  active: "bg-emerald-100 text-emerald-700 border-emerald-300",
-  expired: "bg-red-100 text-red-700 border-red-300",
-  suspended: "bg-yellow-100 text-yellow-700 border-yellow-300",
+  active: "bg-emerald-500/15 text-emerald-600 dark:text-emerald-400 border-emerald-500/30",
+  expired: "bg-red-500/15 text-red-600 dark:text-red-400 border-red-500/30",
+  suspended: "bg-yellow-500/15 text-yellow-600 dark:text-yellow-400 border-yellow-500/30",
   revoked: "bg-red-700/20 text-red-600 border-red-700/30",
-  pending: "bg-blue-100 text-blue-700 border-blue-300",
+  pending: "bg-blue-500/15 text-blue-600 dark:text-blue-400 border-blue-500/30",
 };
 
 const TYPE_LABELS: Record<string, string> = {
@@ -271,7 +271,7 @@ export default function DpcoRegistry() {
                           <ExternalLink className="w-4 h-4" />
                         </a>
                       )}
-                      <Button size="sm" variant="outline" className="text-xs border-red-300 text-red-600 hover:bg-red-100 h-7 w-7 p-0" onClick={() => setDeleteId(dpco.id)}><Trash2 className="w-3 h-3" /></Button>
+                      <Button size="sm" variant="outline" className="text-xs border-red-500/30 text-red-600 hover:bg-red-100 h-7 w-7 p-0" onClick={() => setDeleteId(dpco.id)}><Trash2 className="w-3 h-3" /></Button>
                     </td>
                   </tr>
                 );

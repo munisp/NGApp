@@ -50,18 +50,18 @@ const TIER_META: Record<
   },
   professional: {
     color: "text-blue-700",
-    border: "border-blue-300",
+    border: "border-blue-500/30",
     bg: "bg-blue-50",
     icon: Zap,
-    badge: "bg-blue-100 text-blue-700",
+    badge: "bg-blue-500/15 text-blue-600 dark:text-blue-400",
     highlight: true,
   },
   enterprise: {
     color: "text-purple-700",
-    border: "border-purple-300",
+    border: "border-purple-500/30",
     bg: "bg-purple-50",
     icon: Building2,
-    badge: "bg-purple-100 text-purple-700",
+    badge: "bg-purple-500/15 text-purple-600 dark:text-purple-400",
     highlight: false,
   },
 };
@@ -186,7 +186,7 @@ function UpgradeDialog({
             </div>
           </div>
           {!isDowngrade && (
-            <div className="flex gap-2 rounded-lg border border-blue-200 bg-blue-50 p-3 text-sm text-blue-800">
+            <div className="flex gap-2 rounded-lg border border-blue-500/20 bg-blue-50 p-3 text-sm text-blue-800">
               <CreditCard className="h-4 w-4 mt-0.5 shrink-0" />
               <span>
                 You will be redirected to a secure Stripe checkout page to complete the upgrade.
@@ -195,7 +195,7 @@ function UpgradeDialog({
             </div>
           )}
           {isDowngrade && (
-            <div className="flex gap-2 rounded-lg border border-amber-200 bg-amber-50 p-3 text-sm text-amber-800">
+            <div className="flex gap-2 rounded-lg border border-amber-500/20 bg-amber-50 p-3 text-sm text-amber-800">
               <AlertTriangle className="h-4 w-4 mt-0.5 shrink-0" />
               <span>
                 Downgrading will increase your platform fee rate to{" "}
@@ -247,14 +247,14 @@ export default function DpcoSubscription() {
 
       {/* Current plan banner */}
       {sub && (
-        <div className="rounded-xl border border-blue-200 bg-blue-50 p-4 flex flex-wrap gap-6 items-center">
+        <div className="rounded-xl border border-blue-500/20 bg-blue-50 p-4 flex flex-wrap gap-6 items-center">
           <div className="flex items-center gap-2">
             <CreditCard className="h-5 w-5 text-blue-600" />
             <span className="font-semibold text-blue-800">
               Current Plan:{" "}
               <span className="capitalize">{sub.tier}</span>
             </span>
-            <Badge className="capitalize bg-blue-100 text-blue-700 border-0">
+            <Badge className="capitalize bg-blue-500/15 text-blue-600 dark:text-blue-400 border-0">
               {sub.status}
             </Badge>
           </div>

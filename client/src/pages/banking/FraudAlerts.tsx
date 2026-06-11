@@ -11,11 +11,11 @@ import { toast } from "sonner";
 import { Plus, Search, Shield, AlertTriangle, CheckCircle, Lock } from "lucide-react";
 
 const STATUS_COLORS: Record<string, string> = {
-  open: "bg-red-100 text-red-800",
-  investigating: "bg-yellow-100 text-yellow-800",
-  resolved: "bg-green-100 text-green-800",
+  open: "bg-red-500/15 text-red-600 dark:text-red-400",
+  investigating: "bg-yellow-500/15 text-yellow-600 dark:text-yellow-400",
+  resolved: "bg-green-500/15 text-green-600 dark:text-green-400",
   false_positive: "bg-muted text-foreground",
-  escalated: "bg-purple-100 text-purple-800",
+  escalated: "bg-purple-500/15 text-purple-600 dark:text-purple-400",
 };
 
 const ALERT_TYPES = [

@@ -218,14 +218,14 @@ export default function DpcoOnboard() {
   if (submitted) {
     return (
       <div className="p-6 max-w-2xl mx-auto">
-        <Card className="border-green-200 bg-green-50">
+        <Card className="border-green-500/20 bg-green-50">
           <CardContent className="pt-8 pb-8 text-center">
             <CheckCircle className="w-16 h-16 text-green-600 mx-auto mb-4" />
             <h2 className="text-2xl font-bold text-green-900 mb-2">Application Submitted!</h2>
             <p className="text-green-800 mb-4">
               Your DPCO licence application has been received by the NDPC. You will be notified within 30 working days.
             </p>
-            <div className="bg-background rounded-lg border border-green-200 p-4 mb-6 inline-block">
+            <div className="bg-background rounded-lg border border-green-500/20 p-4 mb-6 inline-block">
               <div className="text-xs text-muted-foreground mb-1">Application Reference Number</div>
               <div className="text-xl font-mono font-bold text-foreground">{refNumber}</div>
             </div>
@@ -316,7 +316,7 @@ export default function DpcoOnboard() {
           {/* Step 2: Key Personnel */}
           {step === 2 && (
             <>
-              <div className="bg-blue-50 border border-blue-200 rounded p-3 text-sm text-blue-800 flex gap-2">
+              <div className="bg-blue-50 border border-blue-500/20 rounded p-3 text-sm text-blue-800 flex gap-2">
                 <AlertCircle className="w-4 h-4 shrink-0 mt-0.5" />
                 The DPO must hold a recognised data protection qualification (CIPP, CIPM, CDPO, or equivalent).
               </div>
@@ -406,7 +406,7 @@ export default function DpcoOnboard() {
           {/* Step 4: Compliance Evidence */}
           {step === 4 && (
             <>
-              <div className="bg-amber-50 border border-amber-200 rounded p-3 text-sm text-amber-800 flex gap-2">
+              <div className="bg-amber-50 border border-amber-500/20 rounded p-3 text-sm text-amber-800 flex gap-2">
                 <AlertCircle className="w-4 h-4 shrink-0 mt-0.5" />
                 Professional Indemnity Insurance is mandatory under NDPA S.33(3). Minimum cover: ₦50,000,000.
               </div>

@@ -13,11 +13,11 @@ import {
 import { toast } from "sonner";
 
 const TIER_COLORS: Record<string, string> = {
-  platinum: "bg-purple-100 text-purple-800 border-purple-300",
-  gold:     "bg-yellow-100 text-yellow-800 border-yellow-300",
+  platinum: "bg-purple-500/15 text-purple-600 dark:text-purple-400 border-purple-500/30",
+  gold:     "bg-yellow-500/15 text-yellow-600 dark:text-yellow-400 border-yellow-500/30",
   silver:   "bg-muted text-foreground border-border",
-  bronze:   "bg-orange-100 text-orange-800 border-orange-300",
-  watch:    "bg-red-100 text-red-800 border-red-300",
+  bronze:   "bg-orange-500/15 text-orange-600 dark:text-orange-400 border-orange-500/30",
+  watch:    "bg-red-500/15 text-red-600 dark:text-red-400 border-red-500/30",
 };
 
 const TIER_LABELS: Record<string, string> = {
@@ -334,7 +334,7 @@ export default function DpcoScorecard() {
       )}
 
       {/* Scoring Methodology */}
-      <Card className="bg-blue-50 border-blue-200">
+      <Card className="bg-blue-50 border-blue-500/20">
         <CardContent className="pt-4">
           <div className="flex items-start gap-3">
             <BarChart3 className="w-5 h-5 text-blue-600 mt-0.5 shrink-0" />

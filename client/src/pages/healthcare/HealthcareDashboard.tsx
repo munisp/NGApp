@@ -30,10 +30,10 @@ function StatCard({ label, value, sub, color }: { label: string; value: string |
 
 function statusBadge(s: string) {
   const map: Record<string, string> = {
-    compliant: "bg-green-100 text-green-800", violation: "bg-red-100 text-red-800",
-    active: "bg-green-100 text-green-800", recruiting: "bg-blue-100 text-blue-800",
-    completed: "bg-muted text-foreground", ethics_approved: "bg-yellow-100 text-yellow-800",
-    suspended: "bg-red-100 text-red-800", under_review: "bg-orange-100 text-orange-800",
+    compliant: "bg-green-500/15 text-green-600 dark:text-green-400", violation: "bg-red-500/15 text-red-600 dark:text-red-400",
+    active: "bg-green-500/15 text-green-600 dark:text-green-400", recruiting: "bg-blue-500/15 text-blue-600 dark:text-blue-400",
+    completed: "bg-muted text-foreground", ethics_approved: "bg-yellow-500/15 text-yellow-600 dark:text-yellow-400",
+    suspended: "bg-red-500/15 text-red-600 dark:text-red-400", under_review: "bg-orange-500/15 text-orange-600 dark:text-orange-400",
   };
   return <Badge className={map[s] ?? "bg-muted text-foreground"}>{s.replace(/_/g, " ")}</Badge>;
 }
@@ -217,7 +217,7 @@ export default function HealthcareDashboard() {
                     <td className="px-3 py-2 text-xs">{c.storage_location}</td>
                     <td className="px-3 py-2">{c.storage_country}</td>
                     <td className="px-3 py-2">{c.is_locally_stored ? <CheckCircle className="h-4 w-4 text-green-600" /> : <XCircle className="h-4 w-4 text-red-500" />}</td>
-                    <td className="px-3 py-2">{c.cross_border_transfer ? <Badge className="bg-red-100 text-red-800">Yes</Badge> : "No"}</td>
+                    <td className="px-3 py-2">{c.cross_border_transfer ? <Badge className="bg-red-500/15 text-red-600 dark:text-red-400">Yes</Badge> : "No"}</td>
                     <td className="px-3 py-2">{fmt(c.records_affected ?? 0)}</td>
                     <td className="px-3 py-2">{statusBadge(c.status)}</td>
                     <td className="px-3 py-2 text-xs">{fmtDate(c.checked_at)}</td>
@@ -248,7 +248,7 @@ export default function HealthcareDashboard() {
                     <td className="px-3 py-2 text-xs">{t.therapeutic_area}</td>
                     <td className="px-3 py-2">{fmt(t.participant_count ?? 0)}</td>
                     <td className="px-3 py-2">{t.data_storage_country}</td>
-                    <td className="px-3 py-2">{t.foreign_sponsor ? <Badge className="bg-orange-100 text-orange-800">Yes</Badge> : "No"}</td>
+                    <td className="px-3 py-2">{t.foreign_sponsor ? <Badge className="bg-orange-500/15 text-orange-600 dark:text-orange-400">Yes</Badge> : "No"}</td>
                     <td className="px-3 py-2 font-mono text-xs">{t.ndpc_approval_ref ?? <span className="text-red-500">Missing</span>}</td>
                     <td className="px-3 py-2">{t.data_localisation_compliant ? <CheckCircle className="h-4 w-4 text-green-600" /> : <XCircle className="h-4 w-4 text-red-500" />}</td>
                     <td className="px-3 py-2">{statusBadge(t.status)}</td>

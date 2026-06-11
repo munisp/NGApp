@@ -27,14 +27,14 @@ const STATE_CONFIG: Record<AccreditationState, {
   description: string;
 }> = {
   DRAFT:            { label: "Draft",            color: "bg-muted text-foreground",   icon: <FileText className="h-4 w-4" />,       description: "Application being prepared" },
-  SUBMITTED:        { label: "Submitted",        color: "bg-blue-100 text-blue-700",   icon: <Clock className="h-4 w-4" />,          description: "Awaiting initial review" },
-  UNDER_REVIEW:     { label: "Under Review",     color: "bg-yellow-100 text-yellow-700", icon: <RefreshCw className="h-4 w-4" />,    description: "Staff reviewing application" },
-  COMMITTEE_REVIEW: { label: "Committee Review", color: "bg-purple-100 text-purple-700", icon: <Shield className="h-4 w-4" />,       description: "Committee deliberating" },
-  APPROVED:         { label: "Approved",         color: "bg-green-100 text-green-700", icon: <CheckCircle2 className="h-4 w-4" />,   description: "Accreditation granted" },
-  REJECTED:         { label: "Rejected",         color: "bg-red-100 text-red-700",     icon: <XCircle className="h-4 w-4" />,        description: "Application rejected" },
-  SUSPENDED:        { label: "Suspended",        color: "bg-orange-100 text-orange-700", icon: <AlertTriangle className="h-4 w-4" />, description: "Accreditation suspended" },
-  REVOKED:          { label: "Revoked",          color: "bg-red-200 text-red-800",     icon: <Ban className="h-4 w-4" />,            description: "Accreditation revoked" },
-  APPEALING:        { label: "Appealing",        color: "bg-indigo-100 text-indigo-700", icon: <ArrowRight className="h-4 w-4" />,   description: "Appeal in progress" },
+  SUBMITTED:        { label: "Submitted",        color: "bg-blue-500/15 text-blue-600 dark:text-blue-400",   icon: <Clock className="h-4 w-4" />,          description: "Awaiting initial review" },
+  UNDER_REVIEW:     { label: "Under Review",     color: "bg-yellow-500/15 text-yellow-600 dark:text-yellow-400", icon: <RefreshCw className="h-4 w-4" />,    description: "Staff reviewing application" },
+  COMMITTEE_REVIEW: { label: "Committee Review", color: "bg-purple-500/15 text-purple-600 dark:text-purple-400", icon: <Shield className="h-4 w-4" />,       description: "Committee deliberating" },
+  APPROVED:         { label: "Approved",         color: "bg-green-500/15 text-green-600 dark:text-green-400", icon: <CheckCircle2 className="h-4 w-4" />,   description: "Accreditation granted" },
+  REJECTED:         { label: "Rejected",         color: "bg-red-500/15 text-red-600 dark:text-red-400",     icon: <XCircle className="h-4 w-4" />,        description: "Application rejected" },
+  SUSPENDED:        { label: "Suspended",        color: "bg-orange-500/15 text-orange-600 dark:text-orange-400", icon: <AlertTriangle className="h-4 w-4" />, description: "Accreditation suspended" },
+  REVOKED:          { label: "Revoked",          color: "bg-red-500/20 text-red-600 dark:text-red-400",     icon: <Ban className="h-4 w-4" />,            description: "Accreditation revoked" },
+  APPEALING:        { label: "Appealing",        color: "bg-indigo-500/15 text-indigo-600 dark:text-indigo-400", icon: <ArrowRight className="h-4 w-4" />,   description: "Appeal in progress" },
 };
 
 const VALID_TRANSITIONS: Record<AccreditationState, AccreditationState[]> = {

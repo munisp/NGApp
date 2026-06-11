@@ -6,13 +6,13 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Progress } from "@/components/ui/progress";
 
 const STATUS_COLORS: Record<string, string> = {
-  running: "bg-green-100 text-green-800",
-  stopped: "bg-red-100 text-red-800",
-  starting: "bg-yellow-100 text-yellow-800",
-  error: "bg-red-100 text-red-800",
-  healthy: "bg-green-100 text-green-800",
-  degraded: "bg-yellow-100 text-yellow-800",
-  down: "bg-red-100 text-red-800",
+  running: "bg-green-500/15 text-green-600 dark:text-green-400",
+  stopped: "bg-red-500/15 text-red-600 dark:text-red-400",
+  starting: "bg-yellow-500/15 text-yellow-600 dark:text-yellow-400",
+  error: "bg-red-500/15 text-red-600 dark:text-red-400",
+  healthy: "bg-green-500/15 text-green-600 dark:text-green-400",
+  degraded: "bg-yellow-500/15 text-yellow-600 dark:text-yellow-400",
+  down: "bg-red-500/15 text-red-600 dark:text-red-400",
 };
 
 function StatusDot({ status }: { status: string }) {

@@ -10,9 +10,9 @@ import { toast } from "sonner";
 import { exportToCsv } from "@/lib/safeExport";
 
 const ROLE_COLORS: Record<string, string> = {
-  admin: "bg-red-100 text-red-800",
-  auditor: "bg-orange-100 text-orange-800",
-  org_admin: "bg-blue-100 text-blue-800",
+  admin: "bg-red-500/15 text-red-600 dark:text-red-400",
+  auditor: "bg-orange-500/15 text-orange-600 dark:text-orange-400",
+  org_admin: "bg-blue-500/15 text-blue-600 dark:text-blue-400",
   user: "bg-muted text-foreground",
 };
 

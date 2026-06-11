@@ -75,9 +75,9 @@ function formatNGN(amount: number) {
 function statusBadge(status: string) {
   const map: Record<string, string> = {
     draft: "bg-muted text-foreground",
-    sent: "bg-blue-100 text-blue-700",
-    paid: "bg-green-100 text-green-700",
-    overdue: "bg-red-100 text-red-700",
+    sent: "bg-blue-500/15 text-blue-600 dark:text-blue-400",
+    paid: "bg-green-500/15 text-green-600 dark:text-green-400",
+    overdue: "bg-red-500/15 text-red-600 dark:text-red-400",
     cancelled: "bg-muted text-muted-foreground",
   };
   return (

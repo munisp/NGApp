@@ -11,10 +11,10 @@ import { Users, Search, Shield, UserX, Activity } from "lucide-react";
 
 
 const ROLE_COLORS: Record<string, string> = {
-  admin: "bg-red-100 text-red-700 border-red-200",
-  government_staff: "bg-purple-100 text-purple-700 border-purple-200",
-  org_admin: "bg-blue-100 text-blue-700 border-blue-200",
-  auditor: "bg-yellow-100 text-yellow-700 border-yellow-200",
+  admin: "bg-red-500/15 text-red-600 dark:text-red-400 border-red-500/20",
+  government_staff: "bg-purple-500/15 text-purple-600 dark:text-purple-400 border-purple-500/20",
+  org_admin: "bg-blue-500/15 text-blue-600 dark:text-blue-400 border-blue-500/20",
+  auditor: "bg-yellow-500/15 text-yellow-600 dark:text-yellow-400 border-yellow-500/20",
   user: "bg-muted text-foreground border-border",
 };
 

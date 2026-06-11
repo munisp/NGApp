@@ -19,9 +19,9 @@ type DpcoRow = {
 
 function ScoreBadge({ score }: { score: number }) {
   const color =
-    score >= 85 ? "bg-emerald-100 text-emerald-700 border-emerald-200" :
-    score >= 65 ? "bg-amber-100 text-amber-700 border-amber-200" :
-    "bg-red-100 text-red-700 border-red-200";
+    score >= 85 ? "bg-emerald-500/15 text-emerald-600 dark:text-emerald-400 border-emerald-500/20" :
+    score >= 65 ? "bg-amber-500/15 text-amber-600 dark:text-amber-400 border-amber-500/20" :
+    "bg-red-500/15 text-red-600 dark:text-red-400 border-red-500/20";
   return <span className={`text-xs font-semibold px-2 py-0.5 rounded-full border ${color}`}>{score}%</span>;
 }
 

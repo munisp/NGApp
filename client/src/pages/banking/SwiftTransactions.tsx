@@ -11,14 +11,14 @@ import { toast } from "sonner";
 import { Plus, Search, Globe, TrendingUp, Clock, AlertTriangle } from "lucide-react";
 
 const STATUS_COLORS: Record<string, string> = {
-  completed: "bg-green-100 text-green-800",
-  settled: "bg-green-100 text-green-800",
-  failed: "bg-red-100 text-red-800",
-  rejected: "bg-red-100 text-red-800",
-  initiated: "bg-blue-100 text-blue-800",
-  pending: "bg-yellow-100 text-yellow-800",
-  processing: "bg-blue-100 text-blue-800",
-  compliance_hold: "bg-red-200 text-red-900",
+  completed: "bg-green-500/15 text-green-600 dark:text-green-400",
+  settled: "bg-green-500/15 text-green-600 dark:text-green-400",
+  failed: "bg-red-500/15 text-red-600 dark:text-red-400",
+  rejected: "bg-red-500/15 text-red-600 dark:text-red-400",
+  initiated: "bg-blue-500/15 text-blue-600 dark:text-blue-400",
+  pending: "bg-yellow-500/15 text-yellow-600 dark:text-yellow-400",
+  processing: "bg-blue-500/15 text-blue-600 dark:text-blue-400",
+  compliance_hold: "bg-red-500/20 text-red-600 dark:text-red-400",
 };
 
 const MSG_TYPES = ["MT103","MT202","MT202COV","MT910","MT940","MT950"] as const;
@@ -221,7 +221,7 @@ export default function SwiftTransactions() {
                 ) : rows.map((r: any) => (
                   <tr key={r.id} className="hover:bg-muted">
                     <td className="px-4 py-3 font-mono text-xs">{r.transaction_ref}</td>
-                    <td className="px-4 py-3"><Badge className="bg-blue-100 text-blue-700">{r.message_type}</Badge></td>
+                    <td className="px-4 py-3"><Badge className="bg-blue-500/15 text-blue-600 dark:text-blue-400">{r.message_type}</Badge></td>
                     <td className="px-4 py-3 font-mono text-xs">{r.sender_bic}</td>
                     <td className="px-4 py-3 font-mono text-xs">{r.receiver_bic}</td>
                     <td className="px-4 py-3 text-xs font-medium">{r.currency}</td>

@@ -12,13 +12,13 @@ import { toast } from "sonner";
 import { Plus, Search, TrendingUp, AlertTriangle, CheckCircle, Clock } from "lucide-react";
 
 const STATUS_COLORS: Record<string, string> = {
-  completed: "bg-green-100 text-green-800",
-  settled: "bg-green-100 text-green-800",
-  failed: "bg-red-100 text-red-800",
-  rejected: "bg-red-100 text-red-800",
-  initiated: "bg-blue-100 text-blue-800",
-  queued: "bg-yellow-100 text-yellow-800",
-  processing: "bg-blue-100 text-blue-800",
+  completed: "bg-green-500/15 text-green-600 dark:text-green-400",
+  settled: "bg-green-500/15 text-green-600 dark:text-green-400",
+  failed: "bg-red-500/15 text-red-600 dark:text-red-400",
+  rejected: "bg-red-500/15 text-red-600 dark:text-red-400",
+  initiated: "bg-blue-500/15 text-blue-600 dark:text-blue-400",
+  queued: "bg-yellow-500/15 text-yellow-600 dark:text-yellow-400",
+  processing: "bg-blue-500/15 text-blue-600 dark:text-blue-400",
 };
 
 const fmt = (n: number | null | undefined) => n == null ? "—" : `₦${Number(n).toLocaleString()}`;
@@ -224,7 +224,7 @@ export default function PaymentsMonitor() {
                           <Badge className={STATUS_COLORS[r.status] || "bg-muted text-foreground"}>{r.status}</Badge>
                         </td>
                         <td className="px-4 py-3">
-                          {r.aml_flagged ? <Badge className="bg-red-100 text-red-700">Flagged</Badge> : <span className="text-muted-foreground text-xs">—</span>}
+                          {r.aml_flagged ? <Badge className="bg-red-500/15 text-red-600 dark:text-red-400">Flagged</Badge> : <span className="text-muted-foreground text-xs">—</span>}
                         </td>
                         <td className="px-4 py-3 font-mono text-xs">{r.nibss_ref}</td>
                         <td className="px-4 py-3 text-xs text-muted-foreground">{r.created_at ? new Date(r.created_at).toLocaleString() : "—"}</td>
@@ -347,7 +347,7 @@ export default function PaymentsMonitor() {
                         <td className="px-4 py-3 text-xs">{r.receiver_bank_code}</td>
                         <td className="px-4 py-3 font-medium">{fmt(r.amount)}</td>
                         <td className="px-4 py-3">
-                          <Badge className={r.priority === "critical" ? "bg-red-100 text-red-700" : r.priority === "urgent" ? "bg-orange-100 text-orange-700" : "bg-muted text-foreground"}>
+                          <Badge className={r.priority === "critical" ? "bg-red-500/15 text-red-600 dark:text-red-400" : r.priority === "urgent" ? "bg-orange-500/15 text-orange-600 dark:text-orange-400" : "bg-muted text-foreground"}>
                             {r.priority}
                           </Badge>
                         </td>

@@ -95,7 +95,7 @@ function DpcoSearchWidget() {
     if (requestSent) {
       return (
         <div className="max-w-lg mx-auto text-center py-10">
-          <div className="w-14 h-14 rounded-full bg-emerald-50 border border-emerald-200 flex items-center justify-center mx-auto mb-4">
+          <div className="w-14 h-14 rounded-full bg-emerald-50 border border-emerald-500/20 flex items-center justify-center mx-auto mb-4">
             <CheckCircle className="w-7 h-7 text-emerald-600" />
           </div>
           <h3 className="text-lg font-semibold text-slate-900 mb-2">Engagement Request Sent</h3>
@@ -121,7 +121,7 @@ function DpcoSearchWidget() {
               <p className="text-xs text-slate-500 mt-0.5">Licence: {selectedDpco.licenceNumber ?? "Active"}</p>
               {selectedDpco.sectors && <p className="text-xs text-emerald-600 mt-1">{selectedDpco.sectors}</p>}
             </div>
-            <span className="ml-auto text-xs bg-emerald-100 text-emerald-700 px-2 py-0.5 rounded-full font-medium capitalize">{selectedDpco.tier}</span>
+            <span className="ml-auto text-xs bg-emerald-500/15 text-emerald-600 dark:text-emerald-400 px-2 py-0.5 rounded-full font-medium capitalize">{selectedDpco.tier}</span>
           </div>
         </div>
         <h4 className="text-sm font-semibold text-slate-900 mb-3">Send Engagement Request</h4>
@@ -207,7 +207,7 @@ function DpcoSearchWidget() {
                 <div className="w-9 h-9 rounded-lg bg-emerald-700 flex items-center justify-center">
                   <Building2 className="w-4.5 h-4.5 text-foreground" />
                 </div>
-                <span className="text-xs bg-emerald-100 text-emerald-700 px-2 py-0.5 rounded-full font-medium capitalize">{dpco.tier}</span>
+                <span className="text-xs bg-emerald-500/15 text-emerald-600 dark:text-emerald-400 px-2 py-0.5 rounded-full font-medium capitalize">{dpco.tier}</span>
               </div>
               <h3 className="text-sm font-semibold text-slate-900 mb-1">{dpco.name}</h3>
               {dpco.sectors && (

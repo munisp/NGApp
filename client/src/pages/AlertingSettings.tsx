@@ -14,7 +14,7 @@ import {
 
 function StatusBadge({ configured, label }: { configured: boolean; label: string }) {
   return configured ? (
-    <Badge className="bg-emerald-500/10 text-emerald-600 border-emerald-200 gap-1">
+    <Badge className="bg-emerald-500/10 text-emerald-600 border-emerald-500/20 gap-1">
       <CheckCircle2 className="h-3 w-3" /> {label}
     </Badge>
   ) : (

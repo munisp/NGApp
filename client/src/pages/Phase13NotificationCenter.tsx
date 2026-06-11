@@ -100,7 +100,7 @@ export default function Phase13NotificationCenter() {
             ) : (
               <div className="space-y-2">
                 {list.map((n: any) => (
-                  <div key={n.id} className={`flex items-start gap-3 p-3 rounded-lg border transition-colors ${!n.is_read ? "bg-blue-50/50 dark:bg-blue-950/20 border-blue-200 dark:border-blue-800" : "border-transparent hover:bg-muted/30"}`}>
+                  <div key={n.id} className={`flex items-start gap-3 p-3 rounded-lg border transition-colors ${!n.is_read ? "bg-blue-50/50 dark:bg-blue-950/20 border-blue-500/20 dark:border-blue-800" : "border-transparent hover:bg-muted/30"}`}>
                     <div className="mt-1">
                       {!n.is_read ? (
                         <Circle className="h-3 w-3 fill-blue-500 text-blue-500" />

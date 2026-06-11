@@ -12,11 +12,11 @@ import { Plus, Search, FileText, AlertTriangle, CheckCircle, Clock } from "lucid
 
 const STATUS_COLORS: Record<string, string> = {
   draft: "bg-muted text-foreground",
-  pending_review: "bg-yellow-100 text-yellow-800",
-  submitted: "bg-blue-100 text-blue-800",
-  acknowledged: "bg-green-100 text-green-800",
-  rejected: "bg-red-100 text-red-800",
-  overdue: "bg-red-200 text-red-900",
+  pending_review: "bg-yellow-500/15 text-yellow-600 dark:text-yellow-400",
+  submitted: "bg-blue-500/15 text-blue-600 dark:text-blue-400",
+  acknowledged: "bg-green-500/15 text-green-600 dark:text-green-400",
+  rejected: "bg-red-500/15 text-red-600 dark:text-red-400",
+  overdue: "bg-red-500/20 text-red-600 dark:text-red-400",
 };
 
 const REPORT_TYPES = ["ctr","str","capital_adequacy","scuml_report","aml_annual","prudential_return","liquidity_return","credit_risk","operational_risk"] as const;
@@ -200,7 +200,7 @@ export default function CbnReports() {
                   return (
                     <tr key={r.id} className={`hover:bg-muted ${isOverdue ? "bg-red-50" : ""}`}>
                       <td className="px-4 py-3 font-mono text-xs">{r.report_ref}</td>
-                      <td className="px-4 py-3"><Badge className="bg-blue-100 text-blue-700">{r.report_type?.toUpperCase()}</Badge></td>
+                      <td className="px-4 py-3"><Badge className="bg-blue-500/15 text-blue-600 dark:text-blue-400">{r.report_type?.toUpperCase()}</Badge></td>
                       <td className="px-4 py-3 text-xs">
                         {r.report_period_start ? new Date(r.report_period_start).toLocaleDateString() : "—"} –{" "}
                         {r.report_period_end ? new Date(r.report_period_end).toLocaleDateString() : "—"}

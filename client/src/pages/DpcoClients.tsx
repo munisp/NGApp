@@ -12,10 +12,10 @@ import { toast } from "sonner";
 import { Users, Plus, Calendar, TrendingUp, FileCheck, AlertTriangle, RefreshCw, Building2 , Trash2 } from "lucide-react";
 
 const STATUS_COLORS: Record<string, string> = {
-  active: "bg-emerald-100 text-emerald-700 border-emerald-300",
-  completed: "bg-blue-100 text-blue-700 border-blue-300",
-  suspended: "bg-yellow-100 text-yellow-700 border-yellow-300",
-  terminated: "bg-red-100 text-red-700 border-red-300",
+  active: "bg-emerald-500/15 text-emerald-600 dark:text-emerald-400 border-emerald-500/30",
+  completed: "bg-blue-500/15 text-blue-600 dark:text-blue-400 border-blue-500/30",
+  suspended: "bg-yellow-500/15 text-yellow-600 dark:text-yellow-400 border-yellow-500/30",
+  terminated: "bg-red-500/15 text-red-600 dark:text-red-400 border-red-500/30",
 };
 
 const ENGAGEMENT_LABELS: Record<string, string> = {

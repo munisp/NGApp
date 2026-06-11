@@ -138,7 +138,7 @@ export default function BankingDashboard() {
             CBN-regulated financial institution oversight — KYC, AML, NIP/RTGS, SWIFT, Fraud, Correspondent Banking
           </p>
         </div>
-        <Badge variant="outline" className="text-green-700 border-green-300 bg-green-50">
+        <Badge variant="outline" className="text-green-700 border-green-500/30 bg-green-50">
           CBN Compliant
         </Badge>
       </div>

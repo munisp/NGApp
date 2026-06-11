@@ -13,9 +13,9 @@ import { ShieldCheck, Plus, Download, FileText, CheckCircle, Clock, XCircle, Ref
 
 const STATUS_COLORS: Record<string, string> = {
   draft: "bg-muted-foreground/20 text-foreground border-border/30",
-  issued: "bg-emerald-100 text-emerald-700 border-emerald-300",
-  submitted: "bg-blue-100 text-blue-700 border-blue-300",
-  revoked: "bg-red-100 text-red-700 border-red-300",
+  issued: "bg-emerald-500/15 text-emerald-600 dark:text-emerald-400 border-emerald-500/30",
+  submitted: "bg-blue-500/15 text-blue-600 dark:text-blue-400 border-blue-500/30",
+  revoked: "bg-red-500/15 text-red-600 dark:text-red-400 border-red-500/30",
   expired: "bg-orange-500/20 text-orange-600 border-orange-500/30",
 };
 

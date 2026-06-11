@@ -94,7 +94,7 @@ export default function Phase13ComplianceCalendar() {
         </div>
 
         {upcomingList.length > 0 && (
-          <Card className="border-orange-200 bg-orange-50 dark:bg-orange-950/20">
+          <Card className="border-orange-500/20 bg-orange-50 dark:bg-orange-950/20">
             <CardHeader className="pb-2">
               <CardTitle className="text-orange-700 dark:text-orange-400 flex items-center gap-2 text-base">
                 <Bell className="h-4 w-4" />

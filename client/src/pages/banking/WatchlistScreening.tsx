@@ -11,13 +11,13 @@ import { toast } from "sonner";
 import { Search, Plus, Shield, AlertTriangle, CheckCircle, Globe } from "lucide-react";
 
 const CATEGORY_COLORS: Record<string, string> = {
-  sanctions: "bg-red-100 text-red-800",
-  pep: "bg-orange-100 text-orange-800",
-  adverse_media: "bg-yellow-100 text-yellow-800",
-  terrorism: "bg-red-200 text-red-900",
-  fraud: "bg-purple-100 text-purple-800",
-  corruption: "bg-pink-100 text-pink-800",
-  money_laundering: "bg-indigo-100 text-indigo-800",
+  sanctions: "bg-red-500/15 text-red-600 dark:text-red-400",
+  pep: "bg-orange-500/15 text-orange-600 dark:text-orange-400",
+  adverse_media: "bg-yellow-500/15 text-yellow-600 dark:text-yellow-400",
+  terrorism: "bg-red-500/20 text-red-600 dark:text-red-400",
+  fraud: "bg-purple-500/15 text-purple-600 dark:text-purple-400",
+  corruption: "bg-pink-500/15 text-pink-600 dark:text-pink-400",
+  money_laundering: "bg-indigo-500/15 text-indigo-600 dark:text-indigo-400",
 };
 
 const SOURCES = [
@@ -110,7 +110,7 @@ export default function WatchlistScreening() {
                   {screenMutation.isPending ? "Screening..." : "Run Screening"}
                 </Button>
                 {screenResult && (
-                  <div className={`p-4 rounded-lg ${(screenResult.matchCount ?? 0) > 0 ? "bg-red-50 border border-red-200" : "bg-green-50 border border-green-200"}`}>
+                  <div className={`p-4 rounded-lg ${(screenResult.matchCount ?? 0) > 0 ? "bg-red-50 border border-red-500/20" : "bg-green-50 border border-green-500/20"}`}>
                     <div className="flex items-center gap-2 mb-2">
                       {(screenResult.matchCount ?? 0) > 0
                         ? <AlertTriangle className="h-5 w-5 text-red-600" />
@@ -297,7 +297,7 @@ export default function WatchlistScreening() {
                     <td className="px-4 py-3 font-mono text-xs">{r.passport_number || "—"}</td>
                     <td className="px-4 py-3">
                       {r.is_active
-                        ? <Badge className="bg-red-100 text-red-700">Listed</Badge>
+                        ? <Badge className="bg-red-500/15 text-red-600 dark:text-red-400">Listed</Badge>
                         : <Badge className="bg-muted text-muted-foreground">Delisted</Badge>}
                     </td>
                     <td className="px-4 py-3 text-xs text-muted-foreground">

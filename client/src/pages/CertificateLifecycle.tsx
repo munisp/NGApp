@@ -15,10 +15,10 @@ import { Textarea } from "@/components/ui/textarea";
 import { Award, RefreshCw, XCircle, Search, Plus, AlertTriangle, CheckCircle2, Clock } from "lucide-react";
 
 const statusColor: Record<string, string> = {
-  active: "bg-green-100 text-green-800",
-  expired: "bg-red-100 text-red-800",
+  active: "bg-green-500/15 text-green-600 dark:text-green-400",
+  expired: "bg-red-500/15 text-red-600 dark:text-red-400",
   revoked: "bg-muted text-foreground",
-  expiring_soon: "bg-yellow-100 text-yellow-800",
+  expiring_soon: "bg-yellow-500/15 text-yellow-600 dark:text-yellow-400",
 };
 
 export default function CertificateLifecycle() {
@@ -170,7 +170,7 @@ export default function CertificateLifecycle() {
                     <Button size="sm" variant="outline" onClick={() => { setSelectedCert(c); setRenewOpen(true); }} disabled={c.status === 'revoked'}>
                       <RefreshCw className="w-3 h-3 mr-1" />Renew
                     </Button>
-                    <Button size="sm" variant="outline" className="text-red-600 border-red-200" onClick={() => { setSelectedCert(c); setRevokeOpen(true); }} disabled={c.status === 'revoked'}>
+                    <Button size="sm" variant="outline" className="text-red-600 border-red-500/20" onClick={() => { setSelectedCert(c); setRevokeOpen(true); }} disabled={c.status === 'revoked'}>
                       <XCircle className="w-3 h-3 mr-1" />Revoke
                     </Button>
                   </td>

@@ -111,7 +111,7 @@ export default function DpcoBrochure() {
         <div className="flex items-center gap-2">
           <Pencil className="w-4 h-4 text-violet-500" />
           <span className="text-sm font-medium text-slate-700">Brochure Editor</span>
-          <Badge className="bg-violet-100 text-violet-700 border-violet-200 text-xs">Live Edit Mode</Badge>
+          <Badge className="bg-violet-500/15 text-violet-600 dark:text-violet-400 border-violet-500/20 text-xs">Live Edit Mode</Badge>
         </div>
         <span className="text-xs text-muted-foreground ml-2">Click any text to edit it inline</span>
         <div className="ml-auto flex items-center gap-2">
@@ -171,7 +171,7 @@ export default function DpcoBrochure() {
           <p className="text-slate-500 text-sm mb-10">Eight purpose-built modules covering the complete DPCO business lifecycle.</p>
           <div className="grid grid-cols-2 gap-6">
             {c.modules.map((m, i) => (
-              <div key={i} className="border border-border rounded-xl p-5 hover:border-emerald-300 transition-colors">
+              <div key={i} className="border border-border rounded-xl p-5 hover:border-emerald-500/30 transition-colors">
                 <div className="flex items-start gap-3">
                   <div className="w-8 h-8 rounded-lg bg-emerald-50 border border-emerald-100 flex items-center justify-center shrink-0 mt-0.5">
                     <span className="text-emerald-600 font-bold text-xs">{String(i + 1).padStart(2, "0")}</span>

@@ -325,7 +325,7 @@ export default function UserGuide() {
 
         {/* Quick start banner */}
         {completedCount === 0 && (
-          <Card className="border-blue-200 bg-blue-50/50">
+          <Card className="border-blue-500/20 bg-blue-50/50">
             <CardContent className="pt-4 pb-4">
               <div className="flex items-center justify-between">
                 <div className="flex items-center gap-3">

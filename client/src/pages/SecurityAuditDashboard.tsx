@@ -8,11 +8,11 @@ import { Shield, ShieldCheck, AlertTriangle, RefreshCw, CheckCircle2, Lock, Serv
 
 
 const GRADE_COLOR: Record<string, string> = {
-  A: "text-green-600 bg-green-50 border-green-200",
-  B: "text-blue-600 bg-blue-50 border-blue-200",
-  C: "text-yellow-600 bg-yellow-50 border-yellow-200",
-  D: "text-orange-600 bg-orange-50 border-orange-200",
-  F: "text-red-600 bg-red-50 border-red-200",
+  A: "text-green-600 bg-green-50 border-green-500/20",
+  B: "text-blue-600 bg-blue-50 border-blue-500/20",
+  C: "text-yellow-600 bg-yellow-50 border-yellow-500/20",
+  D: "text-orange-600 bg-orange-50 border-orange-500/20",
+  F: "text-red-600 bg-red-50 border-red-500/20",
 };
 
 const CATEGORY_ICONS: Record<string, React.ReactNode> = {
@@ -128,7 +128,7 @@ export default function SecurityAuditDashboard() {
                     <div className="flex items-center gap-2 flex-wrap">
                       <span className="font-medium text-sm">{f.title}</span>
                       <Badge variant="outline" className="text-xs">{f.category}</Badge>
-                      <Badge className="text-xs bg-green-100 text-green-700 border-green-200">
+                      <Badge className="text-xs bg-green-500/15 text-green-600 dark:text-green-400 border-green-500/20">
                         {f.status ?? "fixed"}
                       </Badge>
                     </div>

@@ -8,8 +8,8 @@ import { FileText, AlertTriangle, CheckCircle2, Clock, Zap } from "lucide-react"
 
 function DaysRemaining({ days }: { days: number }) {
   if (days < 0) return <Badge variant="destructive">Overdue by {Math.abs(Math.round(days))}d</Badge>;
-  if (days <= 3) return <Badge className="bg-red-100 text-red-700 border-red-200">{Math.round(days)}d left</Badge>;
-  if (days <= 7) return <Badge className="bg-yellow-100 text-yellow-700 border-yellow-200">{Math.round(days)}d left</Badge>;
+  if (days <= 3) return <Badge className="bg-red-500/15 text-red-600 dark:text-red-400 border-red-500/20">{Math.round(days)}d left</Badge>;
+  if (days <= 7) return <Badge className="bg-yellow-500/15 text-yellow-600 dark:text-yellow-400 border-yellow-500/20">{Math.round(days)}d left</Badge>;
   return <Badge variant="outline">{Math.round(days)}d left</Badge>;
 }
 
@@ -128,7 +128,7 @@ export default function DSARLifecycle() {
         </Card>
 
         {/* NDPA Compliance Note */}
-        <Card className="border-blue-200 bg-blue-50/50">
+        <Card className="border-blue-500/20 bg-blue-50/50">
           <CardContent className="pt-4">
             <div className="flex gap-3">
               <FileText className="h-5 w-5 text-blue-600 shrink-0 mt-0.5" />

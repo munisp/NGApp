@@ -231,7 +231,7 @@ export default function AuditExport() {
         </Card>
 
         {/* Info */}
-        <Card className="border-blue-200 bg-blue-50/50">
+        <Card className="border-blue-500/20 bg-blue-50/50">
           <CardContent className="pt-4 text-sm text-blue-800">
             <p className="font-semibold mb-1">Export Notes</p>
             <ul className="list-disc list-inside space-y-1 text-blue-700">

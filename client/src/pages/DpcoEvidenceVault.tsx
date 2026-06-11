@@ -18,14 +18,14 @@ import {
 import { toast } from "sonner";
 
 const CATEGORIES = [
-  { value: "privacy_policy",   label: "Privacy Policy",         color: "bg-blue-100 text-blue-800" },
-  { value: "dpia",             label: "DPIA",                   color: "bg-purple-100 text-purple-800" },
-  { value: "training_record",  label: "Training Record",        color: "bg-green-100 text-green-800" },
-  { value: "ropa",             label: "ROPA",                   color: "bg-yellow-100 text-yellow-800" },
-  { value: "dpa_contract",     label: "DPA Contract",           color: "bg-orange-100 text-orange-800" },
-  { value: "breach_report",    label: "Breach Report",          color: "bg-red-100 text-red-800" },
-  { value: "consent_record",   label: "Consent Record",         color: "bg-teal-100 text-teal-800" },
-  { value: "audit_report",     label: "Audit Report",           color: "bg-indigo-100 text-indigo-800" },
+  { value: "privacy_policy",   label: "Privacy Policy",         color: "bg-blue-500/15 text-blue-600 dark:text-blue-400" },
+  { value: "dpia",             label: "DPIA",                   color: "bg-purple-500/15 text-purple-600 dark:text-purple-400" },
+  { value: "training_record",  label: "Training Record",        color: "bg-green-500/15 text-green-600 dark:text-green-400" },
+  { value: "ropa",             label: "ROPA",                   color: "bg-yellow-500/15 text-yellow-600 dark:text-yellow-400" },
+  { value: "dpa_contract",     label: "DPA Contract",           color: "bg-orange-500/15 text-orange-600 dark:text-orange-400" },
+  { value: "breach_report",    label: "Breach Report",          color: "bg-red-500/15 text-red-600 dark:text-red-400" },
+  { value: "consent_record",   label: "Consent Record",         color: "bg-teal-500/15 text-teal-600 dark:text-teal-400" },
+  { value: "audit_report",     label: "Audit Report",           color: "bg-indigo-500/15 text-indigo-600 dark:text-indigo-400" },
   { value: "other",            label: "Other",                  color: "bg-muted text-foreground" },
 ];
 
@@ -259,7 +259,7 @@ export default function DpcoEvidenceVault() {
                   <Progress value={uploadProgress} className="h-2" />
                 </div>
               )}
-              <div className="bg-blue-50 border border-blue-200 rounded p-3 text-xs text-blue-800 flex gap-2">
+              <div className="bg-blue-50 border border-blue-500/20 rounded p-3 text-xs text-blue-800 flex gap-2">
                 <Hash className="w-4 h-4 shrink-0 mt-0.5" />
                 SHA-256 hash is computed client-side before upload. The hash is stored immutably and can be used to verify file integrity at any time.
               </div>

@@ -6,7 +6,7 @@ import { Progress } from "@/components/ui/progress";
 import { toast } from "sonner";
 import { Clock, CheckCircle, AlertTriangle, XCircle, RefreshCw, Download, Shield } from "lucide-react";
 
-const timerColor: Record<string,string> = { completed:"bg-green-100 text-green-800", on_track:"bg-blue-100 text-blue-800", warning:"bg-yellow-100 text-yellow-800", critical:"bg-orange-100 text-orange-800", overdue:"bg-red-100 text-red-800" };
+const timerColor: Record<string,string> = { completed:"bg-green-500/15 text-green-600 dark:text-green-400", on_track:"bg-blue-500/15 text-blue-600 dark:text-blue-400", warning:"bg-yellow-500/15 text-yellow-600 dark:text-yellow-400", critical:"bg-orange-500/15 text-orange-600 dark:text-orange-400", overdue:"bg-red-500/15 text-red-600 dark:text-red-400" };
 
 export default function Article40Tracker() {
   const { data: timers, refetch, isRefetching } = trpc.article40Tracker.activeTimers.useQuery(undefined, { refetchInterval: 60_000 });

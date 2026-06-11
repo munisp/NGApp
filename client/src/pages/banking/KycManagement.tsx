@@ -11,15 +11,15 @@ import { toast } from "sonner";
 import { Search, Plus, Eye, CheckCircle, AlertTriangle, Clock, Shield, Download, Filter } from "lucide-react";
 
 const STATUS_COLORS: Record<string, string> = {
-  pending: "bg-yellow-100 text-yellow-800",
-  submitted: "bg-blue-100 text-blue-800",
-  in_review: "bg-purple-100 text-purple-800",
-  verified: "bg-green-100 text-green-800",
-  approved: "bg-green-100 text-green-800",
-  rejected: "bg-red-100 text-red-800",
-  failed: "bg-red-100 text-red-800",
-  suspended: "bg-orange-100 text-orange-800",
-  edd_required: "bg-orange-100 text-orange-800",
+  pending: "bg-yellow-500/15 text-yellow-600 dark:text-yellow-400",
+  submitted: "bg-blue-500/15 text-blue-600 dark:text-blue-400",
+  in_review: "bg-purple-500/15 text-purple-600 dark:text-purple-400",
+  verified: "bg-green-500/15 text-green-600 dark:text-green-400",
+  approved: "bg-green-500/15 text-green-600 dark:text-green-400",
+  rejected: "bg-red-500/15 text-red-600 dark:text-red-400",
+  failed: "bg-red-500/15 text-red-600 dark:text-red-400",
+  suspended: "bg-orange-500/15 text-orange-600 dark:text-orange-400",
+  edd_required: "bg-orange-500/15 text-orange-600 dark:text-orange-400",
   expired: "bg-muted text-foreground",
 };
 
@@ -292,7 +292,7 @@ export default function KycManagement() {
                     <td className="px-4 py-3 font-medium">{r.full_name}</td>
                     <td className="px-4 py-3 font-mono text-xs">{r.bvn ? r.bvn.replace(/(\d{3})\d{5}(\d{3})/, "$1*****$2") : "—"}</td>
                     <td className="px-4 py-3">
-                      <Badge className="bg-blue-100 text-blue-700">{r.tier?.toUpperCase() || "—"}</Badge>
+                      <Badge className="bg-blue-500/15 text-blue-600 dark:text-blue-400">{r.tier?.toUpperCase() || "—"}</Badge>
                     </td>
                     <td className="px-4 py-3">
                       <Badge className={STATUS_COLORS[r.status] || "bg-muted text-foreground"}>
@@ -305,10 +305,10 @@ export default function KycManagement() {
                       </span>
                     </td>
                     <td className="px-4 py-3">
-                      {r.pep_flag ? <Badge className="bg-red-100 text-red-700">PEP</Badge> : <span className="text-muted-foreground text-xs">No</span>}
+                      {r.pep_flag ? <Badge className="bg-red-500/15 text-red-600 dark:text-red-400">PEP</Badge> : <span className="text-muted-foreground text-xs">No</span>}
                     </td>
                     <td className="px-4 py-3">
-                      {r.sanctions_flag ? <Badge className="bg-red-100 text-red-700">MATCH</Badge> : <span className="text-muted-foreground text-xs">Clear</span>}
+                      {r.sanctions_flag ? <Badge className="bg-red-500/15 text-red-600 dark:text-red-400">MATCH</Badge> : <span className="text-muted-foreground text-xs">Clear</span>}
                     </td>
                     <td className="px-4 py-3 text-xs text-muted-foreground">
                       {r.created_at ? new Date(r.created_at).toLocaleDateString() : "—"}
@@ -388,11 +388,11 @@ export default function KycManagement() {
             <div className="flex justify-end gap-2 border-t pt-3">
               {(viewRecord.status === "pending" || viewRecord.status === "submitted" || viewRecord.status === "in_review") && (
                 <>
-                  <Button size="sm" variant="outline" className="text-green-600 border-green-300"
+                  <Button size="sm" variant="outline" className="text-green-600 border-green-500/30"
                     onClick={() => { reviewMutation.mutate({ id: viewRecord.id, action: "approve" }); setViewRecord(null); }}>
                     Approve
                   </Button>
-                  <Button size="sm" variant="outline" className="text-red-600 border-red-300"
+                  <Button size="sm" variant="outline" className="text-red-600 border-red-500/30"
                     onClick={() => { reviewMutation.mutate({ id: viewRecord.id, action: "reject", notes: "Rejected via UI" }); setViewRecord(null); }}>
                     Reject
                   </Button>

@@ -12,14 +12,14 @@ import { toast } from "sonner";
 import { CalendarDays, Clock, AlertTriangle, Plus, Pencil, Trash2, Search, RefreshCw } from "lucide-react";
 
 const PRIORITY_COLORS: Record<string, string> = {
-  critical: "bg-red-100 text-red-800 border-red-200",
-  warning: "bg-yellow-100 text-yellow-800 border-yellow-200",
-  info: "bg-blue-100 text-blue-800 border-blue-200",
+  critical: "bg-red-500/15 text-red-600 dark:text-red-400 border-red-500/20",
+  warning: "bg-yellow-500/15 text-yellow-600 dark:text-yellow-400 border-yellow-500/20",
+  info: "bg-blue-500/15 text-blue-600 dark:text-blue-400 border-blue-500/20",
 };
 const STATUS_COLORS: Record<string, string> = {
-  upcoming: "bg-blue-100 text-blue-700",
-  in_progress: "bg-yellow-100 text-yellow-700",
-  completed: "bg-green-100 text-green-700",
+  upcoming: "bg-blue-500/15 text-blue-600 dark:text-blue-400",
+  in_progress: "bg-yellow-500/15 text-yellow-600 dark:text-yellow-400",
+  completed: "bg-green-500/15 text-green-600 dark:text-green-400",
   cancelled: "bg-muted text-muted-foreground",
 };
 const EVENT_TYPES = ["deadline","renewal","audit","training","reporting"];
