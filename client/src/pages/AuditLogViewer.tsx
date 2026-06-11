@@ -94,7 +94,7 @@ export default function AuditLogViewer() {
             <span className="layer-badge">LAYER 4</span>
             <span className="data-label">7-year retention · Immutable · WORM</span>
           </div>
-          <h1 className="text-3xl font-bold tracking-tight">Audit Log Viewer</h1>
+          <h1 className="text-2xl font-bold tracking-tight">Audit Log Viewer</h1>
           <p className="text-muted-foreground mono text-sm mt-0.5">
             Complete record of all write actions — who did what, to which entity, and when.
           </p>

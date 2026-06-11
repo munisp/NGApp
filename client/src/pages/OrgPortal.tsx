@@ -520,7 +520,7 @@ export default function OrgPortal() {
       <div className="max-w-4xl mx-auto px-4 py-8">
         {/* Hero */}
         <div className="mb-8 text-center">
-          <h1 className="text-3xl font-bold text-foreground mb-2">Organization Compliance Registration</h1>
+          <h1 className="text-2xl font-bold text-foreground mb-2">Organization Compliance Registration</h1>
           <p className="text-muted-foreground max-w-xl mx-auto text-sm">
             Register your organization for national data sovereignty compliance audit. This portal accepts submissions from banks, telecoms, healthcare providers, government agencies, fintechs, and energy companies.
           </p>

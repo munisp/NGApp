@@ -97,7 +97,7 @@ export default function DsarPublicPortal() {
         {mode === "home" && (
           <div>
             <div className="text-center mb-10">
-              <h1 className="text-3xl font-bold text-foreground mb-3">Exercise Your Data Rights</h1>
+              <h1 className="text-2xl font-bold text-foreground mb-3">Exercise Your Data Rights</h1>
               <p className="text-muted-foreground max-w-xl mx-auto">
                 Under the Nigeria Data Protection Act 2023, you have the right to access, correct, delete, and port your personal data. Submit a request below — organisations must respond within <strong className="text-foreground">30 days</strong>.
               </p>

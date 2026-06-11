@@ -71,7 +71,7 @@ export default function RoleManagement() {
             <span className="layer-badge">RBAC</span>
             <span className="data-label">Keycloak · Role-Based Access Control</span>
           </div>
-          <h1 className="text-3xl font-bold tracking-tight">Role Management</h1>
+          <h1 className="text-2xl font-bold tracking-tight">Role Management</h1>
           <p className="text-muted-foreground mono text-sm mt-0.5">
             Platform access control · Permission matrix · Role hierarchy
           </p>

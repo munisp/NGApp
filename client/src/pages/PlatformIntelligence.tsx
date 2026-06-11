@@ -156,7 +156,7 @@ export default function PlatformIntelligencePage() {
   return (
     <div className="p-6 space-y-6">
       <div>
-        <h1 className="text-3xl font-bold">Platform Intelligence</h1>
+        <h1 className="text-2xl font-bold">Platform Intelligence</h1>
         <p className="text-muted-foreground mt-1">Next-generation capabilities: AI, blockchain, quantum crypto, federated learning, and digital twin simulation</p>
       </div>
       <Tabs value={tab} onValueChange={setTab}>

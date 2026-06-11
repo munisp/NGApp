@@ -1161,7 +1161,7 @@ export default function DigitalTwinPage() {
   return (
     <div className="p-6 space-y-6">
       <div>
-        <h1 className="text-3xl font-bold flex items-center gap-3">
+        <h1 className="text-2xl font-bold flex items-center gap-3">
           <Boxes className="h-8 w-8 text-primary" />
           Digital Twin V2
         </h1>

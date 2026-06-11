@@ -101,7 +101,7 @@ export default function LedgerExplorer() {
             <span className="layer-badge">LEDGER</span>
             <span className="data-label">TigerBeetle · ACID · Double-Entry</span>
           </div>
-          <h1 className="text-3xl font-bold tracking-tight">TigerBeetle Ledger Explorer</h1>
+          <h1 className="text-2xl font-bold tracking-tight">TigerBeetle Ledger Explorer</h1>
           <p className="text-muted-foreground mono text-sm mt-0.5">
             Immutable double-entry financial ledger · ACID guarantees · Full audit trail
           </p>

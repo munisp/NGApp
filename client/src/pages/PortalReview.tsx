@@ -187,7 +187,7 @@ export default function PortalReview() {
             <span className="layer-badge">REV</span>
             <span className="data-label">Auditor Review Queue</span>
           </div>
-          <h1 className="text-3xl font-bold tracking-tight text-foreground">Portal Review Queue</h1>
+          <h1 className="text-2xl font-bold tracking-tight text-foreground">Portal Review Queue</h1>
           <p className="text-muted-foreground mono text-sm mt-0.5">Review and advance organization compliance submissions through certification phases</p>
         </div>
         <Button variant="outline" size="sm" onClick={() => refetch()} className="gap-1.5">

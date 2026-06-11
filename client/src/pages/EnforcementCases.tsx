@@ -170,7 +170,7 @@ export default function EnforcementCases() {
             <span className="layer-badge">ENF</span>
             <span className="data-label">NITDA · Penalty Escalation · Case Management</span>
           </div>
-          <h1 className="text-3xl font-bold tracking-tight text-foreground">Enforcement Cases</h1>
+          <h1 className="text-2xl font-bold tracking-tight text-foreground">Enforcement Cases</h1>
           <p className="text-muted-foreground mono text-sm mt-0.5">
             Escalated penalty cases · NITDA referrals · Resolution tracking
           </p>

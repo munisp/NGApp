@@ -183,7 +183,7 @@ export default function StreamingEvents() {
             <span className="layer-badge">STREAMING</span>
             <span className="data-label">Apache Kafka · Fluvio · Dapr · Redis Streams</span>
           </div>
-          <h1 className="text-3xl font-bold tracking-tight">Real-Time Event Streaming</h1>
+          <h1 className="text-2xl font-bold tracking-tight">Real-Time Event Streaming</h1>
           <p className="text-muted-foreground mono text-sm mt-0.5">Kafka topics · Fluvio edge streams · Event visualization · Consumer group monitoring</p>
         </div>
         <div className="flex items-center gap-2">

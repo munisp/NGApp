@@ -225,7 +225,7 @@ export default function Dashboard() {
             <span className="layer-badge">LAYER 6</span>
             <span className="data-label">Government Executive Dashboard</span>
           </div>
-          <h1 className="heading-display text-3xl text-foreground">National Data Sovereignty</h1>
+          <h1 className="heading-display text-2xl text-foreground">National Data Sovereignty</h1>
           <p className="caption mt-1">Real-time situational awareness &middot; National risk assessment &middot; Enforcement overview</p>
         </div>
         <div className="flex items-center gap-3">

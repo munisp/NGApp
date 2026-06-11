@@ -191,7 +191,7 @@ export default function DpcoRegister() {
       <div className="max-w-4xl mx-auto px-6 py-10">
         {/* Title */}
         <div className="text-center mb-10">
-          <h1 className="text-3xl font-bold text-foreground mb-2">
+          <h1 className="text-2xl font-bold text-foreground mb-2">
             Data Protection Compliance Organisation
           </h1>
           <p className="text-muted-foreground max-w-xl mx-auto">

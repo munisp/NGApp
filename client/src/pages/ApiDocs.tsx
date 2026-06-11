@@ -323,7 +323,7 @@ export default function ApiDocs() {
       <div className="max-w-5xl mx-auto px-4 py-8">
         {/* Hero */}
         <div className="mb-8">
-          <h1 className="text-3xl font-bold text-foreground mb-2">NDSEP Public API</h1>
+          <h1 className="text-2xl font-bold text-foreground mb-2">NDSEP Public API</h1>
           <p className="text-muted-foreground max-w-2xl text-sm mb-4">
             The National Data Sovereignty Enforcement Platform exposes a public tRPC API for third-party integration.
             Banks, auditors, investors, and regulators can verify compliance certificates, query the leaderboard,

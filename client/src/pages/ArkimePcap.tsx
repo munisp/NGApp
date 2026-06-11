@@ -132,7 +132,7 @@ export default function ArkimePcap() {
             <span className="layer-badge">LAYER 5</span>
             <span className="data-label">Arkime · Full Packet Capture · TLS Decryption · Forensic Search</span>
           </div>
-          <h1 className="text-3xl font-bold tracking-tight flex items-center gap-2">
+          <h1 className="text-2xl font-bold tracking-tight flex items-center gap-2">
             <HardDrive className="h-7 w-7 text-cyan-400" />
             Arkime PCAP Viewer
           </h1>

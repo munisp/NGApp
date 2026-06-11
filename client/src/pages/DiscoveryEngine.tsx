@@ -148,7 +148,7 @@ export default function DiscoveryEngine() {
             <span className="layer-badge">LAYER 1</span>
             <span className="data-label">Discovery Engine · NMAP · Censys · CloudQuery · GLPI</span>
           </div>
-          <h1 className="text-3xl font-bold tracking-tight">Asset Discovery Engine</h1>
+          <h1 className="text-2xl font-bold tracking-tight">Asset Discovery Engine</h1>
           <p className="text-muted-foreground mono text-sm mt-0.5">Active & passive scanning · Hardware, software, cloud, network assets · Vulnerability assessment</p>
         </div>
         <div className="flex items-center gap-2">

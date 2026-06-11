@@ -96,7 +96,7 @@ export default function DataCatalog() {
             <span className="layer-badge">LAYER 2</span>
             <span className="data-label">DataHub · OpenMetadata · Apache Atlas · Delta Lake · Apache Sedona</span>
           </div>
-          <h1 className="text-3xl font-bold tracking-tight">Data Catalog & Lakehouse</h1>
+          <h1 className="text-2xl font-bold tracking-tight">Data Catalog & Lakehouse</h1>
           <p className="text-muted-foreground mono text-sm mt-0.5">Metadata management · Data lineage · Geospatial residency verification · Classification taxonomy</p>
         </div>
       </div>

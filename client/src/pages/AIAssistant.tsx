@@ -81,7 +81,7 @@ export default function AIAssistant() {
             <span className="layer-badge">AI</span>
             <span className="data-label">LLM · RAG · Platform Context · Go · Python</span>
           </div>
-          <h1 className="text-3xl font-bold tracking-tight">AI Compliance Advisor</h1>
+          <h1 className="text-2xl font-bold tracking-tight">AI Compliance Advisor</h1>
           <p className="text-muted-foreground mono text-sm mt-0.5">Natural language queries · Risk analysis · Enforcement recommendations · Real-time platform context</p>
         </div>
         <div className="flex items-center gap-2">
