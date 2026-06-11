@@ -47,10 +47,10 @@ const mockStore = vi.hoisted(() => ({
   },
 }));
 
-vi.mock("mysql2/promise", () => {
+vi.mock("pg", () => {
   return {
     default: {
-      createPool: vi.fn(() => mockStore.pool),
+      Pool: vi.fn(() => mockStore.pool),
     },
   };
 });

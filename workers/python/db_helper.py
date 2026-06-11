@@ -13,18 +13,14 @@ _DEFAULT_DSN = "postgresql://ndsep_user:ndsep_secure_2026@localhost:5432/ndsep_d
 
 def _build_dsn():
     """
-    Priority: WORKER_DATABASE_URL > LOCAL_DATABASE_URL > _DEFAULT_DSN
-    DATABASE_URL is intentionally excluded — it points to TiDB/MySQL (psycopg2-incompatible).
+    Priority: WORKER_DATABASE_URL > LOCAL_DATABASE_URL > DATABASE_URL > _DEFAULT_DSN
     """
     dsn = (
         os.environ.get("WORKER_DATABASE_URL")
         or os.environ.get("LOCAL_DATABASE_URL")
+        or os.environ.get("DATABASE_URL")
         or _DEFAULT_DSN
     )
-    # Guard against accidentally using a MySQL/TiDB URL
-    if dsn.startswith("mysql://") or "tidb" in dsn.lower():
-        log.warning("[DB] URL appears to be MySQL/TiDB — falling back to local PostgreSQL")
-        return _DEFAULT_DSN
     return dsn
 
 def get_connection(autocommit=False):

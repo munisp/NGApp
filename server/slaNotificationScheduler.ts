@@ -12,20 +12,22 @@
  *   - Cross-border approval: 14 days (NDPA §44)
  *
  * On each overdue breach:
- *   1. Marks the breach status as 'escalated' in MySQL
+ *   1. Marks the breach status as 'escalated' in PostgreSQL
  *   2. Fires notifyOwner() with structured alert content
  *   3. Broadcasts a WebSocket event to connected NDSEP clients
  *   4. Emits a structured audit log entry
  */
 
-import mysql from "mysql2/promise";
+import pg from "pg";
+import { getDatabaseUrl } from "./config";
+import { getPgSslConfig } from "./dbSslConfig";
 
 import { notifyOwner } from "./_core/notification";
 import { sendMail } from "./mailer";
 import { ENV } from "./_core/env";
 import pino from "pino";
 
-
+const { Pool } = pg;
 const logger = pino({ name: "sla-notification-scheduler" });
 
 const SLA_DEADLINE_HOURS: Record<string, number> = {
@@ -46,16 +48,11 @@ const NDPA_SECTION: Record<string, string> = {
   cross_border_approval: "NDPA §44",
 };
 
-function getMysqlPool() {
-  const u = new URL(process.env.DATABASE_URL ?? "");
-  return mysql.createPool({
-    host: u.hostname,
-    port: Number(u.port) || 3306,
-    user: u.username,
-    password: u.password,
-    database: u.pathname.slice(1),
-    ssl: process.env.NODE_ENV === "production" ? { rejectUnauthorized: process.env.DB_SSL_REJECT_UNAUTHORIZED !== "false" } : undefined,
-    connectionLimit: 3,
+function getPgPool() {
+  return new Pool({
+    connectionString: getDatabaseUrl(),
+    max: 3,
+    ssl: getPgSslConfig(),
   });
 }
 
@@ -75,19 +72,19 @@ export interface SlaBreachAlert {
  * Detect all overdue SLA breaches and return them as structured alerts.
  */
 export async function detectOverdueBreaches(): Promise<SlaBreachAlert[]> {
-  const pool = getMysqlPool();
+  const pool = getPgPool();
   try {
-    const [rows] = await pool.query<any[]>(`
+    const result = await pool.query(`
       SELECT
         sb.id,
         sb.organization_id,
-        COALESCE(o.name, CONCAT('Org #', sb.organization_id)) AS org_name,
+        COALESCE(o.name, 'Org #' || sb.organization_id::text) AS org_name,
         sb.breach_type,
         sb.severity,
         sb.status,
         sb.sla_deadline,
         sb.description,
-        TIMESTAMPDIFF(HOUR, sb.sla_deadline, NOW()) AS hours_overdue
+        EXTRACT(EPOCH FROM (NOW() - sb.sla_deadline)) / 3600 AS hours_overdue
       FROM sla_breaches sb
       LEFT JOIN organizations o ON o.id = sb.organization_id
       WHERE sb.status IN ('open', 'pending')
@@ -96,7 +93,7 @@ export async function detectOverdueBreaches(): Promise<SlaBreachAlert[]> {
       ORDER BY sb.severity DESC, sb.sla_deadline ASC
       LIMIT 100
     `);
-    return rows as SlaBreachAlert[];
+    return result.rows as SlaBreachAlert[];
   } finally {
     await pool.end();
   }
@@ -106,13 +103,13 @@ export async function detectOverdueBreaches(): Promise<SlaBreachAlert[]> {
  * Escalate a single breach: update status to 'escalated' and record escalation time.
  */
 export async function escalateBreach(id: number, orgName: string, breachType: string): Promise<void> {
-  const pool = getMysqlPool();
+  const pool = getPgPool();
   try {
     await pool.query(
       `UPDATE sla_breaches
        SET status = 'escalated',
-           description = CONCAT(COALESCE(description, ''), '\n[AUTO-ESCALATED ', NOW(), '] Deadline missed — notified NDSEP owner')
-       WHERE id = ? AND status IN ('open', 'pending')`,
+           description = COALESCE(description, '') || E'\n[AUTO-ESCALATED ' || NOW()::text || '] Deadline missed — notified NDSEP owner'
+       WHERE id = $1 AND status IN ('open', 'pending')`,
       [id]
     );
     logger.info({ id, orgName, breachType }, "[SLA] Breach escalated");
