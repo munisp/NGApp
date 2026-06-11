@@ -117,7 +117,7 @@ export default function NetworkIntelligencePage() {
     <div className="p-6 space-y-6">
       {/* Header */}
       <div className="flex items-center gap-3">
-        <Link href="/network"><Button variant="ghost" size="icon"><ArrowLeft className="h-4 w-4" /></Button></Link>
+        <Link href="/network"><Button variant="ghost" size="icon" aria-label="Go back"><ArrowLeft className="h-4 w-4" /></Button></Link>
         <Radio className="h-7 w-7 text-emerald-500" />
         <div>
           <h1 className="text-2xl font-bold">Network Intelligence Engine</h1>

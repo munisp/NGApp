@@ -77,6 +77,7 @@ export default function ThemeToggle({ className, variant = "icon" }: ThemeToggle
         className
       )}
       title={MODE_META[mode].label}
+      aria-label={`Switch theme: ${MODE_META[mode].label}`}
     >
       <span className="relative flex items-center justify-center">
         <Icon className="h-4 w-4 transition-all duration-300 ease-out" />

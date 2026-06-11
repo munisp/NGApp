@@ -129,6 +129,7 @@ export function FloatingChatBubble() {
                 size="icon"
                 className="h-6 w-6 text-slate-400 hover:text-cyan-300"
                 onClick={() => setMinimized((m) => !m)}
+                aria-label={minimized ? "Expand chat" : "Minimize chat"}
               >
                 {minimized ? <Maximize2 className="h-3 w-3" /> : <Minimize2 className="h-3 w-3" />}
               </Button>
@@ -137,6 +138,7 @@ export function FloatingChatBubble() {
                 size="icon"
                 className="h-6 w-6 text-slate-400 hover:text-red-400"
                 onClick={() => setOpen(false)}
+                aria-label="Close chat"
               >
                 <X className="h-3 w-3" />
               </Button>
@@ -226,6 +228,7 @@ export function FloatingChatBubble() {
                   className="h-8 w-8 bg-cyan-500 hover:bg-cyan-400 text-black"
                   onClick={() => handleSend()}
                   disabled={!input.trim() || isTyping}
+                  aria-label="Send message"
                 >
                   <Send className="h-3 w-3" />
                 </Button>

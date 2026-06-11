@@ -191,8 +191,8 @@ export default function ComplianceCalendar() {
                     <td className="py-2 pr-3 text-muted-foreground">{ev.assigned_to??"—"}</td>
                     <td className="py-2">
                       <div className="flex gap-1">
-                        <Button variant="ghost" size="icon" className="h-7 w-7" onClick={()=>setEditEvent(ev)}><Pencil className="h-3.5 w-3.5"/></Button>
-                        <Button variant="ghost" size="icon" className="h-7 w-7 text-red-500 hover:text-red-700" onClick={()=>{if(confirm("Delete this event?"))deleteM.mutate({id:ev.id});}}><Trash2 className="h-3.5 w-3.5"/></Button>
+                        <Button variant="ghost" size="icon" className="h-7 w-7" onClick={()=>setEditEvent(ev)} aria-label="Edit event"><Pencil className="h-3.5 w-3.5"/></Button>
+                        <Button variant="ghost" size="icon" className="h-7 w-7 text-red-500 hover:text-red-700" onClick={()=>{if(confirm("Delete this event?"))deleteM.mutate({id:ev.id});}} aria-label="Delete event"><Trash2 className="h-3.5 w-3.5"/></Button>
                       </div>
                     </td>
                   </tr>

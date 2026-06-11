@@ -167,6 +167,7 @@ export default function ComplianceTrend() {
               size="icon"
               onClick={() => navigate("/my-dashboard")}
               className="shrink-0"
+              aria-label="Go back"
             >
               <ArrowLeft className="h-4 w-4" />
             </Button>

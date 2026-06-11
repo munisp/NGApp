@@ -252,6 +252,7 @@ export function LivenessCamera({
           size="icon"
           onClick={() => setMirrored(!mirrored)}
           title="Flip camera"
+          aria-label="Flip camera"
         >
           <RotateCcw className="w-4 h-4" />
         </Button>
@@ -261,6 +262,7 @@ export function LivenessCamera({
           size="icon"
           onClick={isStreaming ? stopCamera : startCamera}
           title={isStreaming ? "Stop camera" : "Start camera"}
+          aria-label={isStreaming ? "Stop camera" : "Start camera"}
         >
           {isStreaming ? <VideoOff className="w-4 h-4" /> : <Video className="w-4 h-4" />}
         </Button>

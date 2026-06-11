@@ -327,13 +327,13 @@ export default function KnowledgeGraphVisualiser() {
               <CardContent className="p-0">
                 {/* Toolbar */}
                 <div className="absolute top-3 right-3 z-10 flex gap-1">
-                  <Button size="icon" variant="outline" className="w-7 h-7 bg-background/80" onClick={() => setZoom(z => Math.min(z + 0.2, 3))}>
+                  <Button size="icon" variant="outline" className="w-7 h-7 bg-background/80" onClick={() => setZoom(z => Math.min(z + 0.2, 3))} aria-label="Zoom in">
                     <ZoomIn className="w-3 h-3" />
                   </Button>
-                  <Button size="icon" variant="outline" className="w-7 h-7 bg-background/80" onClick={() => setZoom(z => Math.max(z - 0.2, 0.3))}>
+                  <Button size="icon" variant="outline" className="w-7 h-7 bg-background/80" onClick={() => setZoom(z => Math.max(z - 0.2, 0.3))} aria-label="Zoom out">
                     <ZoomOut className="w-3 h-3" />
                   </Button>
-                  <Button size="icon" variant="outline" className="w-7 h-7 bg-background/80" onClick={() => { setZoom(1); setPan({ x: 0, y: 0 }); }}>
+                  <Button size="icon" variant="outline" className="w-7 h-7 bg-background/80" onClick={() => { setZoom(1); setPan({ x: 0, y: 0 }); }} aria-label="Reset view">
                     <Maximize2 className="w-3 h-3" />
                   </Button>
                 </div>

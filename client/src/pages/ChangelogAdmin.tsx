@@ -258,6 +258,7 @@ export default function ChangelogAdmin() {
                           size="icon"
                           className="h-7 w-7"
                           onClick={() => openEdit(entry)}
+                          aria-label="Edit entry"
                         >
                           <Pencil className="h-3.5 w-3.5" />
                         </Button>
@@ -266,6 +267,7 @@ export default function ChangelogAdmin() {
                           size="icon"
                           className="h-7 w-7 text-destructive hover:text-destructive"
                           onClick={() => setDeleteEntry(entry)}
+                          aria-label="Delete entry"
                         >
                           <Trash2 className="h-3.5 w-3.5" />
                         </Button>

@@ -58,6 +58,7 @@ export function OnboardingBanner() {
         size="icon"
         className="h-6 w-6 text-slate-500 hover:text-slate-300 flex-shrink-0"
         onClick={() => dismissBanner.mutate()}
+        aria-label="Dismiss banner"
       >
         <X className="h-3 w-3" />
       </Button>
