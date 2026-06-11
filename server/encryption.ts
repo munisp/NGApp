@@ -113,7 +113,7 @@ export function decryptField(encrypted: string | null | undefined): string | nul
     const tag = Buffer.from(tagHex, "hex");
     const ciphertext = Buffer.from(ciphertextHex, "hex");
 
-    const decipher = crypto.createDecipheriv(ALGORITHM, key, iv);
+    const decipher = crypto.createDecipheriv(ALGORITHM, key, iv, { authTagLength: 16 });
     decipher.setAuthTag(tag);
 
     const decrypted = Buffer.concat([
@@ -226,7 +226,7 @@ export function reEncryptField(
   const tag = Buffer.from(tagHex, "hex");
   const ciphertext = Buffer.from(ciphertextHex, "hex");
 
-  const decipher = crypto.createDecipheriv(ALGORITHM, oldKey, iv);
+  const decipher = crypto.createDecipheriv(ALGORITHM, oldKey, iv, { authTagLength: 16 });
   decipher.setAuthTag(tag);
   const plaintext = Buffer.concat([decipher.update(ciphertext), decipher.final()]).toString("utf8");
 
