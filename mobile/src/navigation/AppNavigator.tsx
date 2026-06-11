@@ -103,9 +103,61 @@ function SettingsStack() {
   );
 }
 
+const linking = {
+  prefixes: ["ndsep://", "https://ndsep.gov.ng"],
+  config: {
+    screens: {
+      Dashboard: {
+        screens: {
+          DashboardHome: "dashboard",
+          ComplianceDetail: "compliance/:id",
+          OrganizationDetail: "org/:id",
+          ComplianceAudit: "audits",
+          AIGovernance: "ai-governance",
+          DPIA: "dpia",
+          DSAR: "dsar",
+          DataTransfers: "transfers",
+          Banking: "banking",
+          Workflows: "workflows",
+        },
+      },
+      Enforcement: {
+        screens: {
+          EnforcementList: "enforcement",
+          CaseDetail: "enforcement/:id",
+          PenaltyCalculator: "penalty-calculator",
+        },
+      },
+      Breaches: {
+        screens: {
+          BreachList: "breaches",
+          BreachReport: "breach/report",
+          BreachTimeline: "breach/:id/timeline",
+        },
+      },
+      NOC: {
+        screens: {
+          NOCMonitor: "noc",
+          AlertDetail: "alert/:id",
+          NetworkIntelligence: "network-intel",
+        },
+      },
+      Settings: {
+        screens: {
+          SettingsHome: "settings",
+          Profile: "profile",
+          Notifications: "notifications",
+          Security: "security",
+          OfflineData: "offline",
+        },
+      },
+    },
+  },
+};
+
 export function AppNavigator() {
   return (
-    <NavigationContainer>
+    <NavigationContainer linking={linking}>
       <Tab.Navigator
         screenOptions={({ route }) => ({
           tabBarIcon: ({ color, size }) => {
