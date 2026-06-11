@@ -116,7 +116,10 @@ workers/rust/target/
 client/dev-dist/
 .manus-logs/
 .manus/db/
+demo-screenshots/
+test-results/
 __pycache__/
 workers/python/vendor/
+workers/python/models/
 workers/go/bin/
 workers/rust/target/
