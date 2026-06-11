@@ -54,28 +54,28 @@ function OverviewTab() {
         <Breadcrumbs items={[{ label: "Dashboard", href: "/" }, { label: "NOC Dashboard" }]} />
       {/* KPI Cards */}
       <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-        <Card className="bg-slate-800/60 border-slate-700">
+        <Card className="bg-card border-border">
           <CardContent className="pt-4 text-center">
             <AlertTriangle className="w-8 h-8 mx-auto mb-2 text-red-400" />
             <p className="text-3xl font-bold text-red-400">{stats?.critical_active ?? 0}</p>
             <p className="text-xs text-muted-foreground">Critical Alerts</p>
           </CardContent>
         </Card>
-        <Card className="bg-slate-800/60 border-slate-700">
+        <Card className="bg-card border-border">
           <CardContent className="pt-4 text-center">
             <Shield className="w-8 h-8 mx-auto mb-2 text-orange-400" />
             <p className="text-3xl font-bold text-orange-400">{stats?.high_active ?? 0}</p>
             <p className="text-xs text-muted-foreground">High Alerts</p>
           </CardContent>
         </Card>
-        <Card className="bg-slate-800/60 border-slate-700">
+        <Card className="bg-card border-border">
           <CardContent className="pt-4 text-center">
             <CheckCircle2 className="w-8 h-8 mx-auto mb-2 text-emerald-400" />
             <p className="text-3xl font-bold text-emerald-400">{stats?.resolved ?? 0}</p>
             <p className="text-xs text-muted-foreground">Resolved (24h)</p>
           </CardContent>
         </Card>
-        <Card className="bg-slate-800/60 border-slate-700">
+        <Card className="bg-card border-border">
           <CardContent className="pt-4 text-center">
             <GitBranch className="w-8 h-8 mx-auto mb-2 text-blue-400" />
             <p className="text-3xl font-bold text-blue-400">{stats?.correlated ?? 0}</p>
@@ -85,7 +85,7 @@ function OverviewTab() {
       </div>
 
       {/* Subsystem Health */}
-      <Card className="bg-slate-800/60 border-slate-700">
+      <Card className="bg-card border-border">
         <CardHeader><CardTitle className="text-sm">NOC Subsystem Health</CardTitle></CardHeader>
         <CardContent>
           <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
@@ -107,7 +107,7 @@ function OverviewTab() {
       </Card>
 
       {/* Middleware Health */}
-      <Card className="bg-slate-800/60 border-slate-700">
+      <Card className="bg-card border-border">
         <CardHeader><CardTitle className="text-sm">Middleware Infrastructure</CardTitle></CardHeader>
         <CardContent>
           {dboard?.middleware ? (
@@ -134,7 +134,7 @@ function AlertsTab() {
   const alerts = val<{ alerts: Array<Record<string, unknown>>; total: number }>(alertsData);
 
   return (
-    <Card className="bg-slate-800/60 border-slate-700">
+    <Card className="bg-card border-border">
       <CardHeader>
         <CardTitle className="text-sm flex items-center gap-2">
           <AlertTriangle className="w-4 h-4" /> NOC Alerts ({alerts?.total ?? 0} total)
@@ -190,21 +190,21 @@ function TopologyTab() {
   return (
     <div className="space-y-4">
       <div className="grid grid-cols-3 gap-4">
-        <Card className="bg-slate-800/60 border-slate-700">
+        <Card className="bg-card border-border">
           <CardContent className="pt-4 text-center">
             <Server className="w-6 h-6 mx-auto mb-1 text-blue-400" />
             <p className="text-2xl font-bold">{topo?.nodeCount ?? devList?.length ?? 0}</p>
             <p className="text-xs text-muted-foreground">Devices</p>
           </CardContent>
         </Card>
-        <Card className="bg-slate-800/60 border-slate-700">
+        <Card className="bg-card border-border">
           <CardContent className="pt-4 text-center">
             <Network className="w-6 h-6 mx-auto mb-1 text-purple-400" />
             <p className="text-2xl font-bold">{topo?.edgeCount ?? 0}</p>
             <p className="text-xs text-muted-foreground">Links</p>
           </CardContent>
         </Card>
-        <Card className="bg-slate-800/60 border-slate-700">
+        <Card className="bg-card border-border">
           <CardContent className="pt-4 text-center">
             <Globe className="w-6 h-6 mx-auto mb-1 text-emerald-400" />
             <p className="text-2xl font-bold">
@@ -215,7 +215,7 @@ function TopologyTab() {
         </Card>
       </div>
 
-      <Card className="bg-slate-800/60 border-slate-700">
+      <Card className="bg-card border-border">
         <CardHeader><CardTitle className="text-sm">Device Inventory</CardTitle></CardHeader>
         <CardContent>
           <Table>
@@ -266,28 +266,28 @@ function UptimeTab() {
   return (
     <div className="space-y-4">
       <div className="grid grid-cols-4 gap-4">
-        <Card className="bg-slate-800/60 border-slate-700">
+        <Card className="bg-card border-border">
           <CardContent className="pt-4 text-center">
             <Activity className="w-6 h-6 mx-auto mb-1 text-emerald-400" />
             <p className="text-2xl font-bold text-emerald-400">{uptime?.up ?? 0}</p>
             <p className="text-xs text-muted-foreground">Services Up</p>
           </CardContent>
         </Card>
-        <Card className="bg-slate-800/60 border-slate-700">
+        <Card className="bg-card border-border">
           <CardContent className="pt-4 text-center">
             <XCircle className="w-6 h-6 mx-auto mb-1 text-red-400" />
             <p className="text-2xl font-bold text-red-400">{uptime?.down ?? 0}</p>
             <p className="text-xs text-muted-foreground">Services Down</p>
           </CardContent>
         </Card>
-        <Card className="bg-slate-800/60 border-slate-700">
+        <Card className="bg-card border-border">
           <CardContent className="pt-4 text-center">
             <CheckCircle2 className="w-6 h-6 mx-auto mb-1 text-emerald-400" />
             <p className="text-2xl font-bold text-emerald-400">{sla?.sla_met ?? 0}</p>
             <p className="text-xs text-muted-foreground">SLA Met</p>
           </CardContent>
         </Card>
-        <Card className="bg-slate-800/60 border-slate-700">
+        <Card className="bg-card border-border">
           <CardContent className="pt-4 text-center">
             <AlertTriangle className="w-6 h-6 mx-auto mb-1 text-orange-400" />
             <p className="text-2xl font-bold text-orange-400">{sla?.sla_breached ?? 0}</p>
@@ -296,7 +296,7 @@ function UptimeTab() {
         </Card>
       </div>
 
-      <Card className="bg-slate-800/60 border-slate-700">
+      <Card className="bg-card border-border">
         <CardHeader><CardTitle className="text-sm">Service Availability</CardTitle></CardHeader>
         <CardContent>
           <Table>
@@ -334,7 +334,7 @@ function UptimeTab() {
       </Card>
 
       {sla?.services && sla.services.length > 0 && (
-        <Card className="bg-slate-800/60 border-slate-700">
+        <Card className="bg-card border-border">
           <CardHeader><CardTitle className="text-sm">SLA Compliance</CardTitle></CardHeader>
           <CardContent>
             <Table>
@@ -389,21 +389,21 @@ function EscalationTab() {
   return (
     <div className="space-y-4">
       <div className="grid grid-cols-3 gap-4">
-        <Card className="bg-slate-800/60 border-slate-700">
+        <Card className="bg-card border-border">
           <CardContent className="pt-4 text-center">
             <Bell className="w-6 h-6 mx-auto mb-1 text-orange-400" />
             <p className="text-2xl font-bold">{Number(met?.alerts_escalated ?? 0)}</p>
             <p className="text-xs text-muted-foreground">Alerts Escalated</p>
           </CardContent>
         </Card>
-        <Card className="bg-slate-800/60 border-slate-700">
+        <Card className="bg-card border-border">
           <CardContent className="pt-4 text-center">
             <Workflow className="w-6 h-6 mx-auto mb-1 text-blue-400" />
             <p className="text-2xl font-bold">{Number(met?.runbooks_executed ?? 0)}</p>
             <p className="text-xs text-muted-foreground">Runbooks Executed</p>
           </CardContent>
         </Card>
-        <Card className="bg-slate-800/60 border-slate-700">
+        <Card className="bg-card border-border">
           <CardContent className="pt-4 text-center">
             <Zap className="w-6 h-6 mx-auto mb-1 text-purple-400" />
             <p className="text-2xl font-bold">{Number(met?.notifications_sent ?? 0)}</p>
@@ -413,7 +413,7 @@ function EscalationTab() {
       </div>
 
       {/* Escalation Policies */}
-      <Card className="bg-slate-800/60 border-slate-700">
+      <Card className="bg-card border-border">
         <CardHeader><CardTitle className="text-sm">Escalation Policies</CardTitle></CardHeader>
         <CardContent>
           <div className="grid gap-3">
@@ -438,7 +438,7 @@ function EscalationTab() {
       </Card>
 
       {/* On-Call Schedules */}
-      <Card className="bg-slate-800/60 border-slate-700">
+      <Card className="bg-card border-border">
         <CardHeader><CardTitle className="text-sm">On-Call Schedules</CardTitle></CardHeader>
         <CardContent>
           <div className="grid gap-3">
@@ -456,7 +456,7 @@ function EscalationTab() {
       </Card>
 
       {/* Runbooks */}
-      <Card className="bg-slate-800/60 border-slate-700">
+      <Card className="bg-card border-border">
         <CardHeader><CardTitle className="text-sm">Runbooks</CardTitle></CardHeader>
         <CardContent>
           <Table>
@@ -472,7 +472,7 @@ function EscalationTab() {
               {(rbs ?? []).map((r, i) => (
                 <TableRow key={i}>
                   <TableCell className="text-xs">{String(r.name)}</TableCell>
-                  <TableCell>{r.auto_execute ? <CheckCircle2 className="w-4 h-4 text-emerald-400" /> : <XCircle className="w-4 h-4 text-slate-500" />}</TableCell>
+                  <TableCell>{r.auto_execute ? <CheckCircle2 className="w-4 h-4 text-emerald-400" /> : <XCircle className="w-4 h-4 text-muted-foreground" />}</TableCell>
                   <TableCell className="text-xs">{(r.steps as unknown[])?.length ?? 0}</TableCell>
                   <TableCell className="text-xs">{String(r.execution_count ?? 0)}</TableCell>
                 </TableRow>
@@ -500,21 +500,21 @@ function CollectorsTab() {
   return (
     <div className="space-y-4">
       <div className="grid grid-cols-3 gap-4">
-        <Card className="bg-slate-800/60 border-slate-700">
+        <Card className="bg-card border-border">
           <CardContent className="pt-4 text-center">
             <Radio className="w-6 h-6 mx-auto mb-1 text-blue-400" />
             <p className="text-2xl font-bold">{met?.snmp?.traps_received ?? 0}</p>
             <p className="text-xs text-muted-foreground">SNMP Traps</p>
           </CardContent>
         </Card>
-        <Card className="bg-slate-800/60 border-slate-700">
+        <Card className="bg-card border-border">
           <CardContent className="pt-4 text-center">
             <Eye className="w-6 h-6 mx-auto mb-1 text-purple-400" />
             <p className="text-2xl font-bold">{met?.syslog?.messages_received ?? 0}</p>
             <p className="text-xs text-muted-foreground">Syslog Messages</p>
           </CardContent>
         </Card>
-        <Card className="bg-slate-800/60 border-slate-700">
+        <Card className="bg-card border-border">
           <CardContent className="pt-4 text-center">
             <BarChart3 className="w-6 h-6 mx-auto mb-1 text-emerald-400" />
             <p className="text-2xl font-bold">{met?.netflow?.records_received ?? 0}</p>
@@ -525,7 +525,7 @@ function CollectorsTab() {
 
       {/* Bandwidth Summary */}
       {bw && (
-        <Card className="bg-slate-800/60 border-slate-700">
+        <Card className="bg-card border-border">
           <CardHeader><CardTitle className="text-sm">Bandwidth Summary</CardTitle></CardHeader>
           <CardContent>
             <div className="grid grid-cols-3 gap-4 text-center">
@@ -547,7 +547,7 @@ function CollectorsTab() {
       )}
 
       {/* Recent SNMP Traps */}
-      <Card className="bg-slate-800/60 border-slate-700">
+      <Card className="bg-card border-border">
         <CardHeader><CardTitle className="text-sm">Recent SNMP Traps ({trapData?.count ?? 0})</CardTitle></CardHeader>
         <CardContent>
           <Table>
@@ -576,7 +576,7 @@ function CollectorsTab() {
       </Card>
 
       {/* Recent Syslog */}
-      <Card className="bg-slate-800/60 border-slate-700">
+      <Card className="bg-card border-border">
         <CardHeader><CardTitle className="text-sm">Recent Syslog ({syslogData?.count ?? 0})</CardTitle></CardHeader>
         <CardContent>
           <Table>
@@ -620,28 +620,28 @@ function CorrelationTab() {
   return (
     <div className="space-y-4">
       <div className="grid grid-cols-4 gap-4">
-        <Card className="bg-slate-800/60 border-slate-700">
+        <Card className="bg-card border-border">
           <CardContent className="pt-4 text-center">
             <TrendingUp className="w-6 h-6 mx-auto mb-1 text-blue-400" />
             <p className="text-2xl font-bold">{met?.alerts_processed ?? 0}</p>
             <p className="text-xs text-muted-foreground">Alerts Processed</p>
           </CardContent>
         </Card>
-        <Card className="bg-slate-800/60 border-slate-700">
+        <Card className="bg-card border-border">
           <CardContent className="pt-4 text-center">
             <GitBranch className="w-6 h-6 mx-auto mb-1 text-purple-400" />
             <p className="text-2xl font-bold">{met?.correlations_created ?? 0}</p>
             <p className="text-xs text-muted-foreground">Correlations</p>
           </CardContent>
         </Card>
-        <Card className="bg-slate-800/60 border-slate-700">
+        <Card className="bg-card border-border">
           <CardContent className="pt-4 text-center">
             <AlertTriangle className="w-6 h-6 mx-auto mb-1 text-red-400" />
             <p className="text-2xl font-bold">{met?.incidents_created ?? 0}</p>
             <p className="text-xs text-muted-foreground">Incidents</p>
           </CardContent>
         </Card>
-        <Card className="bg-slate-800/60 border-slate-700">
+        <Card className="bg-card border-border">
           <CardContent className="pt-4 text-center">
             <Timer className="w-6 h-6 mx-auto mb-1 text-emerald-400" />
             <p className="text-2xl font-bold">{met?.window_size ?? 0}</p>
@@ -651,7 +651,7 @@ function CorrelationTab() {
       </div>
 
       {/* Causal Patterns */}
-      <Card className="bg-slate-800/60 border-slate-700">
+      <Card className="bg-card border-border">
         <CardHeader><CardTitle className="text-sm">Causal Correlation Patterns ({pats?.count ?? 0})</CardTitle></CardHeader>
         <CardContent>
           <div className="grid gap-3">
@@ -670,7 +670,7 @@ function CorrelationTab() {
       </Card>
 
       {/* Correlated Incidents */}
-      <Card className="bg-slate-800/60 border-slate-700">
+      <Card className="bg-card border-border">
         <CardHeader><CardTitle className="text-sm">Correlated Incidents ({incs?.count ?? 0})</CardTitle></CardHeader>
         <CardContent>
           <Table>
@@ -729,7 +729,7 @@ export default function NocDashboard() {
       </div>
 
       <Tabs value={tab} onValueChange={setTab}>
-        <TabsList className="bg-slate-800 border border-slate-700">
+        <TabsList className="bg-card border border-border">
           <TabsTrigger value="overview">Overview</TabsTrigger>
           <TabsTrigger value="alerts">Alerts</TabsTrigger>
           <TabsTrigger value="topology">Topology & Devices</TabsTrigger>
