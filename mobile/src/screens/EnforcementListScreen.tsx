@@ -1,7 +1,12 @@
 import React from "react";
-import { View, Text, ScrollView, StyleSheet, RefreshControl, TouchableOpacity } from "react-native";
+import { View, Text, ScrollView, StyleSheet, RefreshControl } from "react-native";
 import { useQuery } from "@tanstack/react-query";
 import { api } from "../services/api";
+import { colors, borderRadius, spacing, fontSize, fontWeight } from "../theme";
+import { MobileCard } from "../components/MobileCard";
+import { MobilePageHeader } from "../components/MobilePageHeader";
+import { MobileBadge, getBadgeVariant } from "../components/MobileBadge";
+import { MobileEmptyState } from "../components/MobileEmptyState";
 
 export function EnforcementListScreen() {
   const [refreshing, setRefreshing] = React.useState(false);
@@ -14,42 +19,29 @@ export function EnforcementListScreen() {
   const onRefresh = async () => { setRefreshing(true); await refetch(); setRefreshing(false); };
   const cases = data?.cases ?? [];
 
-  const statusColor = (s: string) => s === "open" ? "#ef4444" : s === "investigating" ? "#f59e0b" : s === "resolved" ? "#10b981" : "#6b7280";
-
   return (
-    <ScrollView style={s.container} refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor="#10b981" />}>
-      <View style={s.header}>
-        <Text style={s.title}>Enforcement Cases</Text>
-        <Text style={s.subtitle}>{cases.length} active cases</Text>
-      </View>
+    <ScrollView style={s.container} refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor={colors.success} />}>
+      <MobilePageHeader title="Enforcement Cases" subtitle={`${cases.length} active cases`} />
       {cases.map((c: { id: string; org_name: string; case_type: string; status: string; severity: string; created_at: string }, idx: number) => (
-        <View key={idx} style={s.card}>
+        <MobileCard key={idx} style={s.cardOuter}>
           <View style={s.cardHeader}>
             <Text style={s.caseName}>{c.org_name}</Text>
-            <View style={[s.badge, { backgroundColor: statusColor(c.status) + "22" }]}>
-              <Text style={[s.badgeText, { color: statusColor(c.status) }]}>{c.status}</Text>
-            </View>
+            <MobileBadge variant={getBadgeVariant(c.status)}>{c.status}</MobileBadge>
           </View>
           <Text style={s.caseType}>{c.case_type} — Severity: {c.severity}</Text>
           <Text style={s.caseDate}>{new Date(c.created_at).toLocaleDateString()}</Text>
-        </View>
+        </MobileCard>
       ))}
-      {cases.length === 0 && <View style={s.card}><Text style={s.emptyText}>No enforcement cases</Text></View>}
+      {cases.length === 0 && <MobileEmptyState title="No enforcement cases" description="Cases will appear here when created." />}
     </ScrollView>
   );
 }
 
 const s = StyleSheet.create({
-  container: { flex: 1, backgroundColor: "#0a0a0a" },
-  header: { padding: 20, paddingTop: 10 },
-  title: { color: "#fff", fontSize: 24, fontWeight: "700" },
-  subtitle: { color: "#9ca3af", fontSize: 14, marginTop: 4 },
-  card: { backgroundColor: "#111827", borderRadius: 12, padding: 16, marginHorizontal: 16, marginBottom: 12 },
+  container: { flex: 1, backgroundColor: colors.background },
+  cardOuter: { marginHorizontal: spacing.lg },
   cardHeader: { flexDirection: "row", justifyContent: "space-between", alignItems: "center" },
-  caseName: { color: "#fff", fontSize: 16, fontWeight: "600", flex: 1 },
-  badge: { borderRadius: 6, paddingHorizontal: 8, paddingVertical: 2 },
-  badgeText: { fontSize: 12, fontWeight: "600", textTransform: "uppercase" },
-  caseType: { color: "#9ca3af", fontSize: 13, marginTop: 4 },
-  caseDate: { color: "#6b7280", fontSize: 12, marginTop: 4 },
-  emptyText: { color: "#6b7280", textAlign: "center", fontSize: 14 },
+  caseName: { color: colors.text, fontSize: fontSize.lg, fontWeight: fontWeight.semibold, flex: 1 },
+  caseType: { color: colors.textSecondary, fontSize: fontSize.md, marginTop: spacing.xs },
+  caseDate: { color: colors.textMuted, fontSize: fontSize.sm, marginTop: spacing.xs },
 });

@@ -2,6 +2,11 @@ import React from "react";
 import { View, Text, ScrollView, StyleSheet, RefreshControl, ActivityIndicator } from "react-native";
 import { useQuery } from "@tanstack/react-query";
 import { api } from "../services/api";
+import { colors, spacing, fontSize, fontWeight } from "../theme";
+import { MobileCard } from "../components/MobileCard";
+import { MobilePageHeader } from "../components/MobilePageHeader";
+import { MobileBadge, getBadgeVariant } from "../components/MobileBadge";
+import { MobileEmptyState } from "../components/MobileEmptyState";
 
 export function BreachTimelineScreen() {
   const { data: breaches = [], isLoading, refetch } = useQuery({
@@ -13,37 +18,34 @@ export function BreachTimelineScreen() {
   const onRefresh = React.useCallback(async () => { setRefreshing(true); await refetch(); setRefreshing(false); }, [refetch]);
 
   const getSeverityColor = (sev: string) => {
-    switch (sev) { case "critical": return "#ef4444"; case "high": return "#f59e0b"; case "medium": return "#3b82f6"; default: return "#10b981"; }
+    switch (sev) { case "critical": return colors.danger; case "high": return colors.warning; case "medium": return colors.primary; default: return colors.success; }
   };
 
-  if (isLoading) return <View style={s.container}><ActivityIndicator size="large" color="#3b82f6" /></View>;
+  if (isLoading) return <View style={s.container}><ActivityIndicator size="large" color={colors.primary} /></View>;
 
   return (
-    <ScrollView style={s.container} refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor="#3b82f6" />}>
-      <Text style={s.title}>Breach Timeline</Text>
-      <Text style={s.subtitle}>72-Hour NDPA Notification Tracking</Text>
+    <ScrollView style={s.container} refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor={colors.primary} />}>
+      <MobilePageHeader title="Breach Timeline" subtitle="72-Hour NDPA Notification Tracking" />
       {(breaches as any[]).map((b: any) => (
-        <View key={b.id} style={[s.card, { borderLeftWidth: 3, borderLeftColor: getSeverityColor(b.severity) }]}>
-          <View style={s.row}><Text style={s.cardTitle}>Breach #{b.id}</Text><Text style={[s.badge, { color: getSeverityColor(b.severity) }]}>{b.severity}</Text></View>
+        <MobileCard key={b.id} style={{ borderLeftWidth: 3, borderLeftColor: getSeverityColor(b.severity) }}>
+          <View style={s.row}>
+            <Text style={s.cardTitle}>Breach #{b.id}</Text>
+            <MobileBadge variant={getBadgeVariant(b.severity)}>{b.severity}</MobileBadge>
+          </View>
           <Text style={s.desc}>{b.description ?? "No description"}</Text>
           <Text style={s.meta}>Status: {b.status} | Subjects: {b.affected_data_subjects ?? "—"}</Text>
           <Text style={s.meta}>Reported: {b.reported_at ? new Date(b.reported_at).toLocaleDateString() : "—"}</Text>
-        </View>
+        </MobileCard>
       ))}
-      {breaches.length === 0 && <Text style={s.empty}>No breaches recorded</Text>}
+      {breaches.length === 0 && <MobileEmptyState title="No breaches recorded" description="Breach timeline entries will appear here." />}
     </ScrollView>
   );
 }
 
 const s = StyleSheet.create({
-  container: { flex: 1, backgroundColor: "#0a0a0a", padding: 16 },
-  title: { color: "#fff", fontSize: 24, fontWeight: "700" },
-  subtitle: { color: "#9ca3af", fontSize: 14, marginBottom: 16 },
-  card: { backgroundColor: "#111827", borderRadius: 8, padding: 16, marginBottom: 12 },
+  container: { flex: 1, backgroundColor: colors.background, padding: spacing.lg },
   row: { flexDirection: "row", justifyContent: "space-between", alignItems: "center" },
-  cardTitle: { color: "#fff", fontSize: 16, fontWeight: "600" },
-  badge: { fontSize: 12, fontWeight: "700", textTransform: "uppercase" },
-  desc: { color: "#d1d5db", fontSize: 13, marginTop: 8 },
-  meta: { color: "#9ca3af", fontSize: 12, marginTop: 4 },
-  empty: { color: "#6b7280", textAlign: "center", marginTop: 32 },
+  cardTitle: { color: colors.text, fontSize: fontSize.lg, fontWeight: fontWeight.semibold },
+  desc: { color: colors.textSecondary, fontSize: fontSize.md, marginTop: spacing.sm },
+  meta: { color: colors.textSecondary, fontSize: fontSize.sm, marginTop: spacing.xs },
 });

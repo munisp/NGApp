@@ -2,6 +2,9 @@ import React from "react";
 import { View, Text, ScrollView, StyleSheet, TouchableOpacity, Alert } from "react-native";
 import { useQuery, useMutation } from "@tanstack/react-query";
 import { api } from "../services/api";
+import { colors, borderRadius, spacing, fontSize, fontWeight } from "../theme";
+import { MobileCard } from "../components/MobileCard";
+import { MobilePageHeader } from "../components/MobilePageHeader";
 
 export function ProfileScreen() {
   const { data: authData } = useQuery({
@@ -14,17 +17,17 @@ export function ProfileScreen() {
 
   return (
     <ScrollView style={s.container}>
-      <Text style={s.title}>Profile</Text>
-      <View style={s.card}>
+      <MobilePageHeader title="Profile" />
+      <MobileCard style={s.profileCard}>
         <View style={s.avatar}><Text style={s.avatarText}>{(user?.email ?? "U")[0].toUpperCase()}</Text></View>
         <Text style={s.name}>{user?.displayName ?? user?.email ?? "NDSEP User"}</Text>
         <Text style={s.role}>{user?.role ?? "user"}</Text>
-      </View>
-      <View style={s.card}>
+      </MobileCard>
+      <MobileCard>
         <Text style={s.label}>Email</Text><Text style={s.value}>{user?.email ?? "—"}</Text>
         <Text style={s.label}>Role</Text><Text style={s.value}>{user?.role ?? "—"}</Text>
         <Text style={s.label}>User ID</Text><Text style={s.value}>{user?.id ?? "—"}</Text>
-      </View>
+      </MobileCard>
       <TouchableOpacity style={s.logoutBtn} onPress={() => logoutMutation.mutate()}>
         <Text style={s.logoutText}>Log Out</Text>
       </TouchableOpacity>
@@ -33,15 +36,14 @@ export function ProfileScreen() {
 }
 
 const s = StyleSheet.create({
-  container: { flex: 1, backgroundColor: "#0a0a0a", padding: 16 },
-  title: { color: "#fff", fontSize: 24, fontWeight: "700", marginBottom: 16 },
-  card: { backgroundColor: "#111827", borderRadius: 8, padding: 16, marginBottom: 16, alignItems: "center" },
-  avatar: { width: 64, height: 64, borderRadius: 32, backgroundColor: "#3b82f6", justifyContent: "center", alignItems: "center", marginBottom: 12 },
-  avatarText: { color: "#fff", fontSize: 28, fontWeight: "700" },
-  name: { color: "#fff", fontSize: 18, fontWeight: "600" },
-  role: { color: "#9ca3af", fontSize: 14, textTransform: "capitalize" },
-  label: { color: "#9ca3af", fontSize: 12, marginTop: 12, alignSelf: "flex-start" },
-  value: { color: "#fff", fontSize: 16, alignSelf: "flex-start" },
-  logoutBtn: { backgroundColor: "#ef4444", borderRadius: 8, padding: 14, alignItems: "center" },
-  logoutText: { color: "#fff", fontSize: 16, fontWeight: "600" },
+  container: { flex: 1, backgroundColor: colors.background, padding: spacing.lg },
+  profileCard: { alignItems: "center" },
+  avatar: { width: 64, height: 64, borderRadius: borderRadius.full, backgroundColor: colors.primary, justifyContent: "center", alignItems: "center", marginBottom: spacing.md },
+  avatarText: { color: colors.text, fontSize: 28, fontWeight: fontWeight.bold },
+  name: { color: colors.text, fontSize: fontSize.xl, fontWeight: fontWeight.semibold },
+  role: { color: colors.textSecondary, fontSize: fontSize.base, textTransform: "capitalize" },
+  label: { color: colors.textSecondary, fontSize: fontSize.sm, marginTop: spacing.md, alignSelf: "flex-start" },
+  value: { color: colors.text, fontSize: fontSize.lg, alignSelf: "flex-start" },
+  logoutBtn: { backgroundColor: colors.danger, borderRadius: borderRadius.md, padding: spacing.lg, alignItems: "center", marginTop: spacing.lg },
+  logoutText: { color: colors.text, fontSize: fontSize.lg, fontWeight: fontWeight.semibold },
 });

@@ -11,7 +11,6 @@ import {
   StyleSheet,
   RefreshControl,
   TouchableOpacity,
-  Dimensions,
 } from "react-native";
 import { useQuery } from "@tanstack/react-query";
 import { useNavigation } from "@react-navigation/native";
@@ -20,8 +19,8 @@ import { ComplianceScoreCard } from "../components/ComplianceScoreCard";
 import { AlertsList } from "../components/AlertsList";
 import { QuickActions } from "../components/QuickActions";
 import { MetricsGrid } from "../components/MetricsGrid";
-
-const { width } = Dimensions.get("window");
+import { colors, spacing, fontSize, fontWeight } from "../theme";
+import { MobilePageHeader } from "../components/MobilePageHeader";
 
 export function DashboardScreen() {
   const navigation = useNavigation();
@@ -54,22 +53,16 @@ export function DashboardScreen() {
   return (
     <ScrollView
       style={styles.container}
-      refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor="#10b981" />}
+      refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor={colors.success} />}
     >
-      {/* Header */}
-      <View style={styles.header}>
-        <Text style={styles.title}>NDSEP Dashboard</Text>
-        <Text style={styles.subtitle}>National Data Sovereignty Enforcement</Text>
-      </View>
+      <MobilePageHeader title="NDSEP Dashboard" subtitle="National Data Sovereignty Enforcement" />
 
-      {/* Compliance Score */}
       <ComplianceScoreCard
         score={complianceData?.overallScore ?? 0}
         trend={complianceData?.trend ?? "stable"}
         dimensions={complianceData?.dimensions ?? {}}
       />
 
-      {/* Quick Actions */}
       <QuickActions
         actions={[
           { label: "New Breach", icon: "alert-circle", onPress: () => navigation.navigate("BreachReport" as never) },
@@ -79,7 +72,6 @@ export function DashboardScreen() {
         ]}
       />
 
-      {/* Key Metrics */}
       <MetricsGrid
         metrics={[
           { label: "Organizations", value: metrics?.totalOrgs ?? 0, icon: "building" },
@@ -89,7 +81,6 @@ export function DashboardScreen() {
         ]}
       />
 
-      {/* Active Alerts */}
       <View style={styles.section}>
         <View style={styles.sectionHeader}>
           <Text style={styles.sectionTitle}>Active Alerts</Text>
@@ -106,40 +97,25 @@ export function DashboardScreen() {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: "#0a0a0a",
-  },
-  header: {
-    paddingHorizontal: 20,
-    paddingTop: 60,
-    paddingBottom: 20,
-  },
-  title: {
-    fontSize: 28,
-    fontWeight: "700",
-    color: "#ffffff",
-  },
-  subtitle: {
-    fontSize: 14,
-    color: "#6b7280",
-    marginTop: 4,
+    backgroundColor: colors.background,
   },
   section: {
-    paddingHorizontal: 20,
-    marginTop: 24,
+    paddingHorizontal: spacing.xl,
+    marginTop: spacing.xxl,
   },
   sectionHeader: {
     flexDirection: "row",
     justifyContent: "space-between",
     alignItems: "center",
-    marginBottom: 12,
+    marginBottom: spacing.md,
   },
   sectionTitle: {
-    fontSize: 18,
-    fontWeight: "600",
-    color: "#ffffff",
+    fontSize: fontSize.xl,
+    fontWeight: fontWeight.semibold,
+    color: colors.text,
   },
   viewAll: {
-    fontSize: 14,
-    color: "#10b981",
+    fontSize: fontSize.base,
+    color: colors.success,
   },
 });

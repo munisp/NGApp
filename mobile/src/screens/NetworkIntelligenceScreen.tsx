@@ -2,6 +2,9 @@ import React from "react";
 import { View, Text, ScrollView, StyleSheet, RefreshControl } from "react-native";
 import { useQuery } from "@tanstack/react-query";
 import { api } from "../services/api";
+import { colors, spacing, fontSize, fontWeight } from "../theme";
+import { MobileCard } from "../components/MobileCard";
+import { MobilePageHeader } from "../components/MobilePageHeader";
 
 export function NetworkIntelligenceScreen() {
   const [refreshing, setRefreshing] = React.useState(false);
@@ -22,30 +25,24 @@ export function NetworkIntelligenceScreen() {
   ];
 
   return (
-    <ScrollView style={s.container} refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor="#3b82f6" />}>
-      <View style={s.header}><Text style={s.title}>Network Intelligence</Text><Text style={s.subtitle}>Real-time network & threat monitoring</Text></View>
+    <ScrollView style={s.container} refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor={colors.primary} />}>
+      <MobilePageHeader title="Network Intelligence" subtitle="Real-time network & threat monitoring" />
       {netMetrics.map((m, idx) => (
-        <View key={idx} style={s.card}>
+        <MobileCard key={idx}>
           <Text style={s.metricLabel}>{m.label}</Text>
           <Text style={s.metricValue}>{m.value}{m.unit ? ` ${m.unit}` : ""}</Text>
-        </View>
+        </MobileCard>
       ))}
-      <View style={s.card}>
-        <Text style={s.cardTitle}>Threat Map</Text>
+      <MobileCard title="Threat Map">
         <Text style={s.placeholder}>Geographic threat visualization requires full-screen mode</Text>
-      </View>
+      </MobileCard>
     </ScrollView>
   );
 }
 
 const s = StyleSheet.create({
-  container: { flex: 1, backgroundColor: "#0a0a0a" },
-  header: { padding: 20, paddingTop: 10 },
-  title: { color: "#fff", fontSize: 24, fontWeight: "700" },
-  subtitle: { color: "#9ca3af", fontSize: 14, marginTop: 4 },
-  card: { backgroundColor: "#111827", borderRadius: 12, padding: 16, marginHorizontal: 16, marginBottom: 12 },
-  cardTitle: { color: "#d1d5db", fontSize: 14, fontWeight: "600" },
-  metricLabel: { color: "#6b7280", fontSize: 12 },
-  metricValue: { color: "#3b82f6", fontSize: 28, fontWeight: "800", marginTop: 4 },
-  placeholder: { color: "#4b5563", fontSize: 13, marginTop: 8, textAlign: "center" },
+  container: { flex: 1, backgroundColor: colors.background },
+  metricLabel: { color: colors.textMuted, fontSize: fontSize.sm },
+  metricValue: { color: colors.primary, fontSize: 28, fontWeight: fontWeight.bold, marginTop: spacing.xs },
+  placeholder: { color: colors.textMuted, fontSize: fontSize.md, textAlign: "center" },
 });

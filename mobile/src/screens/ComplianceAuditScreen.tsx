@@ -2,6 +2,11 @@ import React from "react";
 import { View, Text, ScrollView, StyleSheet, RefreshControl, ActivityIndicator } from "react-native";
 import { useQuery } from "@tanstack/react-query";
 import { api } from "../services/api";
+import { colors, borderRadius, spacing, fontSize, fontWeight } from "../theme";
+import { MobileCard } from "../components/MobileCard";
+import { MobilePageHeader } from "../components/MobilePageHeader";
+import { MobileEmptyState } from "../components/MobileEmptyState";
+import { MobileBadge, getBadgeVariant } from "../components/MobileBadge";
 
 export function ComplianceAuditScreen() {
   const { data: audits = [], isLoading, refetch } = useQuery({
@@ -12,33 +17,36 @@ export function ComplianceAuditScreen() {
   const [refreshing, setRefreshing] = React.useState(false);
   const onRefresh = React.useCallback(async () => { setRefreshing(true); await refetch(); setRefreshing(false); }, [refetch]);
 
-  const getScoreColor = (score: number) => score >= 80 ? "#10b981" : score >= 60 ? "#f59e0b" : "#ef4444";
+  const getScoreColor = (score: number) => score >= 80 ? colors.success : score >= 60 ? colors.warning : colors.danger;
 
-  if (isLoading) return <View style={s.container}><ActivityIndicator size="large" color="#3b82f6" /></View>;
+  if (isLoading) return <View style={s.container}><ActivityIndicator size="large" color={colors.primary} /></View>;
 
   return (
-    <ScrollView style={s.container} refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor="#3b82f6" />}>
-      <Text style={s.title}>Compliance Audits</Text>
-      <Text style={s.subtitle}>CAR Submissions & Audit Returns</Text>
+    <ScrollView style={s.container} refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor={colors.primary} />}>
+      <MobilePageHeader title="Compliance Audits" subtitle="CAR Submissions & Audit Returns" />
       {(audits as any[]).map((a: any) => (
-        <View key={a.id} style={s.card}>
-          <View style={s.row}><Text style={s.cardTitle}>Audit #{a.id}</Text><Text style={[s.score, { color: getScoreColor(a.score ?? 0) }]}>{a.score ?? "—"}%</Text></View>
-          <Text style={s.meta}>Status: {a.status ?? "pending"} | Org: #{a.org_id ?? a.orgId ?? "—"}</Text>
-        </View>
+        <MobileCard key={a.id} style={s.cardMargin}>
+          <View style={s.row}>
+            <Text style={s.cardTitle}>Audit #{a.id}</Text>
+            <Text style={[s.score, { color: getScoreColor(a.score ?? 0) }]}>{a.score ?? "—"}%</Text>
+          </View>
+          <View style={s.metaRow}>
+            <MobileBadge variant={getBadgeVariant(a.status ?? "pending")}>{a.status ?? "pending"}</MobileBadge>
+            <Text style={s.meta}>Org: #{a.org_id ?? a.orgId ?? "—"}</Text>
+          </View>
+        </MobileCard>
       ))}
-      {audits.length === 0 && <Text style={s.empty}>No audits found</Text>}
+      {audits.length === 0 && <MobileEmptyState title="No audits found" description="Compliance audits will appear here when submitted." />}
     </ScrollView>
   );
 }
 
 const s = StyleSheet.create({
-  container: { flex: 1, backgroundColor: "#0a0a0a", padding: 16 },
-  title: { color: "#fff", fontSize: 24, fontWeight: "700" },
-  subtitle: { color: "#9ca3af", fontSize: 14, marginBottom: 16 },
-  card: { backgroundColor: "#111827", borderRadius: 8, padding: 16, marginBottom: 12 },
+  container: { flex: 1, backgroundColor: colors.background, padding: spacing.lg },
+  cardMargin: { marginHorizontal: 0 },
   row: { flexDirection: "row", justifyContent: "space-between", alignItems: "center" },
-  cardTitle: { color: "#fff", fontSize: 16, fontWeight: "600" },
-  score: { fontSize: 20, fontWeight: "700" },
-  meta: { color: "#9ca3af", fontSize: 12, marginTop: 8 },
-  empty: { color: "#6b7280", textAlign: "center", marginTop: 32 },
+  cardTitle: { color: colors.text, fontSize: fontSize.lg, fontWeight: fontWeight.semibold },
+  score: { fontSize: fontSize.xl, fontWeight: fontWeight.bold },
+  metaRow: { flexDirection: "row", alignItems: "center", gap: spacing.sm, marginTop: spacing.sm },
+  meta: { color: colors.textSecondary, fontSize: fontSize.sm },
 });

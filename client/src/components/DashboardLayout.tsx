@@ -980,6 +980,7 @@ function DashboardLayoutContent({
       </div>
 
       <SidebarInset className="flex flex-col h-screen overflow-hidden">
+        <a href="#main-content" className="sr-only focus:not-sr-only focus:absolute focus:top-2 focus:left-2 focus:z-[100] focus:px-4 focus:py-2 focus:bg-primary focus:text-primary-foreground focus:rounded-md">Skip to content</a>
         <NotificationsHeader isMobile={isMobile} activeMenuLabel={activeMenuItem?.label} />
         {user?.openId === "demo-dpco-user-001" && <DemoModeBanner role="dpco" />}
         {user?.openId === "demo-admin-user-001" && <DemoModeBanner role="admin" />}
@@ -988,7 +989,7 @@ function DashboardLayoutContent({
         <FloatingChatBubble />
         <WhatsNewModal />
         <PwaInstallPrompt />
-        <main className="flex-1 min-h-0 overflow-hidden gradient-mesh">
+        <main id="main-content" role="main" className="flex-1 min-h-0 overflow-hidden gradient-mesh">
           <div className="relative z-10 h-full">
             <PageTransition>{children}</PageTransition>
           </div>

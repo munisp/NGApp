@@ -2,6 +2,12 @@ import { trpc } from "@/lib/trpc";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Shield, ShieldAlert, ShieldCheck, Lock, FileWarning, Activity, BarChart3 } from "lucide-react";
+import { PageShell } from "@/components/PageShell";
+import { PageHeader } from "@/components/PageHeader";
+import { PageLoader } from "@/components/PageLoader";
+import { ErrorState } from "@/components/ErrorState";
+import { EmptyState } from "@/components/EmptyState";
+import { StatusBadge, getStatusVariant } from "@/components/StatusBadge";
 
 export default function SecurityDashboard() {
   const score = trpc.securityAudit.getScore.useQuery();
@@ -11,8 +17,8 @@ export default function SecurityDashboard() {
   const isLoading = score.isLoading || findings.isLoading;
   const error = score.error || findings.error;
 
-  if (isLoading) return <div className="flex items-center justify-center h-64"><div className="animate-spin h-8 w-8 border-4 border-blue-500 border-t-transparent rounded-full" /></div>;
-  if (error) return <div className="text-red-500 p-4">Error loading security status: {error.message}</div>;
+  if (isLoading) return <PageLoader message="Loading security status…" />;
+  if (error) return <ErrorState message={error.message} retry={() => { score.refetch(); findings.refetch(); }} />;
 
   const scoreData = score.data;
   const findingsData = findings.data ?? [];
@@ -28,17 +34,13 @@ export default function SecurityDashboard() {
   ];
 
   return (
-    <div className="space-y-6">
-      <div className="flex items-center gap-3">
-        <Shield className="h-8 w-8 text-blue-600" />
-        <div>
-          <h1 className="text-2xl font-bold">Security Dashboard</h1>
-          <p className="text-muted-foreground">Real-time security posture monitoring via tRPC</p>
-        </div>
-        <div className="ml-auto">
-          <span className={`text-4xl font-bold ${gradeColor}`}>{scoreData?.grade ?? "N/A"}</span>
-        </div>
-      </div>
+    <PageShell>
+      <PageHeader
+        title="Security Dashboard"
+        subtitle="Real-time security posture monitoring via tRPC"
+        icon={Shield}
+        badge={<span className={`text-4xl font-bold ${gradeColor}`}>{scoreData?.grade ?? "N/A"}</span>}
+      />
 
       {/* Security Modules Grid */}
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
@@ -62,7 +64,7 @@ export default function SecurityDashboard() {
         <CardHeader><CardTitle>Security Findings ({findingsData.length})</CardTitle></CardHeader>
         <CardContent>
           {findingsData.length === 0 ? (
-            <p className="text-muted-foreground">No security findings recorded. Run a scan to generate findings.</p>
+            <EmptyState title="No security findings" description="Run a scan to generate findings." icon={ShieldCheck} />
           ) : (
             <div className="space-y-2">
               {findingsData.map((f) => (
@@ -76,15 +78,15 @@ export default function SecurityDashboard() {
                     </div>
                     <p className="text-xs text-muted-foreground mt-1">{f.description}</p>
                   </div>
-                  <Badge variant={f.status === "fixed" || f.status === "mitigated" ? "default" : "destructive"}>
+                  <StatusBadge variant={getStatusVariant(f.status)}>
                     {f.status}
-                  </Badge>
+                  </StatusBadge>
                 </div>
               ))}
             </div>
           )}
         </CardContent>
       </Card>
-    </div>
+    </PageShell>
   );
 }

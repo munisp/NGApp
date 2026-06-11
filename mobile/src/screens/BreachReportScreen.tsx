@@ -1,6 +1,9 @@
 import React from "react";
 import { View, Text, ScrollView, StyleSheet, TextInput, TouchableOpacity, Alert } from "react-native";
 import { api } from "../services/api";
+import { colors, borderRadius, spacing, fontSize, fontWeight } from "../theme";
+import { MobileCard } from "../components/MobileCard";
+import { MobilePageHeader } from "../components/MobilePageHeader";
 
 export function BreachReportScreen({ navigation }: { navigation: { goBack: () => void } }) {
   const [form, setForm] = React.useState({ title: "", description: "", severity: "high", affected_subjects: "" });
@@ -27,12 +30,12 @@ export function BreachReportScreen({ navigation }: { navigation: { goBack: () =>
 
   return (
     <ScrollView style={s.container}>
-      <View style={s.header}><Text style={s.title}>Report Data Breach</Text><Text style={s.subtitle}>NDPA S.40 — 72-hour notification requirement</Text></View>
-      <View style={s.card}>
+      <MobilePageHeader title="Report Data Breach" subtitle="NDPA S.40 — 72-hour notification requirement" />
+      <MobileCard>
         <Text style={s.label}>Breach Title *</Text>
-        <TextInput style={s.input} value={form.title} onChangeText={t => setForm(f => ({ ...f, title: t }))} placeholder="Brief description" placeholderTextColor="#4b5563" />
+        <TextInput style={s.input} value={form.title} onChangeText={t => setForm(f => ({ ...f, title: t }))} placeholder="Brief description" placeholderTextColor={colors.textMuted} />
         <Text style={s.label}>Description</Text>
-        <TextInput style={[s.input, { height: 100 }]} value={form.description} onChangeText={t => setForm(f => ({ ...f, description: t }))} placeholder="Full details of the breach" placeholderTextColor="#4b5563" multiline />
+        <TextInput style={[s.input, { height: 100 }]} value={form.description} onChangeText={t => setForm(f => ({ ...f, description: t }))} placeholder="Full details of the breach" placeholderTextColor={colors.textMuted} multiline />
         <Text style={s.label}>Severity</Text>
         <View style={s.row}>
           {["low", "medium", "high", "critical"].map(sv => (
@@ -42,28 +45,24 @@ export function BreachReportScreen({ navigation }: { navigation: { goBack: () =>
           ))}
         </View>
         <Text style={s.label}>Affected Data Subjects</Text>
-        <TextInput style={s.input} value={form.affected_subjects} onChangeText={t => setForm(f => ({ ...f, affected_subjects: t }))} keyboardType="numeric" placeholder="Number of people affected" placeholderTextColor="#4b5563" />
+        <TextInput style={s.input} value={form.affected_subjects} onChangeText={t => setForm(f => ({ ...f, affected_subjects: t }))} keyboardType="numeric" placeholder="Number of people affected" placeholderTextColor={colors.textMuted} />
         <TouchableOpacity style={[s.submitBtn, submitting && { opacity: 0.5 }]} onPress={submit} disabled={submitting}>
           <Text style={s.submitText}>{submitting ? "Submitting…" : "Submit Breach Report"}</Text>
         </TouchableOpacity>
-      </View>
+      </MobileCard>
     </ScrollView>
   );
 }
 
 const s = StyleSheet.create({
-  container: { flex: 1, backgroundColor: "#0a0a0a" },
-  header: { padding: 20, paddingTop: 10 },
-  title: { color: "#fff", fontSize: 24, fontWeight: "700" },
-  subtitle: { color: "#ef4444", fontSize: 13, marginTop: 4 },
-  card: { backgroundColor: "#111827", borderRadius: 12, padding: 16, marginHorizontal: 16, marginBottom: 12 },
-  label: { color: "#6b7280", fontSize: 12, marginTop: 12, marginBottom: 4 },
-  input: { backgroundColor: "#1f2937", borderRadius: 8, padding: 12, color: "#fff", fontSize: 15 },
-  row: { flexDirection: "row", gap: 8 },
-  sevBtn: { flex: 1, paddingVertical: 8, borderRadius: 6, backgroundColor: "#1f2937", alignItems: "center" },
-  sevActive: { backgroundColor: "#dc2626" },
-  sevText: { color: "#9ca3af", fontSize: 13, fontWeight: "600", textTransform: "capitalize" },
-  sevTextActive: { color: "#fff" },
-  submitBtn: { backgroundColor: "#dc2626", borderRadius: 8, padding: 14, marginTop: 20, alignItems: "center" },
-  submitText: { color: "#fff", fontSize: 16, fontWeight: "700" },
+  container: { flex: 1, backgroundColor: colors.background },
+  label: { color: colors.textMuted, fontSize: fontSize.sm, marginTop: spacing.md, marginBottom: spacing.xs },
+  input: { backgroundColor: colors.cardBorder, borderRadius: borderRadius.md, padding: spacing.md, color: colors.text, fontSize: fontSize.base },
+  row: { flexDirection: "row", gap: spacing.sm },
+  sevBtn: { flex: 1, paddingVertical: spacing.sm, borderRadius: borderRadius.sm, backgroundColor: colors.cardBorder, alignItems: "center" },
+  sevActive: { backgroundColor: colors.dangerDark },
+  sevText: { color: colors.textSecondary, fontSize: fontSize.md, fontWeight: fontWeight.semibold, textTransform: "capitalize" },
+  sevTextActive: { color: colors.text },
+  submitBtn: { backgroundColor: colors.dangerDark, borderRadius: borderRadius.md, padding: spacing.lg, marginTop: spacing.xl, alignItems: "center" },
+  submitText: { color: colors.text, fontSize: fontSize.lg, fontWeight: fontWeight.bold },
 });

@@ -7,6 +7,7 @@ import { NavigationContainer } from "@react-navigation/native";
 import { createNativeStackNavigator } from "@react-navigation/native-stack";
 import { createBottomTabNavigator } from "@react-navigation/bottom-tabs";
 import { Feather } from "@expo/vector-icons";
+import { colors } from "../theme";
 
 // Screens
 import { DashboardScreen } from "../screens/DashboardScreen";
@@ -38,8 +39,8 @@ const Stack = createNativeStackNavigator();
 const Tab = createBottomTabNavigator();
 
 const stackOpts = {
-  headerStyle: { backgroundColor: "#111827" },
-  headerTintColor: "#ffffff",
+  headerStyle: { backgroundColor: colors.card },
+  headerTintColor: colors.text,
   headerTitleStyle: { fontWeight: "600" as const },
 };
 
@@ -117,9 +118,9 @@ export function AppNavigator() {
             };
             return <Feather name={icons[route.name] as any} size={size} color={color} />;
           },
-          tabBarActiveTintColor: "#10b981",
-          tabBarInactiveTintColor: "#6b7280",
-          tabBarStyle: { backgroundColor: "#111827", borderTopColor: "#1f2937" },
+          tabBarActiveTintColor: colors.tabBarActive,
+          tabBarInactiveTintColor: colors.tabBarInactive,
+          tabBarStyle: { backgroundColor: colors.card, borderTopColor: colors.cardBorder },
           headerShown: false,
         })}
       >

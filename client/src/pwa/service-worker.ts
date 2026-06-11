@@ -26,9 +26,10 @@ declare global {
   }
 }
 
-const CACHE_VERSION = "ndsep-v2.0.0";
+const CACHE_VERSION = "ndsep-v2.1.0";
 const STATIC_CACHE = `${CACHE_VERSION}-static`;
 const API_CACHE = `${CACHE_VERSION}-api`;
+const FONT_CACHE = `${CACHE_VERSION}-fonts`;
 const OFFLINE_QUEUE = "ndsep-offline-queue";
 
 // Assets to precache on install
@@ -57,7 +58,7 @@ self.addEventListener("activate", (event) => {
     caches.keys().then((keys) =>
       Promise.all(
         keys
-          .filter((key) => key !== STATIC_CACHE && key !== API_CACHE)
+          .filter((key) => key !== STATIC_CACHE && key !== API_CACHE && key !== FONT_CACHE)
           .map((key) => caches.delete(key))
       )
     )
@@ -76,6 +77,12 @@ self.addEventListener("fetch", (event) => {
     if (!navigator.onLine) {
       event.respondWith(queueOfflineMutation(request));
     }
+    return;
+  }
+
+  // Google Fonts: cache-first (immutable)
+  if (url.hostname === "fonts.googleapis.com" || url.hostname === "fonts.gstatic.com") {
+    event.respondWith(cacheFirst(request, FONT_CACHE));
     return;
   }
 

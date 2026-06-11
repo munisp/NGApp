@@ -1,6 +1,7 @@
 import React from "react";
 import { View, Text, StyleSheet, TouchableOpacity } from "react-native";
 import { Feather } from "@expo/vector-icons";
+import { colors, borderRadius, spacing, fontSize } from "../theme";
 
 interface Action {
   label: string;
@@ -18,7 +19,7 @@ export function QuickActions({ actions }: Props) {
       {actions.map((action) => (
         <TouchableOpacity key={action.label} style={styles.action} onPress={action.onPress}>
           <View style={styles.iconContainer}>
-            <Feather name={action.icon as any} size={20} color="#10b981" />
+            <Feather name={action.icon as any} size={20} color={colors.success} />
           </View>
           <Text style={styles.label}>{action.label}</Text>
         </TouchableOpacity>
@@ -28,8 +29,8 @@ export function QuickActions({ actions }: Props) {
 }
 
 const styles = StyleSheet.create({
-  container: { flexDirection: "row", justifyContent: "space-between", paddingHorizontal: 20, marginTop: 20 },
-  action: { alignItems: "center", gap: 6 },
-  iconContainer: { width: 48, height: 48, borderRadius: 12, backgroundColor: "#064e3b", justifyContent: "center", alignItems: "center" },
-  label: { color: "#9ca3af", fontSize: 11 },
+  container: { flexDirection: "row", justifyContent: "space-between", paddingHorizontal: spacing.xl, marginTop: spacing.xl },
+  action: { alignItems: "center", gap: spacing.sm },
+  iconContainer: { width: 48, height: 48, borderRadius: borderRadius.lg, backgroundColor: colors.successBg, justifyContent: "center", alignItems: "center" },
+  label: { color: colors.textSecondary, fontSize: fontSize.xs },
 });

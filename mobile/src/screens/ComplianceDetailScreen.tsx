@@ -2,6 +2,9 @@ import React from "react";
 import { View, Text, ScrollView, StyleSheet, RefreshControl, TouchableOpacity } from "react-native";
 import { useQuery } from "@tanstack/react-query";
 import { api } from "../services/api";
+import { colors, borderRadius, spacing, fontSize, fontWeight } from "../theme";
+import { MobileCard } from "../components/MobileCard";
+import { MobilePageHeader } from "../components/MobilePageHeader";
 
 export function ComplianceDetailScreen() {
   const [refreshing, setRefreshing] = React.useState(false);
@@ -17,61 +20,53 @@ export function ComplianceDetailScreen() {
     setRefreshing(false);
   };
 
-  return (
-    <ScrollView style={styles.container} refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor="#10b981" />}>
-      <View style={styles.header}>
-        <Text style={styles.title}>Compliance Overview</Text>
-        <Text style={styles.subtitle}>NDPA/NDPR Compliance Status</Text>
-      </View>
+  const scoreColor = (v: number) => v >= 80 ? colors.success : v >= 60 ? colors.warning : colors.danger;
 
-      <View style={styles.card}>
-        <Text style={styles.cardTitle}>Overall Score</Text>
-        <Text style={styles.scoreText}>{score?.overall_score ?? "—"}/100</Text>
-        <Text style={styles.gradeText}>Grade: {score?.grade ?? "N/A"}</Text>
-      </View>
+  return (
+    <ScrollView style={s.container} refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor={colors.success} />}>
+      <MobilePageHeader title="Compliance Overview" subtitle="NDPA/NDPR Compliance Status" />
+
+      <MobileCard>
+        <Text style={s.cardTitle}>Overall Score</Text>
+        <Text style={[s.scoreText, { color: colors.success }]}>{score?.overall_score ?? "—"}/100</Text>
+        <Text style={s.gradeText}>Grade: {score?.grade ?? "N/A"}</Text>
+      </MobileCard>
 
       {(score?.dimensions ?? []).map((dim: { name: string; score: number; status: string }, idx: number) => (
-        <View key={idx} style={styles.card}>
-          <View style={styles.dimRow}>
-            <Text style={styles.dimName}>{dim.name}</Text>
-            <Text style={[styles.dimScore, { color: dim.score >= 80 ? "#10b981" : dim.score >= 60 ? "#f59e0b" : "#ef4444" }]}>
-              {dim.score}%
-            </Text>
+        <MobileCard key={idx}>
+          <View style={s.dimRow}>
+            <Text style={s.dimName}>{dim.name}</Text>
+            <Text style={[s.dimScore, { color: scoreColor(dim.score) }]}>{dim.score}%</Text>
           </View>
-          <View style={styles.progressBar}>
-            <View style={[styles.progressFill, { width: `${dim.score}%`, backgroundColor: dim.score >= 80 ? "#10b981" : dim.score >= 60 ? "#f59e0b" : "#ef4444" }]} />
+          <View style={s.progressBar}>
+            <View style={[s.progressFill, { width: `${dim.score}%`, backgroundColor: scoreColor(dim.score) }]} />
           </View>
-          <Text style={styles.dimStatus}>{dim.status}</Text>
-        </View>
+          <Text style={s.dimStatus}>{dim.status}</Text>
+        </MobileCard>
       ))}
 
-      <View style={styles.card}>
-        <Text style={styles.cardTitle}>Quick Actions</Text>
+      <MobileCard title="Quick Actions">
         {["Run Compliance Audit", "Generate DPIA", "Submit Annual Report", "View Violations"].map((action, i) => (
-          <TouchableOpacity key={i} style={styles.actionBtn}>
-            <Text style={styles.actionText}>{action}</Text>
+          <TouchableOpacity key={i} style={s.actionBtn}>
+            <Text style={s.actionText}>{action}</Text>
           </TouchableOpacity>
         ))}
-      </View>
+      </MobileCard>
     </ScrollView>
   );
 }
 
-const styles = StyleSheet.create({
-  container: { flex: 1, backgroundColor: "#0a0a0a" },
-  header: { padding: 20, paddingTop: 10 },
-  title: { color: "#fff", fontSize: 24, fontWeight: "700" },
-  subtitle: { color: "#9ca3af", fontSize: 14, marginTop: 4 },
-  card: { backgroundColor: "#111827", borderRadius: 12, padding: 16, marginHorizontal: 16, marginBottom: 12 },
-  cardTitle: { color: "#d1d5db", fontSize: 14, fontWeight: "600", marginBottom: 8 },
-  scoreText: { color: "#10b981", fontSize: 48, fontWeight: "800", textAlign: "center" },
-  gradeText: { color: "#9ca3af", fontSize: 16, textAlign: "center", marginTop: 4 },
+const s = StyleSheet.create({
+  container: { flex: 1, backgroundColor: colors.background },
+  cardTitle: { color: colors.textSecondary, fontSize: fontSize.base, fontWeight: fontWeight.semibold, marginBottom: spacing.sm },
+  scoreText: { fontSize: 48, fontWeight: "800", textAlign: "center" },
+  gradeText: { color: colors.textSecondary, fontSize: fontSize.lg, textAlign: "center", marginTop: spacing.xs },
   dimRow: { flexDirection: "row", justifyContent: "space-between", alignItems: "center" },
-  dimName: { color: "#e5e7eb", fontSize: 14, fontWeight: "500" },
-  dimScore: { fontSize: 16, fontWeight: "700" },
-  progressBar: { height: 6, backgroundColor: "#374151", borderRadius: 3, marginTop: 8, marginBottom: 4 },
+  dimName: { color: colors.text, fontSize: fontSize.base, fontWeight: fontWeight.medium },
+  dimScore: { fontSize: fontSize.lg, fontWeight: fontWeight.bold },
+  progressBar: { height: 6, backgroundColor: colors.input, borderRadius: 3, marginTop: spacing.sm, marginBottom: spacing.xs },
   progressFill: { height: 6, borderRadius: 3 },
-  dimStatus: { color: "#6b7280", fontSize: 12 },
-  actionBtn: { backgroundColor: "#1f2937", borderRadius: 8, padding: 12, marginTop: 8 },
-  actionText: { color: "#10b981", fontSize: 14, fontWeight: "600", textAlign: "center" },
+  dimStatus: { color: colors.textMuted, fontSize: fontSize.sm },
+  actionBtn: { backgroundColor: colors.cardBorder, borderRadius: borderRadius.md, padding: spacing.md, marginTop: spacing.sm },
+  actionText: { color: colors.success, fontSize: fontSize.base, fontWeight: fontWeight.semibold, textAlign: "center" },
 });

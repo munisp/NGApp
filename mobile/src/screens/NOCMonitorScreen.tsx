@@ -2,6 +2,10 @@ import React from "react";
 import { View, Text, ScrollView, StyleSheet, RefreshControl } from "react-native";
 import { useQuery } from "@tanstack/react-query";
 import { api } from "../services/api";
+import { colors, spacing, fontSize, fontWeight } from "../theme";
+import { MobileCard } from "../components/MobileCard";
+import { MobilePageHeader } from "../components/MobilePageHeader";
+import { MobileEmptyState } from "../components/MobileEmptyState";
 
 export function NOCMonitorScreen() {
   const [refreshing, setRefreshing] = React.useState(false);
@@ -16,19 +20,16 @@ export function NOCMonitorScreen() {
   const statusIcon = (s: string) => s === "healthy" ? "🟢" : s === "degraded" ? "🟡" : "🔴";
 
   return (
-    <ScrollView style={s.container} refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor="#10b981" />}>
-      <View style={s.header}>
-        <Text style={s.title}>NOC Monitor</Text>
-        <Text style={s.subtitle}>Network Operations Center — Real-time</Text>
-      </View>
-      <View style={s.card}>
-        <Text style={s.cardTitle}>Platform Status</Text>
-        <Text style={[s.overallStatus, { color: noc?.overall === "healthy" ? "#10b981" : "#f59e0b" }]}>
+    <ScrollView style={s.container} refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor={colors.success} />}>
+      <MobilePageHeader title="NOC Monitor" subtitle="Network Operations Center — Real-time" />
+      <MobileCard style={s.cardOuter}>
+        <Text style={s.cardLabel}>Platform Status</Text>
+        <Text style={[s.overallStatus, { color: noc?.overall === "healthy" ? colors.success : colors.warning }]}>
           {noc?.overall === "healthy" ? "All Systems Operational" : "Degraded Performance"}
         </Text>
-      </View>
+      </MobileCard>
       {services.map((svc: { name: string; status: string; latency_ms: number; uptime: number }, idx: number) => (
-        <View key={idx} style={s.card}>
+        <MobileCard key={idx} style={s.cardOuter}>
           <View style={s.svcRow}>
             <Text style={s.svcStatus}>{statusIcon(svc.status)}</Text>
             <View style={{ flex: 1 }}>
@@ -36,24 +37,20 @@ export function NOCMonitorScreen() {
               <Text style={s.svcMeta}>{svc.latency_ms}ms • {(svc.uptime * 100).toFixed(2)}% uptime</Text>
             </View>
           </View>
-        </View>
+        </MobileCard>
       ))}
-      {services.length === 0 && <View style={s.card}><Text style={s.emptyText}>Connecting to NOC…</Text></View>}
+      {services.length === 0 && <MobileEmptyState title="Connecting to NOC…" description="Service status will appear here." />}
     </ScrollView>
   );
 }
 
 const s = StyleSheet.create({
-  container: { flex: 1, backgroundColor: "#0a0a0a" },
-  header: { padding: 20, paddingTop: 10 },
-  title: { color: "#fff", fontSize: 24, fontWeight: "700" },
-  subtitle: { color: "#9ca3af", fontSize: 14, marginTop: 4 },
-  card: { backgroundColor: "#111827", borderRadius: 12, padding: 16, marginHorizontal: 16, marginBottom: 12 },
-  cardTitle: { color: "#d1d5db", fontSize: 14, fontWeight: "600" },
-  overallStatus: { fontSize: 18, fontWeight: "700", marginTop: 4 },
-  svcRow: { flexDirection: "row", alignItems: "center", gap: 12 },
-  svcStatus: { fontSize: 16 },
-  svcName: { color: "#fff", fontSize: 15, fontWeight: "600" },
-  svcMeta: { color: "#6b7280", fontSize: 12, marginTop: 2 },
-  emptyText: { color: "#6b7280", textAlign: "center" },
+  container: { flex: 1, backgroundColor: colors.background },
+  cardOuter: { marginHorizontal: spacing.lg },
+  cardLabel: { color: colors.textSecondary, fontSize: fontSize.base, fontWeight: fontWeight.semibold },
+  overallStatus: { fontSize: fontSize.xl, fontWeight: fontWeight.bold, marginTop: spacing.xs },
+  svcRow: { flexDirection: "row", alignItems: "center", gap: spacing.md },
+  svcStatus: { fontSize: fontSize.lg },
+  svcName: { color: colors.text, fontSize: fontSize.base, fontWeight: fontWeight.semibold },
+  svcMeta: { color: colors.textMuted, fontSize: fontSize.sm, marginTop: 2 },
 });

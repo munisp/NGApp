@@ -1,6 +1,7 @@
 import React from "react";
 import { View, Text, StyleSheet } from "react-native";
 import Svg, { Circle } from "react-native-svg";
+import { colors, borderRadius, spacing, fontSize, fontWeight } from "../theme";
 
 interface Props {
   score: number;
@@ -12,13 +13,13 @@ export function ComplianceScoreCard({ score, trend, dimensions }: Props) {
   const radius = 60;
   const circumference = 2 * Math.PI * radius;
   const progress = (score / 100) * circumference;
-  const color = score >= 80 ? "#10b981" : score >= 60 ? "#f59e0b" : "#ef4444";
+  const color = score >= 80 ? colors.success : score >= 60 ? colors.warning : colors.danger;
 
   return (
     <View style={styles.card}>
       <View style={styles.scoreContainer}>
         <Svg width={140} height={140}>
-          <Circle cx={70} cy={70} r={radius} stroke="#1f2937" strokeWidth={8} fill="none" />
+          <Circle cx={70} cy={70} r={radius} stroke={colors.cardBorder} strokeWidth={8} fill="none" />
           <Circle
             cx={70} cy={70} r={radius}
             stroke={color} strokeWidth={8} fill="none"
@@ -37,7 +38,7 @@ export function ComplianceScoreCard({ score, trend, dimensions }: Props) {
           <View key={key} style={styles.dimension}>
             <Text style={styles.dimensionLabel}>{key.replace(/_/g, " ")}</Text>
             <View style={styles.dimensionBar}>
-              <View style={[styles.dimensionFill, { width: `${value}%`, backgroundColor: value >= 70 ? "#10b981" : "#f59e0b" }]} />
+              <View style={[styles.dimensionFill, { width: `${value}%`, backgroundColor: value >= 70 ? colors.success : colors.warning }]} />
             </View>
           </View>
         ))}
@@ -47,14 +48,14 @@ export function ComplianceScoreCard({ score, trend, dimensions }: Props) {
 }
 
 const styles = StyleSheet.create({
-  card: { backgroundColor: "#111827", borderRadius: 16, padding: 20, marginHorizontal: 20, marginTop: 16 },
-  scoreContainer: { alignItems: "center", marginBottom: 16 },
+  card: { backgroundColor: colors.card, borderRadius: borderRadius.xl, padding: spacing.xl, marginHorizontal: spacing.xl, marginTop: spacing.lg },
+  scoreContainer: { alignItems: "center", marginBottom: spacing.lg },
   scoreTextContainer: { position: "absolute", top: 45, alignItems: "center" },
-  scoreValue: { fontSize: 36, fontWeight: "700" },
-  scoreLabel: { fontSize: 12, color: "#6b7280" },
-  dimensionsContainer: { gap: 8 },
-  dimension: { flexDirection: "row", alignItems: "center", gap: 8 },
-  dimensionLabel: { fontSize: 11, color: "#9ca3af", width: 80, textTransform: "capitalize" },
-  dimensionBar: { flex: 1, height: 4, backgroundColor: "#1f2937", borderRadius: 2 },
+  scoreValue: { fontSize: 36, fontWeight: fontWeight.bold },
+  scoreLabel: { fontSize: fontSize.sm, color: colors.textMuted },
+  dimensionsContainer: { gap: spacing.sm },
+  dimension: { flexDirection: "row", alignItems: "center", gap: spacing.sm },
+  dimensionLabel: { fontSize: fontSize.xs, color: colors.textSecondary, width: 80, textTransform: "capitalize" },
+  dimensionBar: { flex: 1, height: 4, backgroundColor: colors.cardBorder, borderRadius: 2 },
   dimensionFill: { height: 4, borderRadius: 2 },
 });

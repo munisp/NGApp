@@ -2,6 +2,10 @@ import React from "react";
 import { View, Text, ScrollView, StyleSheet, RefreshControl, ActivityIndicator } from "react-native";
 import { useQuery } from "@tanstack/react-query";
 import { api } from "../services/api";
+import { colors, spacing, fontSize, fontWeight } from "../theme";
+import { MobileCard } from "../components/MobileCard";
+import { MobilePageHeader } from "../components/MobilePageHeader";
+import { MobileEmptyState } from "../components/MobileEmptyState";
 
 export function NotificationsScreen() {
   const { data: alerts = [], isLoading, refetch } = useQuery({
@@ -12,31 +16,28 @@ export function NotificationsScreen() {
   const [refreshing, setRefreshing] = React.useState(false);
   const onRefresh = React.useCallback(async () => { setRefreshing(true); await refetch(); setRefreshing(false); }, [refetch]);
 
-  const getSeverityColor = (sev: string) => { switch (sev) { case "critical": return "#ef4444"; case "high": return "#f59e0b"; case "medium": return "#3b82f6"; default: return "#10b981"; } };
+  const getSeverityColor = (sev: string) => {
+    switch (sev) { case "critical": return colors.danger; case "high": return colors.warning; case "medium": return colors.primary; default: return colors.success; }
+  };
 
-  if (isLoading) return <View style={s.container}><ActivityIndicator size="large" color="#3b82f6" /></View>;
+  if (isLoading) return <View style={s.container}><ActivityIndicator size="large" color={colors.primary} /></View>;
 
   return (
-    <ScrollView style={s.container} refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor="#3b82f6" />}>
-      <Text style={s.title}>Notifications</Text>
-      <Text style={s.subtitle}>{alerts.length} active alert{alerts.length !== 1 ? "s" : ""}</Text>
+    <ScrollView style={s.container} refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor={colors.primary} />}>
+      <MobilePageHeader title="Notifications" subtitle={`${alerts.length} active alert${alerts.length !== 1 ? "s" : ""}`} />
       {(alerts as any[]).map((a: any) => (
-        <View key={a.id} style={[s.card, { borderLeftWidth: 3, borderLeftColor: getSeverityColor(a.severity) }]}>
+        <MobileCard key={a.id} style={{ borderLeftWidth: 3, borderLeftColor: getSeverityColor(a.severity) }}>
           <Text style={s.cardTitle}>{a.title ?? `Alert #${a.id}`}</Text>
           <Text style={s.meta}>{a.type ?? "system"} | {a.timestamp ? new Date(a.timestamp).toLocaleString() : "—"}</Text>
-        </View>
+        </MobileCard>
       ))}
-      {alerts.length === 0 && <Text style={s.empty}>No notifications</Text>}
+      {alerts.length === 0 && <MobileEmptyState title="No notifications" description="You're all caught up." />}
     </ScrollView>
   );
 }
 
 const s = StyleSheet.create({
-  container: { flex: 1, backgroundColor: "#0a0a0a", padding: 16 },
-  title: { color: "#fff", fontSize: 24, fontWeight: "700" },
-  subtitle: { color: "#9ca3af", fontSize: 14, marginBottom: 16 },
-  card: { backgroundColor: "#111827", borderRadius: 8, padding: 16, marginBottom: 12 },
-  cardTitle: { color: "#fff", fontSize: 16, fontWeight: "600" },
-  meta: { color: "#9ca3af", fontSize: 12, marginTop: 8 },
-  empty: { color: "#6b7280", textAlign: "center", marginTop: 32 },
+  container: { flex: 1, backgroundColor: colors.background, padding: spacing.lg },
+  cardTitle: { color: colors.text, fontSize: fontSize.lg, fontWeight: fontWeight.semibold },
+  meta: { color: colors.textSecondary, fontSize: fontSize.sm, marginTop: spacing.sm },
 });

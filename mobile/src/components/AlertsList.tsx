@@ -1,6 +1,7 @@
 import React from "react";
 import { View, Text, StyleSheet, TouchableOpacity } from "react-native";
 import { Feather } from "@expo/vector-icons";
+import { colors, borderRadius, spacing, fontSize, fontWeight } from "../theme";
 
 interface Alert {
   id: string;
@@ -18,7 +19,7 @@ export function AlertsList({ alerts }: Props) {
   if (alerts.length === 0) {
     return (
       <View style={styles.empty}>
-        <Feather name="check-circle" size={24} color="#10b981" />
+        <Feather name="check-circle" size={24} color={colors.success} />
         <Text style={styles.emptyText}>No active alerts</Text>
       </View>
     );
@@ -33,7 +34,7 @@ export function AlertsList({ alerts }: Props) {
             <Text style={styles.alertTitle} numberOfLines={1}>{alert.title}</Text>
             <Text style={styles.alertMeta}>{alert.type} · {formatTime(alert.timestamp)}</Text>
           </View>
-          <Feather name="chevron-right" size={16} color="#6b7280" />
+          <Feather name="chevron-right" size={16} color={colors.textMuted} />
         </TouchableOpacity>
       ))}
     </View>
@@ -42,10 +43,10 @@ export function AlertsList({ alerts }: Props) {
 
 function severityColor(severity: string): string {
   switch (severity) {
-    case "critical": return "#ef4444";
-    case "high": return "#f97316";
-    case "medium": return "#f59e0b";
-    default: return "#6b7280";
+    case "critical": return colors.danger;
+    case "high": return colors.warning;
+    case "medium": return colors.warningLight;
+    default: return colors.textMuted;
   }
 }
 
@@ -59,12 +60,12 @@ function formatTime(timestamp: string): string {
 }
 
 const styles = StyleSheet.create({
-  container: { gap: 8 },
-  empty: { alignItems: "center", paddingVertical: 24, gap: 8 },
-  emptyText: { color: "#6b7280", fontSize: 14 },
-  alertItem: { flexDirection: "row", alignItems: "center", backgroundColor: "#1f2937", borderRadius: 12, padding: 14, gap: 12 },
+  container: { gap: spacing.sm },
+  empty: { alignItems: "center", paddingVertical: spacing.xxl, gap: spacing.sm },
+  emptyText: { color: colors.textMuted, fontSize: fontSize.base },
+  alertItem: { flexDirection: "row", alignItems: "center", backgroundColor: colors.cardBorder, borderRadius: borderRadius.lg, padding: spacing.lg, gap: spacing.md },
   severityDot: { width: 8, height: 8, borderRadius: 4 },
   alertContent: { flex: 1 },
-  alertTitle: { color: "#ffffff", fontSize: 14, fontWeight: "500" },
-  alertMeta: { color: "#6b7280", fontSize: 12, marginTop: 2 },
+  alertTitle: { color: colors.text, fontSize: fontSize.base, fontWeight: fontWeight.medium },
+  alertMeta: { color: colors.textMuted, fontSize: fontSize.sm, marginTop: 2 },
 });

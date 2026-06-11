@@ -1,7 +1,11 @@
 import React from "react";
-import { View, Text, ScrollView, StyleSheet, RefreshControl, FlatList } from "react-native";
+import { View, Text, ScrollView, StyleSheet, RefreshControl } from "react-native";
 import { useQuery } from "@tanstack/react-query";
 import { api } from "../services/api";
+import { colors, spacing, fontSize, fontWeight } from "../theme";
+import { MobileCard } from "../components/MobileCard";
+import { MobilePageHeader } from "../components/MobilePageHeader";
+import { MobileEmptyState } from "../components/MobileEmptyState";
 
 export function OrganizationDetailScreen() {
   const [refreshing, setRefreshing] = React.useState(false);
@@ -12,26 +16,22 @@ export function OrganizationDetailScreen() {
   });
 
   const onRefresh = async () => { setRefreshing(true); await refetch(); setRefreshing(false); };
-
   const orgs = data?.organizations ?? [];
 
   return (
-    <ScrollView style={s.container} refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor="#10b981" />}>
-      <View style={s.header}>
-        <Text style={s.title}>Organizations</Text>
-        <Text style={s.subtitle}>{orgs.length} registered data controllers</Text>
-      </View>
+    <ScrollView style={s.container} refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor={colors.success} />}>
+      <MobilePageHeader title="Organizations" subtitle={`${orgs.length} registered data controllers`} />
       {orgs.length === 0 ? (
-        <View style={s.card}><Text style={s.emptyText}>No organizations loaded</Text></View>
+        <MobileEmptyState title="No organizations loaded" description="Registered organizations will appear here." />
       ) : (
         orgs.map((org: { id: number; name: string; sector: string; compliance_score?: number }, idx: number) => (
-          <View key={idx} style={s.card}>
+          <MobileCard key={idx}>
             <Text style={s.orgName}>{org.name}</Text>
             <Text style={s.orgSector}>{org.sector}</Text>
-            <Text style={[s.orgScore, { color: (org.compliance_score ?? 0) >= 80 ? "#10b981" : "#f59e0b" }]}>
+            <Text style={[s.orgScore, { color: (org.compliance_score ?? 0) >= 80 ? colors.success : colors.warning }]}>
               Score: {org.compliance_score ?? "N/A"}%
             </Text>
-          </View>
+          </MobileCard>
         ))
       )}
     </ScrollView>
@@ -39,13 +39,8 @@ export function OrganizationDetailScreen() {
 }
 
 const s = StyleSheet.create({
-  container: { flex: 1, backgroundColor: "#0a0a0a" },
-  header: { padding: 20, paddingTop: 10 },
-  title: { color: "#fff", fontSize: 24, fontWeight: "700" },
-  subtitle: { color: "#9ca3af", fontSize: 14, marginTop: 4 },
-  card: { backgroundColor: "#111827", borderRadius: 12, padding: 16, marginHorizontal: 16, marginBottom: 12 },
-  emptyText: { color: "#6b7280", textAlign: "center", fontSize: 14 },
-  orgName: { color: "#fff", fontSize: 16, fontWeight: "600" },
-  orgSector: { color: "#9ca3af", fontSize: 13, marginTop: 2 },
-  orgScore: { fontSize: 14, fontWeight: "700", marginTop: 6 },
+  container: { flex: 1, backgroundColor: colors.background },
+  orgName: { color: colors.text, fontSize: fontSize.lg, fontWeight: fontWeight.semibold },
+  orgSector: { color: colors.textSecondary, fontSize: fontSize.md, marginTop: 2 },
+  orgScore: { fontSize: fontSize.base, fontWeight: fontWeight.bold, marginTop: spacing.sm },
 });
