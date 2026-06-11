@@ -65,6 +65,7 @@ import { traceMiddleware } from "../telemetry";
 import { initWebhookSystem, deliverWebhookEvent } from "../webhookSystem";
 import { createVersionedEndpoints } from "../apiVersioning";
 import { registerMobileApi } from "../mobileApi";
+import { registerMojaloopCallbacks } from "../mojaloopCallback";
 import { sdk } from "./sdk";
 import { COOKIE_NAME, ONE_YEAR_MS } from "@shared/const";
 import { getSessionCookieOptions } from "./cookies";
@@ -213,6 +214,7 @@ async function startServer() {
   });
   createVersionedEndpoints(app);
   registerMobileApi(app);
+  registerMojaloopCallbacks(app);
   // ── Security Headers (helmet) ─────────────────────────────────────────────
   const isProd = process.env.NODE_ENV === "production";
   app.use(

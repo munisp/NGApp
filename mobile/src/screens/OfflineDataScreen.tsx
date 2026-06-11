@@ -1,73 +1,46 @@
 import React from "react";
 import { View, Text, ScrollView, StyleSheet, TouchableOpacity, Alert } from "react-native";
-import { syncEngine as OfflineSyncManager } from "../services/offlineSync";
+import { useMutation } from "@tanstack/react-query";
+import { api } from "../services/api";
 
 export function OfflineDataScreen() {
-  const [pendingCount, setPendingCount] = React.useState(0);
-  const [syncing, setSyncing] = React.useState(false);
-
-  React.useEffect(() => {
-    OfflineSyncManager.getPendingCount().then(setPendingCount).catch(() => {});
-  }, []);
-
-  const handleSync = async () => {
-    setSyncing(true);
-    try {
-      await OfflineSyncManager.triggerSync();
-      const count = await OfflineSyncManager.getPendingCount();
-      setPendingCount(count);
-      Alert.alert("Sync Complete", `${pendingCount - count} items synced successfully.`);
-    } catch {
-      Alert.alert("Sync Failed", "Some items could not be synced. They will retry automatically.");
-    }
-    setSyncing(false);
-  };
+  const queueSize = api.getOfflineQueueSize();
+  const syncMutation = useMutation({
+    mutationFn: () => api.syncOfflineQueue(),
+    onSuccess: (results) => { const synced = results.filter((r: any) => r.success).length; Alert.alert("Sync Complete", `${synced}/${results.length} items synced`); },
+    onError: () => Alert.alert("Sync Failed", "Could not reach the server"),
+  });
 
   return (
     <ScrollView style={s.container}>
-      <View style={s.header}><Text style={s.title}>Offline Data</Text><Text style={s.subtitle}>SQLite-backed offline storage with vector clock sync</Text></View>
+      <Text style={s.title}>Offline Data</Text>
+      <Text style={s.subtitle}>Queued actions waiting to sync</Text>
       <View style={s.card}>
-        <Text style={s.cardTitle}>Sync Status</Text>
-        <View style={s.statRow}>
-          <View style={s.stat}><Text style={s.statValue}>{pendingCount}</Text><Text style={s.statLabel}>Pending</Text></View>
-          <View style={s.stat}><Text style={s.statValue}>—</Text><Text style={s.statLabel}>Last Sync</Text></View>
-        </View>
-        <TouchableOpacity style={[s.syncBtn, syncing && { opacity: 0.5 }]} onPress={handleSync} disabled={syncing || pendingCount === 0}>
-          <Text style={s.syncText}>{syncing ? "Syncing…" : "Sync Now"}</Text>
-        </TouchableOpacity>
+        <Text style={s.statNum}>{queueSize}</Text>
+        <Text style={s.statLabel}>Items in offline queue</Text>
       </View>
-      <View style={s.card}>
-        <Text style={s.cardTitle}>Cached Data</Text>
-        {["Compliance Overview", "Active Alerts", "Platform Metrics", "NOC Status", "Enforcement Cases"].map((item, i) => (
-          <View key={i} style={s.cacheItem}>
-            <Text style={s.cacheName}>{item}</Text>
-            <Text style={s.cacheStatus}>Cached</Text>
-          </View>
-        ))}
-      </View>
-      <View style={s.card}>
-        <Text style={s.cardTitle}>Storage</Text>
-        <Text style={s.infoText}>Local database uses SQLite with vector clocks for conflict resolution. All cached data expires after 24 hours. Mutations are queued and synced when connectivity returns.</Text>
+      <TouchableOpacity style={[s.btn, queueSize === 0 && s.btnDisabled]} onPress={() => queueSize > 0 && syncMutation.mutate()} disabled={queueSize === 0}>
+        <Text style={s.btnText}>{syncMutation.isPending ? "Syncing..." : "Sync Now"}</Text>
+      </TouchableOpacity>
+      <View style={s.info}>
+        <Text style={s.infoTitle}>How it works</Text>
+        <Text style={s.infoText}>When you submit breach reports or DSARs offline, they are saved locally and synced when connectivity is restored.</Text>
       </View>
     </ScrollView>
   );
 }
 
 const s = StyleSheet.create({
-  container: { flex: 1, backgroundColor: "#0a0a0a" },
-  header: { padding: 20, paddingTop: 10 },
+  container: { flex: 1, backgroundColor: "#0a0a0a", padding: 16 },
   title: { color: "#fff", fontSize: 24, fontWeight: "700" },
-  subtitle: { color: "#9ca3af", fontSize: 14, marginTop: 4 },
-  card: { backgroundColor: "#111827", borderRadius: 12, padding: 16, marginHorizontal: 16, marginBottom: 12 },
-  cardTitle: { color: "#d1d5db", fontSize: 14, fontWeight: "600", marginBottom: 8 },
-  statRow: { flexDirection: "row", gap: 20, marginVertical: 8 },
-  stat: { flex: 1, alignItems: "center" },
-  statValue: { color: "#10b981", fontSize: 28, fontWeight: "800" },
-  statLabel: { color: "#6b7280", fontSize: 12, marginTop: 2 },
-  syncBtn: { backgroundColor: "#10b981", borderRadius: 8, padding: 12, marginTop: 8, alignItems: "center" },
-  syncText: { color: "#fff", fontSize: 15, fontWeight: "700" },
-  cacheItem: { flexDirection: "row", justifyContent: "space-between", paddingVertical: 8, borderBottomWidth: 1, borderBottomColor: "#1f2937" },
-  cacheName: { color: "#e5e7eb", fontSize: 14 },
-  cacheStatus: { color: "#10b981", fontSize: 13, fontWeight: "600" },
+  subtitle: { color: "#9ca3af", fontSize: 14, marginBottom: 16 },
+  card: { backgroundColor: "#111827", borderRadius: 8, padding: 24, alignItems: "center", marginBottom: 16 },
+  statNum: { color: "#3b82f6", fontSize: 48, fontWeight: "700" },
+  statLabel: { color: "#9ca3af", fontSize: 14, marginTop: 4 },
+  btn: { backgroundColor: "#3b82f6", borderRadius: 8, padding: 14, alignItems: "center", marginBottom: 16 },
+  btnDisabled: { opacity: 0.5 },
+  btnText: { color: "#fff", fontSize: 16, fontWeight: "600" },
+  info: { backgroundColor: "#111827", borderRadius: 8, padding: 16 },
+  infoTitle: { color: "#fff", fontSize: 14, fontWeight: "600", marginBottom: 8 },
   infoText: { color: "#9ca3af", fontSize: 13, lineHeight: 20 },
 });

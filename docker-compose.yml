@@ -7,7 +7,7 @@ services:
     environment:
       POSTGRES_DB: ndsep_db
       POSTGRES_USER: ndsep_user
-      POSTGRES_PASSWORD: ndsep_secure_2026
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-ndsep_secure_2026}
     ports: ["5432:5432"]
     volumes: ["pgdata:/var/lib/postgresql/data"]
     healthcheck:
@@ -67,10 +67,10 @@ services:
       KC_DB: postgres
       KC_DB_URL: jdbc:postgresql://postgres:5432/ndsep_db
       KC_DB_USERNAME: ndsep_user
-      KC_DB_PASSWORD: ndsep_secure_2026
+      KC_DB_PASSWORD: ${POSTGRES_PASSWORD:-ndsep_secure_2026}
       KC_HEALTH_ENABLED: "true"
-      KEYCLOAK_ADMIN: admin
-      KEYCLOAK_ADMIN_PASSWORD: admin
+      KEYCLOAK_ADMIN: ${KEYCLOAK_ADMIN:-admin}
+      KEYCLOAK_ADMIN_PASSWORD: ${KEYCLOAK_ADMIN_PASSWORD:-admin}
     ports: ["8080:8080"]
     healthcheck:
       test: ["CMD-SHELL", "exec 3<>/dev/tcp/localhost/8080"]
@@ -86,7 +86,7 @@ services:
     command: serve
     environment:
       PERMIFY_DATABASE_ENGINE: postgres
-      PERMIFY_DATABASE_URI: "postgres://ndsep_user:ndsep_secure_2026@postgres:5432/ndsep_db"
+      PERMIFY_DATABASE_URI: "postgres://ndsep_user:${POSTGRES_PASSWORD:-ndsep_secure_2026}@postgres:5432/ndsep_db"
     ports: ["3476:3476", "3478:3478"]
     healthcheck:
       test: ["CMD-SHELL", "wget -qO- http://localhost:3476/healthz || exit 1"]
@@ -103,7 +103,7 @@ services:
       - DB=postgresql
       - DB_PORT=5432
       - POSTGRES_USER=ndsep_user
-      - POSTGRES_PWD=ndsep_secure_2026
+      - POSTGRES_PWD=${POSTGRES_PASSWORD:-ndsep_secure_2026}
       - POSTGRES_SEEDS=postgres
       - DYNAMIC_CONFIG_FILE_PATH=config/dynamicconfig/development-sql.yaml
     ports: ["7233:7233"]
@@ -185,8 +185,8 @@ services:
     image: minio/minio:RELEASE.2024-06-29T01-20-47Z
     command: server /data --console-address ":9001"
     environment:
-      MINIO_ROOT_USER: minioadmin
-      MINIO_ROOT_PASSWORD: minioadmin
+      MINIO_ROOT_USER: ${MINIO_ROOT_USER:-minioadmin}
+      MINIO_ROOT_PASSWORD: ${MINIO_ROOT_PASSWORD:-minioadmin}
     ports:
       - "9000:9000"
       - "9001:9001"
@@ -203,8 +203,8 @@ services:
       CATALOG_WAREHOUSE: s3://ndsep-lakehouse/warehouse
       CATALOG_IO__IMPL: org.apache.iceberg.aws.s3.S3FileIO
       AWS_S3_ENDPOINT: http://minio:9000
-      AWS_ACCESS_KEY_ID: minioadmin
-      AWS_SECRET_ACCESS_KEY: minioadmin
+      AWS_ACCESS_KEY_ID: ${MINIO_ROOT_USER:-minioadmin}
+      AWS_SECRET_ACCESS_KEY: ${MINIO_ROOT_PASSWORD:-minioadmin}
       AWS_REGION: us-east-1
     ports: ["8181:8181"]
     depends_on:
@@ -217,9 +217,9 @@ services:
       dockerfile: Dockerfile
     ports: ["5000:5000"]
     environment:
-      DATABASE_URL: postgresql://ndsep_user:ndsep_secure_2026@postgres:5432/ndsep_db
+      DATABASE_URL: postgresql://ndsep_user:${POSTGRES_PASSWORD:-ndsep_secure_2026}@postgres:5432/ndsep_db
       REDIS_URL: redis://redis:6379
-      JWT_SECRET: dev-jwt-secret-32-chars-minimum!!
+      JWT_SECRET: ${JWT_SECRET:-dev-jwt-secret-32-chars-minimum!!}
       NODE_ENV: development
       EVENT_GATEWAY_URL: http://event-gateway:8170
       REALTIME_ENGINE_URL: http://realtime-engine:8180
@@ -276,7 +276,7 @@ services:
       dockerfile: dlq-processor/Dockerfile
     ports: ["9090:9090"]
     environment:
-      DATABASE_URL: postgresql://ndsep_user:ndsep_secure_2026@postgres:5432/ndsep_db
+      DATABASE_URL: postgresql://ndsep_user:${POSTGRES_PASSWORD:-ndsep_secure_2026}@postgres:5432/ndsep_db
       REDIS_URL: redis://redis:6379
     depends_on:
       postgres: { condition: service_healthy }

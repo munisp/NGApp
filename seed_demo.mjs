@@ -1,8 +1,12 @@
 import pg from 'pg';
 import { readFile } from 'fs/promises';
 
+if (!process.env.DATABASE_URL) {
+  console.error("DATABASE_URL environment variable is required. Set it before running this script.");
+  process.exit(1);
+}
 const pool = new pg.Pool({ 
-  connectionString: (process.env.DATABASE_URL || "postgresql://ndsep_user:ndsep_secure_2026@localhost:5432/ndsep_db"), 
+  connectionString: process.env.DATABASE_URL, 
   ssl: false 
 });
 

@@ -1,54 +1,49 @@
 import React from "react";
-import { View, Text, ScrollView, StyleSheet } from "react-native";
-
-const TIMELINE_ITEMS = [
-  { time: "T+0h", title: "Breach Detected", desc: "Automated monitoring detected anomalous data access pattern", done: true },
-  { time: "T+1h", title: "Incident Team Assembled", desc: "DPO notified, forensics team activated", done: true },
-  { time: "T+4h", title: "Scope Assessment", desc: "Determine affected data subjects and data categories", done: true },
-  { time: "T+12h", title: "Containment", desc: "Access revoked, vulnerability patched", done: false },
-  { time: "T+48h", title: "NDPC Pre-notification", desc: "Initial report submitted to NDPC (within 72h per NDPA S.40)", done: false },
-  { time: "T+72h", title: "NDPC Formal Notification", desc: "Full incident report with remediation plan", done: false },
-  { time: "T+7d", title: "Data Subject Notification", desc: "Notify affected individuals if high risk (NDPA S.40(2))", done: false },
-  { time: "T+30d", title: "Remediation Complete", desc: "All corrective actions implemented and verified", done: false },
-];
+import { View, Text, ScrollView, StyleSheet, RefreshControl, ActivityIndicator } from "react-native";
+import { useQuery } from "@tanstack/react-query";
+import { api } from "../services/api";
 
 export function BreachTimelineScreen() {
+  const { data: breaches = [], isLoading, refetch } = useQuery({
+    queryKey: ["breach-timeline"],
+    queryFn: () => api.getBreachList(),
+    staleTime: 30_000,
+  });
+  const [refreshing, setRefreshing] = React.useState(false);
+  const onRefresh = React.useCallback(async () => { setRefreshing(true); await refetch(); setRefreshing(false); }, [refetch]);
+
+  const getSeverityColor = (sev: string) => {
+    switch (sev) { case "critical": return "#ef4444"; case "high": return "#f59e0b"; case "medium": return "#3b82f6"; default: return "#10b981"; }
+  };
+
+  if (isLoading) return <View style={s.container}><ActivityIndicator size="large" color="#3b82f6" /></View>;
+
   return (
-    <ScrollView style={s.container}>
-      <View style={s.header}>
-        <Text style={s.title}>Breach Response Timeline</Text>
-        <Text style={s.subtitle}>NDPA S.40 — Mandatory 72-hour notification</Text>
-      </View>
-      {TIMELINE_ITEMS.map((item, idx) => (
-        <View key={idx} style={s.timelineRow}>
-          <View style={s.lineCol}>
-            <View style={[s.dot, item.done && s.dotDone]} />
-            {idx < TIMELINE_ITEMS.length - 1 && <View style={[s.line, item.done && s.lineDone]} />}
-          </View>
-          <View style={s.contentCol}>
-            <Text style={s.time}>{item.time}</Text>
-            <Text style={[s.itemTitle, item.done && { color: "#10b981" }]}>{item.title}</Text>
-            <Text style={s.desc}>{item.desc}</Text>
-          </View>
+    <ScrollView style={s.container} refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor="#3b82f6" />}>
+      <Text style={s.title}>Breach Timeline</Text>
+      <Text style={s.subtitle}>72-Hour NDPA Notification Tracking</Text>
+      {(breaches as any[]).map((b: any) => (
+        <View key={b.id} style={[s.card, { borderLeftWidth: 3, borderLeftColor: getSeverityColor(b.severity) }]}>
+          <View style={s.row}><Text style={s.cardTitle}>Breach #{b.id}</Text><Text style={[s.badge, { color: getSeverityColor(b.severity) }]}>{b.severity}</Text></View>
+          <Text style={s.desc}>{b.description ?? "No description"}</Text>
+          <Text style={s.meta}>Status: {b.status} | Subjects: {b.affected_data_subjects ?? "—"}</Text>
+          <Text style={s.meta}>Reported: {b.reported_at ? new Date(b.reported_at).toLocaleDateString() : "—"}</Text>
         </View>
       ))}
+      {breaches.length === 0 && <Text style={s.empty}>No breaches recorded</Text>}
     </ScrollView>
   );
 }
 
 const s = StyleSheet.create({
-  container: { flex: 1, backgroundColor: "#0a0a0a" },
-  header: { padding: 20, paddingTop: 10 },
+  container: { flex: 1, backgroundColor: "#0a0a0a", padding: 16 },
   title: { color: "#fff", fontSize: 24, fontWeight: "700" },
-  subtitle: { color: "#ef4444", fontSize: 13, marginTop: 4 },
-  timelineRow: { flexDirection: "row", paddingHorizontal: 20 },
-  lineCol: { width: 30, alignItems: "center" },
-  dot: { width: 12, height: 12, borderRadius: 6, backgroundColor: "#374151", borderWidth: 2, borderColor: "#4b5563" },
-  dotDone: { backgroundColor: "#10b981", borderColor: "#10b981" },
-  line: { width: 2, flex: 1, backgroundColor: "#374151" },
-  lineDone: { backgroundColor: "#10b981" },
-  contentCol: { flex: 1, paddingLeft: 12, paddingBottom: 24 },
-  time: { color: "#6b7280", fontSize: 11, fontWeight: "600" },
-  itemTitle: { color: "#e5e7eb", fontSize: 16, fontWeight: "600", marginTop: 2 },
-  desc: { color: "#9ca3af", fontSize: 13, marginTop: 4 },
+  subtitle: { color: "#9ca3af", fontSize: 14, marginBottom: 16 },
+  card: { backgroundColor: "#111827", borderRadius: 8, padding: 16, marginBottom: 12 },
+  row: { flexDirection: "row", justifyContent: "space-between", alignItems: "center" },
+  cardTitle: { color: "#fff", fontSize: 16, fontWeight: "600" },
+  badge: { fontSize: 12, fontWeight: "700", textTransform: "uppercase" },
+  desc: { color: "#d1d5db", fontSize: 13, marginTop: 8 },
+  meta: { color: "#9ca3af", fontSize: 12, marginTop: 4 },
+  empty: { color: "#6b7280", textAlign: "center", marginTop: 32 },
 });
