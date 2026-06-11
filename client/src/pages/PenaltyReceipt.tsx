@@ -2,7 +2,7 @@ import { useParams, Link } from "wouter";
 import { trpc } from "@/lib/trpc";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import { Printer, CheckCircle, ArrowLeft, ExternalLink, Shield } from "lucide-react";
+import { Printer, CheckCircle, ArrowLeft, ExternalLink, Shield, Loader2 } from "lucide-react";
 
 function qrDataUrl(text: string): string {
   // Simple QR placeholder — in production use a QR library
@@ -22,7 +22,7 @@ export default function PenaltyReceipt() {
     return (
       <div className="min-h-[400px] flex items-center justify-center">
         <div className="text-center">
-          <div className="w-10 h-10 border-2 border-green-500 border-t-transparent rounded-full animate-spin mx-auto mb-4" />
+          <Loader2 className="w-10 h-10 animate-spin text-green-500 mx-auto mb-4" />
           <p className="text-muted-foreground">Loading receipt…</p>
         </div>
       </div>

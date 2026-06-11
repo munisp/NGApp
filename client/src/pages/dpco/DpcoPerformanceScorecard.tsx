@@ -3,7 +3,7 @@ import { Badge } from "@/components/ui/badge";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { useState } from "react";
-import { Star, TrendingUp, Clock, CheckCircle2, AlertTriangle, Search, Award, BarChart3, Activity } from "lucide-react";
+import { Star, TrendingUp, Clock, CheckCircle2, AlertTriangle, Search, Award, BarChart3, Activity, Loader2 } from "lucide-react";
 
 type DpcoRow = {
   id: number;
@@ -157,7 +157,7 @@ export default function DpcoPerformanceScorecard() {
       <div className="flex-1 overflow-auto px-6 py-4">
         {isLoading ? (
           <div className="flex items-center justify-center h-40">
-            <div className="w-6 h-6 border-2 border-emerald-500 border-t-transparent rounded-full animate-spin" />
+            <Loader2 className="w-6 h-6 animate-spin text-emerald-500" />
           </div>
         ) : sorted.length === 0 ? (
           <div className="flex flex-col items-center justify-center h-40 text-muted-foreground">

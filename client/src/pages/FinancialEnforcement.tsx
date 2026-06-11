@@ -10,7 +10,7 @@ import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Textarea } from "@/components/ui/textarea";
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, Cell, PieChart, Pie } from "recharts";
-import { Wallet, DollarSign, AlertTriangle, CheckCircle2, Clock, TrendingUp, Plus, Zap, CheckCircle, Upload, FileSpreadsheet, AlertCircle, X, ChevronLeft, ChevronRight, Download, Gavel, Users } from "lucide-react";
+import { Wallet, DollarSign, AlertTriangle, CheckCircle2, Clock, TrendingUp, Plus, Zap, CheckCircle, Upload, FileSpreadsheet, AlertCircle, X, ChevronLeft, ChevronRight, Download, Gavel, Users, Loader2 } from "lucide-react";
 import { useRef } from "react";
 import { toast } from "sonner";
 
@@ -305,7 +305,7 @@ export default function FinancialEnforcement() {
           {step === "processing" && (
             <div className="py-10 flex flex-col items-center gap-4">
               <div className="relative">
-                <div className="w-16 h-16 rounded-full border-2 border-primary/30 border-t-primary animate-spin" />
+                <Loader2 className="w-16 h-16 animate-spin text-primary" />
                 <Zap className="w-6 h-6 text-primary absolute inset-0 m-auto" />
               </div>
               <div className="text-center">

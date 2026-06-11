@@ -3,7 +3,7 @@ import { useState } from "react";
 import {
   ShieldCheck, Zap, Brain, BarChart3, FileText, Users, Award, Clock,
   CheckCircle, ArrowRight, Star, Globe, Lock, TrendingUp, ChevronRight,
-  Search, MapPin, Building2, Send
+  Search, MapPin, Building2, Send, Loader2
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -189,7 +189,7 @@ function DpcoSearchWidget() {
 
       {isLoading && (
         <div className="text-center py-10">
-          <div className="w-5 h-5 border-2 border-emerald-500 border-t-transparent rounded-full animate-spin mx-auto" />
+          <Loader2 className="w-5 h-5 animate-spin text-emerald-500 mx-auto" />
         </div>
       )}
 

@@ -2,7 +2,7 @@ import { useState, useCallback } from "react";
 import DOMPurify from "dompurify";
 import { trpc } from "@/lib/trpc";
 import { Input } from "@/components/ui/input";
-import { Search, Building2, AlertTriangle, FileText, Shield, User, ArrowRight } from "lucide-react";
+import { Search, Building2, AlertTriangle, FileText, Shield, User, ArrowRight, Loader2 } from "lucide-react";
 import { useLocation } from "wouter";
 import { useDebouncedCallback } from "use-debounce";
 
@@ -87,7 +87,7 @@ export default function GlobalSearch() {
             autoFocus
           />
           {isLoading && (
-            <div className="absolute right-4 top-1/2 -translate-y-1/2 w-4 h-4 border-2 border-blue-400 border-t-transparent rounded-full animate-spin" />
+            <Loader2 className="absolute right-4 top-1/2 -translate-y-1/2 w-4 h-4 animate-spin text-blue-400" />
           )}
         </div>
 
