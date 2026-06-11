@@ -235,7 +235,7 @@ export default function DpcoLanding() {
   return (
     <div className="min-h-screen bg-background text-slate-900 font-sans">
       {/* Nav */}
-      <nav className="fixed top-0 left-0 right-0 z-50 bg-background/95 backdrop-blur border-b border-slate-100">
+      <nav className="fixed top-0 left-0 right-0 z-50 bg-background/95 backdrop-blur border-b border-border">
         <div className="max-w-6xl mx-auto px-6 h-14 flex items-center justify-between">
           <div className="flex items-center gap-2">
             <div className="w-7 h-7 rounded-lg bg-emerald-700 flex items-center justify-center">
@@ -383,7 +383,7 @@ export default function DpcoLanding() {
       </section>
 
       {/* DPCO Registry Search */}
-      <section id="find-dpco" className="py-20 bg-background border-t border-slate-100">
+      <section id="find-dpco" className="py-20 bg-background border-t border-border">
         <div className="max-w-5xl mx-auto px-6">
           <div className="text-center mb-10">
             <h2 className="text-3xl font-bold text-slate-900 mb-3">Find an Accredited DPCO</h2>
