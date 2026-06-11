@@ -52,7 +52,7 @@ export default function Phase13RiskScorecard() {
   const matrixData = (matrix as any[]) ?? [];
 
   const riskColor: Record<string, string> = {
-    critical: "text-red-700 bg-red-100 dark:bg-red-950/40",
+    critical: "bg-red-500/15 text-red-600 dark:text-red-400",
     high: "text-red-600 bg-red-50 dark:bg-red-950/20",
     medium: "text-orange-600 bg-orange-50 dark:bg-orange-950/20",
     low: "text-green-600 bg-green-50 dark:bg-green-950/20",
