@@ -10,7 +10,7 @@ import {
 } from "@/components/ui/table";
 import {
   Shield, AlertTriangle, Globe, Search, Activity, Radio,
-  MapPin, Loader2, ExternalLink, Ban, Eye, Crosshair,
+  MapPin, Loader2, ExternalLink, Ban, Eye, Crosshair, Monitor,
 } from "lucide-react";
 import { Breadcrumbs } from "@/components/Breadcrumbs";
 import { EmptyState } from "@/components/EmptyState";
@@ -116,13 +116,51 @@ export default function ThreatIntelligenceDashboard() {
         </Card>
       </div>
 
-      <Tabs defaultValue="conflicts" className="space-y-4">
+      <Tabs defaultValue="osiris-live" className="space-y-4">
         <TabsList>
+          <TabsTrigger value="osiris-live"><Monitor className="w-3.5 h-3.5 mr-1" /> Osiris Live</TabsTrigger>
           <TabsTrigger value="conflicts"><MapPin className="w-3.5 h-3.5 mr-1" /> Conflict Zones</TabsTrigger>
           <TabsTrigger value="cyber"><Shield className="w-3.5 h-3.5 mr-1" /> Cyber Threats</TabsTrigger>
           <TabsTrigger value="sanctions"><Ban className="w-3.5 h-3.5 mr-1" /> Sanctions</TabsTrigger>
           <TabsTrigger value="osint"><Eye className="w-3.5 h-3.5 mr-1" /> OSINT Tools</TabsTrigger>
         </TabsList>
+
+        {/* Osiris Live Embedded Map */}
+        <TabsContent value="osiris-live" className="space-y-4">
+          <Card className="overflow-hidden">
+            <CardHeader className="pb-2">
+              <div className="flex items-center justify-between">
+                <div>
+                  <CardTitle className="text-lg flex items-center gap-2">
+                    <Monitor className="w-5 h-5 text-amber-500" />
+                    Osiris Global Intelligence Command
+                  </CardTitle>
+                  <CardDescription>Live OSINT dashboard — maritime tracking, conflict zones, cyber threats, sanctions, CCTV, aviation</CardDescription>
+                </div>
+                <div className="flex items-center gap-2">
+                  <Badge className="bg-emerald-500/15 text-emerald-600 dark:text-emerald-400">
+                    <Radio className="w-3 h-3 mr-1" /> Connected
+                  </Badge>
+                  <a href={import.meta.env.VITE_OSIRIS_URL || "https://osirislive.app"} target="_blank" rel="noopener noreferrer">
+                    <Button variant="outline" size="sm">
+                      <ExternalLink className="w-3.5 h-3.5 mr-1" /> Open Full Screen
+                    </Button>
+                  </a>
+                </div>
+              </div>
+            </CardHeader>
+            <CardContent className="p-0">
+              <iframe
+                src={import.meta.env.VITE_OSIRIS_URL || "https://osirislive.app"}
+                title="Osiris Global Intelligence Platform"
+                className="w-full border-0 rounded-b-lg"
+                style={{ height: "75vh" }}
+                allow="fullscreen; geolocation"
+                sandbox="allow-scripts allow-same-origin allow-popups allow-forms"
+              />
+            </CardContent>
+          </Card>
+        </TabsContent>
 
         {/* Conflict Zones Tab */}
         <TabsContent value="conflicts" className="space-y-4">
