@@ -8,6 +8,7 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/u
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { toast } from "sonner";
 import { Eye, Search, AlertTriangle, CheckCircle, UserX } from "lucide-react";
+import { EmptyState } from "@/components/EmptyState";
 
 type WBStatus = "new" | "under_investigation" | "resolved" | "closed" | "escalated";
 
@@ -115,7 +116,7 @@ export default function Phase13WhistleblowerCases() {
             {isLoading ? (
               <div className="text-center py-8 text-muted-foreground">Loading cases...</div>
             ) : list.length === 0 ? (
-              <div className="text-center py-8 text-muted-foreground">No whistleblower cases found</div>
+              <EmptyState title="No whistleblower cases" description="No whistleblower reports have been filed" />
             ) : (
               <div className="overflow-x-auto">
                 <table className="w-full text-sm">

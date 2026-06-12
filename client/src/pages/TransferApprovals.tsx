@@ -14,6 +14,7 @@ import {
   Globe, Database, Shield, FileText, ChevronDown, ChevronUp, Filter,
   Lock, Unlock, RefreshCw, Eye, Trash2
 } from "lucide-react";
+import { EmptyState } from "@/components/EmptyState";
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from "@/components/ui/alert-dialog";
 
 const COUNTRIES = [
@@ -262,7 +263,7 @@ export default function TransferApprovals() {
         <Card className="border-dashed border-border bg-card/30">
           <CardContent className="py-12 text-center">
             <ArrowRightLeft className="w-8 h-8 text-muted-foreground mx-auto mb-3" />
-            <p className="text-muted-foreground">No transfer requests found</p>
+            <EmptyState title="No transfer requests" description="There are no pending transfer requests" />
             <p className="text-xs text-muted-foreground mt-1">Submit a new request to begin the approval process</p>
           </CardContent>
         </Card>

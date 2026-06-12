@@ -31,7 +31,7 @@ export function OnboardingBanner() {
           <span className="text-sm font-semibold text-indigo-200">
             Welcome to NDSEP — Complete your onboarding
           </span>
-          <span className="text-xs text-slate-400">
+          <span className="text-xs text-muted-foreground">
             {completedCount}/{totalSteps} steps done
           </span>
         </div>
@@ -56,7 +56,7 @@ export function OnboardingBanner() {
       <Button
         variant="ghost"
         size="icon"
-        className="h-6 w-6 text-slate-500 hover:text-slate-300 flex-shrink-0"
+        className="h-6 w-6 text-muted-foreground hover:text-foreground flex-shrink-0"
         onClick={() => dismissBanner.mutate()}
         aria-label="Dismiss banner"
       >

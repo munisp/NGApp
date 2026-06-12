@@ -127,7 +127,7 @@ export function FloatingChatBubble() {
               <Button
                 variant="ghost"
                 size="icon"
-                className="h-6 w-6 text-slate-400 hover:text-cyan-300"
+                className="h-6 w-6 text-muted-foreground hover:text-cyan-300"
                 onClick={() => setMinimized((m) => !m)}
                 aria-label={minimized ? "Expand chat" : "Minimize chat"}
               >
@@ -136,7 +136,7 @@ export function FloatingChatBubble() {
               <Button
                 variant="ghost"
                 size="icon"
-                className="h-6 w-6 text-slate-400 hover:text-red-400"
+                className="h-6 w-6 text-muted-foreground hover:text-red-400"
                 onClick={() => setOpen(false)}
                 aria-label="Close chat"
               >
@@ -170,12 +170,12 @@ export function FloatingChatBubble() {
                     <div
                       className={`max-w-[75%] rounded-xl px-3 py-2 text-xs leading-relaxed ${
                         msg.role === "assistant"
-                          ? "bg-[#0d1f3c] text-slate-200 border border-cyan-500/10"
-                          : "bg-indigo-600/30 text-slate-100 border border-indigo-500/20"
+                          ? "bg-[#0d1f3c] text-foreground border border-cyan-500/10"
+                          : "bg-indigo-600/30 text-foreground border border-indigo-500/20"
                       }`}
                     >
                       {msg.content}
-                      <div className="text-[10px] text-slate-500 mt-1">
+                      <div className="text-[10px] text-muted-foreground mt-1">
                         {msg.timestamp.toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" })}
                       </div>
                     </div>
@@ -221,7 +221,7 @@ export function FloatingChatBubble() {
                   onChange={(e) => setInput(e.target.value)}
                   onKeyDown={handleKeyDown}
                   placeholder="Ask about NDPA, compliance, or the platform…"
-                  className="flex-1 bg-[#0d1f3c] border border-cyan-500/20 rounded-lg px-3 py-2 text-xs text-slate-200 placeholder-slate-500 focus:outline-none focus:border-cyan-400"
+                  className="flex-1 bg-[#0d1f3c] border border-cyan-500/20 rounded-lg px-3 py-2 text-xs text-foreground placeholder-muted-foreground focus:outline-none focus:border-cyan-400"
                 />
                 <Button
                   size="icon"

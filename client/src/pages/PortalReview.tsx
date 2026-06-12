@@ -13,6 +13,7 @@ import {
   ClipboardCheck, Building2, CheckCircle2, XCircle, ArrowRight,
   Award, Clock, Filter, RefreshCw, Eye, FileText, ChevronDown
 } from "lucide-react";
+import { EmptyState } from "@/components/EmptyState";
 
 const PHASE_ORDER = ["registration", "asset_inventory", "data_catalog", "self_assessment", "initial_audit", "remediation", "certified"];
 const PHASE_LABELS: Record<string, string> = {
@@ -248,7 +249,7 @@ export default function PortalReview() {
           {isLoading ? (
             <div className="p-8 text-center text-muted-foreground mono text-sm">Loading submissions...</div>
           ) : filtered.length === 0 ? (
-            <div className="p-8 text-center text-muted-foreground mono text-sm">No submissions found</div>
+            <EmptyState title="No submissions found" description="There are no pending submissions to review" />
           ) : (
             <div className="overflow-x-auto">
               <table className="w-full text-sm">

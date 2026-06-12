@@ -61,7 +61,7 @@ export function SkeletonText({ lines = 3, className = "" }: { lines?: number; cl
 /** Card skeleton (for dashboard cards) */
 export function SkeletonCard({ className = "" }: { className?: string }) {
   return (
-    <div className={`border border-gray-200 dark:border-gray-700 rounded-lg p-4 ${className}`}>
+    <div className={`border border-border rounded-lg p-4 ${className}`}>
       <div className="flex items-center justify-between mb-3">
         <Skeleton width="40%" height="1rem" />
         <Skeleton width={24} height={24} circle />
@@ -77,7 +77,7 @@ export function SkeletonTable({ rows = 5, cols = 4, className = "" }: { rows?: n
   return (
     <div className={`space-y-2 ${className}`}>
       {/* Header */}
-      <div className="flex gap-4 pb-2 border-b border-gray-200 dark:border-gray-700">
+      <div className="flex gap-4 pb-2 border-b border-border">
         {Array.from({ length: cols }).map((_, i) => (
           <Skeleton key={i} width={`${100 / cols}%`} height="0.75rem" />
         ))}
@@ -105,12 +105,12 @@ export function SkeletonDashboard() {
         ))}
       </div>
       {/* Chart area */}
-      <div className="border border-gray-200 dark:border-gray-700 rounded-lg p-4">
+      <div className="border border-border rounded-lg p-4">
         <Skeleton width="30%" height="1.25rem" className="mb-4" />
         <Skeleton height="200px" rounded />
       </div>
       {/* Table */}
-      <div className="border border-gray-200 dark:border-gray-700 rounded-lg p-4">
+      <div className="border border-border rounded-lg p-4">
         <Skeleton width="25%" height="1.25rem" className="mb-4" />
         <SkeletonTable rows={5} cols={5} />
       </div>

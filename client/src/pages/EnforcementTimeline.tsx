@@ -5,6 +5,7 @@ import { Badge } from "@/components/ui/badge";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Gavel, Filter, TrendingUp, AlertCircle, CheckCircle, Clock } from "lucide-react";
+import { EmptyState } from "@/components/EmptyState";
 
 const SECTOR_COLORS: Record<string, string> = {
   banking: "text-blue-400 bg-blue-500/10 border-blue-500/30",
@@ -83,7 +84,7 @@ export default function EnforcementTimeline() {
               <div className="absolute left-6 top-0 bottom-0 w-px bg-muted" />
               <div className="space-y-4 pl-14">
                 {(timeline as any[]).length === 0 ? (
-                  <div className="text-center py-8 text-muted-foreground">No enforcement actions found</div>
+                  <EmptyState title="No enforcement actions" description="No enforcement timeline entries found" />
                 ) : (timeline as any[]).map((action: any, i: number) => {
                   const Icon = ACTION_ICONS[String(action.action_type ?? "warning")] ?? AlertCircle;
                   const sectorColor = SECTOR_COLORS[String(action.sector ?? "banking")] ?? SECTOR_COLORS.banking;

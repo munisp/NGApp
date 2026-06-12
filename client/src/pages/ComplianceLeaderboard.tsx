@@ -6,6 +6,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Switch } from "@/components/ui/switch";
 import { Label } from "@/components/ui/label";
 import { Award, TrendingUp, Shield, Building2, Star, CheckCircle2, XCircle, Clock, ChevronDown, ChevronUp, RefreshCw } from "lucide-react";
+import { EmptyState } from "@/components/EmptyState";
 import { LineChart, Line, Tooltip, ResponsiveContainer } from "recharts";
 import { toast } from "sonner";
 
@@ -303,7 +304,7 @@ export default function ComplianceLeaderboard() {
         {isLoading ? (
           <div className="p-8 text-center text-muted-foreground text-sm">Loading rankings…</div>
         ) : rows.length === 0 ? (
-          <div className="p-8 text-center text-muted-foreground text-sm">No organisations found.</div>
+          <EmptyState title="No organisations found" description="No organisations match the current filters" />
         ) : (
           <div>
             {rows.map(org => (
