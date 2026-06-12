@@ -193,7 +193,7 @@ export default function DpcoPerformanceScorecard() {
                   const m = getRealMetrics(dpco.id, metricsMap);
                   const isTop3 = idx < 3;
                   return (
-                    <tr key={dpco.id} className={`border-b border-slate-50 hover:bg-muted transition-colors ${isTop3 ? "bg-amber-50/30" : ""}`}>
+                    <tr key={dpco.id} className={`border-b border-border hover:bg-muted transition-colors ${isTop3 ? "bg-amber-50/30" : ""}`}>
                       <td className="px-4 py-3">
                         {isTop3 ? (
                           <span className={`w-5 h-5 rounded-full flex items-center justify-center text-xs font-bold ${

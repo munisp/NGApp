@@ -269,7 +269,7 @@ export default function DpcoApply() {
                     className={`px-3 py-1.5 rounded-full text-xs border transition-all ${
                       selectedSectors.includes(s)
                         ? "bg-emerald-500/20 border-emerald-500 text-emerald-300"
-                        : "bg-card border-border text-muted-foreground hover:border-slate-500"
+                        : "bg-card border-border text-muted-foreground hover:border-primary"
                     }`}>
                     {s}
                   </button>
@@ -320,7 +320,7 @@ export default function DpcoApply() {
                           className={`px-2.5 py-1 rounded text-xs border transition-all ${
                             auditor.certifications.includes(cert)
                               ? "bg-blue-500/20 border-blue-500 text-blue-300"
-                              : "bg-background border-border text-muted-foreground hover:border-slate-500"
+                              : "bg-background border-border text-muted-foreground hover:border-primary"
                           }`}>
                           {cert}
                         </button>
@@ -429,7 +429,7 @@ export default function DpcoApply() {
               <div className="flex items-start gap-3 bg-card/50 border border-border rounded-lg p-4">
                 <Checkbox id="conflict" checked={conflictDeclaration}
                   onCheckedChange={(v) => setConflictDeclaration(v === true)}
-                  className="mt-0.5 border-slate-500" />
+                  className="mt-0.5 border-primary" />
                 <label htmlFor="conflict" className="text-sm text-muted-foreground cursor-pointer leading-relaxed">
                   I declare that this organisation has no material conflict of interest with any prospective audit client, and that all named lead auditors are independent of any organisation they may audit under this accreditation.
                 </label>
@@ -437,7 +437,7 @@ export default function DpcoApply() {
               <div className="flex items-start gap-3 bg-card/50 border border-border rounded-lg p-4">
                 <Checkbox id="accuracy" checked={accuracyDeclaration}
                   onCheckedChange={(v) => setAccuracyDeclaration(v === true)}
-                  className="mt-0.5 border-slate-500" />
+                  className="mt-0.5 border-primary" />
                 <label htmlFor="accuracy" className="text-sm text-muted-foreground cursor-pointer leading-relaxed">
                   I declare that all information provided in this application is true, accurate, and complete to the best of my knowledge. I understand that providing false information is grounds for rejection and may constitute an offence under applicable law.
                 </label>

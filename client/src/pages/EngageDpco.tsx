@@ -478,7 +478,7 @@ export default function EngageDpco() {
                         className={`text-xs px-3 py-1.5 rounded-full border transition-all ${
                           selected
                             ? "bg-cyan-500/15 border-cyan-500/50 text-cyan-300"
-                            : "bg-background border-border text-muted-foreground hover:border-slate-500 hover:text-muted-foreground"
+                            : "bg-background border-border text-muted-foreground hover:border-primary hover:text-muted-foreground"
                         }`}
                       >
                         {selected && <span className="mr-1">✓</span>}{activity}

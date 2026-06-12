@@ -362,13 +362,13 @@ export default function DpcoRegister() {
                       className={`flex items-center gap-3 p-3 rounded-lg border cursor-pointer transition-all ${
                         form.services.includes(svc.id)
                           ? "border-cyan-500/60 bg-cyan-500/10 text-cyan-300"
-                          : "border-border bg-card/40 text-muted-foreground hover:border-slate-500"
+                          : "border-border bg-card/40 text-muted-foreground hover:border-primary"
                       }`}
                     >
                       <Checkbox
                         checked={form.services.includes(svc.id)}
                         onCheckedChange={() => toggleService(svc.id)}
-                        className="border-slate-500"
+                        className="border-primary"
                       />
                       <span className="text-sm">{svc.label}</span>
                     </label>
@@ -444,7 +444,7 @@ export default function DpcoRegister() {
                 <Checkbox
                   checked={form.declarationAccepted}
                   onCheckedChange={(v) => set("declarationAccepted", !!v)}
-                  className="mt-0.5 border-slate-500"
+                  className="mt-0.5 border-primary"
                 />
                 <span className="text-sm text-muted-foreground">
                   I accept the above declaration and confirm that all information provided is accurate and
