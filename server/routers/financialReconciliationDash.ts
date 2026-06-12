@@ -279,6 +279,42 @@ export const financialReconciliationDashRouter = router({
           : 0,
     };
   }),
+  addReconciliationItem: protectedProcedure
+    .input(
+      z.object({
+        batchId: z.number(),
+        externalRef: z.string(),
+        internalRef: z.string().optional(),
+        externalAmount: z.string(),
+        internalAmount: z.string().optional(),
+        matchStatus: z.enum(["matched", "unmatched", "partial", "disputed"]),
+      })
+    )
+    .mutation(async ({ input }) => {
+      const db = (await getDb())!;
+      const discrepancy =
+        input.internalAmount && input.externalAmount
+          ? String(
+              Math.abs(
+                parseFloat(input.externalAmount) -
+                  parseFloat(input.internalAmount)
+              )
+            )
+          : null;
+      const [item] = await db
+        .insert(reconciliationItems)
+        .values({
+          batchId: input.batchId,
+          externalRef: input.externalRef,
+          internalRef: input.internalRef ?? null,
+          externalAmount: input.externalAmount,
+          internalAmount: input.internalAmount ?? null,
+          discrepancy,
+          matchStatus: input.matchStatus,
+        })
+        .returning();
+      return item;
+    }),
   list: protectedProcedure
     .input(
       z

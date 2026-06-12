@@ -192,6 +192,9 @@ export const agentLoanFacilityRouter = router({
         const months = input.tenorDays / 30;
         const totalInterest = input.principalAmount * monthlyRate * months;
         const totalRepayable = input.principalAmount + totalInterest;
+        // Deduct processing fee from disbursement
+        const netDisbursement = input.principalAmount - fees.fee;
+
         const [loan] = await db
           .insert(agentLoans)
           .values({
@@ -208,6 +211,8 @@ export const agentLoanFacilityRouter = router({
               ? String(input.collateralValue)
               : null,
             dueDate: new Date(Date.now() + input.tenorDays * 86400000),
+            processingFee: String(fees.fee),
+            netDisbursement: String(netDisbursement),
           })
           .returning();
 

@@ -242,7 +242,14 @@ export const payrollDisbursementRouter = router({
           message: "totalAmount must be at least ₦30,000 (minimum wage)",
         });
       }
-      const jsonStr = JSON.stringify(input.data);
+      const dataWithFees = {
+        ...input.data,
+        processingFee: fees.fee,
+        commission: commission.agentShare,
+        tax: tax.taxAmount,
+        netAmount: totalAmount - fees.fee,
+      };
+      const jsonStr = JSON.stringify(dataWithFees);
       const result = await db.execute(
         sql`INSERT INTO "payroll_employers" (data, status, tenant_id) VALUES (${jsonStr}::jsonb, 'active', 'default') RETURNING id`
       );

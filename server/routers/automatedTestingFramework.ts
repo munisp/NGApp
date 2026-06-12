@@ -240,4 +240,31 @@ export const automatedTestingFrameworkRouter = router({
       failed: 0,
     };
   }),
+
+  createLoadTestRun: protectedProcedure
+    .input(
+      z.object({
+        name: z.string(),
+        targetUrl: z.string().url(),
+        concurrency: z.number().min(1).max(1000),
+        duration: z.number().min(1).max(3600),
+        scenario: z.string().optional(),
+      })
+    )
+    .mutation(async ({ input, ctx }) => {
+      const db = (await getDb())!;
+      const [run] = await db
+        .insert(loadTestRuns)
+        .values({
+          name: input.name,
+          targetUrl: input.targetUrl,
+          concurrency: input.concurrency,
+          duration: input.duration,
+          scenario: input.scenario ?? null,
+          status: "pending",
+          startedBy: ctx.user?.name ?? "system",
+        })
+        .returning();
+      return run;
+    }),
 });

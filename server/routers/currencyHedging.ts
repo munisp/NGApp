@@ -195,4 +195,31 @@ export const currencyHedgingRouter = router({
     activeRecords: 0,
     lastUpdated: new Date().toISOString(),
   })),
+
+  createRateAlert: protectedProcedure
+    .input(
+      z.object({
+        currencyPair: z.string(),
+        targetRate: z.number().positive(),
+        direction: z.enum(["above", "below"]),
+        notifyEmail: z.string().email().optional(),
+        notifySms: z.string().optional(),
+      })
+    )
+    .mutation(async ({ input, ctx }) => {
+      const db = (await getDb())!;
+      const [alert] = await db
+        .insert(rateAlerts)
+        .values({
+          currencyPair: input.currencyPair,
+          targetRate: String(input.targetRate),
+          direction: input.direction,
+          notifyEmail: input.notifyEmail ?? null,
+          notifySms: input.notifySms ?? null,
+          agentId: ctx.user?.id ?? 0,
+          status: "active",
+        })
+        .returning();
+      return alert;
+    }),
 });

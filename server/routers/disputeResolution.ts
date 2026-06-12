@@ -6,7 +6,13 @@
 import { z } from "zod";
 import { router, protectedProcedure } from "../_core/trpc";
 import { getDb, writeAuditLog } from "../db";
-import { disputes, disputeMessages, sla_breaches } from "../../drizzle/schema";
+import {
+  disputes,
+  disputeMessages,
+  sla_breaches,
+  refunds,
+  disputeEvidence,
+} from "../../drizzle/schema";
 import { eq, desc, count, sql, gte, lte } from "drizzle-orm";
 import { TRPCError } from "@trpc/server";
 import { publishDisputeEvent } from "../middleware/disputeMiddleware";
@@ -327,6 +333,29 @@ export const disputeResolutionRouter = router({
           senderType: "admin",
           senderName: ctx.user?.name ?? "System",
         });
+
+        // Create refund record when dispute is resolved in customer's favor
+        if (input.status === "resolved" && u.amount) {
+          const refundRef = `REF-${Date.now()}-${Math.random().toString(36).slice(2, 8).toUpperCase()}`;
+          await db.insert(refunds).values({
+            ref: refundRef,
+            disputeId: input.disputeId,
+            transactionRef: u.transactionRef ?? undefined,
+            agentId: u.agentId ?? 0,
+            customerName: u.customerName ?? undefined,
+            customerPhone: u.customerPhone ?? undefined,
+            originalAmount: Number(u.amount),
+            refundAmount: Number(u.amount),
+            currency: "NGN",
+            reason: input.resolution ?? "Dispute resolved in customer favor",
+            category: "dispute_resolution",
+            status: "approved",
+            method: "original_method",
+            approvedBy: ctx.user?.name ?? "admin",
+            approvedAt: new Date(),
+          });
+        }
+
         try {
           await publishDisputeEvent({
             eventType: "dispute.status_changed",

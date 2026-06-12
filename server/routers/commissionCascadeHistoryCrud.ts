@@ -258,4 +258,30 @@ export const commissionCascadeHistoryRouter = router({
         });
       }
     }),
+
+  createRecord: protectedProcedure
+    .input(
+      z.object({
+        transactionId: z.number(),
+        agentId: z.number(),
+        level: z.number(),
+        amount: z.number(),
+        parentAgentId: z.number().optional(),
+      })
+    )
+    .mutation(async ({ input, ctx }) => {
+      const db = (await getDb())!;
+      const [record] = await db
+        .insert(commissionCascadeHistory)
+        .values({
+          transactionId: input.transactionId,
+          agentId: input.agentId,
+          level: input.level,
+          amount: String(input.amount),
+          parentAgentId: input.parentAgentId ?? null,
+          status: "completed",
+        })
+        .returning();
+      return record;
+    }),
 });

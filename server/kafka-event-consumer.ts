@@ -166,6 +166,185 @@ eventHandlers.set("settlement.completed", async event => {
   // Update status, notify agent, emit receipt
 });
 
+// Commission domain events
+eventHandlers.set("commission.calculated", async event => {
+  const { agentId, amount, transactionRef } = event.payload as any;
+  console.log(
+    `[Kafka] Commission calculated: agent=${agentId} amount=${amount} ref=${transactionRef}`
+  );
+  // Update commission balance in agent record, record in commission ledger
+});
+
+eventHandlers.set("commission.payout.approved", async event => {
+  const { agentId, amount, payoutRef } = event.payload as any;
+  console.log(
+    `[Kafka] Commission payout approved: agent=${agentId} amount=${amount}`
+  );
+  // Initiate bank transfer for commission payout, debit commission balance
+});
+
+eventHandlers.set("commission.clawback.initiated", async event => {
+  const { agentId, amount, reason } = event.payload as any;
+  console.log(
+    `[Kafka] Commission clawback initiated: agent=${agentId} amount=${amount} reason=${reason}`
+  );
+  // Debit commission balance, create clawback record, notify agent
+});
+
+eventHandlers.set("commission.clawback.applied", async event => {
+  const { agentId, amount, clawbackId } = event.payload as any;
+  console.log(
+    `[Kafka] Commission clawback applied: agent=${agentId} amount=${amount}`
+  );
+  // Finalize clawback, update commission audit trail
+});
+
+eventHandlers.set("commission.split.created", async event => {
+  const { splitId, transactionType, ratios } = event.payload as any;
+  console.log(
+    `[Kafka] Commission split created: id=${splitId} type=${transactionType}`
+  );
+  // Invalidate split ratio cache, notify affected agents
+});
+
+eventHandlers.set("commission.split.updated", async event => {
+  const { splitId, transactionType } = event.payload as any;
+  console.log(`[Kafka] Commission split updated: id=${splitId}`);
+  // Invalidate Redis split cache, recalculate pending commissions
+});
+
+eventHandlers.set("commission.tier.created", async event => {
+  const { tierId, name, minVolume } = event.payload as any;
+  console.log(`[Kafka] Commission tier created: ${tierId} name=${name}`);
+  // Update tier lookup cache
+});
+
+eventHandlers.set("commission.tier.updated", async event => {
+  const { tierId, changes } = event.payload as any;
+  console.log(`[Kafka] Commission tier updated: ${tierId}`);
+  // Invalidate tier cache, recalculate affected agents
+});
+
+eventHandlers.set("commission.tier.deleted", async event => {
+  const { tierId } = event.payload as any;
+  console.log(`[Kafka] Commission tier deleted: ${tierId}`);
+  // Remove from cache, migrate agents to default tier
+});
+
+// Dispute domain events
+eventHandlers.set("dispute.created", async event => {
+  const { disputeId, agentId, amount, reason } = event.payload as any;
+  console.log(
+    `[Kafka] Dispute created: id=${disputeId} agent=${agentId} amount=${amount}`
+  );
+  // Start SLA timer, assign to investigation queue, notify compliance team
+});
+
+eventHandlers.set("dispute.status_changed", async event => {
+  const { disputeId, oldStatus, newStatus } = event.payload as any;
+  console.log(
+    `[Kafka] Dispute status changed: id=${disputeId} ${oldStatus} -> ${newStatus}`
+  );
+  // Update SLA tracking, notify customer, trigger refund if resolved
+});
+
+eventHandlers.set("dispute.ai.analyzed", async event => {
+  const { disputeId, recommendation, confidence } = event.payload as any;
+  console.log(
+    `[Kafka] Dispute AI analyzed: id=${disputeId} recommendation=${recommendation} confidence=${confidence}`
+  );
+  // Update dispute with AI recommendation, auto-resolve if high confidence
+});
+
+eventHandlers.set("dispute.ai.accepted", async event => {
+  const { disputeId, resolvedBy } = event.payload as any;
+  console.log(`[Kafka] Dispute AI accepted: id=${disputeId}`);
+  // Close dispute, process refund, update agent metrics
+});
+
+eventHandlers.set("dispute.ai.overridden", async event => {
+  const { disputeId, overriddenBy, reason } = event.payload as any;
+  console.log(
+    `[Kafka] Dispute AI overridden: id=${disputeId} by=${overriddenBy}`
+  );
+  // Record override, escalate to senior agent, audit trail
+});
+
+eventHandlers.set("dispute.notification.sent", async event => {
+  const { disputeId, channel, recipient } = event.payload as any;
+  console.log(
+    `[Kafka] Dispute notification sent: id=${disputeId} via ${channel}`
+  );
+  // Log notification delivery, update communication history
+});
+
+eventHandlers.set("dispute.workflow.created", async event => {
+  const { disputeId, workflowId } = event.payload as any;
+  console.log(
+    `[Kafka] Dispute workflow created: dispute=${disputeId} workflow=${workflowId}`
+  );
+  // Initialize workflow steps, assign reviewers
+});
+
+eventHandlers.set("dispute.workflow.status_changed", async event => {
+  const { workflowId, step, status } = event.payload as any;
+  console.log(`[Kafka] Dispute workflow step: ${workflowId} step=${step}`);
+  // Progress workflow, check if all steps complete
+});
+
+eventHandlers.set("dispute.workflow.escalated", async event => {
+  const { disputeId, escalatedTo, reason } = event.payload as any;
+  console.log(`[Kafka] Dispute escalated: id=${disputeId} to=${escalatedTo}`);
+  // Notify escalation target, update SLA priority
+});
+
+eventHandlers.set("dispute.workflow.auto_resolved", async event => {
+  const { disputeId, resolution } = event.payload as any;
+  console.log(`[Kafka] Dispute auto-resolved: id=${disputeId}`);
+  // Close dispute, process refund, update metrics
+});
+
+// Settlement schedule events
+eventHandlers.set("settlement.batch.started", async event => {
+  const { batchId, agentCount, totalAmount } = event.payload as any;
+  console.log(
+    `[Kafka] Settlement batch started: batch=${batchId} agents=${agentCount}`
+  );
+  // Lock float balances for batch agents, begin bank transfer processing
+});
+
+eventHandlers.set("settlement.batch.completed", async event => {
+  const { batchId, successCount, failedCount } = event.payload as any;
+  console.log(
+    `[Kafka] Settlement batch completed: batch=${batchId} success=${successCount} failed=${failedCount}`
+  );
+  // Unlock float, send settlement receipts, flag failed for retry
+});
+
+eventHandlers.set("settlement.batch.failed", async event => {
+  const { batchId, reason } = event.payload as any;
+  console.log(
+    `[Kafka] Settlement batch failed: batch=${batchId} reason=${reason}`
+  );
+  // Rollback float locks, notify operations, schedule retry
+});
+
+eventHandlers.set("settlement.schedule.created", async event => {
+  const { scheduleId, frequency, nextRun } = event.payload as any;
+  console.log(
+    `[Kafka] Settlement schedule created: id=${scheduleId} freq=${frequency}`
+  );
+  // Register cron job, validate bank details for all agents
+});
+
+eventHandlers.set("settlement.schedule.manual_trigger", async event => {
+  const { scheduleId, triggeredBy } = event.payload as any;
+  console.log(
+    `[Kafka] Settlement manual trigger: schedule=${scheduleId} by=${triggeredBy}`
+  );
+  // Start immediate settlement batch outside normal schedule
+});
+
 // ─── Consumer Metrics ───────────────────────────────────────────────────────
 
 export interface ConsumerMetrics {

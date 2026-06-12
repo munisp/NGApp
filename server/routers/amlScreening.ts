@@ -548,4 +548,50 @@ export const amlScreeningRouter = router({
 
       return { success: true, id: input.id, newStatus: input.status };
     }),
+
+  addToWatchlist: protectedProcedure
+    .input(
+      z.object({
+        entityName: z.string().min(2),
+        aliases: z.string().optional(),
+        listType: z.enum([
+          "sanctions",
+          "pep",
+          "adverse_media",
+          "terrorism",
+          "fraud",
+        ]),
+        sourceList: z.string().optional(),
+        country: z.string().length(2).optional(),
+      })
+    )
+    .mutation(async ({ input, ctx }) => {
+      const db = (await getDb())!;
+      const [entry] = await db
+        .insert(amlWatchlistEntries)
+        .values({
+          entityName: input.entityName,
+          aliases: input.aliases ?? null,
+          listType: input.listType,
+          sourceList: input.sourceList ?? null,
+          country: input.country ?? null,
+          active: true,
+        })
+        .returning();
+
+      logAudit({
+        userId: null,
+        userRole: "compliance_officer",
+        action: "CREATE",
+        resource: "amlWatchlistEntries",
+        resourceId: String(entry.id),
+        description: `Added ${input.entityName} to ${input.listType} watchlist`,
+        ipAddress: "internal",
+        userAgent: "server",
+        severity: "critical",
+        category: "compliance",
+      });
+
+      return entry;
+    }),
 });

@@ -1680,6 +1680,34 @@ export const managementRouter = router({
 
   // ── VAT Management ─────────────────────────────────────────────────────────
   vat: router({
+    create: mgmtProcedure
+      .input(
+        z.object({
+          transactionId: z.string(),
+          agentId: z.number(),
+          taxableAmount: z.string(),
+          vatAmount: z.string(),
+          vatRate: z.string().default("0.075"),
+          period: z.string(),
+          tinNumber: z.string().optional(),
+        })
+      )
+      .mutation(async ({ input }) => {
+        const db = (await getDb())!;
+        const [record] = await db
+          .insert(vatRecords)
+          .values({
+            transactionId: input.transactionId,
+            agentId: input.agentId,
+            taxableAmount: input.taxableAmount,
+            vatAmount: input.vatAmount,
+            vatRate: input.vatRate,
+            period: input.period,
+            tinNumber: input.tinNumber ?? null,
+          })
+          .returning();
+        return record;
+      }),
     list: mgmtProcedure
       .input(
         z.object({

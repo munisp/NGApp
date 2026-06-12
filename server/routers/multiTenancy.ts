@@ -203,4 +203,25 @@ export const multiTenancyRouter = router({
       plan: "enterprise",
     };
   }),
+
+  addTenantUser: protectedProcedure
+    .input(
+      z.object({
+        tenantId: z.number(),
+        userId: z.number(),
+        role: z.string().default("member"),
+      })
+    )
+    .mutation(async ({ input, ctx }) => {
+      const db = (await getDb())!;
+      const [tu] = await db
+        .insert(tenantUsers)
+        .values({
+          tenantId: input.tenantId,
+          userId: input.userId,
+          role: input.role,
+        })
+        .returning();
+      return tu;
+    }),
 });

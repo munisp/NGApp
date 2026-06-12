@@ -331,6 +331,42 @@ export const customerDisputePortalRouter = router({
         return { items: [], total: 0 };
       }
     }),
+  uploadEvidence: protectedProcedure
+    .input(
+      z.object({
+        disputeId: z.number(),
+        fileName: z.string(),
+        fileUrl: z.string().url(),
+        fileKey: z.string(),
+        mimeType: z.string().optional(),
+        fileSize: z.number().optional(),
+      })
+    )
+    .mutation(async ({ input, ctx }) => {
+      try {
+        const db = (await getDb())!;
+        const [evidence] = await db
+          .insert(disputeEvidence)
+          .values({
+            disputeId: input.disputeId,
+            fileName: input.fileName,
+            fileUrl: input.fileUrl,
+            fileKey: input.fileKey,
+            mimeType: input.mimeType ?? null,
+            fileSize: input.fileSize ?? null,
+            uploadedBy: ctx.user?.name ?? "customer",
+          })
+          .returning();
+        return evidence;
+      } catch (error) {
+        if (error instanceof TRPCError) throw error;
+        throw new TRPCError({
+          code: "INTERNAL_SERVER_ERROR",
+          message:
+            error instanceof Error ? error.message : "Internal server error",
+        });
+      }
+    }),
   escalateDispute: protectedProcedure
     .input(z.object({ disputeId: z.number(), reason: z.string() }))
     .mutation(async ({ input }) => {

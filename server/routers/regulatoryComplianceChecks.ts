@@ -185,4 +185,30 @@ export const regulatoryComplianceChecksRouter = router({
 
       return results;
     }),
+
+  createCheck: protectedProcedure
+    .input(
+      z.object({
+        agentId: z.number(),
+        checkType: z.string(),
+        result: z.enum(["pass", "fail", "warning"]),
+        details: z.string().optional(),
+        regulationType: z.string().default("CBN"),
+      })
+    )
+    .mutation(async ({ input, ctx }) => {
+      const db = (await getDb())!;
+      const [check] = await db
+        .insert(complianceChecks)
+        .values({
+          agentId: input.agentId,
+          checkType: input.checkType,
+          result: input.result,
+          details: input.details ?? null,
+          regulationType: input.regulationType,
+          checkedBy: ctx.user?.name ?? "system",
+        })
+        .returning();
+      return check;
+    }),
 });
