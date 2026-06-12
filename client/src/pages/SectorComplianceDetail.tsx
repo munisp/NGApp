@@ -586,7 +586,7 @@ export default function SectorComplianceDetail() {
               <div>
                 <label className="text-xs text-muted-foreground block mb-1">Entity (optional)</label>
                 <input
-                  className="w-full bg-background border border-border rounded px-3 py-2 text-sm text-foreground focus:outline-none"
+                  className="w-full bg-background border border-border rounded px-3 py-2 text-sm text-foreground focus-visible:outline-none"
                   placeholder={`e.g. specific entity in ${meta?.name ?? sector}`}
                   value={flagEntity}
                   onChange={(e) => setFlagEntity(e.target.value)}
@@ -595,7 +595,7 @@ export default function SectorComplianceDetail() {
               <div>
                 <label className="text-xs text-muted-foreground block mb-1">Reason for Investigation *</label>
                 <textarea
-                  className="w-full bg-background border border-border rounded px-3 py-2 text-sm text-foreground focus:outline-none min-h-[80px] resize-none"
+                  className="w-full bg-background border border-border rounded px-3 py-2 text-sm text-foreground focus-visible:outline-none min-h-[80px] resize-none"
                   placeholder="Describe the compliance concern..."
                   value={flagReason}
                   onChange={(e) => setFlagReason(e.target.value)}

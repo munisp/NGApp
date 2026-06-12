@@ -220,7 +220,7 @@ function HomeTab() {
         {/* Compliance ring */}
         <div className="bg-background/60 border border-border/50 rounded-2xl p-5 flex flex-col items-center justify-center gap-3">
           <p className="text-xs font-bold text-muted-foreground uppercase tracking-wider">Compliance Health</p>
-          <button onClick={() => setShowScoreSheet(true)} className="focus:outline-none hover:opacity-90 transition-opacity">
+          <button onClick={() => setShowScoreSheet(true)} className="focus-visible:outline-none hover:opacity-90 transition-opacity">
             <ComplianceRing score={complianceScore} size={160} />
           </button>
           <p className="text-[11px] text-cyan-500/70 text-center">Click ring for full breakdown</p>
@@ -445,7 +445,7 @@ function ClientsTab() {
           placeholder="Search clients or sectors…"
           value={search}
           onChange={(e) => setSearch(e.target.value)}
-          className="w-full bg-background/60 border border-border/60 rounded-xl px-4 py-2.5 text-sm text-foreground placeholder-slate-500 focus:outline-none focus:border-cyan-500/50"
+          className="w-full bg-background/60 border border-border/60 rounded-xl px-4 py-2.5 text-sm text-foreground placeholder:text-muted-foreground focus-visible:outline-none focus:border-cyan-500/50"
         />
       </div>
 

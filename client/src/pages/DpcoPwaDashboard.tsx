@@ -303,7 +303,7 @@ export default function DpcoPwaDashboard() {
         {/* ── Compliance + KPIs row ── */}
         <div className="bg-background/60 border border-border/50 rounded-2xl p-4">
           <div className="flex items-center gap-4">
-            <button onClick={() => setShowScoreSheet(true)} className="focus:outline-none" title="Tap to see score breakdown" data-tour="dpco-compliance-ring">
+            <button onClick={() => setShowScoreSheet(true)} className="focus-visible:outline-none" title="Tap to see score breakdown" data-tour="dpco-compliance-ring">
               <ComplianceRing score={complianceScore} />
             </button>
             <div className="flex-1 grid grid-cols-2 gap-2">
@@ -322,7 +322,7 @@ export default function DpcoPwaDashboard() {
               ))}
             </div>
           </div>
-          <button onClick={() => setShowScoreSheet(true)} className="w-full focus:outline-none">
+          <button onClick={() => setShowScoreSheet(true)} className="w-full focus-visible:outline-none">
             <p className="text-[10px] text-cyan-500/70 text-center mt-3 hover:text-cyan-400 transition-colors">Compliance Health Score · Tap ring for breakdown ↑</p>
           </button>
         </div>

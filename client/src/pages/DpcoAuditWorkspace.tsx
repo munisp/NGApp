@@ -277,7 +277,7 @@ export default function DpcoAuditWorkspace() {
                 ))}
                 <div className="col-span-2">
                   <Label className="text-muted-foreground text-xs font-medium uppercase tracking-wide">Audit Scope</Label>
-                  <textarea value={form.scope} onChange={e => setForm(f => ({ ...f, scope: e.target.value }))} className="w-full bg-card border border-border text-foreground rounded-md px-3 py-2 text-sm mt-1.5 h-20 resize-none focus:outline-none focus:ring-1 focus:ring-cyan-500" placeholder="Describe audit scope..." />
+                  <textarea value={form.scope} onChange={e => setForm(f => ({ ...f, scope: e.target.value }))} className="w-full bg-card border border-border text-foreground rounded-md px-3 py-2 text-sm mt-1.5 h-20 resize-none focus-visible:outline-none focus:ring-1 focus:ring-cyan-500" placeholder="Describe audit scope..." />
                 </div>
               </div>
               <div className="flex justify-end gap-2 mt-6 pt-4 border-t border-border/60">

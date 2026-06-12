@@ -133,7 +133,7 @@ function DpcoSearchWidget() {
             value={message}
             onChange={e => setMessage(e.target.value)}
             rows={3}
-            className="w-full rounded-md border border-border bg-background px-3 py-2 text-sm placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-emerald-500 resize-none"
+            className="w-full rounded-md border border-border bg-background px-3 py-2 text-sm placeholder:text-muted-foreground focus-visible:outline-none focus:ring-2 focus:ring-emerald-500 resize-none"
           />
           <Button
             className="w-full bg-emerald-700 hover:bg-emerald-800 text-foreground text-sm h-9"
@@ -171,7 +171,7 @@ function DpcoSearchWidget() {
         <select
           value={sector}
           onChange={e => setSector(e.target.value)}
-          className="rounded-md border border-border bg-background px-3 text-sm text-muted-foreground h-10 focus:outline-none focus:ring-2 focus:ring-emerald-500"
+          className="rounded-md border border-border bg-background px-3 text-sm text-muted-foreground h-10 focus-visible:outline-none focus:ring-2 focus:ring-emerald-500"
         >
           {SECTORS.map(s => <option key={s} value={s === "All Sectors" ? "" : s}>{s}</option>)}
         </select>

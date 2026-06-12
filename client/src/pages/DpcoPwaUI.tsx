@@ -284,7 +284,7 @@ function ClientsTab({ dpcoOrgId }: { dpcoOrgId: number }) {
           value={search}
           onChange={(e) => setSearch(e.target.value)}
           placeholder="Search clients or sectors…"
-          className="w-full bg-card/60 border border-border/40 rounded-xl pl-8 pr-3 py-2 text-xs text-foreground placeholder-slate-500 focus:outline-none focus:border-cyan-500/50"
+          className="w-full bg-card/60 border border-border/40 rounded-xl pl-8 pr-3 py-2 text-xs text-foreground placeholder:text-muted-foreground focus-visible:outline-none focus:border-cyan-500/50"
         />
       </div>
 

@@ -792,7 +792,7 @@ export default function DpcoPolicyHub() {
             value={search}
             onChange={e => setSearch(e.target.value)}
             placeholder="Search templates..."
-            className="pl-9 bg-card border-input text-foreground placeholder-slate-500"
+            className="pl-9 bg-card border-input text-foreground placeholder:text-muted-foreground"
           />
         </div>
         <div className="flex gap-2 flex-wrap">
@@ -927,7 +927,7 @@ export default function DpcoPolicyHub() {
                 value={assignNotes}
                 onChange={e => setAssignNotes(e.target.value)}
                 placeholder="Customisation instructions or delivery notes..."
-                className="mt-1 bg-card border-input text-foreground placeholder-slate-500 resize-none"
+                className="mt-1 bg-card border-input text-foreground placeholder:text-muted-foreground resize-none"
                 rows={3}
               />
             </div>
