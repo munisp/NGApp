@@ -98,8 +98,8 @@ function DpcoSearchWidget() {
           <div className="w-14 h-14 rounded-full bg-emerald-50 border border-emerald-500/20 flex items-center justify-center mx-auto mb-4">
             <CheckCircle className="w-7 h-7 text-emerald-600" />
           </div>
-          <h3 className="text-lg font-semibold text-slate-900 mb-2">Engagement Request Sent</h3>
-          <p className="text-sm text-slate-500 mb-4">Your request has been sent to <strong>{selectedDpco.name}</strong>. They will review and respond within 2 business days.</p>
+          <h3 className="text-lg font-semibold text-foreground mb-2">Engagement Request Sent</h3>
+          <p className="text-sm text-muted-foreground mb-4">Your request has been sent to <strong>{selectedDpco.name}</strong>. They will review and respond within 2 business days.</p>
           <Button variant="outline" size="sm" onClick={() => { setSelectedDpco(null); setRequestSent(false); setOrgName(""); setContactEmail(""); setMessage(""); }}>
             Find Another DPCO
           </Button>
@@ -117,14 +117,14 @@ function DpcoSearchWidget() {
               <Building2 className="w-5 h-5 text-foreground" />
             </div>
             <div>
-              <h3 className="font-semibold text-slate-900 text-sm">{selectedDpco.name}</h3>
-              <p className="text-xs text-slate-500 mt-0.5">Licence: {selectedDpco.licenceNumber ?? "Active"}</p>
+              <h3 className="font-semibold text-foreground text-sm">{selectedDpco.name}</h3>
+              <p className="text-xs text-muted-foreground mt-0.5">Licence: {selectedDpco.licenceNumber ?? "Active"}</p>
               {selectedDpco.sectors && <p className="text-xs text-emerald-600 mt-1">{selectedDpco.sectors}</p>}
             </div>
             <span className="ml-auto text-xs bg-emerald-500/15 text-emerald-600 dark:text-emerald-400 px-2 py-0.5 rounded-full font-medium capitalize">{selectedDpco.tier}</span>
           </div>
         </div>
-        <h4 className="text-sm font-semibold text-slate-900 mb-3">Send Engagement Request</h4>
+        <h4 className="text-sm font-semibold text-foreground mb-3">Send Engagement Request</h4>
         <div className="space-y-3">
           <Input placeholder="Your organisation name *" value={orgName} onChange={e => setOrgName(e.target.value)} className="text-sm h-9" />
           <Input placeholder="Contact email *" type="email" value={contactEmail} onChange={e => setContactEmail(e.target.value)} className="text-sm h-9" />
@@ -171,7 +171,7 @@ function DpcoSearchWidget() {
         <select
           value={sector}
           onChange={e => setSector(e.target.value)}
-          className="rounded-md border border-border bg-background px-3 text-sm text-slate-600 h-10 focus:outline-none focus:ring-2 focus:ring-emerald-500"
+          className="rounded-md border border-border bg-background px-3 text-sm text-muted-foreground h-10 focus:outline-none focus:ring-2 focus:ring-emerald-500"
         >
           {SECTORS.map(s => <option key={s} value={s === "All Sectors" ? "" : s}>{s}</option>)}
         </select>
@@ -209,7 +209,7 @@ function DpcoSearchWidget() {
                 </div>
                 <span className="text-xs bg-emerald-500/15 text-emerald-600 dark:text-emerald-400 px-2 py-0.5 rounded-full font-medium capitalize">{dpco.tier}</span>
               </div>
-              <h3 className="text-sm font-semibold text-slate-900 mb-1">{dpco.name}</h3>
+              <h3 className="text-sm font-semibold text-foreground mb-1">{dpco.name}</h3>
               {dpco.sectors && (
                 <p className="text-xs text-emerald-600 mb-3 flex items-center gap-1">
                   <MapPin className="w-3 h-3" /> {dpco.sectors.split(",").slice(0, 2).join(", ")}
@@ -233,7 +233,7 @@ function DpcoSearchWidget() {
 
 export default function DpcoLanding() {
   return (
-    <div className="min-h-screen bg-background text-slate-900 font-sans">
+    <div className="min-h-screen bg-background text-foreground font-sans">
       {/* Nav */}
       <nav className="fixed top-0 left-0 right-0 z-50 bg-background/95 backdrop-blur border-b border-border">
         <div className="max-w-6xl mx-auto px-6 h-14 flex items-center justify-between">
@@ -241,14 +241,14 @@ export default function DpcoLanding() {
             <div className="w-7 h-7 rounded-lg bg-emerald-700 flex items-center justify-center">
               <ShieldCheck className="w-4 h-4 text-foreground" />
             </div>
-            <span className="font-bold text-slate-900 text-sm">NDSEP</span>
+            <span className="font-bold text-foreground text-sm">NDSEP</span>
             <span className="text-muted-foreground text-sm mx-1">|</span>
-            <span className="text-slate-500 text-sm">DPCO Platform</span>
+            <span className="text-muted-foreground text-sm">DPCO Platform</span>
           </div>
           <div className="flex items-center gap-4">
-            <a href="#modules" className="text-sm text-slate-600 hover:text-slate-900 transition-colors">Features</a>
-            <a href="#ai" className="text-sm text-slate-600 hover:text-slate-900 transition-colors">AI Tools</a>
-            <a href="#pricing" className="text-sm text-slate-600 hover:text-slate-900 transition-colors">Pricing</a>
+            <a href="#modules" className="text-sm text-muted-foreground hover:text-foreground transition-colors">Features</a>
+            <a href="#ai" className="text-sm text-muted-foreground hover:text-foreground transition-colors">AI Tools</a>
+            <a href="#pricing" className="text-sm text-muted-foreground hover:text-foreground transition-colors">Pricing</a>
             <Link href="/dpco/apply">
               <Button size="sm" className="bg-emerald-700 hover:bg-emerald-800 text-foreground text-xs h-8">
                 Apply for Accreditation
@@ -303,8 +303,8 @@ export default function DpcoLanding() {
       <section id="modules" className="py-20 bg-slate-50">
         <div className="max-w-6xl mx-auto px-6">
           <div className="text-center mb-12">
-            <h2 className="text-3xl font-bold text-slate-900 mb-3">Everything a DPCO Needs</h2>
-            <p className="text-slate-500 max-w-xl mx-auto text-sm">
+            <h2 className="text-3xl font-bold text-foreground mb-3">Everything a DPCO Needs</h2>
+            <p className="text-muted-foreground max-w-xl mx-auto text-sm">
               Eight integrated modules covering the complete DPCO lifecycle — no third-party tools required.
             </p>
           </div>
@@ -314,8 +314,8 @@ export default function DpcoLanding() {
                 <div className="w-9 h-9 rounded-lg bg-emerald-50 flex items-center justify-center mb-3">
                   <m.icon className="w-4.5 h-4.5 text-emerald-700" />
                 </div>
-                <h3 className="text-sm font-semibold text-slate-900 mb-1.5">{m.title}</h3>
-                <p className="text-xs text-slate-500 leading-relaxed">{m.desc}</p>
+                <h3 className="text-sm font-semibold text-foreground mb-1.5">{m.title}</h3>
+                <p className="text-xs text-muted-foreground leading-relaxed">{m.desc}</p>
               </div>
             ))}
           </div>
@@ -362,8 +362,8 @@ export default function DpcoLanding() {
       <section className="py-20 bg-background">
         <div className="max-w-5xl mx-auto px-6">
           <div className="text-center mb-12">
-            <h2 className="text-3xl font-bold text-slate-900 mb-3">How DPCOs Onboard</h2>
-            <p className="text-slate-500 text-sm max-w-xl mx-auto">From application to first CAR filing in 4 steps</p>
+            <h2 className="text-3xl font-bold text-foreground mb-3">How DPCOs Onboard</h2>
+            <p className="text-muted-foreground text-sm max-w-xl mx-auto">From application to first CAR filing in 4 steps</p>
           </div>
           <div className="grid grid-cols-4 gap-6">
             {[
@@ -374,8 +374,8 @@ export default function DpcoLanding() {
             ].map(s => (
               <div key={s.step} className="relative">
                 <div className="text-4xl font-black text-emerald-100 mb-3">{s.step}</div>
-                <h3 className="text-sm font-semibold text-slate-900 mb-2">{s.title}</h3>
-                <p className="text-xs text-slate-500 leading-relaxed">{s.desc}</p>
+                <h3 className="text-sm font-semibold text-foreground mb-2">{s.title}</h3>
+                <p className="text-xs text-muted-foreground leading-relaxed">{s.desc}</p>
               </div>
             ))}
           </div>
@@ -386,8 +386,8 @@ export default function DpcoLanding() {
       <section id="find-dpco" className="py-20 bg-background border-t border-border">
         <div className="max-w-5xl mx-auto px-6">
           <div className="text-center mb-10">
-            <h2 className="text-3xl font-bold text-slate-900 mb-3">Find an Accredited DPCO</h2>
-            <p className="text-slate-500 text-sm max-w-xl mx-auto">
+            <h2 className="text-3xl font-bold text-foreground mb-3">Find an Accredited DPCO</h2>
+            <p className="text-muted-foreground text-sm max-w-xl mx-auto">
               Browse NDPC-accredited DPCOs and send an engagement request directly from this page.
             </p>
           </div>
@@ -399,8 +399,8 @@ export default function DpcoLanding() {
       <section id="pricing" className="py-20 bg-slate-50">
         <div className="max-w-5xl mx-auto px-6">
           <div className="text-center mb-12">
-            <h2 className="text-3xl font-bold text-slate-900 mb-3">Subscription Tiers</h2>
-            <p className="text-slate-500 text-sm max-w-xl mx-auto">Choose the plan that matches your practice size</p>
+            <h2 className="text-3xl font-bold text-foreground mb-3">Subscription Tiers</h2>
+            <p className="text-muted-foreground text-sm max-w-xl mx-auto">Choose the plan that matches your practice size</p>
           </div>
           <div className="grid grid-cols-3 gap-6">
             {TIERS.map(t => (
@@ -411,13 +411,13 @@ export default function DpcoLanding() {
                     <span className="text-3xl font-black">{t.price}</span>
                     <span className={`text-sm mb-1 ${t.highlight ? "text-emerald-200" : "text-muted-foreground"}`}>{t.period}</span>
                   </div>
-                  <p className={`text-xs mt-1 ${t.highlight ? "text-emerald-200" : "text-slate-500"}`}>{t.desc}</p>
+                  <p className={`text-xs mt-1 ${t.highlight ? "text-emerald-200" : "text-muted-foreground"}`}>{t.desc}</p>
                 </div>
                 <ul className="space-y-2.5 flex-1 mb-6">
                   {t.features.map(f => (
                     <li key={f} className="flex items-start gap-2 text-xs">
                       <CheckCircle className={`w-3.5 h-3.5 mt-0.5 shrink-0 ${t.highlight ? "text-emerald-300" : "text-emerald-500"}`} />
-                      <span className={t.highlight ? "text-emerald-50" : "text-slate-600"}>{f}</span>
+                      <span className={t.highlight ? "text-emerald-50" : "text-muted-foreground"}>{f}</span>
                     </li>
                   ))}
                 </ul>

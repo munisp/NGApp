@@ -167,7 +167,7 @@ export function ComplianceHeatmap({ className = "", showFlows = true, height = "
         onMapReady={handleMapReady}
       />
       {/* Legend overlay */}
-      <div className="absolute bottom-3 left-3 bg-[#0a1628ee] border border-[#1e3a5f] rounded p-2 text-[10px] font-mono space-y-1">
+      <div className="absolute bottom-3 left-3 bg-card/95 border border-border rounded p-2 text-[10px] font-mono space-y-1">
         <div className="text-[#4a7fa5] font-semibold mb-1">COMPLIANCE LEGEND</div>
         <div className="flex items-center gap-1.5">
           <span className="w-3 h-3 rounded-full bg-[#00c896] inline-block" />
@@ -196,7 +196,7 @@ export function ComplianceHeatmap({ className = "", showFlows = true, height = "
         )}
       </div>
       {/* Live indicator */}
-      <div className="absolute top-3 right-3 bg-[#0a1628ee] border border-[#1e3a5f] rounded px-2 py-1 text-[10px] font-mono flex items-center gap-1.5">
+      <div className="absolute top-3 right-3 bg-card/95 border border-border rounded px-2 py-1 text-[10px] font-mono flex items-center gap-1.5">
         <span className="w-1.5 h-1.5 rounded-full bg-[#00c896] animate-pulse inline-block" />
         <span className="text-[#4a7fa5]">LIVE · 8 ORGS MONITORED</span>
       </div>

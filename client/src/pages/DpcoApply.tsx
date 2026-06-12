@@ -127,9 +127,9 @@ export default function DpcoApply() {
               Your DPCO accreditation application has been received by the NDPC. You will be contacted at <span className="text-foreground">{email}</span> within 30 working days.
             </p>
             <div className="bg-card rounded-lg p-4 mb-6">
-              <p className="text-xs text-slate-500 mb-1">Reference Token</p>
+              <p className="text-xs text-muted-foreground mb-1">Reference Token</p>
               <p className="text-lg font-mono font-bold text-emerald-400">{referenceToken}</p>
-              <p className="text-xs text-slate-500 mt-1">Keep this token to track your application status</p>
+              <p className="text-xs text-muted-foreground mt-1">Keep this token to track your application status</p>
             </div>
             <div className="space-y-2">
               <Link href="/accreditation/status">
@@ -186,10 +186,10 @@ export default function DpcoApply() {
                   }`}>
                     {isDone
                       ? <CheckCircle className="w-4 h-4 text-foreground" />
-                      : <Icon className={`w-4 h-4 ${isActive ? "text-emerald-400" : "text-slate-500"}`} />
+                      : <Icon className={`w-4 h-4 ${isActive ? "text-emerald-400" : "text-muted-foreground"}`} />
                     }
                   </div>
-                  <span className={`text-xs whitespace-nowrap ${isActive ? "text-emerald-400 font-medium" : isDone ? "text-emerald-500" : "text-slate-500"}`}>
+                  <span className={`text-xs whitespace-nowrap ${isActive ? "text-emerald-400 font-medium" : isDone ? "text-emerald-500" : "text-muted-foreground"}`}>
                     {s.label}
                   </span>
                 </div>
@@ -214,55 +214,55 @@ export default function DpcoApply() {
                 <Label className="text-muted-foreground text-sm mb-1.5 block">Organisation Name <span className="text-red-400">*</span></Label>
                 <Input value={orgName} onChange={e => setOrgName(e.target.value)}
                   placeholder="e.g. DataGuard Consulting Ltd"
-                  className="bg-card border-border text-foreground placeholder:text-slate-500" />
+                  className="bg-card border-border text-foreground placeholder:text-muted-foreground" />
               </div>
               <div>
                 <Label className="text-muted-foreground text-sm mb-1.5 block">RC Number <span className="text-red-400">*</span></Label>
                 <Input value={rcNumber} onChange={e => setRcNumber(e.target.value)}
                   placeholder="e.g. RC1234567"
-                  className="bg-card border-border text-foreground placeholder:text-slate-500" />
+                  className="bg-card border-border text-foreground placeholder:text-muted-foreground" />
               </div>
               <div>
                 <Label className="text-muted-foreground text-sm mb-1.5 block">CAC Number</Label>
                 <Input value={cacNumber} onChange={e => setCacNumber(e.target.value)}
                   placeholder="Optional"
-                  className="bg-card border-border text-foreground placeholder:text-slate-500" />
+                  className="bg-card border-border text-foreground placeholder:text-muted-foreground" />
               </div>
               <div>
                 <Label className="text-muted-foreground text-sm mb-1.5 block">Tax ID (TIN)</Label>
                 <Input value={taxId} onChange={e => setTaxId(e.target.value)}
                   placeholder="Optional"
-                  className="bg-card border-border text-foreground placeholder:text-slate-500" />
+                  className="bg-card border-border text-foreground placeholder:text-muted-foreground" />
               </div>
               <div>
                 <Label className="text-muted-foreground text-sm mb-1.5 block">Website</Label>
                 <Input value={website} onChange={e => setWebsite(e.target.value)}
                   placeholder="https://example.com"
-                  className="bg-card border-border text-foreground placeholder:text-slate-500" />
+                  className="bg-card border-border text-foreground placeholder:text-muted-foreground" />
               </div>
               <div>
                 <Label className="text-muted-foreground text-sm mb-1.5 block">Contact Email <span className="text-red-400">*</span></Label>
                 <Input value={email} onChange={e => setEmail(e.target.value)}
                   type="email" placeholder="accreditation@example.com"
-                  className="bg-card border-border text-foreground placeholder:text-slate-500" />
+                  className="bg-card border-border text-foreground placeholder:text-muted-foreground" />
               </div>
               <div>
                 <Label className="text-muted-foreground text-sm mb-1.5 block">Phone</Label>
                 <Input value={phone} onChange={e => setPhone(e.target.value)}
                   placeholder="+234 800 000 0000"
-                  className="bg-card border-border text-foreground placeholder:text-slate-500" />
+                  className="bg-card border-border text-foreground placeholder:text-muted-foreground" />
               </div>
               <div className="col-span-2">
                 <Label className="text-muted-foreground text-sm mb-1.5 block">Registered Address <span className="text-red-400">*</span></Label>
                 <Textarea value={address} onChange={e => setAddress(e.target.value)}
                   placeholder="Full registered address including state and LGA"
-                  className="bg-card border-border text-foreground placeholder:text-slate-500 resize-none" rows={2} />
+                  className="bg-card border-border text-foreground placeholder:text-muted-foreground resize-none" rows={2} />
               </div>
             </div>
 
             <div>
               <Label className="text-muted-foreground text-sm mb-2 block">Sector Specialisations <span className="text-red-400">*</span></Label>
-              <p className="text-xs text-slate-500 mb-3">Select all sectors your organisation has expertise in auditing</p>
+              <p className="text-xs text-muted-foreground mb-3">Select all sectors your organisation has expertise in auditing</p>
               <div className="flex flex-wrap gap-2">
                 {SECTORS.map(s => (
                   <button key={s} onClick={() => toggleSector(s)}
@@ -303,13 +303,13 @@ export default function DpcoApply() {
                       <Label className="text-muted-foreground text-xs mb-1 block">Full Name <span className="text-red-400">*</span></Label>
                       <Input value={auditor.name} onChange={e => updateAuditor(i, "name", e.target.value)}
                         placeholder="Dr. Amina Okonkwo"
-                        className="bg-background border-border text-foreground placeholder:text-slate-500 h-8 text-sm" />
+                        className="bg-background border-border text-foreground placeholder:text-muted-foreground h-8 text-sm" />
                     </div>
                     <div>
                       <Label className="text-muted-foreground text-xs mb-1 block">Email <span className="text-red-400">*</span></Label>
                       <Input value={auditor.email} onChange={e => updateAuditor(i, "email", e.target.value)}
                         type="email" placeholder="auditor@example.com"
-                        className="bg-background border-border text-foreground placeholder:text-slate-500 h-8 text-sm" />
+                        className="bg-background border-border text-foreground placeholder:text-muted-foreground h-8 text-sm" />
                     </div>
                   </div>
                   <div>
@@ -361,7 +361,7 @@ export default function DpcoApply() {
                   <div className="flex items-start justify-between mb-2">
                     <div>
                       <p className="text-sm font-medium text-foreground">{doc.label} {doc.required && <span className="text-red-400">*</span>}</p>
-                      <p className="text-xs text-slate-500">{doc.sublabel}</p>
+                      <p className="text-xs text-muted-foreground">{doc.sublabel}</p>
                     </div>
                     {doc.value && (
                       <a href={doc.value} target="_blank" rel="noopener noreferrer">
@@ -373,7 +373,7 @@ export default function DpcoApply() {
                   </div>
                   <Input value={doc.value} onChange={e => doc.setter(e.target.value)}
                     placeholder="https://drive.google.com/... or https://dropbox.com/..."
-                    className="bg-background border-border text-foreground placeholder:text-slate-500 text-sm" />
+                    className="bg-background border-border text-foreground placeholder:text-muted-foreground text-sm" />
                 </div>
               ))}
             </div>
@@ -398,12 +398,12 @@ export default function DpcoApply() {
             <div className="bg-card/50 border border-border rounded-lg p-4 space-y-2">
               <h3 className="text-sm font-medium text-muted-foreground mb-3">Application Summary</h3>
               <div className="grid grid-cols-2 gap-x-6 gap-y-1.5 text-sm">
-                <span className="text-slate-500">Organisation</span><span className="text-foreground">{orgName}</span>
-                <span className="text-slate-500">RC Number</span><span className="text-foreground">{rcNumber}</span>
-                <span className="text-slate-500">Email</span><span className="text-foreground">{email}</span>
-                <span className="text-slate-500">Lead Auditors</span><span className="text-foreground">{auditors.length} named</span>
-                <span className="text-slate-500">Sectors</span><span className="text-foreground">{selectedSectors.length} selected</span>
-                <span className="text-slate-500">Application Type</span><span className="text-foreground">New Accreditation</span>
+                <span className="text-muted-foreground">Organisation</span><span className="text-foreground">{orgName}</span>
+                <span className="text-muted-foreground">RC Number</span><span className="text-foreground">{rcNumber}</span>
+                <span className="text-muted-foreground">Email</span><span className="text-foreground">{email}</span>
+                <span className="text-muted-foreground">Lead Auditors</span><span className="text-foreground">{auditors.length} named</span>
+                <span className="text-muted-foreground">Sectors</span><span className="text-foreground">{selectedSectors.length} selected</span>
+                <span className="text-muted-foreground">Application Type</span><span className="text-foreground">New Accreditation</span>
               </div>
             </div>
 
@@ -412,11 +412,11 @@ export default function DpcoApply() {
               <div className="flex items-center justify-between">
                 <div>
                   <p className="text-sm font-medium text-foreground">Application Fee</p>
-                  <p className="text-xs text-slate-500">Non-refundable NDPC processing fee (NDPA §33)</p>
+                  <p className="text-xs text-muted-foreground">Non-refundable NDPC processing fee (NDPA §33)</p>
                 </div>
                 <div className="text-right">
                   <p className="text-xl font-bold text-foreground">₦150,000</p>
-                  <p className="text-xs text-slate-500">Payable on submission</p>
+                  <p className="text-xs text-muted-foreground">Payable on submission</p>
                 </div>
               </div>
               <div className="mt-3 pt-3 border-t border-border">
@@ -452,7 +452,7 @@ export default function DpcoApply() {
             className="text-muted-foreground hover:text-foreground gap-2">
             <ChevronLeft className="w-4 h-4" /> Previous
           </Button>
-          <span className="text-xs text-slate-500">Step {step} of {STEPS.length}</span>
+          <span className="text-xs text-muted-foreground">Step {step} of {STEPS.length}</span>
           {step < 4 ? (
             <Button onClick={() => setStep(s => s + 1)}
               disabled={

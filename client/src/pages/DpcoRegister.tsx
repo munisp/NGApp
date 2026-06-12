@@ -166,7 +166,7 @@ export default function DpcoRegister() {
   return (
     <div className="min-h-screen bg-slate-950 text-foreground">
       {/* Header */}
-      <header className="border-b border-cyan-900/40 bg-[#0d1220]/80 backdrop-blur-sm">
+      <header className="border-b border-cyan-900/40 bg-background/80 backdrop-blur-sm">
         <div className="max-w-4xl mx-auto px-6 py-4 flex items-center justify-between">
           <div className="flex items-center gap-3">
             <div className="w-8 h-8 rounded bg-cyan-500/20 border border-cyan-500/40 flex items-center justify-center">
@@ -229,7 +229,7 @@ export default function DpcoRegister() {
         </div>
 
         {/* Form card */}
-        <div className="bg-[#0d1220] border border-border/50 rounded-xl p-8">
+        <div className="bg-background border border-border/50 rounded-xl p-8">
           {/* Step 1: Organisation Details */}
           {step === 1 && (
             <div className="space-y-6">

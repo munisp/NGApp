@@ -255,12 +255,12 @@ export default function PwaDashboard() {
                       </div>
                       <p className="text-base font-black text-foreground leading-none">{value}</p>
                       <p className="text-[10px] text-muted-foreground mt-0.5">{label}</p>
-                      <p className="text-[10px] text-slate-500 leading-tight">{sub}</p>
+                      <p className="text-[10px] text-muted-foreground leading-tight">{sub}</p>
                     </div>
                   ))}
                 </div>
               </div>
-              <p className="text-[10px] text-slate-500 text-center mt-3">NDPA Compliance Index · Updated every 2 min</p>
+              <p className="text-[10px] text-muted-foreground text-center mt-3">NDPA Compliance Index · Updated every 2 min</p>
             </div>
 
             {/* KPI row 2 */}
@@ -272,7 +272,7 @@ export default function PwaDashboard() {
                   </div>
                   <p className="text-xl font-black text-foreground leading-none">{value}</p>
                   <p className="text-[11px] text-muted-foreground mt-1">{label}</p>
-                  <p className="text-[10px] text-slate-500">{sub}</p>
+                  <p className="text-[10px] text-muted-foreground">{sub}</p>
                 </div>
               ))}
             </div>
@@ -282,7 +282,7 @@ export default function PwaDashboard() {
               <SectionHeader title="Compliance Trend (90d)" icon={TrendingUp} href="/frameworks" />
               {trendData.length === 0 ? (
                 <div className="h-36 flex items-center justify-center">
-                  <p className="text-xs text-slate-500">Loading trend data…</p>
+                  <p className="text-xs text-muted-foreground">Loading trend data…</p>
                 </div>
               ) : (
                 <ResponsiveContainer width="100%" height={150}>
@@ -379,7 +379,7 @@ export default function PwaDashboard() {
           <div className="bg-background/60 border border-border/50 rounded-2xl p-4">
             <SectionHeader title="Breach Incident Timeline" icon={ShieldAlert} href="/breach-notification" />
             {breaches.length === 0 ? (
-              <p className="text-xs text-slate-500 text-center py-8">No breach incidents recorded</p>
+              <p className="text-xs text-muted-foreground text-center py-8">No breach incidents recorded</p>
             ) : (
               <div className="space-y-3">
                 {breaches.map((b: any, i: number) => (
@@ -395,7 +395,7 @@ export default function PwaDashboard() {
                         <span className={`text-[10px] font-semibold ${severityColor(b.breach_incident_severity ?? "medium")}`}>
                           {(b.breach_incident_severity ?? "medium").toUpperCase()}
                         </span>
-                        <span className="text-[10px] text-slate-500">{fmtDate(b.breach_detected_at ?? b.created_at ?? Date.now())}</span>
+                        <span className="text-[10px] text-muted-foreground">{fmtDate(b.breach_detected_at ?? b.created_at ?? Date.now())}</span>
                         <span className={`text-[10px] px-1.5 py-0.5 rounded-full ${statusBadge(b.breach_incident_status ?? "open")}`}>
                           {b.breach_incident_status ?? "open"}
                         </span>
@@ -414,7 +414,7 @@ export default function PwaDashboard() {
             <div className="bg-background/60 border border-border/50 rounded-2xl p-4">
               <SectionHeader title="Enforcement Cases" icon={Gavel} href="/enforcement-cases" />
               {cases.length === 0 ? (
-                <p className="text-xs text-slate-500 text-center py-8">No enforcement cases found</p>
+                <p className="text-xs text-muted-foreground text-center py-8">No enforcement cases found</p>
               ) : (
                 <div className="space-y-3">
                   {cases.map((c: any, i: number) => (
@@ -432,7 +432,7 @@ export default function PwaDashboard() {
                         <div className="flex items-center gap-2 mt-1">
                           <span className={`text-[10px] px-1.5 py-0.5 rounded-full ${statusBadge(c.status)}`}>{c.status}</span>
                           {c.penalty_amount && <span className="text-[10px] text-amber-400 font-semibold">{fmtNGN(Number(c.penalty_amount))}</span>}
-                          <span className="text-[10px] text-slate-500">{fmtDate(c.created_at ?? Date.now())}</span>
+                          <span className="text-[10px] text-muted-foreground">{fmtDate(c.created_at ?? Date.now())}</span>
                         </div>
                       </div>
                     </div>
@@ -470,7 +470,7 @@ export default function PwaDashboard() {
             <div className="bg-background/60 border border-border/50 rounded-2xl p-4">
               <SectionHeader title="Compliance Leaderboard" icon={TrendingUp} href="/leaderboard" />
               {leaders.length === 0 ? (
-                <p className="text-xs text-slate-500 text-center py-8">No leaderboard data</p>
+                <p className="text-xs text-muted-foreground text-center py-8">No leaderboard data</p>
               ) : (
                 <div className="space-y-2">
                   {leaders.map((org: any, i: number) => {
@@ -478,7 +478,7 @@ export default function PwaDashboard() {
                     const barColor = score >= 80 ? C.emerald : score >= 60 ? C.amber : C.rose;
                     return (
                       <div key={org.id ?? i} className="flex items-center gap-3">
-                        <span className="text-[11px] font-bold text-slate-500 w-4 flex-shrink-0">{i + 1}</span>
+                        <span className="text-[11px] font-bold text-muted-foreground w-4 flex-shrink-0">{i + 1}</span>
                         <div className="flex-1 min-w-0">
                           <div className="flex items-center justify-between mb-1">
                             <p className="text-xs font-semibold text-foreground truncate">{org.name ?? org.organisation_name ?? `Org #${org.id}`}</p>
@@ -513,7 +513,7 @@ export default function PwaDashboard() {
                             <div className="h-1 rounded-full" style={{ width: `${avg}%`, background: Object.values(C)[i % Object.values(C).length] }} />
                           </div>
                         </div>
-                        <span className="text-[10px] text-slate-500 flex-shrink-0">{s.org_count ?? s.count ?? 0} orgs</span>
+                        <span className="text-[10px] text-muted-foreground flex-shrink-0">{s.org_count ?? s.count ?? 0} orgs</span>
                       </div>
                     );
                   })}
@@ -537,7 +537,7 @@ export default function PwaDashboard() {
           </Link>
         </div>
 
-        <p className="text-[10px] text-slate-600 text-center pb-2">
+        <p className="text-[10px] text-muted-foreground text-center pb-2">
           NDSEP v1.0.0 · NDPC © 2026 · All data is live
         </p>
       </main>

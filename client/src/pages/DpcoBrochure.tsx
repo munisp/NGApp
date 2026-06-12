@@ -110,7 +110,7 @@ export default function DpcoBrochure() {
       <div className="sticky top-0 z-50 bg-background border-b border-border px-6 py-2 flex items-center gap-3 shadow-sm print:hidden">
         <div className="flex items-center gap-2">
           <Pencil className="w-4 h-4 text-violet-500" />
-          <span className="text-sm font-medium text-slate-700">Brochure Editor</span>
+          <span className="text-sm font-medium text-foreground">Brochure Editor</span>
           <Badge className="bg-violet-500/15 text-violet-600 dark:text-violet-400 border-violet-500/20 text-xs">Live Edit Mode</Badge>
         </div>
         <span className="text-xs text-muted-foreground ml-2">Click any text to edit it inline</span>
@@ -140,7 +140,7 @@ export default function DpcoBrochure() {
             </div>
             <div className="ml-auto text-right">
               <p className="text-muted-foreground text-xs">For Licensed DPCOs</p>
-              <p className="text-slate-500 text-xs">NDPA 2023 Compliant</p>
+              <p className="text-muted-foreground text-xs">NDPA 2023 Compliant</p>
             </div>
           </div>
 
@@ -167,8 +167,8 @@ export default function DpcoBrochure() {
 
         {/* ── PLATFORM MODULES ────────────────────────────────────────────── */}
         <section className="bg-background px-16 py-14">
-          <h2 className="text-2xl font-bold text-slate-900 mb-2">Everything You Need. Nothing You Don't.</h2>
-          <p className="text-slate-500 text-sm mb-10">Eight purpose-built modules covering the complete DPCO business lifecycle.</p>
+          <h2 className="text-2xl font-bold text-foreground mb-2">Everything You Need. Nothing You Don't.</h2>
+          <p className="text-muted-foreground text-sm mb-10">Eight purpose-built modules covering the complete DPCO business lifecycle.</p>
           <div className="grid grid-cols-2 gap-6">
             {c.modules.map((m, i) => (
               <div key={i} className="border border-border rounded-xl p-5 hover:border-emerald-500/30 transition-colors">
@@ -177,11 +177,11 @@ export default function DpcoBrochure() {
                     <span className="text-emerald-600 font-bold text-xs">{String(i + 1).padStart(2, "0")}</span>
                   </div>
                   <div className="flex-1 min-w-0">
-                    <h3 className="font-semibold text-slate-900 text-sm mb-1">
-                      <EditableText value={m.title} onChange={v => updateModule(i, "title", v)} className="font-semibold text-slate-900 text-sm" />
+                    <h3 className="font-semibold text-foreground text-sm mb-1">
+                      <EditableText value={m.title} onChange={v => updateModule(i, "title", v)} className="font-semibold text-foreground text-sm" />
                     </h3>
-                    <p className="text-slate-500 text-xs leading-relaxed">
-                      <EditableText value={m.desc} onChange={v => updateModule(i, "desc", v)} multiline className="text-slate-500 text-xs" />
+                    <p className="text-muted-foreground text-xs leading-relaxed">
+                      <EditableText value={m.desc} onChange={v => updateModule(i, "desc", v)} multiline className="text-muted-foreground text-xs" />
                     </p>
                   </div>
                 </div>
@@ -220,28 +220,28 @@ export default function DpcoBrochure() {
 
         {/* ── PRICING ─────────────────────────────────────────────────────── */}
         <section className="bg-background px-16 py-14">
-          <h2 className="text-2xl font-bold text-slate-900 mb-2">Transparent Pricing. No Hidden Fees.</h2>
-          <p className="text-slate-500 text-sm mb-10">Choose the tier that matches your practice size. All tiers include NDPC integration and full audit trail.</p>
+          <h2 className="text-2xl font-bold text-foreground mb-2">Transparent Pricing. No Hidden Fees.</h2>
+          <p className="text-muted-foreground text-sm mb-10">Choose the tier that matches your practice size. All tiers include NDPC integration and full audit trail.</p>
           <div className="grid grid-cols-3 gap-6">
             {c.tiers.map((tier, i) => (
               <div key={i} className={`rounded-xl border-2 p-6 flex flex-col ${tier.highlight ? "border-emerald-500 bg-emerald-50" : "border-border bg-background"}`}>
                 <div className="mb-4">
-                  <h3 className="font-bold text-slate-900 text-lg">
-                    <EditableText value={tier.name} onChange={v => updateTier(i, "name", v)} className="font-bold text-slate-900 text-lg" />
+                  <h3 className="font-bold text-foreground text-lg">
+                    <EditableText value={tier.name} onChange={v => updateTier(i, "name", v)} className="font-bold text-foreground text-lg" />
                   </h3>
                   <div className="flex items-baseline gap-1 mt-1">
-                    <span className="text-3xl font-bold text-slate-900">
-                      <EditableText value={tier.price} onChange={v => updateTier(i, "price", v)} className="text-3xl font-bold text-slate-900" />
+                    <span className="text-3xl font-bold text-foreground">
+                      <EditableText value={tier.price} onChange={v => updateTier(i, "price", v)} className="text-3xl font-bold text-foreground" />
                     </span>
-                    <span className="text-slate-500 text-sm">
-                      <EditableText value={tier.period} onChange={v => updateTier(i, "period", v)} className="text-slate-500 text-sm" />
+                    <span className="text-muted-foreground text-sm">
+                      <EditableText value={tier.period} onChange={v => updateTier(i, "period", v)} className="text-muted-foreground text-sm" />
                     </span>
                   </div>
                 </div>
                 {tier.highlight && <Badge className="mb-4 w-fit bg-emerald-500 text-foreground border-0 text-xs">Most Popular</Badge>}
                 <ul className="space-y-2 flex-1 mb-6">
                   {tier.features.map((f, j) => (
-                    <li key={j} className="flex items-start gap-2 text-xs text-slate-600">
+                    <li key={j} className="flex items-start gap-2 text-xs text-muted-foreground">
                       <Check className="w-3.5 h-3.5 text-emerald-500 mt-0.5 shrink-0" />
                       {f}
                     </li>
@@ -272,8 +272,8 @@ export default function DpcoBrochure() {
           >
             <EditableText value={c.ctaButton} onChange={v => setC(p => ({ ...p, ctaButton: v }))} className="text-foreground font-semibold" />
           </button>
-          <p className="text-slate-500 text-xs">
-            <EditableText value={c.ctaContact} onChange={v => setC(p => ({ ...p, ctaContact: v }))} className="text-slate-500 text-xs" />
+          <p className="text-muted-foreground text-xs">
+            <EditableText value={c.ctaContact} onChange={v => setC(p => ({ ...p, ctaContact: v }))} className="text-muted-foreground text-xs" />
           </p>
           <div className="mt-12 pt-8 border-t border-border/50 flex items-center justify-center gap-8">
             {[
@@ -284,7 +284,7 @@ export default function DpcoBrochure() {
             ].map(s => (
               <div key={s.label} className="text-center">
                 <p className="text-2xl font-bold text-emerald-400">{s.num}</p>
-                <p className="text-xs text-slate-500">{s.label}</p>
+                <p className="text-xs text-muted-foreground">{s.label}</p>
               </div>
             ))}
           </div>

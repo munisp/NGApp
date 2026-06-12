@@ -252,7 +252,7 @@ export default function DpcoPwaDashboard() {
         <div className="max-w-lg mx-auto px-4 py-3 flex items-center justify-between">
           <div className="flex items-center gap-2.5">
             <div className="w-8 h-8 rounded-lg bg-cyan-500 flex items-center justify-center shadow-lg shadow-cyan-500/30">
-              <span className="text-slate-900 font-black text-sm">N</span>
+              <span className="text-foreground font-black text-sm">N</span>
             </div>
             <div>
               <p className="text-sm font-bold text-foreground leading-none">DPCO Dashboard</p>
@@ -291,7 +291,7 @@ export default function DpcoPwaDashboard() {
               onClick={() => setPeriod(p)}
               className={`flex-1 text-xs font-semibold py-1.5 rounded-lg transition-all ${
                 period === p
-                  ? "bg-cyan-500 text-slate-900 shadow-md shadow-cyan-500/20"
+                  ? "bg-cyan-500 text-foreground shadow-md shadow-cyan-500/20"
                   : "text-muted-foreground hover:text-foreground"
               }`}
             >
@@ -336,7 +336,7 @@ export default function DpcoPwaDashboard() {
               </div>
               <p className="text-xl font-black text-foreground leading-none">{value}</p>
               <p className="text-[11px] text-muted-foreground mt-1">{label}</p>
-              <p className="text-[10px] text-slate-500">{sub}</p>
+              <p className="text-[10px] text-muted-foreground">{sub}</p>
             </div>
           ))}
         </div>
@@ -365,7 +365,7 @@ export default function DpcoPwaDashboard() {
             <div key="overdue" className={wrapperClass} {...lp}
               onPointerEnter={() => drag.dragMode && drag.onDragOver("overdue")}>
               <div className="bg-amber-950/30 border border-amber-500/30 rounded-2xl p-4">
-                {drag.dragMode && <p className="text-[10px] text-slate-500 text-right mb-1">☰ hold &amp; drag</p>}
+                {drag.dragMode && <p className="text-[10px] text-muted-foreground text-right mb-1">☰ hold &amp; drag</p>}
                 <div className="flex items-center gap-2 mb-3">
                   <AlertTriangle className="h-4 w-4 text-amber-400" />
                   <span className="text-xs font-bold text-amber-300 uppercase tracking-wider">
@@ -404,11 +404,11 @@ export default function DpcoPwaDashboard() {
             <div key="earnings" className={wrapperClass} {...lp}
               onPointerEnter={() => drag.dragMode && drag.onDragOver("earnings")}>
               <div className="bg-background/60 border border-border/50 rounded-2xl p-4">
-                {drag.dragMode && <p className="text-[10px] text-slate-500 text-right mb-1">☰ hold &amp; drag</p>}
+                {drag.dragMode && <p className="text-[10px] text-muted-foreground text-right mb-1">☰ hold &amp; drag</p>}
                 <SectionHeader title="Monthly Earnings" href="/dpco/billing" icon={TrendingUp} />
                 {monthlyTrend.length === 0 ? (
                   <div className="h-36 flex items-center justify-center">
-                    <p className="text-xs text-slate-500">No payment data yet</p>
+                    <p className="text-xs text-muted-foreground">No payment data yet</p>
                   </div>
                 ) : (
                   <ResponsiveContainer width="100%" height={160}>
@@ -439,7 +439,7 @@ export default function DpcoPwaDashboard() {
             <div key="service" className={wrapperClass} {...lp}
               onPointerEnter={() => drag.dragMode && drag.onDragOver("service")}>
               <div className="bg-background/60 border border-border/50 rounded-2xl p-4">
-                {drag.dragMode && <p className="text-[10px] text-slate-500 text-right mb-1">☰ hold &amp; drag</p>}
+                {drag.dragMode && <p className="text-[10px] text-muted-foreground text-right mb-1">☰ hold &amp; drag</p>}
                 <SectionHeader title="Revenue by Service" icon={Activity} />
                 <div className="flex items-center gap-4">
                   <ResponsiveContainer width={120} height={120}>
@@ -473,10 +473,10 @@ export default function DpcoPwaDashboard() {
             <div key="payments" className={wrapperClass} {...lp}
               onPointerEnter={() => drag.dragMode && drag.onDragOver("payments")}>
               <div className="bg-background/60 border border-border/50 rounded-2xl p-4">
-                {drag.dragMode && <p className="text-[10px] text-slate-500 text-right mb-1">☰ hold &amp; drag</p>}
+                {drag.dragMode && <p className="text-[10px] text-muted-foreground text-right mb-1">☰ hold &amp; drag</p>}
                 <SectionHeader title="Recent Payments" href="/dpco/billing" icon={Zap} />
                 {recentPayments.length === 0 ? (
-                  <p className="text-xs text-slate-500 text-center py-4">No payments recorded yet</p>
+                  <p className="text-xs text-muted-foreground text-center py-4">No payments recorded yet</p>
                 ) : (
                   <div className="space-y-2">
                     {recentPayments.slice(0, 5).map((p: any) => (
@@ -490,7 +490,7 @@ export default function DpcoPwaDashboard() {
                         </div>
                         <div className="text-right flex-shrink-0">
                           <p className="text-xs font-bold text-emerald-400">+{formatNGN(Number(p.amount))}</p>
-                          <p className="text-[10px] text-slate-500">{formatDate(p.paid_at)}</p>
+                          <p className="text-[10px] text-muted-foreground">{formatDate(p.paid_at)}</p>
                         </div>
                       </div>
                     ))}
@@ -504,7 +504,7 @@ export default function DpcoPwaDashboard() {
             <div key="stats" className={wrapperClass} {...lp}
               onPointerEnter={() => drag.dragMode && drag.onDragOver("stats")}>
               <div className="grid grid-cols-3 gap-2">
-                {drag.dragMode && <p className="col-span-3 text-[10px] text-slate-500 text-right">☰ hold &amp; drag</p>}
+                {drag.dragMode && <p className="col-span-3 text-[10px] text-muted-foreground text-right">☰ hold &amp; drag</p>}
                 {[
                   { label: "Training", value: stats.trainingSessions, icon: Star, color: "text-amber-400" },
                   { label: "Verifications", value: stats.verificationStatements, icon: ShieldCheck, color: "text-cyan-400" },
@@ -561,7 +561,7 @@ export default function DpcoPwaDashboard() {
           </Link>
         </div>
 
-        <p className="text-[10px] text-slate-600 text-center pb-2">
+        <p className="text-[10px] text-muted-foreground text-center pb-2">
           NDSEP DPCO Portal · v1.0.0 · © 2026 NDPC
         </p>
       </main>

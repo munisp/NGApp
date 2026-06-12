@@ -51,7 +51,7 @@ function KpiCard({
     <div className={`${bg} border border-border/40 rounded-xl p-3 space-y-1`}>
       <p className="text-[10px] text-muted-foreground uppercase tracking-wide">{label}</p>
       <p className={`text-lg font-bold ${accent}`}>{value}</p>
-      {sub && <p className="text-[10px] text-slate-500">{sub}</p>}
+      {sub && <p className="text-[10px] text-muted-foreground">{sub}</p>}
       {trend && (
         <div className={`flex items-center gap-0.5 text-[10px] ${trend.dir === "up" ? "text-emerald-400" : "text-red-400"}`}>
           {trend.dir === "up" ? <ArrowUpRight className="h-3 w-3" /> : <ArrowDownRight className="h-3 w-3" />}
@@ -131,7 +131,7 @@ function HomeTab({ dpcoOrgId }: { dpcoOrgId: number }) {
         <div>
           <p className="text-xs text-muted-foreground">Good morning,</p>
           <h2 className="text-lg font-bold text-foreground leading-tight">DataGuard Ltd</h2>
-          <p className="text-[10px] text-slate-500">NDPC-DPCO-2024-0042 · Professional</p>
+          <p className="text-[10px] text-muted-foreground">NDPC-DPCO-2024-0042 · Professional</p>
         </div>
         <div className="relative">
           <div className="w-10 h-10 rounded-full bg-cyan-500/20 border border-cyan-500/40 flex items-center justify-center">
@@ -279,7 +279,7 @@ function ClientsTab({ dpcoOrgId }: { dpcoOrgId: number }) {
 
       {/* Search */}
       <div className="relative">
-        <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-3.5 w-3.5 text-slate-500" />
+        <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-3.5 w-3.5 text-muted-foreground" />
         <input
           value={search}
           onChange={(e) => setSearch(e.target.value)}
@@ -316,7 +316,7 @@ function ClientsTab({ dpcoOrgId }: { dpcoOrgId: number }) {
                 </div>
                 <div className="flex items-center gap-2 mt-1.5 ml-7.5">
                   <span className={`text-[9px] px-1.5 py-0.5 rounded-full ${sectorColors[c.sector] ?? "bg-slate-600/40 text-muted-foreground"}`}>{c.sector}</span>
-                  {c.city && <span className="text-[9px] text-slate-500 flex items-center gap-0.5"><MapPin className="h-2.5 w-2.5" />{c.city}</span>}
+                  {c.city && <span className="text-[9px] text-muted-foreground flex items-center gap-0.5"><MapPin className="h-2.5 w-2.5" />{c.city}</span>}
                 </div>
               </div>
               <div className="flex flex-col items-end gap-1">
@@ -332,7 +332,7 @@ function ClientsTab({ dpcoOrgId }: { dpcoOrgId: number }) {
             </div>
             {c.contact_email && (
               <div className="flex items-center gap-1 mt-2 ml-0">
-                <Mail className="h-3 w-3 text-slate-500" />
+                <Mail className="h-3 w-3 text-muted-foreground" />
                 <span className="text-[10px] text-muted-foreground truncate">{c.contact_email}</span>
               </div>
             )}
@@ -387,7 +387,7 @@ function BillingTab({ dpcoOrgId }: { dpcoOrgId: number }) {
       <div className="flex items-center justify-between">
         <h2 className="text-xl font-bold text-foreground">Billing</h2>
         <Link href="/dpco/billing">
-          <Button size="sm" className="h-7 text-[10px] bg-cyan-500 hover:bg-cyan-400 text-slate-900 font-semibold gap-1 px-2.5">
+          <Button size="sm" className="h-7 text-[10px] bg-cyan-500 hover:bg-cyan-400 text-foreground font-semibold gap-1 px-2.5">
             <Plus className="h-3 w-3" />New Invoice
           </Button>
         </Link>
@@ -415,7 +415,7 @@ function BillingTab({ dpcoOrgId }: { dpcoOrgId: number }) {
               <div className="min-w-0">
                 <p className="text-sm font-semibold text-foreground truncate">{inv.client_name}</p>
                 <p className="text-[10px] text-muted-foreground mt-0.5">{inv.invoice_number}</p>
-                {inv.service_type && <p className="text-[9px] text-slate-500 mt-0.5">{inv.service_type}</p>}
+                {inv.service_type && <p className="text-[9px] text-muted-foreground mt-0.5">{inv.service_type}</p>}
               </div>
               <div className="text-right flex-shrink-0 space-y-1">
                 <p className="text-sm font-bold text-foreground">{NGN(Number(inv.total_amount))}</p>
@@ -427,10 +427,10 @@ function BillingTab({ dpcoOrgId }: { dpcoOrgId: number }) {
             {selectedId === inv.id && (
               <div className="mt-2.5 pt-2.5 border-t border-border/40 space-y-2">
                 <div className="grid grid-cols-2 gap-x-4 gap-y-1 text-[10px]">
-                  <div><span className="text-slate-500">Due:</span> <span className="text-muted-foreground">{new Date(inv.due_date).toLocaleDateString("en-NG")}</span></div>
-                  <div><span className="text-slate-500">Net:</span> <span className="text-emerald-400">{NGN(Number(inv.total_amount) * 0.88)}</span></div>
-                  <div><span className="text-slate-500">Platform fee:</span> <span className="text-amber-400">{NGN(Number(inv.total_amount) * 0.12)}</span></div>
-                  <div><span className="text-slate-500">VAT (7.5%):</span> <span className="text-muted-foreground">{NGN(Number(inv.total_amount) * 0.075)}</span></div>
+                  <div><span className="text-muted-foreground">Due:</span> <span className="text-muted-foreground">{new Date(inv.due_date).toLocaleDateString("en-NG")}</span></div>
+                  <div><span className="text-muted-foreground">Net:</span> <span className="text-emerald-400">{NGN(Number(inv.total_amount) * 0.88)}</span></div>
+                  <div><span className="text-muted-foreground">Platform fee:</span> <span className="text-amber-400">{NGN(Number(inv.total_amount) * 0.12)}</span></div>
+                  <div><span className="text-muted-foreground">VAT (7.5%):</span> <span className="text-muted-foreground">{NGN(Number(inv.total_amount) * 0.075)}</span></div>
                 </div>
                 <div className="flex gap-2">
                   <button
@@ -533,7 +533,7 @@ function AuditTab() {
 
             {/* Progress bar */}
             <div className="mt-2">
-              <div className="flex justify-between text-[9px] text-slate-500 mb-1">
+              <div className="flex justify-between text-[9px] text-muted-foreground mb-1">
                 <span>Progress</span>
                 <span>{audit.progress}%</span>
               </div>
@@ -557,12 +557,12 @@ function AuditTab() {
                     {i < Math.floor(audit.progress / 25) ? (
                       <CheckCircle2 className="h-3 w-3 text-emerald-400 flex-shrink-0" />
                     ) : (
-                      <Clock className="h-3 w-3 text-slate-500 flex-shrink-0" />
+                      <Clock className="h-3 w-3 text-muted-foreground flex-shrink-0" />
                     )}
                     <span className={`text-[10px] ${i < Math.floor(audit.progress / 25) ? "text-muted-foreground line-through" : "text-muted-foreground"}`}>{item}</span>
                   </div>
                 ))}
-                <div className="flex items-center gap-1 text-[9px] text-slate-500 mt-1">
+                <div className="flex items-center gap-1 text-[9px] text-muted-foreground mt-1">
                   <Calendar className="h-3 w-3" />
                   Due: {new Date(audit.dueDate).toLocaleDateString("en-NG")}
                 </div>
@@ -634,7 +634,7 @@ function SettingsTab() {
 
       {settingsGroups.map((group) => (
         <div key={group.title}>
-          <p className="text-[10px] text-slate-500 uppercase tracking-widest mb-1.5 px-1">{group.title}</p>
+          <p className="text-[10px] text-muted-foreground uppercase tracking-widest mb-1.5 px-1">{group.title}</p>
           <div className="bg-card/60 border border-border/40 rounded-xl overflow-hidden divide-y divide-slate-700/40">
             {group.items.map((item) => (
               "toggle" in item ? (
@@ -643,7 +643,7 @@ function SettingsTab() {
                     <item.icon className="h-4 w-4 text-muted-foreground" />
                     <div>
                       <p className="text-xs font-medium text-foreground">{item.label}</p>
-                      <p className="text-[9px] text-slate-500">{item.desc}</p>
+                      <p className="text-[9px] text-muted-foreground">{item.desc}</p>
                     </div>
                   </div>
                   <button
@@ -660,10 +660,10 @@ function SettingsTab() {
                       <item.icon className="h-4 w-4 text-muted-foreground" />
                       <div>
                         <p className="text-xs font-medium text-foreground">{item.label}</p>
-                        <p className="text-[9px] text-slate-500">{item.desc}</p>
+                        <p className="text-[9px] text-muted-foreground">{item.desc}</p>
                       </div>
                     </div>
-                    <ChevronRight className="h-3.5 w-3.5 text-slate-500" />
+                    <ChevronRight className="h-3.5 w-3.5 text-muted-foreground" />
                   </div>
                 </Link>
               )
@@ -674,8 +674,8 @@ function SettingsTab() {
 
       {/* App info */}
       <div className="text-center space-y-0.5 pb-2">
-        <p className="text-[9px] text-slate-600">NDSEP DPCO Portal · v1.0.0 · PWA</p>
-        <p className="text-[9px] text-slate-600">© 2026 National Data Protection Commission</p>
+        <p className="text-[9px] text-muted-foreground">NDSEP DPCO Portal · v1.0.0 · PWA</p>
+        <p className="text-[9px] text-muted-foreground">© 2026 National Data Protection Commission</p>
       </div>
     </div>
   );
@@ -732,8 +732,8 @@ function PhoneFrame({ tab, active, onSelect, dpcoOrgId }: { tab: Tab; active: Ta
         <div className="bg-background border-t border-border px-2 py-1.5 flex items-center justify-around">
           {TABS.map((t) => (
             <div key={t.id} className={`flex flex-col items-center gap-0.5 px-2 py-1 rounded-xl transition-colors ${t.id === tab ? "bg-cyan-500/15" : ""}`}>
-              <t.icon className={`h-4 w-4 ${t.id === tab ? "text-cyan-400" : "text-slate-500"}`} />
-              <span className={`text-[7px] font-medium ${t.id === tab ? "text-cyan-400" : "text-slate-500"}`}>{t.label}</span>
+              <t.icon className={`h-4 w-4 ${t.id === tab ? "text-cyan-400" : "text-muted-foreground"}`} />
+              <span className={`text-[7px] font-medium ${t.id === tab ? "text-cyan-400" : "text-muted-foreground"}`}>{t.label}</span>
             </div>
           ))}
         </div>
@@ -769,7 +769,7 @@ export default function DpcoPwaUI() {
           </div>
           <div className="flex items-center gap-2">
             <Link href="/dpco-app">
-              <Button size="sm" className="h-7 text-[10px] bg-cyan-500 hover:bg-cyan-400 text-slate-900 font-semibold gap-1 px-3">
+              <Button size="sm" className="h-7 text-[10px] bg-cyan-500 hover:bg-cyan-400 text-foreground font-semibold gap-1 px-3">
                 <Zap className="h-3 w-3" />
                 Launch PWA
               </Button>
@@ -792,7 +792,7 @@ export default function DpcoPwaUI() {
               onClick={() => setActiveTab(t.id)}
               className={`flex items-center gap-1.5 px-4 py-2 rounded-full text-xs font-medium transition-all ${
                 activeTab === t.id
-                  ? "bg-cyan-500 text-slate-900"
+                  ? "bg-cyan-500 text-foreground"
                   : "bg-card/60 text-muted-foreground hover:bg-muted/60 hover:text-foreground border border-border/40"
               }`}
             >
@@ -850,8 +850,8 @@ export default function DpcoPwaUI() {
                   onClick={() => setActiveTab(t.id)}
                   className={`flex flex-col items-center gap-0.5 px-2 py-1 rounded-xl transition-colors ${t.id === activeTab ? "bg-cyan-500/15" : ""}`}
                 >
-                  <t.icon className={`h-4 w-4 ${t.id === activeTab ? "text-cyan-400" : "text-slate-500"}`} />
-                  <span className={`text-[7px] font-medium ${t.id === activeTab ? "text-cyan-400" : "text-slate-500"}`}>{t.label}</span>
+                  <t.icon className={`h-4 w-4 ${t.id === activeTab ? "text-cyan-400" : "text-muted-foreground"}`} />
+                  <span className={`text-[7px] font-medium ${t.id === activeTab ? "text-cyan-400" : "text-muted-foreground"}`}>{t.label}</span>
                 </button>
               ))}
             </div>
@@ -860,7 +860,7 @@ export default function DpcoPwaUI() {
 
         {/* All 5 screens mini-grid */}
         <div>
-          <p className="text-center text-xs text-slate-500 mb-4 uppercase tracking-widest">All Screens Preview</p>
+          <p className="text-center text-xs text-muted-foreground mb-4 uppercase tracking-widest">All Screens Preview</p>
           <div className="flex flex-wrap justify-center gap-4">
             {TABS.map((t) => (
               <div key={t.id} onClick={() => setActiveTab(t.id)} className={`cursor-pointer transition-all ${activeTab === t.id ? "ring-2 ring-cyan-500 ring-offset-2 ring-offset-slate-950 rounded-[2rem]" : "opacity-60 hover:opacity-80"}`}>
@@ -887,7 +887,7 @@ export default function DpcoPwaUI() {
                   <div className="bg-background border-t border-border px-1 py-1 flex justify-around">
                     {TABS.map((tb) => (
                       <div key={tb.id} className={`flex flex-col items-center gap-0.5 ${tb.id === t.id ? "opacity-100" : "opacity-30"}`}>
-                        <tb.icon className={`h-2.5 w-2.5 ${tb.id === t.id ? "text-cyan-400" : "text-slate-500"}`} />
+                        <tb.icon className={`h-2.5 w-2.5 ${tb.id === t.id ? "text-cyan-400" : "text-muted-foreground"}`} />
                       </div>
                     ))}
                   </div>

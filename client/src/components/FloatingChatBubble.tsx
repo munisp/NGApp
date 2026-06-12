@@ -112,13 +112,13 @@ export function FloatingChatBubble() {
       {/* Chat window */}
       {open && (
         <div
-          className={`bg-[#0a1628] border border-cyan-500/30 rounded-xl shadow-2xl flex flex-col transition-all duration-200 ${
+          className={`bg-card border border-cyan-500/30 rounded-xl shadow-2xl flex flex-col transition-all duration-200 ${
             minimized ? "h-12 w-80 overflow-hidden" : "w-96 h-[520px]"
           }`}
           style={{ boxShadow: "0 0 40px rgba(0,255,255,0.08)" }}
         >
           {/* Header */}
-          <div className="flex items-center justify-between px-4 py-3 border-b border-cyan-500/20 bg-[#0d1f3c] rounded-t-xl">
+          <div className="flex items-center justify-between px-4 py-3 border-b border-cyan-500/20 bg-muted rounded-t-xl">
             <div className="flex items-center gap-2">
               <div className="w-2 h-2 rounded-full bg-cyan-400 animate-pulse" />
               <span className="text-cyan-300 font-semibold text-sm">NDSEP AI Support</span>
@@ -170,7 +170,7 @@ export function FloatingChatBubble() {
                     <div
                       className={`max-w-[75%] rounded-xl px-3 py-2 text-xs leading-relaxed ${
                         msg.role === "assistant"
-                          ? "bg-[#0d1f3c] text-foreground border border-cyan-500/10"
+                          ? "bg-muted text-foreground border border-cyan-500/10"
                           : "bg-indigo-600/30 text-foreground border border-indigo-500/20"
                       }`}
                     >
@@ -186,7 +186,7 @@ export function FloatingChatBubble() {
                     <div className="w-7 h-7 rounded-full bg-cyan-500/20 text-cyan-400 flex items-center justify-center">
                       <Bot className="h-4 w-4" />
                     </div>
-                    <div className="bg-[#0d1f3c] border border-cyan-500/10 rounded-xl px-3 py-2">
+                    <div className="bg-muted border border-cyan-500/10 rounded-xl px-3 py-2">
                       <div className="flex gap-1 items-center h-4">
                         <span className="w-1.5 h-1.5 bg-cyan-400 rounded-full animate-bounce" style={{ animationDelay: "0ms" }} />
                         <span className="w-1.5 h-1.5 bg-cyan-400 rounded-full animate-bounce" style={{ animationDelay: "150ms" }} />
@@ -221,7 +221,7 @@ export function FloatingChatBubble() {
                   onChange={(e) => setInput(e.target.value)}
                   onKeyDown={handleKeyDown}
                   placeholder="Ask about NDPA, compliance, or the platform…"
-                  className="flex-1 bg-[#0d1f3c] border border-cyan-500/20 rounded-lg px-3 py-2 text-xs text-foreground placeholder-muted-foreground focus:outline-none focus:border-cyan-400"
+                  className="flex-1 bg-muted border border-cyan-500/20 rounded-lg px-3 py-2 text-xs text-foreground placeholder-muted-foreground focus:outline-none focus:border-cyan-400"
                 />
                 <Button
                   size="icon"

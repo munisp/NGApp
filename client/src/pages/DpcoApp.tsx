@@ -209,7 +209,7 @@ function HomeTab() {
       <div className="flex gap-1.5 bg-background/60 p-1 rounded-xl border border-border/60 max-w-xs">
         {(["7d", "30d", "90d", "12m"] as const).map((p) => (
           <button key={p} onClick={() => setPeriod(p)}
-            className={`flex-1 text-xs font-semibold py-1.5 rounded-lg transition-all ${period === p ? "bg-cyan-500 text-slate-900 shadow-md" : "text-muted-foreground hover:text-foreground"}`}>
+            className={`flex-1 text-xs font-semibold py-1.5 rounded-lg transition-all ${period === p ? "bg-cyan-500 text-foreground shadow-md" : "text-muted-foreground hover:text-foreground"}`}>
             {p === "12m" ? "1Y" : p.toUpperCase()}
           </button>
         ))}
@@ -232,7 +232,7 @@ function HomeTab() {
             ].map(({ label, value }) => (
               <div key={label} className="text-center">
                 <p className="text-sm font-bold text-foreground">{value}</p>
-                <p className="text-[10px] text-slate-500">{label}</p>
+                <p className="text-[10px] text-muted-foreground">{label}</p>
               </div>
             ))}
           </div>
@@ -247,7 +247,7 @@ function HomeTab() {
               </div>
               <p className="text-xl font-black text-foreground leading-none">{value}</p>
               <p className="text-xs text-muted-foreground mt-1">{label}</p>
-              <p className="text-[10px] text-slate-500">{sub}</p>
+              <p className="text-[10px] text-muted-foreground">{sub}</p>
               <div className={`flex items-center gap-0.5 mt-2 text-[10px] font-semibold ${up ? "text-emerald-400" : "text-amber-400"}`}>
                 {up ? <ArrowUpRight className="h-3 w-3" /> : <ArrowDownRight className="h-3 w-3" />}
                 {trend}
@@ -280,7 +280,7 @@ function HomeTab() {
               </AreaChart>
             </ResponsiveContainer>
           ) : (
-            <div className="h-48 flex items-center justify-center text-slate-500 text-sm">No earnings data yet</div>
+            <div className="h-48 flex items-center justify-center text-muted-foreground text-sm">No earnings data yet</div>
           )}
         </div>
       </div>
@@ -315,7 +315,7 @@ function HomeTab() {
               </div>
             </div>
           ) : (
-            <div className="h-40 flex items-center justify-center text-slate-500 text-sm">No service data yet</div>
+            <div className="h-40 flex items-center justify-center text-muted-foreground text-sm">No service data yet</div>
           )}
         </div>
 
@@ -344,7 +344,7 @@ function HomeTab() {
                 </div>
               </div>
             ))}
-            {invoices.length === 0 && <p className="text-sm text-slate-500 text-center py-6">No invoices yet</p>}
+            {invoices.length === 0 && <p className="text-sm text-muted-foreground text-center py-6">No invoices yet</p>}
           </div>
         </div>
       </div>
@@ -432,7 +432,7 @@ function ClientsTab() {
           <p className="text-sm text-muted-foreground mt-0.5">{clients.length} total organisations</p>
         </div>
         <Link href="/dpco/clients">
-          <Button size="sm" className="bg-cyan-500 hover:bg-cyan-400 text-slate-900 font-semibold gap-1.5">
+          <Button size="sm" className="bg-cyan-500 hover:bg-cyan-400 text-foreground font-semibold gap-1.5">
             <Building2 className="h-4 w-4" /> Add Client
           </Button>
         </Link>
@@ -452,12 +452,12 @@ function ClientsTab() {
       {/* Sector chips */}
       {sectors.length > 0 && (
         <div className="flex flex-wrap gap-2">
-          <button onClick={() => setSearch("")} className={`text-xs px-3 py-1 rounded-full font-medium transition-colors ${!search ? "bg-cyan-500 text-slate-900" : "bg-card text-muted-foreground hover:text-foreground"}`}>
+          <button onClick={() => setSearch("")} className={`text-xs px-3 py-1 rounded-full font-medium transition-colors ${!search ? "bg-cyan-500 text-foreground" : "bg-card text-muted-foreground hover:text-foreground"}`}>
             All ({clients.length})
           </button>
           {sectors.map((s: any) => (
             <button key={s} onClick={() => setSearch(s)}
-              className={`text-xs px-3 py-1 rounded-full font-medium transition-colors ${search === s ? "bg-cyan-500 text-slate-900" : "bg-card text-muted-foreground hover:text-foreground"}`}>
+              className={`text-xs px-3 py-1 rounded-full font-medium transition-colors ${search === s ? "bg-cyan-500 text-foreground" : "bg-card text-muted-foreground hover:text-foreground"}`}>
               {s} ({clients.filter((c: any) => c.org_sector === s).length})
             </button>
           ))}
@@ -471,7 +471,7 @@ function ClientsTab() {
         </div>
       ) : filtered.length === 0 ? (
         <div className="text-center py-12">
-          <Users className="h-12 w-12 text-slate-600 mx-auto mb-3" />
+          <Users className="h-12 w-12 text-muted-foreground mx-auto mb-3" />
           <p className="text-muted-foreground">No clients found</p>
         </div>
       ) : (
@@ -530,7 +530,7 @@ function ClientsTab() {
                     <StatusBadge status={c.risk_level ?? "low"} />
                   </div>
                 </div>
-                <p className="text-xs text-slate-500 mt-2">{c.contract_reference ?? c.engagement_type?.replace(/_/g, " ") ?? "—"}</p>
+                <p className="text-xs text-muted-foreground mt-2">{c.contract_reference ?? c.engagement_type?.replace(/_/g, " ") ?? "—"}</p>
               </div>
             ))}
           </div>
@@ -571,7 +571,7 @@ function BillingTab() {
           <p className="text-sm text-muted-foreground mt-0.5">{invoices.length} invoices</p>
         </div>
         <Link href="/dpco/billing">
-          <Button size="sm" className="bg-cyan-500 hover:bg-cyan-400 text-slate-900 font-semibold gap-1.5">
+          <Button size="sm" className="bg-cyan-500 hover:bg-cyan-400 text-foreground font-semibold gap-1.5">
             <FileText className="h-4 w-4" /> New Invoice
           </Button>
         </Link>
@@ -605,7 +605,7 @@ function BillingTab() {
             </thead>
             <tbody>
               {invoices.length === 0 && (
-                <tr><td colSpan={7} className="px-5 py-10 text-center text-slate-500">No invoices found</td></tr>
+                <tr><td colSpan={7} className="px-5 py-10 text-center text-muted-foreground">No invoices found</td></tr>
               )}
               {invoices.map((inv, i) => (
                   <tr key={inv.id}
@@ -632,7 +632,7 @@ function BillingTab() {
 
           {/* Mobile cards */}
         <div className="lg:hidden divide-y divide-slate-800/40">
-          {invoices.length === 0 && <p className="text-center text-slate-500 py-10">No invoices found</p>}
+          {invoices.length === 0 && <p className="text-center text-muted-foreground py-10">No invoices found</p>}
           {invoices.map((inv) => (
             <div key={inv.id} className="px-4 py-3.5 cursor-pointer hover:bg-card/30 transition-colors"
               onClick={() => setSelectedInvoice(inv as unknown as InvoiceRow)}
@@ -676,7 +676,7 @@ function AuditTab() {
           <p className="text-sm text-muted-foreground mt-0.5">{audits.length} audit engagements</p>
         </div>
         <Link href="/dpco/audit">
-          <Button size="sm" className="bg-cyan-500 hover:bg-cyan-400 text-slate-900 font-semibold gap-1.5">
+          <Button size="sm" className="bg-cyan-500 hover:bg-cyan-400 text-foreground font-semibold gap-1.5">
             <ClipboardCheck className="h-4 w-4" /> Full Workspace
           </Button>
         </Link>
@@ -701,10 +701,10 @@ function AuditTab() {
         <div className="space-y-3">{[1, 2, 3].map((i) => <div key={i} className="h-24 bg-card/40 rounded-xl animate-pulse" />)}</div>
       ) : audits.length === 0 ? (
         <div className="bg-background/60 border border-border/50 rounded-2xl p-8 text-center">
-          <ClipboardCheck className="h-12 w-12 text-slate-600 mx-auto mb-3" />
+          <ClipboardCheck className="h-12 w-12 text-muted-foreground mx-auto mb-3" />
           <p className="text-muted-foreground mb-4">No audit engagements yet</p>
           <Link href="/dpco/audit">
-            <Button size="sm" className="bg-cyan-500 hover:bg-cyan-400 text-slate-900 font-semibold gap-1.5">
+            <Button size="sm" className="bg-cyan-500 hover:bg-cyan-400 text-foreground font-semibold gap-1.5">
               <ExternalLink className="h-4 w-4" /> Open Audit Workspace
             </Button>
           </Link>
@@ -789,7 +789,7 @@ function SettingsTab({ lock }: { lock: ReturnType<typeof usePwaLock> }) {
             </div>
           </div>
           {isInstallable ? (
-            <Button className="w-full bg-cyan-500 hover:bg-cyan-400 text-slate-900 font-semibold gap-2" onClick={install}>
+            <Button className="w-full bg-cyan-500 hover:bg-cyan-400 text-foreground font-semibold gap-2" onClick={install}>
               <Download className="h-4 w-4" /> Install DPCO Portal
             </Button>
           ) : (
@@ -817,7 +817,7 @@ function SettingsTab({ lock }: { lock: ReturnType<typeof usePwaLock> }) {
                 <p className="font-semibold text-foreground">{label}</p>
                 <p className="text-xs text-muted-foreground mt-0.5">{desc}</p>
               </div>
-              <ChevronRight className="h-4 w-4 text-slate-500 flex-shrink-0" />
+              <ChevronRight className="h-4 w-4 text-muted-foreground flex-shrink-0" />
             </div>
           </Link>
         ))}
@@ -838,8 +838,8 @@ function SettingsTab({ lock }: { lock: ReturnType<typeof usePwaLock> }) {
       {/* App info */}
       <div className="bg-background/60 border border-border/50 rounded-2xl p-4 text-center space-y-1">
         <p className="text-sm font-semibold text-muted-foreground">NDSEP DPCO Portal</p>
-        <p className="text-xs text-slate-500">Version 1.0.0 · PWA enabled</p>
-        <p className="text-xs text-slate-500">© 2026 National Data Protection Commission</p>
+        <p className="text-xs text-muted-foreground">Version 1.0.0 · PWA enabled</p>
+        <p className="text-xs text-muted-foreground">© 2026 National Data Protection Commission</p>
       </div>
     </div>
   );
@@ -853,7 +853,7 @@ function SidebarNav({ active, onChange }: { active: Tab; onChange: (t: Tab) => v
       <div className="px-5 py-5 border-b border-border/60">
         <div className="flex items-center gap-3">
           <div className="w-9 h-9 rounded-xl bg-cyan-500 flex items-center justify-center shadow-lg shadow-cyan-500/30">
-            <span className="text-slate-900 font-black text-base">N</span>
+            <span className="text-foreground font-black text-base">N</span>
           </div>
           <div>
             <p className="font-bold text-foreground leading-none text-sm">DPCO Portal</p>
@@ -929,7 +929,7 @@ function BottomNav({ active, onChange }: { active: Tab; onChange: (t: Tab) => vo
               key={id}
               onClick={() => { onChange(id); setMoreOpen(false); }}
               className={`flex flex-col items-center justify-center py-2.5 gap-1 rounded-xl transition-colors ${
-                active === id ? "bg-cyan-500/15 text-cyan-400" : "text-slate-400 hover:text-foreground hover:bg-card/60"
+                active === id ? "bg-cyan-500/15 text-cyan-400" : "text-muted-foreground hover:text-foreground hover:bg-card/60"
               }`}
             >
               <Icon className="h-5 w-5" />
@@ -944,7 +944,7 @@ function BottomNav({ active, onChange }: { active: Tab; onChange: (t: Tab) => vo
             key={id}
             onClick={() => { onChange(id); setMoreOpen(false); }}
             className={`flex-1 flex flex-col items-center justify-center py-2.5 gap-0.5 transition-colors ${
-              active === id ? "text-cyan-400" : "text-slate-500 hover:text-muted-foreground"
+              active === id ? "text-cyan-400" : "text-muted-foreground hover:text-muted-foreground"
             }`}
           >
             <Icon className="h-5 w-5" />
@@ -955,7 +955,7 @@ function BottomNav({ active, onChange }: { active: Tab; onChange: (t: Tab) => vo
         <button
           onClick={() => setMoreOpen(p => !p)}
           className={`flex-1 flex flex-col items-center justify-center py-2.5 gap-0.5 transition-colors ${
-            isMoreActive || moreOpen ? "text-cyan-400" : "text-slate-500 hover:text-muted-foreground"
+            isMoreActive || moreOpen ? "text-cyan-400" : "text-muted-foreground hover:text-muted-foreground"
           }`}
         >
           <Menu className="h-5 w-5" />
@@ -1004,7 +1004,7 @@ export default function DpcoApp() {
             {/* Mobile logo */}
             <div className="lg:hidden flex items-center gap-2.5">
               <div className="w-8 h-8 rounded-lg bg-cyan-500 flex items-center justify-center">
-                <span className="text-slate-900 font-black text-sm">N</span>
+                <span className="text-foreground font-black text-sm">N</span>
               </div>
               <div>
                 <p className="text-sm font-bold text-foreground leading-none">DPCO Portal</p>
