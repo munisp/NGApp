@@ -264,7 +264,7 @@ export default function BreachNotification() {
             <div className="w-10 h-10 rounded-xl bg-primary/10 flex items-center justify-center"><AlertTriangle className="w-5 h-5 text-red-400" /></div>
             <div>
               <div className="text-xs text-red-400 font-mono uppercase tracking-widest">NDPA S.47 / GAID Art. 31-36</div>
-              <h1 className="text-xl font-bold text-foreground">Data Breach Notification</h1>
+              <h1 className="text-2xl font-bold text-foreground">Data Breach Notification</h1>
             </div>
           </div>
           <p className="text-muted-foreground max-w-2xl text-sm">72-hour NDPC notification tracking, breach lifecycle management, and affected individual notification per NDPA requirements.</p>

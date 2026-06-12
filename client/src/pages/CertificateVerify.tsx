@@ -3,7 +3,7 @@ import { useParams } from "wouter";
 import { trpc } from "@/lib/trpc";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { Shield, CheckCircle2, XCircle, Search, Award, Building2, Calendar, Star, Download, Printer } from "lucide-react";
+import { Shield, CheckCircle2, XCircle, Search, Award, Building2, Calendar, Star, Download, Printer, Loader2 } from "lucide-react";
 
 function CertificatePrintView({ data }: {
   data: {
@@ -154,7 +154,7 @@ export default function CertificateVerify() {
             />
             <Button onClick={handleVerify} disabled={!inputToken.trim() || loading} className="bg-blue-600 hover:bg-blue-700 shrink-0">
               {loading ? (
-                <span className="flex items-center gap-1"><span className="animate-spin h-4 w-4 border-2 border-white border-t-transparent rounded-full" /> Checking…</span>
+                <span className="flex items-center gap-1"><Loader2 className="h-4 w-4 animate-spin" /> Checking…</span>
               ) : (
                 <span className="flex items-center gap-1"><Search className="h-4 w-4" /> Verify</span>
               )}

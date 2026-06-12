@@ -106,7 +106,7 @@ export default function DpiaWizard() {
         <div className="flex items-center gap-3 mb-6">
           <FileSearch className="w-7 h-7 text-blue-400" />
           <div>
-            <h1 className="text-xl font-bold text-foreground">DPIA Wizard</h1>
+            <h1 className="text-2xl font-bold text-foreground">DPIA Wizard</h1>
             <p className="text-sm text-muted-foreground">Data Protection Impact Assessment — NDPA 2023 Article 28</p>
           </div>
         </div>

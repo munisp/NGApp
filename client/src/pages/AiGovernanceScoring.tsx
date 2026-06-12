@@ -83,7 +83,7 @@ export default function AiGovernanceScoring() {
           <div className="flex items-center gap-3">
             <Brain className="w-7 h-7 text-purple-400" />
             <div>
-              <h1 className="text-xl font-bold text-foreground">AI Governance Scoring</h1>
+              <h1 className="text-2xl font-bold text-foreground">AI Governance Scoring</h1>
               <p className="text-sm text-muted-foreground">NDPA 2023 Article 24 — Automated Decision-Making Compliance</p>
             </div>
           </div>

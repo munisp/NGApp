@@ -590,7 +590,7 @@ export default function FinancialEnforcement() {
                   </SelectContent>
                 </Select>
                 <Button size="sm" variant="outline" className="font-mono text-xs h-8" onClick={() => refetchTbBalance()} disabled={!balanceOrgId || tbBalanceLoading}>
-                  {tbBalanceLoading ? "Loading..." : "Refresh"}
+                  {tbBalanceLoading ? <><Loader2 className="h-3.5 w-3.5 mr-1 animate-spin" />Loading</> : "Refresh"}
                 </Button>
               </div>
             </div>

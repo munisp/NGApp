@@ -37,7 +37,7 @@ export default function ComplianceAuditReturns() {
         <div className="px-6 py-8">
           <div className="flex items-center gap-3 mb-3">
             <div className="w-10 h-10 rounded-xl bg-sky-600/20 border border-sky-500/30 flex items-center justify-center"><ClipboardList className="w-5 h-5 text-sky-400" /></div>
-            <div><div className="text-xs text-sky-400 font-mono uppercase tracking-widest">GAID Art. 15</div><h1 className="text-xl font-bold text-foreground">Compliance Audit Returns (CAR)</h1></div>
+            <div><div className="text-xs text-sky-400 font-mono uppercase tracking-widest">GAID Art. 15</div><h1 className="text-2xl font-bold text-foreground">Compliance Audit Returns (CAR)</h1></div>
           </div>
           <p className="text-muted-foreground max-w-2xl text-sm">File and manage Compliance Audit Returns from DPCOs with scoring, findings, and remediation tracking.</p>
         </div>

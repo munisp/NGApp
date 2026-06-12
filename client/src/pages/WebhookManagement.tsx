@@ -78,7 +78,7 @@ export default function WebhookManagement() {
           <div className="flex items-center gap-3">
             <Webhook className="w-7 h-7 text-orange-400" />
             <div>
-              <h1 className="text-xl font-bold text-foreground">Webhook Management</h1>
+              <h1 className="text-2xl font-bold text-foreground">Webhook Management</h1>
               <p className="text-sm text-muted-foreground">Real-time event delivery to external systems</p>
             </div>
           </div>

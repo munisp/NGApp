@@ -64,7 +64,7 @@ export function Pagination({
                 onPageSizeChange(Number(e.target.value));
                 onPageChange(1);
               }}
-              className="rounded border border-border bg-background px-2 py-1 text-sm focus:outline-none focus:ring-1 focus:ring-primary"
+              className="rounded border border-border bg-background px-2 py-1 text-sm focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-primary"
             >
               {pageSizeOptions.map((s) => (
                 <option key={s} value={s}>

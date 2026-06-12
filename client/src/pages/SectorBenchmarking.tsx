@@ -43,7 +43,7 @@ export default function SectorBenchmarking() {
         <div className="flex items-center gap-3 mb-6">
           <BarChart2 className="w-7 h-7 text-blue-400" />
           <div>
-            <h1 className="text-xl font-bold text-foreground">Sector Benchmarking</h1>
+            <h1 className="text-2xl font-bold text-foreground">Sector Benchmarking</h1>
             <p className="text-sm text-muted-foreground">Comparative compliance analytics across regulated sectors</p>
           </div>
         </div>

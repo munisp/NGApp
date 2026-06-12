@@ -42,7 +42,7 @@ export default function DataExportJobs() {
         <div className="px-6 py-8">
           <div className="flex items-center gap-3 mb-3">
             <div className="w-10 h-10 rounded-xl bg-primary/10 flex items-center justify-center"><Download className="w-5 h-5 text-primary" /></div>
-            <div><div className="text-xs text-primary font-mono uppercase tracking-widest">NDPA S.46</div><h1 className="text-xl font-bold text-foreground">Data Portability / Export Jobs</h1></div>
+            <div><div className="text-xs text-primary font-mono uppercase tracking-widest">NDPA S.46</div><h1 className="text-2xl font-bold text-foreground">Data Portability / Export Jobs</h1></div>
           </div>
           <p className="text-muted-foreground max-w-2xl text-sm">Process data portability requests with high-performance export in JSON, CSV, XML, and Parquet formats per NDPA S.46.</p>
         </div>

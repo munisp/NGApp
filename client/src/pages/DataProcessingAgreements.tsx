@@ -43,7 +43,7 @@ export default function DataProcessingAgreements() {
         <div className="px-6 py-8">
           <div className="flex items-center gap-3 mb-3">
             <div className="w-10 h-10 rounded-xl bg-primary/10 flex items-center justify-center"><FileSignature className="w-5 h-5 text-primary" /></div>
-            <div><div className="text-xs text-primary font-mono uppercase tracking-widest">NDPA Data Processing</div><h1 className="text-xl font-bold text-foreground">Data Processing Agreements</h1></div>
+            <div><div className="text-xs text-primary font-mono uppercase tracking-widest">NDPA Data Processing</div><h1 className="text-2xl font-bold text-foreground">Data Processing Agreements</h1></div>
           </div>
           <p className="text-muted-foreground max-w-2xl text-sm">Manage contracts with data processors including sub-processor tracking, security measures, and cross-border transfer clauses.</p>
         </div>

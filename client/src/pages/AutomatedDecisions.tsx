@@ -45,7 +45,7 @@ export default function AutomatedDecisions() {
         <div className="px-6 py-8">
           <div className="flex items-center gap-3 mb-3">
             <div className="w-10 h-10 rounded-xl bg-fuchsia-600/20 border border-fuchsia-500/30 flex items-center justify-center"><Bot className="w-5 h-5 text-fuchsia-400" /></div>
-            <div><div className="text-xs text-fuchsia-400 font-mono uppercase tracking-widest">NDPA S.36</div><h1 className="text-xl font-bold text-foreground">Automated Decision-Making</h1></div>
+            <div><div className="text-xs text-fuchsia-400 font-mono uppercase tracking-widest">NDPA S.36</div><h1 className="text-2xl font-bold text-foreground">Automated Decision-Making</h1></div>
           </div>
           <p className="text-muted-foreground max-w-2xl text-sm">Track automated decisions with significant effects, ensure human review rights, and maintain explainability records per NDPA S.36.</p>
         </div>

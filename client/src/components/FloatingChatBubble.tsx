@@ -221,7 +221,7 @@ export function FloatingChatBubble() {
                   onChange={(e) => setInput(e.target.value)}
                   onKeyDown={handleKeyDown}
                   placeholder="Ask about NDPA, compliance, or the platform…"
-                  className="flex-1 bg-muted border border-cyan-500/20 rounded-lg px-3 py-2 text-xs text-foreground placeholder-muted-foreground focus:outline-none focus:border-cyan-400"
+                  className="flex-1 bg-muted border border-cyan-500/20 rounded-lg px-3 py-2 text-xs text-foreground placeholder-muted-foreground focus-visible:outline-none focus-visible:border-cyan-400"
                 />
                 <Button
                   size="icon"

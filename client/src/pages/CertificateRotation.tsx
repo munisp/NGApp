@@ -39,7 +39,7 @@ export default function CertificateRotation() {
           <ShieldCheck className="w-5 h-5 text-primary" />
         </div>
         <div>
-          <h1 className="text-xl font-bold text-foreground">PDF Signing Certificate</h1>
+          <h1 className="text-2xl font-bold text-foreground">PDF Signing Certificate</h1>
           <p className="text-sm text-muted-foreground">
             Manage the PKCS#7 signing certificate used to digitally sign NDPA Annual Audit Return PDFs
           </p>

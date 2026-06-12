@@ -83,7 +83,7 @@ export default function ConsentManagement() {
             </div>
             <div>
               <div className="text-xs text-primary font-mono uppercase tracking-widest">NDPA S.25-27 / GAID Art. 16-20</div>
-              <h1 className="text-xl font-bold text-foreground">Consent Management</h1>
+              <h1 className="text-2xl font-bold text-foreground">Consent Management</h1>
             </div>
           </div>
           <p className="text-muted-foreground max-w-2xl text-sm">Track and manage lawful basis for data processing. Record consent, manage withdrawals, and maintain audit trails per NDPA requirements.</p>

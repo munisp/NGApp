@@ -101,7 +101,7 @@ export default function CitizenRightsPortal() {
             </div>
             <div>
               <div className="text-xs text-teal-400 font-mono uppercase tracking-widest">Nigeria Data Protection Act 2023</div>
-              <h1 className="text-xl font-bold text-foreground">Citizen Data Rights Portal</h1>
+              <h1 className="text-2xl font-bold text-foreground">Citizen Data Rights Portal</h1>
             </div>
           </div>
           <p className="text-muted-foreground max-w-2xl text-sm leading-relaxed">

@@ -168,37 +168,37 @@ export function ComplianceHeatmap({ className = "", showFlows = true, height = "
       />
       {/* Legend overlay */}
       <div className="absolute bottom-3 left-3 bg-card/95 border border-border rounded p-2 text-[10px] font-mono space-y-1">
-        <div className="text-[#4a7fa5] font-semibold mb-1">COMPLIANCE LEGEND</div>
+        <div className="text-muted-foreground font-semibold mb-1">COMPLIANCE LEGEND</div>
         <div className="flex items-center gap-1.5">
-          <span className="w-3 h-3 rounded-full bg-[#00c896] inline-block" />
-          <span className="text-[#e0f0ff]">≥80 Compliant</span>
+          <span className="w-3 h-3 rounded-full bg-emerald-500 inline-block" />
+          <span className="text-foreground/80">≥80 Compliant</span>
         </div>
         <div className="flex items-center gap-1.5">
-          <span className="w-3 h-3 rounded-full bg-[#f59e0b] inline-block" />
-          <span className="text-[#e0f0ff]">60–79 Under Review</span>
+          <span className="w-3 h-3 rounded-full bg-amber-500 inline-block" />
+          <span className="text-foreground/80">60–79 Under Review</span>
         </div>
         <div className="flex items-center gap-1.5">
-          <span className="w-3 h-3 rounded-full bg-[#ef4444] inline-block" />
-          <span className="text-[#e0f0ff]">&lt;60 Non-Compliant</span>
+          <span className="w-3 h-3 rounded-full bg-red-500 inline-block" />
+          <span className="text-foreground/80">&lt;60 Non-Compliant</span>
         </div>
         {showFlows && (
           <>
-            <div className="border-t border-[#1e3a5f] my-1" />
+            <div className="border-t border-border my-1" />
             <div className="flex items-center gap-1.5">
-              <span className="w-4 h-0.5 bg-[#f59e0b] inline-block" />
-              <span className="text-[#e0f0ff]">Cross-border flow</span>
+              <span className="w-4 h-0.5 bg-amber-500 inline-block" />
+              <span className="text-foreground/80">Cross-border flow</span>
             </div>
             <div className="flex items-center gap-1.5">
-              <span className="w-4 h-0.5 bg-[#ef4444] inline-block" />
-              <span className="text-[#e0f0ff]">Blocked egress</span>
+              <span className="w-4 h-0.5 bg-red-500 inline-block" />
+              <span className="text-foreground/80">Blocked egress</span>
             </div>
           </>
         )}
       </div>
       {/* Live indicator */}
       <div className="absolute top-3 right-3 bg-card/95 border border-border rounded px-2 py-1 text-[10px] font-mono flex items-center gap-1.5">
-        <span className="w-1.5 h-1.5 rounded-full bg-[#00c896] animate-pulse inline-block" />
-        <span className="text-[#4a7fa5]">LIVE · 8 ORGS MONITORED</span>
+        <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse inline-block" />
+        <span className="text-muted-foreground">LIVE · 8 ORGS MONITORED</span>
       </div>
     </div>
   );

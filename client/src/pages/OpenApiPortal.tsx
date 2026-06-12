@@ -131,7 +131,7 @@ export default function OpenApiPortal() {
         <div className="flex items-center gap-3 mb-6">
           <BookOpen className="w-7 h-7 text-indigo-400" />
           <div>
-            <h1 className="text-xl font-bold text-foreground">Developer API Portal</h1>
+            <h1 className="text-2xl font-bold text-foreground">Developer API Portal</h1>
             <p className="text-sm text-muted-foreground">NDSEP tRPC API reference and interactive explorer</p>
           </div>
         </div>

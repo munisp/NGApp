@@ -45,7 +45,7 @@ export default function TransferInstruments() {
         <div className="px-6 py-8">
           <div className="flex items-center gap-3 mb-3">
             <div className="w-10 h-10 rounded-xl bg-primary/10 flex items-center justify-center"><ArrowLeftRight className="w-5 h-5 text-primary" /></div>
-            <div><div className="text-xs text-primary font-mono uppercase tracking-widest">NDPA Cross-Border</div><h1 className="text-xl font-bold text-foreground">Transfer Instruments (BCR/SCC)</h1></div>
+            <div><div className="text-xs text-primary font-mono uppercase tracking-widest">NDPA Cross-Border</div><h1 className="text-2xl font-bold text-foreground">Transfer Instruments (BCR/SCC)</h1></div>
           </div>
           <p className="text-muted-foreground max-w-2xl text-sm">Manage Binding Corporate Rules, Standard Contractual Clauses, and other transfer instruments for cross-border data transfers.</p>
         </div>

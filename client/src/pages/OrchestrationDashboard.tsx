@@ -3,7 +3,7 @@ import { Badge } from "@/components/ui/badge";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
-import { Layers, CheckCircle, XCircle, AlertTriangle, RefreshCw, Activity, Zap, Database, Shield, GitBranch, BarChart3, Cpu, Mail, Eye, Users, ShieldCheck, ShieldOff } from "lucide-react";
+import { Layers, CheckCircle, XCircle, AlertTriangle, RefreshCw, Activity, Zap, Database, Shield, GitBranch, BarChart3, Cpu, Mail, Eye, Users, ShieldCheck, ShieldOff, Loader2 } from "lucide-react";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { useState } from "react";
 import { toast } from "sonner";
@@ -512,7 +512,7 @@ export default function OrchestrationDashboard() {
               disabled={previewDigest.isPending}
             >
               <Eye className="h-3.5 w-3.5 mr-1.5" />
-              {previewDigest.isPending ? "Loading..." : "Preview Digest Email"}
+              {previewDigest.isPending ? <><Loader2 className="h-3.5 w-3.5 mr-1 animate-spin" />Loading</> : "Preview Digest Email"}
             </Button>
             <Button
               size="sm"

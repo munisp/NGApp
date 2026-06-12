@@ -43,7 +43,7 @@ export default function ParentalConsent() {
         <div className="px-6 py-8">
           <div className="flex items-center gap-3 mb-3">
             <div className="w-10 h-10 rounded-xl bg-primary/10 flex items-center justify-center"><Baby className="w-5 h-5 text-primary" /></div>
-            <div><div className="text-xs text-primary font-mono uppercase tracking-widest">NDPA S.35</div><h1 className="text-xl font-bold text-foreground">Children's Data / Parental Consent</h1></div>
+            <div><div className="text-xs text-primary font-mono uppercase tracking-widest">NDPA S.35</div><h1 className="text-2xl font-bold text-foreground">Children's Data / Parental Consent</h1></div>
           </div>
           <p className="text-muted-foreground max-w-2xl text-sm">Manage parental consent for processing children's data with age verification, identity validation, and consent lifecycle tracking.</p>
         </div>

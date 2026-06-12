@@ -63,7 +63,7 @@ export default function RopaRecords() {
             <div className="w-10 h-10 rounded-xl bg-primary/10 flex items-center justify-center"><Database className="w-5 h-5 text-primary" /></div>
             <div>
               <div className="text-xs text-primary font-mono uppercase tracking-widest">NDPA S.44</div>
-              <h1 className="text-xl font-bold text-foreground">Records of Processing Activities (ROPA)</h1>
+              <h1 className="text-2xl font-bold text-foreground">Records of Processing Activities (ROPA)</h1>
             </div>
           </div>
           <p className="text-muted-foreground max-w-2xl text-sm">Maintain structured registers of all processing activities with purposes, recipients, retention periods, and lawful bases.</p>

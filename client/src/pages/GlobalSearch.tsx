@@ -72,7 +72,7 @@ export default function GlobalSearch() {
         <div className="flex items-center gap-3 mb-6">
           <Search className="w-7 h-7 text-muted-foreground" />
           <div>
-            <h1 className="text-xl font-bold text-foreground">Global Search</h1>
+            <h1 className="text-2xl font-bold text-foreground">Global Search</h1>
             <p className="text-sm text-muted-foreground">Search across organisations, violations, enforcement cases, DPCOs, and citizen requests</p>
           </div>
         </div>

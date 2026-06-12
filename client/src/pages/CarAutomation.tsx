@@ -48,7 +48,7 @@ export default function CarAutomation() {
         <div className="flex items-center gap-3 mb-6">
           <FileText className="w-7 h-7 text-cyan-400" />
           <div>
-            <h1 className="text-xl font-bold text-foreground">CAR Automation</h1>
+            <h1 className="text-2xl font-bold text-foreground">CAR Automation</h1>
             <p className="text-sm text-muted-foreground">Compliance Audit Return — Automated generation and submission (NDPA 2023 Section 43)</p>
           </div>
         </div>

@@ -65,7 +65,7 @@ export function PwaSecuritySettings({ lock }: PwaSecuritySettingsProps) {
             placeholder="New 4-digit PIN"
             value={newPin}
             onChange={(e) => { setNewPin(e.target.value.replace(/\D/g, "").slice(0, 4)); setError(""); }}
-            className="w-full bg-muted border border-border/50 rounded-xl px-3 py-2 text-sm text-white placeholder-muted-foreground focus:outline-none focus:border-violet-500/60 tracking-widest text-center"
+            className="w-full bg-muted border border-border/50 rounded-xl px-3 py-2 text-sm text-white placeholder-muted-foreground focus-visible:outline-none focus-visible:border-violet-500/60 tracking-widest text-center"
           />
           <input
             type="password"
@@ -74,7 +74,7 @@ export function PwaSecuritySettings({ lock }: PwaSecuritySettingsProps) {
             placeholder="Confirm PIN"
             value={confirmPin}
             onChange={(e) => { setConfirmPin(e.target.value.replace(/\D/g, "").slice(0, 4)); setError(""); }}
-            className="w-full bg-muted border border-border/50 rounded-xl px-3 py-2 text-sm text-white placeholder-muted-foreground focus:outline-none focus:border-violet-500/60 tracking-widest text-center"
+            className="w-full bg-muted border border-border/50 rounded-xl px-3 py-2 text-sm text-white placeholder-muted-foreground focus-visible:outline-none focus-visible:border-violet-500/60 tracking-widest text-center"
           />
           {error && <p className="text-xs text-rose-400">{error}</p>}
           <div className="flex gap-2">
