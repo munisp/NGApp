@@ -70,6 +70,7 @@ const menuSections: MenuSection[] = [
       { icon: Network, label: "Network DPI", path: "/network" },
       { icon: Radio, label: "Network Intelligence", path: "/network-intelligence" },
       { icon: Activity, label: "NOC Dashboard", path: "/noc" },
+      { icon: Shield, label: "Threat Intelligence", path: "/threat-intelligence" },
       { icon: Bot, label: "AI NOC Agent", path: "/noc-agent" },
       { icon: GitBranch, label: "BGP Routes", path: "/bgp" },
       { icon: HardDrive, label: "Arkime PCAP", path: "/pcap" },

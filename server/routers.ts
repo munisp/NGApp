@@ -251,6 +251,7 @@ import { phase12Router } from "./routers/phase12Features";
 import { phase13Router } from "./routers/phase13Features";
 import { productionReadinessRouter } from "./routers/productionReadiness";
 import { temporalRouter, searchRouter as opensearchRouter, wafRouter, gatewayRouter, authzRouter, kafkaMetricsRouter, ledgerRouter } from "./routers/middlewareWiring";
+import { osirisIntelRouter } from "./routers/osirisIntel";
 import { logger } from "./logger";
 
 export const appRouter = router({
@@ -283,6 +284,7 @@ export const appRouter = router({
   policyTemplates: policyTemplatesRouter,
   streamingEvents: streamingEventsDbRouter,
   threatIntelligence: threatIntelligenceRouter,
+  osirisIntel: osirisIntelRouter,
   tiaAssessments: tiaAssessmentsRouter,
   transferImpact: transferImpactRouter,
   system: systemRouter,

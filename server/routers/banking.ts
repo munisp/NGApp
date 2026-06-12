@@ -10,6 +10,7 @@ import { router, protectedProcedure, adminProcedure, exportProcedure, deleteProc
 import { emitEvent, logAuditEvent, broadcastEvent, broadcastUpdate, cacheGetJson, cacheSetJson, cacheDel, recordFinancialTransaction, triggerWorkflow } from "../middlewareHelpers";
 import { emitComplianceEvent, opensearchIndex, lakehouseIngest, daprPublish, fluvioPublish, permifyCheck, mojaloopTransfer, tigerbeetleTransfer, keycloakValidate, permifyWriteRelationship } from "../middlewareExtensions";
 import { emitMutationEvent, EVENTS } from "../middlewareIntegration";
+import { enrichedSanctionsCheck } from "../osirisClient";
 import { autoDecryptRows } from "../encryptionMiddleware";
 import { TRPCError } from "@trpc/server";
 import pg from "pg";
@@ -599,8 +600,19 @@ const watchlistRouter = router({
         params.push(input.passportNumber);
       }
       const matches = await query(sql, params);
-      emitMutationEvent(EVENTS.KYC_VERIFICATION, { action: "watchlist_screened", ts: new Date().toISOString() }).catch((e: unknown) => logger.debug({ err: e instanceof Error ? e.message : String(e) }, "fire-and-forget failed"));
-      return { matches, screeningRef: genRef("SCR"), matchCount: matches.length };
+      // Enrich with Osiris OFAC SDN data (fire-and-forget, graceful degradation)
+      const osirisResult = await enrichedSanctionsCheck(input.name, input.nationality?.slice(0, 2)).catch(() => null);
+      const osirisMatches = osirisResult?.matches ?? [];
+      const conflictRisk = osirisResult?.riskLevel ?? "none";
+      emitMutationEvent(EVENTS.KYC_VERIFICATION, { action: "watchlist_screened", osirisHits: osirisMatches.length, conflictRisk, ts: new Date().toISOString() }).catch((e: unknown) => logger.debug({ err: e instanceof Error ? e.message : String(e) }, "fire-and-forget failed"));
+      return {
+        matches,
+        osirisMatches: osirisMatches.slice(0, 10),
+        conflictRisk,
+        recommendation: osirisResult?.recommendation ?? null,
+        screeningRef: genRef("SCR"),
+        matchCount: matches.length + osirisMatches.length,
+      };
     }),
 
   addEntry: adminProcedure

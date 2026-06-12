@@ -199,6 +199,7 @@ const CocoIndexPage = lazy(() => import("@/pages/ai/CocoIndexPage"));
 const AnomalyAlertsPage = lazy(() => import("@/pages/ai/AnomalyAlertsPage"));
 const NetworkIntelligencePage = lazy(() => import("@/pages/NetworkIntelligencePage"));
 const NocDashboard = lazy(() => import("@/pages/NocDashboard"));
+const ThreatIntelligenceDashboard = lazy(() => import("@/pages/ThreatIntelligenceDashboard"));
 const NocAgentDashboard = lazy(() => import("@/pages/NocAgentDashboard"));
 const DataPipeline = lazy(() => import("@/pages/DataPipeline"));
 const DataLineage = lazy(() => import("@/pages/DataLineage"));
@@ -476,6 +477,7 @@ function Router() {
         <Route path="/security-dashboard" component={SecurityDashboard} />
         {/* Route aliases — common alternative URLs */}
         <Route path="/noc-dashboard" component={NocDashboard} />
+        <Route path="/threat-intelligence" component={ThreatIntelligenceDashboard} />
         <Route path="/liveness-verification" component={LivenessVerification} />
         <Route path="/wiredigg" component={NetworkIntelligencePage} />
         {/* Catch-all — must be last */}

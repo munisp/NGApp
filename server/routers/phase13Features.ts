@@ -4,6 +4,7 @@ import { getPool } from "../db";
 import { logger } from "../logger";
 import { emitComplianceEvent, opensearchIndex, lakehouseIngest, daprPublish, fluvioPublish, permifyCheck } from "../middlewareExtensions";
 import { emitMutationEvent, EVENTS } from "../middlewareIntegration";
+import { getConflictRiskLevel, isConflictCountry } from "../osirisClient";
 import { autoDecryptRows } from "../encryptionMiddleware";
 
 async function exec(query: string, params: unknown[] = []): Promise<any[]> {
@@ -982,16 +983,25 @@ export const crossBorderMonitorRouter = router({
       safeguards: z.string().optional(),
     }))
     .mutation(async ({ ctx, input }) => {
-      // Business rule: flag China, Russia, North Korea as critical risk
+      // Business rule: Use Osiris conflict zone intelligence for dynamic risk assessment
       const criticalCountries = ["China", "Russia", "North Korea", "Iran"];
-      const risk_level = criticalCountries.includes(input.destination_country) ? "critical" :
-        input.transfer_mechanism === "none" ? "high" : "medium";
+      const staticRisk = criticalCountries.includes(input.destination_country) ? "critical" : null;
+      // Extract ISO code from country name for Osiris conflict zone lookup
+      const countryIso = input.destination_country.slice(0, 2).toUpperCase();
+      const conflictRisk = getConflictRiskLevel(countryIso);
+      const conflictZone = isConflictCountry(countryIso);
+      // Combine static list + Osiris dynamic intelligence
+      let risk_level: string;
+      if (staticRisk === "critical" || conflictRisk === "critical") risk_level = "critical";
+      else if (conflictRisk === "high") risk_level = "high";
+      else if (conflictRisk === "elevated" || input.transfer_mechanism === "none") risk_level = "high";
+      else risk_level = "medium";
       const [row] = await exec(
         `INSERT INTO cross_border_transfers (org_id, org_name, destination_country, data_category, transfer_mechanism, volume_records, safeguards, risk_level)
          VALUES ($1, $2, $3, $4, $5, $6, $7, $8) RETURNING *`,
         [input.org_id, input.org_name, input.destination_country, input.data_category, input.transfer_mechanism, input.volume_records, input.safeguards, risk_level]
       );
-      await logAudit('crossBorder.create', 'cross_border_transfer', row?.id ?? null, String(ctx.user.id), { destination_country: input.destination_country, risk_level, transfer_mechanism: input.transfer_mechanism });
+      await logAudit('crossBorder.create', 'cross_border_transfer', row?.id ?? null, String(ctx.user.id), { destination_country: input.destination_country, risk_level, transfer_mechanism: input.transfer_mechanism, conflictZone: conflictZone?.name ?? null, osirisRisk: conflictRisk });
       emitMutationEvent("ndsep.regulatory.mutation", { action: "phase13Features", ts: new Date().toISOString() }).catch((e: unknown) => logger.debug({ err: e instanceof Error ? e.message : String(e) }, "fire-and-forget failed"));
       return row;
     }),
