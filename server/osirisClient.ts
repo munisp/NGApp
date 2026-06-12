@@ -16,7 +16,7 @@ import pino from "pino";
 
 const logger = pino({ name: "osiris-client" });
 
-const OSIRIS_URL = process.env.OSIRIS_URL ?? "https://osirislive.app";
+const OSIRIS_URL = process.env.OSIRIS_URL ?? "https://osirisai.live";
 const OSIRIS_SCANNER_KEY = process.env.OSIRIS_SCANNER_KEY ?? "";
 const CACHE_TTL_MS = 15 * 60 * 1000; // 15 min cache
 
