@@ -52,7 +52,7 @@ function statusColor(s: string) {
   if (s === "paid") return "bg-emerald-500/20 text-emerald-300";
   if (s === "overdue") return "bg-rose-500/20 text-rose-300";
   if (s === "sent") return "bg-cyan-500/20 text-cyan-300";
-  if (s === "draft") return "bg-slate-500/20 text-slate-300";
+  if (s === "draft") return "bg-muted text-foreground";
   return "bg-amber-500/20 text-amber-300";
 }
 
@@ -117,25 +117,25 @@ export function InvoiceDrilldownSheet({ invoice, onClose }: Props) {
       {/* Sheet */}
       <div
         ref={sheetRef}
-        className="fixed bottom-0 left-0 right-0 z-50 max-w-lg mx-auto bg-slate-900 border border-slate-700/60 rounded-t-3xl shadow-2xl"
+        className="fixed bottom-0 left-0 right-0 z-50 max-w-lg mx-auto bg-card border border-border/60 rounded-t-3xl shadow-2xl"
         style={{ maxHeight: "90vh", overflowY: "auto" }}
       >
         {/* Handle */}
         <div className="flex justify-center pt-3 pb-1">
-          <div className="w-10 h-1 rounded-full bg-slate-600" />
+          <div className="w-10 h-1 rounded-full bg-muted" />
         </div>
 
         {/* Header */}
-        <div className="flex items-start justify-between px-5 pt-2 pb-4 border-b border-slate-800">
+        <div className="flex items-start justify-between px-5 pt-2 pb-4 border-b border-border">
           <div>
             <p className="text-base font-bold text-white">{invoice.invoice_number}</p>
-            <p className="text-sm text-slate-400 mt-0.5">{invoice.client_name}</p>
+            <p className="text-sm text-muted-foreground mt-0.5">{invoice.client_name}</p>
           </div>
           <div className="flex items-center gap-2">
             <span className={`text-xs px-2 py-0.5 rounded-full font-semibold ${statusColor(invoice.status)}`}>
               {invoice.status}
             </span>
-            <button onClick={onClose} className="p-1.5 rounded-lg text-slate-400 hover:text-white hover:bg-slate-800 transition-colors">
+            <button onClick={onClose} className="p-1.5 rounded-lg text-muted-foreground hover:text-white hover:bg-card transition-colors">
               <X className="h-4 w-4" />
             </button>
           </div>
@@ -143,30 +143,30 @@ export function InvoiceDrilldownSheet({ invoice, onClose }: Props) {
 
         <div className="px-5 py-4 space-y-5">
           {/* Amount summary */}
-          <div className="bg-slate-800/60 rounded-2xl p-4">
+          <div className="bg-muted rounded-2xl p-4">
             <div className="flex items-center justify-between mb-3">
-              <span className="text-xs text-slate-400">Total Amount</span>
+              <span className="text-xs text-muted-foreground">Total Amount</span>
               <span className="text-2xl font-black text-white">{fmt(invoice.total_amount)}</span>
             </div>
             <div className="space-y-1.5">
               <div className="flex justify-between text-xs">
-                <span className="text-slate-400">DPCO Net Earnings</span>
+                <span className="text-muted-foreground">DPCO Net Earnings</span>
                 <span className="text-emerald-400 font-semibold">{fmt(invoice.dpco_net_amount)}</span>
               </div>
               <div className="flex justify-between text-xs">
-                <span className="text-slate-400">Platform Fee</span>
+                <span className="text-muted-foreground">Platform Fee</span>
                 <span className="text-violet-400 font-semibold">{fmt(invoice.platform_fee_amount)}</span>
               </div>
               <div className="flex justify-between text-xs">
-                <span className="text-slate-400">VAT (7.5%)</span>
-                <span className="text-slate-300 font-semibold">{fmt(invoice.vat_amount)}</span>
+                <span className="text-muted-foreground">VAT (7.5%)</span>
+                <span className="text-foreground font-semibold">{fmt(invoice.vat_amount)}</span>
               </div>
             </div>
           </div>
 
           {/* Invoice details */}
           <div>
-            <p className="text-xs font-bold text-slate-400 uppercase tracking-wider mb-2">Invoice Details</p>
+            <p className="text-xs font-bold text-muted-foreground uppercase tracking-wider mb-2">Invoice Details</p>
             <div className="space-y-2">
               {[
                 { label: "Service Type", value: (invoice.service_type ?? "").replace(/_/g, " ") },
@@ -176,8 +176,8 @@ export function InvoiceDrilldownSheet({ invoice, onClose }: Props) {
                 { label: "Last Emailed", value: invoice.email_sent_at ? fmtDate(invoice.email_sent_at) : "Not sent" },
               ].map(({ label, value }) => (
                 <div key={label} className="flex items-center justify-between">
-                  <span className="text-xs text-slate-500">{label}</span>
-                  <span className="text-xs text-slate-200 font-medium capitalize">{value}</span>
+                  <span className="text-xs text-muted-foreground">{label}</span>
+                  <span className="text-xs text-foreground font-medium capitalize">{value}</span>
                 </div>
               ))}
             </div>
@@ -185,16 +185,16 @@ export function InvoiceDrilldownSheet({ invoice, onClose }: Props) {
 
           {/* Line items */}
           <div>
-            <p className="text-xs font-bold text-slate-400 uppercase tracking-wider mb-2">Line Items</p>
-            <div className="bg-slate-800/40 rounded-xl overflow-hidden">
+            <p className="text-xs font-bold text-muted-foreground uppercase tracking-wider mb-2">Line Items</p>
+            <div className="bg-muted/60 rounded-xl overflow-hidden">
               {lineItems.map((item, i) => (
-                <div key={i} className={`flex justify-between px-3 py-2 text-xs ${i < lineItems.length - 1 ? "border-b border-slate-700/40" : ""}`}>
-                  <span className="text-slate-300">{item.label}</span>
+                <div key={i} className={`flex justify-between px-3 py-2 text-xs ${i < lineItems.length - 1 ? "border-b border-border/40" : ""}`}>
+                  <span className="text-foreground">{item.label}</span>
                   <span className="text-white font-semibold">{fmt(item.amount)}</span>
                 </div>
               ))}
-              <div className="flex justify-between px-3 py-2 text-xs bg-slate-700/30 font-bold">
-                <span className="text-slate-200">Total</span>
+              <div className="flex justify-between px-3 py-2 text-xs bg-muted/40 font-bold">
+                <span className="text-foreground">Total</span>
                 <span className="text-white">{fmt(invoice.total_amount)}</span>
               </div>
             </div>
@@ -203,8 +203,8 @@ export function InvoiceDrilldownSheet({ invoice, onClose }: Props) {
           {/* Description */}
           {invoice.description && (
             <div>
-              <p className="text-xs font-bold text-slate-400 uppercase tracking-wider mb-1">Description</p>
-              <p className="text-xs text-slate-300 leading-relaxed">{invoice.description}</p>
+              <p className="text-xs font-bold text-muted-foreground uppercase tracking-wider mb-1">Description</p>
+              <p className="text-xs text-foreground leading-relaxed">{invoice.description}</p>
             </div>
           )}
 
@@ -213,7 +213,7 @@ export function InvoiceDrilldownSheet({ invoice, onClose }: Props) {
             <Button
               variant="outline"
               size="sm"
-              className="border-slate-700 text-slate-300 hover:text-white gap-1.5 text-xs"
+              className="border-border text-foreground hover:text-white gap-1.5 text-xs"
               onClick={() => window.open(`/api/invoices/${invoice.id}/invoice.pdf`, "_blank")}
             >
               <Download className="h-3.5 w-3.5" />

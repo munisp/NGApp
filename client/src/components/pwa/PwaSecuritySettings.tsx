@@ -43,12 +43,12 @@ export function PwaSecuritySettings({ lock }: PwaSecuritySettingsProps) {
   }
 
   return (
-    <div className="bg-slate-900/60 border border-slate-800/50 rounded-2xl p-4 space-y-3">
+    <div className="bg-card border border-border rounded-2xl p-4 space-y-3">
       <div className="flex items-center gap-3">
         <ShieldCheck className="h-5 w-5 text-violet-400" />
         <div>
           <p className="text-sm font-semibold text-white">App Lock</p>
-          <p className="text-[11px] text-slate-400">
+          <p className="text-[11px] text-muted-foreground">
             {lock.hasPinSet
               ? "PIN active — app locks after 5 min inactivity"
               : "No PIN set — app will not auto-lock"}
@@ -65,7 +65,7 @@ export function PwaSecuritySettings({ lock }: PwaSecuritySettingsProps) {
             placeholder="New 4-digit PIN"
             value={newPin}
             onChange={(e) => { setNewPin(e.target.value.replace(/\D/g, "").slice(0, 4)); setError(""); }}
-            className="w-full bg-slate-800/60 border border-slate-700/50 rounded-xl px-3 py-2 text-sm text-white placeholder-slate-500 focus:outline-none focus:border-violet-500/60 tracking-widest text-center"
+            className="w-full bg-muted border border-border/50 rounded-xl px-3 py-2 text-sm text-white placeholder-muted-foreground focus:outline-none focus:border-violet-500/60 tracking-widest text-center"
           />
           <input
             type="password"
@@ -74,12 +74,12 @@ export function PwaSecuritySettings({ lock }: PwaSecuritySettingsProps) {
             placeholder="Confirm PIN"
             value={confirmPin}
             onChange={(e) => { setConfirmPin(e.target.value.replace(/\D/g, "").slice(0, 4)); setError(""); }}
-            className="w-full bg-slate-800/60 border border-slate-700/50 rounded-xl px-3 py-2 text-sm text-white placeholder-slate-500 focus:outline-none focus:border-violet-500/60 tracking-widest text-center"
+            className="w-full bg-muted border border-border/50 rounded-xl px-3 py-2 text-sm text-white placeholder-muted-foreground focus:outline-none focus:border-violet-500/60 tracking-widest text-center"
           />
           {error && <p className="text-xs text-rose-400">{error}</p>}
           <div className="flex gap-2">
             <Button size="sm" variant="outline"
-              className="flex-1 text-xs border-slate-700 text-slate-300"
+              className="flex-1 text-xs border-border text-foreground"
               onClick={() => { setShowSetup(false); setNewPin(""); setConfirmPin(""); setError(""); }}>
               Cancel
             </Button>
@@ -93,7 +93,7 @@ export function PwaSecuritySettings({ lock }: PwaSecuritySettingsProps) {
       ) : (
         <div className="flex gap-2">
           <Button size="sm" variant="outline"
-            className="flex-1 text-xs border-slate-700 text-slate-300 hover:text-white gap-1.5"
+            className="flex-1 text-xs border-border text-foreground hover:text-white gap-1.5"
             onClick={() => setShowSetup(true)}>
             <Lock className="h-3 w-3" />
             {lock.hasPinSet ? "Change PIN" : "Set PIN"}
@@ -101,7 +101,7 @@ export function PwaSecuritySettings({ lock }: PwaSecuritySettingsProps) {
           {lock.hasPinSet && (
             <>
               <Button size="sm" variant="outline"
-                className="flex-1 text-xs border-slate-700 text-slate-300 hover:text-white gap-1.5"
+                className="flex-1 text-xs border-border text-foreground hover:text-white gap-1.5"
                 onClick={lock.lockNow}>
                 <Unlock className="h-3 w-3" />
                 Lock Now

@@ -11,19 +11,19 @@ export function InstallBanner() {
 
   return (
     <div className="fixed bottom-20 left-4 right-4 z-50 md:left-auto md:right-6 md:w-96">
-      <div className="bg-slate-900 border border-cyan-500/30 rounded-xl shadow-2xl p-4 flex items-start gap-3">
+      <div className="bg-card border border-cyan-500/30 rounded-xl shadow-2xl p-4 flex items-start gap-3">
         <div className="flex-shrink-0 w-10 h-10 rounded-lg bg-cyan-500/20 flex items-center justify-center">
           <Smartphone className="h-5 w-5 text-cyan-400" />
         </div>
         <div className="flex-1 min-w-0">
           <p className="text-sm font-semibold text-white">Install DPCO Portal</p>
-          <p className="text-xs text-slate-400 mt-0.5">
+          <p className="text-xs text-muted-foreground mt-0.5">
             Add to your home screen for quick access and offline support.
           </p>
           <div className="flex gap-2 mt-3">
             <Button
               size="sm"
-              className="h-7 text-xs bg-cyan-500 hover:bg-cyan-400 text-slate-900 font-semibold gap-1.5"
+              className="h-7 text-xs bg-cyan-500 hover:bg-cyan-400 text-foreground font-semibold gap-1.5"
               onClick={async () => {
                 const accepted = await install();
                 if (!accepted) setDismissed(true);
@@ -35,7 +35,7 @@ export function InstallBanner() {
             <Button
               size="sm"
               variant="ghost"
-              className="h-7 text-xs text-slate-400 hover:text-white"
+              className="h-7 text-xs text-muted-foreground hover:text-white"
               onClick={() => setDismissed(true)}
             >
               Not now
@@ -44,7 +44,7 @@ export function InstallBanner() {
         </div>
         <button
           onClick={() => setDismissed(true)}
-          className="flex-shrink-0 text-slate-500 hover:text-slate-300 transition-colors"
+          className="flex-shrink-0 text-muted-foreground hover:text-foreground transition-colors"
         >
           <X className="h-4 w-4" />
         </button>

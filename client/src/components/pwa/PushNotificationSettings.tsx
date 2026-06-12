@@ -14,12 +14,12 @@ export function PushNotificationSettings() {
 
   if (permission === "unsupported") {
     return (
-      <div className="bg-slate-900/60 border border-slate-800/50 rounded-2xl p-4">
+      <div className="bg-card border border-border rounded-2xl p-4">
         <div className="flex items-center gap-3 mb-2">
-          <BellOff className="h-5 w-5 text-slate-500" />
-          <p className="text-sm font-semibold text-slate-400">Push Notifications</p>
+          <BellOff className="h-5 w-5 text-muted-foreground" />
+          <p className="text-sm font-semibold text-muted-foreground">Push Notifications</p>
         </div>
-        <p className="text-xs text-slate-500">
+        <p className="text-xs text-muted-foreground">
           Push notifications are not supported in this browser. Use Chrome or Edge for the best
           experience.
         </p>
@@ -28,18 +28,18 @@ export function PushNotificationSettings() {
   }
 
   return (
-    <div className="bg-slate-900/60 border border-slate-800/50 rounded-2xl p-4 space-y-3">
+    <div className="bg-card border border-border rounded-2xl p-4 space-y-3">
       {/* Header */}
       <div className="flex items-center justify-between">
         <div className="flex items-center gap-3">
           {isSubscribed ? (
             <BellRing className="h-5 w-5 text-cyan-400" />
           ) : (
-            <Bell className="h-5 w-5 text-slate-400" />
+            <Bell className="h-5 w-5 text-muted-foreground" />
           )}
           <div>
             <p className="text-sm font-semibold text-white">Push Notifications</p>
-            <p className="text-[11px] text-slate-400">
+            <p className="text-[11px] text-muted-foreground">
               {isSubscribed
                 ? "Active — you'll receive overdue invoice and audit alerts"
                 : "Disabled — enable to receive real-time alerts"}
@@ -50,7 +50,7 @@ export function PushNotificationSettings() {
           {isSubscribed ? (
             <CheckCircle2 className="h-4 w-4 text-emerald-400" />
           ) : (
-            <XCircle className="h-4 w-4 text-slate-600" />
+            <XCircle className="h-4 w-4 text-muted-foreground" />
           )}
         </div>
       </div>
@@ -76,7 +76,7 @@ export function PushNotificationSettings() {
           ].map((item) => (
             <div key={item} className="flex items-center gap-2">
               <div className="w-1.5 h-1.5 rounded-full bg-cyan-500 flex-shrink-0" />
-              <p className="text-xs text-slate-300">{item}</p>
+              <p className="text-xs text-foreground">{item}</p>
             </div>
           ))}
         </div>
@@ -89,7 +89,7 @@ export function PushNotificationSettings() {
             <Button
               size="sm"
               variant="outline"
-              className="flex-1 text-xs border-slate-700 text-slate-300 hover:text-white gap-1.5"
+              className="flex-1 text-xs border-border text-foreground hover:text-white gap-1.5"
               onClick={sendTest}
               disabled={isLoading}
             >

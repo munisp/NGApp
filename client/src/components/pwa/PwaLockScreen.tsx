@@ -95,7 +95,7 @@ export function PwaLockScreen({ lock }: PwaLockScreenProps) {
   const dots = Array.from({ length: PIN_LENGTH }, (_, i) => i < currentPin.length);
 
   return (
-    <div className="fixed inset-0 z-[9999] bg-slate-950 flex flex-col items-center justify-center px-6">
+    <div className="fixed inset-0 z-[9999] bg-background flex flex-col items-center justify-center px-6">
       {/* Logo */}
       <div className="mb-8 flex flex-col items-center gap-3">
         <div className="w-16 h-16 rounded-2xl bg-gradient-to-br from-cyan-600 to-violet-700 flex items-center justify-center shadow-lg shadow-cyan-900/30">
@@ -103,7 +103,7 @@ export function PwaLockScreen({ lock }: PwaLockScreenProps) {
         </div>
         <div className="text-center">
           <p className="text-lg font-black text-white tracking-tight">NDSEP DPCO</p>
-          <p className="text-xs text-slate-400">
+          <p className="text-xs text-muted-foreground">
             {isSetup
               ? setupStep === "enter"
                 ? "Create a 4-digit PIN to secure your data"
@@ -121,7 +121,7 @@ export function PwaLockScreen({ lock }: PwaLockScreenProps) {
             className={`w-4 h-4 rounded-full border-2 transition-all duration-150 ${
               filled
                 ? "bg-cyan-400 border-cyan-400 scale-110"
-                : "bg-transparent border-slate-600"
+                : "bg-transparent border-border"
             }`}
           />
         ))}
@@ -154,7 +154,7 @@ export function PwaLockScreen({ lock }: PwaLockScreenProps) {
           <button
             key={n}
             onClick={() => handlePinDigit(String(n))}
-            className="h-14 rounded-2xl bg-slate-800/80 border border-slate-700/50 text-xl font-bold text-white hover:bg-slate-700/80 active:scale-95 transition-all"
+            className="h-14 rounded-2xl bg-card border border-border/50 text-xl font-bold text-white hover:bg-muted/80 active:scale-95 transition-all"
           >
             {n}
           </button>
@@ -162,19 +162,19 @@ export function PwaLockScreen({ lock }: PwaLockScreenProps) {
         {/* Bottom row: show/hide | 0 | delete */}
         <button
           onClick={() => setShowPin((v) => !v)}
-          className="h-14 rounded-2xl bg-slate-800/40 border border-slate-700/30 flex items-center justify-center text-slate-400 hover:text-white transition-colors"
+          className="h-14 rounded-2xl bg-muted/60 border border-border/30 flex items-center justify-center text-muted-foreground hover:text-white transition-colors"
         >
           {showPin ? <EyeOff className="h-5 w-5" /> : <Eye className="h-5 w-5" />}
         </button>
         <button
           onClick={() => handlePinDigit("0")}
-          className="h-14 rounded-2xl bg-slate-800/80 border border-slate-700/50 text-xl font-bold text-white hover:bg-slate-700/80 active:scale-95 transition-all"
+          className="h-14 rounded-2xl bg-card border border-border/50 text-xl font-bold text-white hover:bg-muted/80 active:scale-95 transition-all"
         >
           0
         </button>
         <button
           onClick={handleDelete}
-          className="h-14 rounded-2xl bg-slate-800/40 border border-slate-700/30 flex items-center justify-center text-slate-400 hover:text-white transition-colors"
+          className="h-14 rounded-2xl bg-muted/60 border border-border/30 flex items-center justify-center text-muted-foreground hover:text-white transition-colors"
         >
           <Delete className="h-5 w-5" />
         </button>
@@ -195,7 +195,7 @@ export function PwaLockScreen({ lock }: PwaLockScreenProps) {
         aria-label="PIN entry"
       />
 
-      <p className="text-[10px] text-slate-600 mt-8 text-center">
+      <p className="text-[10px] text-muted-foreground mt-8 text-center">
         Session locked after 5 minutes of inactivity
       </p>
     </div>

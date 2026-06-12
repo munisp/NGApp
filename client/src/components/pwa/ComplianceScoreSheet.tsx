@@ -43,12 +43,12 @@ function ScoreRow({
   type: "positive" | "negative" | "neutral";
   tip: string;
 }) {
-  const color = type === "positive" ? "text-emerald-400" : type === "negative" ? "text-rose-400" : "text-slate-400";
-  const bg = type === "positive" ? "bg-emerald-500/10" : type === "negative" ? "bg-rose-500/10" : "bg-slate-700/20";
+  const color = type === "positive" ? "text-emerald-400" : type === "negative" ? "text-rose-400" : "text-muted-foreground";
+  const bg = type === "positive" ? "bg-emerald-500/10" : type === "negative" ? "bg-rose-500/10" : "bg-muted/30";
   const sign = type === "positive" ? "+" : type === "negative" ? "−" : "";
 
   return (
-    <div className="flex items-start gap-3 py-3 border-b border-slate-800/60 last:border-0">
+    <div className="flex items-start gap-3 py-3 border-b border-border last:border-0">
       <div className={`w-8 h-8 rounded-lg ${bg} flex items-center justify-center flex-shrink-0`}>
         <Icon className={`h-4 w-4 ${color}`} />
       </div>
@@ -57,8 +57,8 @@ function ScoreRow({
           <p className="text-xs font-semibold text-white">{label}</p>
           <span className={`text-sm font-black ${color}`}>{sign}{Math.abs(contribution)} pts</span>
         </div>
-        <p className="text-[10px] text-slate-400 mt-0.5">{tip}</p>
-        <div className="mt-1.5 h-1 rounded-full bg-slate-700">
+        <p className="text-[10px] text-muted-foreground mt-0.5">{tip}</p>
+        <div className="mt-1.5 h-1 rounded-full bg-muted">
           <div
             className="h-1 rounded-full"
             style={{
@@ -100,36 +100,36 @@ export function ComplianceScoreSheet({ open, onClose, breakdown }: Props) {
   return (
     <>
       <div className="fixed inset-0 z-40 bg-black/60 backdrop-blur-sm" onClick={onClose} />
-      <div className="fixed bottom-0 left-0 right-0 z-50 max-w-lg mx-auto bg-slate-900 border border-slate-700/60 rounded-t-3xl shadow-2xl"
+      <div className="fixed bottom-0 left-0 right-0 z-50 max-w-lg mx-auto bg-card border border-border/60 rounded-t-3xl shadow-2xl"
         style={{ maxHeight: "88vh", overflowY: "auto" }}>
 
         {/* Handle */}
         <div className="flex justify-center pt-3 pb-1">
-          <div className="w-10 h-1 rounded-full bg-slate-600" />
+          <div className="w-10 h-1 rounded-full bg-muted" />
         </div>
 
         {/* Header */}
-        <div className="flex items-center justify-between px-5 pt-2 pb-4 border-b border-slate-800">
+        <div className="flex items-center justify-between px-5 pt-2 pb-4 border-b border-border">
           <div className="flex items-center gap-2.5">
             <Info className="h-4 w-4 text-cyan-400" />
             <p className="text-sm font-bold text-white">Compliance Score Breakdown</p>
           </div>
-          <button onClick={onClose} className="p-1.5 rounded-lg text-slate-400 hover:text-white hover:bg-slate-800 transition-colors">
+          <button onClick={onClose} className="p-1.5 rounded-lg text-muted-foreground hover:text-white hover:bg-card transition-colors">
             <X className="h-4 w-4" />
           </button>
         </div>
 
         <div className="px-5 py-4 space-y-5">
           {/* Score summary */}
-          <div className="bg-slate-800/60 rounded-2xl p-4 flex items-center gap-4">
+          <div className="bg-muted rounded-2xl p-4 flex items-center gap-4">
             <div className="w-16 h-16 rounded-full border-4 flex items-center justify-center flex-shrink-0"
               style={{ borderColor: color }}>
               <span className="text-xl font-black" style={{ color }}>{score}</span>
             </div>
             <div>
               <p className="text-base font-bold text-white">{label}</p>
-              <p className="text-xs text-slate-400 mt-0.5">Your DPCO compliance health score</p>
-              <p className="text-[10px] text-slate-500 mt-1">
+              <p className="text-xs text-muted-foreground mt-0.5">Your DPCO compliance health score</p>
+              <p className="text-[10px] text-muted-foreground mt-1">
                 Score = {base} (base) {clientBonus > 0 ? `+ ${clientBonus} (clients)` : ""}{trainingBonus > 0 ? ` + ${trainingBonus} (training)` : ""}{penaltyDeduction > 0 ? ` − ${penaltyDeduction} (pending CARs)` : ""}{overdueDeduction > 0 ? ` − ${overdueDeduction} (overdue invoices)` : ""}
               </p>
             </div>
@@ -137,8 +137,8 @@ export function ComplianceScoreSheet({ open, onClose, breakdown }: Props) {
 
           {/* Formula explanation */}
           <div>
-            <p className="text-xs font-bold text-slate-400 uppercase tracking-wider mb-1">How It's Calculated</p>
-            <div className="bg-slate-800/40 rounded-xl px-4 py-3 text-xs text-slate-300 font-mono leading-relaxed">
+            <p className="text-xs font-bold text-muted-foreground uppercase tracking-wider mb-1">How It's Calculated</p>
+            <div className="bg-muted/60 rounded-xl px-4 py-3 text-xs text-foreground font-mono leading-relaxed">
               score = 50 (base)<br />
               &nbsp;&nbsp;+ min(activeClients × 2, 20)<br />
               &nbsp;&nbsp;+ min(trainingSessions × 3, 15)<br />
@@ -150,7 +150,7 @@ export function ComplianceScoreSheet({ open, onClose, breakdown }: Props) {
 
           {/* Breakdown rows */}
           <div>
-            <p className="text-xs font-bold text-slate-400 uppercase tracking-wider mb-1">Your Factors</p>
+            <p className="text-xs font-bold text-muted-foreground uppercase tracking-wider mb-1">Your Factors</p>
             <ScoreRow
               icon={CheckCircle2}
               label="Base Score"
