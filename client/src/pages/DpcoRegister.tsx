@@ -214,14 +214,14 @@ export default function DpcoRegister() {
                       ? "bg-cyan-500/20 border border-cyan-500/60 text-cyan-300"
                       : isDone
                       ? "bg-green-500/20 border border-green-500/40 text-green-400"
-                      : "bg-card/60 border border-border text-slate-500"
+                      : "bg-card/60 border border-border text-muted-foreground"
                   }`}
                 >
                   <Icon className="w-3.5 h-3.5" />
                   <span>{s.label}</span>
                 </div>
                 {i < STEPS.length - 1 && (
-                  <ChevronRight className="w-3 h-3 text-slate-600" />
+                  <ChevronRight className="w-3 h-3 text-muted-foreground" />
                 )}
               </div>
             );
@@ -353,7 +353,7 @@ export default function DpcoRegister() {
               </h2>
               <div>
                 <Label className="text-muted-foreground mb-3 block">
-                  Services Offered * <span className="text-slate-500 text-xs">(select all that apply)</span>
+                  Services Offered * <span className="text-muted-foreground text-xs">(select all that apply)</span>
                 </Label>
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
                   {DPCO_SERVICES.map((svc) => (
@@ -412,17 +412,17 @@ export default function DpcoRegister() {
               <div className="bg-card/40 border border-border rounded-lg p-5 space-y-3 text-sm text-muted-foreground leading-relaxed">
                 <p className="font-semibold text-foreground">Application Summary</p>
                 <div className="grid grid-cols-2 gap-2 text-xs">
-                  <span className="text-slate-500">Organisation:</span>
+                  <span className="text-muted-foreground">Organisation:</span>
                   <span>{form.name}</span>
-                  <span className="text-slate-500">Email:</span>
+                  <span className="text-muted-foreground">Email:</span>
                   <span>{form.email}</span>
-                  <span className="text-slate-500">CAC Number:</span>
+                  <span className="text-muted-foreground">CAC Number:</span>
                   <span>{form.cacNumber}</span>
-                  <span className="text-slate-500">State:</span>
+                  <span className="text-muted-foreground">State:</span>
                   <span>{form.state}</span>
-                  <span className="text-slate-500">Services:</span>
+                  <span className="text-muted-foreground">Services:</span>
                   <span>{form.services.length} selected</span>
-                  <span className="text-slate-500">Contact:</span>
+                  <span className="text-muted-foreground">Contact:</span>
                   <span>{form.contactPersonName}</span>
                 </div>
               </div>
@@ -465,9 +465,9 @@ export default function DpcoRegister() {
                 <p className="text-muted-foreground max-w-md mx-auto">{result.message}</p>
               </div>
               <div className="bg-card/60 border border-border rounded-lg p-5 inline-block text-left">
-                <p className="text-xs text-slate-500 mb-1">Provisional Licence Reference</p>
+                <p className="text-xs text-muted-foreground mb-1">Provisional Licence Reference</p>
                 <p className="font-mono text-cyan-300 text-lg font-bold">{result.provisionalLicence}</p>
-                <p className="text-xs text-slate-500 mt-2">Keep this reference for your records</p>
+                <p className="text-xs text-muted-foreground mt-2">Keep this reference for your records</p>
               </div>
               <div className="flex items-center justify-center gap-3 pt-2">
                 <Button

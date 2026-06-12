@@ -731,7 +731,7 @@ function PolicyEngineTab() {
                       <span className="font-medium text-sm">{p.name as string}</span>
                     </div>
                     <div className="flex items-center gap-2">
-                      <Badge className={`text-xs ${(p.status as string) === "enforced" ? "bg-green-500/20 text-green-400" : (p.status as string) === "proposed" ? "bg-amber-500/20 text-amber-400" : "bg-gray-500/20 text-gray-400"}`}>
+                      <Badge className={`text-xs ${(p.status as string) === "enforced" ? "bg-green-500/20 text-green-400" : (p.status as string) === "proposed" ? "bg-amber-500/20 text-amber-400" : "bg-muted text-muted-foreground"}`}>
                         {p.status as string}
                       </Badge>
                       <Badge variant="secondary" className="text-xs">{p.category as string}</Badge>
@@ -965,7 +965,7 @@ function SandboxTab() {
                   <CardContent className="pt-3 pb-2 px-4">
                     <div className="flex items-center justify-between">
                       <span className="font-medium">{sb.name as string}</span>
-                      <Badge className={`text-xs ${(sb.status as string) === "active" ? "bg-green-500/20 text-green-400" : "bg-gray-500/20 text-gray-400"}`}>
+                      <Badge className={`text-xs ${(sb.status as string) === "active" ? "bg-green-500/20 text-green-400" : "bg-muted text-muted-foreground"}`}>
                         {sb.status as string}
                       </Badge>
                     </div>
