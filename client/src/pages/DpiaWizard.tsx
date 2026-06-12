@@ -237,7 +237,7 @@ export default function DpiaWizard() {
                   <div key={i} className="flex items-center gap-2 bg-card rounded-lg px-3 py-2 text-sm">
                     <AlertTriangle className="w-3.5 h-3.5 text-orange-400 flex-shrink-0" />
                     <span className="text-muted-foreground flex-1">{rf.factor ?? rf}</span>
-                    <button onClick={() => setForm(p => ({ ...p, riskFactors: p.riskFactors.filter((_, j) => j !== i) }))} className="text-muted-foreground hover:text-red-400"><X className="w-3.5 h-3.5" /></button>
+                    <button aria-label="Remove" onClick={() => setForm(p => ({ ...p, riskFactors: p.riskFactors.filter((_, j) => j !== i) }))} className="text-muted-foreground hover:text-red-400"><X className="w-3.5 h-3.5" /></button>
                   </div>
                 ))}
               </div>
@@ -253,7 +253,7 @@ export default function DpiaWizard() {
                   <div key={i} className="flex items-center gap-2 bg-card rounded-lg px-3 py-2 text-sm">
                     <CheckCircle2 className="w-3.5 h-3.5 text-green-400 flex-shrink-0" />
                     <span className="text-muted-foreground flex-1">{m.action ?? m}</span>
-                    <button onClick={() => setForm(p => ({ ...p, mitigations: p.mitigations.filter((_, j) => j !== i) }))} className="text-muted-foreground hover:text-red-400"><X className="w-3.5 h-3.5" /></button>
+                    <button aria-label="Remove" onClick={() => setForm(p => ({ ...p, mitigations: p.mitigations.filter((_, j) => j !== i) }))} className="text-muted-foreground hover:text-red-400"><X className="w-3.5 h-3.5" /></button>
                   </div>
                 ))}
               </div>

@@ -301,15 +301,15 @@ export default function Organizations() {
                     <td className="px-4 py-2.5 mono">{Number(org.openViolations ?? 0)}</td>
                     <td className="px-4 py-2.5">
                       <div className="flex items-center gap-1">
-                        <button onClick={() => setCaseHistoryOrg(org)} title="View Case History" className="p-1 rounded hover:bg-orange-500/10 text-muted-foreground hover:text-orange-500 transition-colors"><Gavel className="h-3 w-3" /></button>
+                        <button aria-label="View cases" onClick={() => setCaseHistoryOrg(org)} title="View Case History" className="p-1 rounded hover:bg-orange-500/10 text-muted-foreground hover:text-orange-500 transition-colors"><Gavel className="h-3 w-3" /></button>
                         <a href={`/audit-log?resourceId=${org.id}&resourceType=organization`} title="View Audit Trail" className="p-1 rounded hover:bg-blue-500/10 text-muted-foreground hover:text-blue-500 transition-colors"><FileSearch className="h-3 w-3" /></a>
                         <a href={`/trends/${org.id}`} title="View 90-day Compliance Trend" className="p-1 rounded hover:bg-green-500/10 text-muted-foreground hover:text-green-500 transition-colors"><TrendingUp className="h-3 w-3" /></a>
                         {(org as any).contactEmail && (
                           <a href={`mailto:${(org as any).contactEmail}`} title={`Email DPO: ${(org as any).contactEmail}`} className="p-1 rounded hover:bg-emerald-500/10 text-muted-foreground hover:text-emerald-500 transition-colors"><Mail className="h-3 w-3" /></a>
                         )}
                         {isAdmin && (<>
-                          <button onClick={() => openEdit(org)} className="p-1 rounded hover:bg-muted/60 text-muted-foreground hover:text-foreground transition-colors"><Pencil className="h-3 w-3" /></button>
-                          <button onClick={() => setDeleteOrg(org)} className="p-1 rounded hover:bg-red-500/10 text-muted-foreground hover:text-red-500 transition-colors"><Trash2 className="h-3 w-3" /></button>
+                          <button aria-label="Edit" onClick={() => openEdit(org)} className="p-1 rounded hover:bg-muted/60 text-muted-foreground hover:text-foreground transition-colors"><Pencil className="h-3 w-3" /></button>
+                          <button aria-label="Delete" onClick={() => setDeleteOrg(org)} className="p-1 rounded hover:bg-red-500/10 text-muted-foreground hover:text-red-500 transition-colors"><Trash2 className="h-3 w-3" /></button>
                         </>)}
                       </div>
                     </td>

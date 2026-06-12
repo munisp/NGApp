@@ -85,7 +85,7 @@ export default function MultiOrgTrendCompare() {
                 <Badge key={id} style={{ backgroundColor: COLORS[i] + "20", color: COLORS[i], borderColor: COLORS[i] }} className="border gap-1 px-3 py-1">
                   <span className="w-2 h-2 rounded-full inline-block mr-1" style={{ backgroundColor: COLORS[i] }} />
                   {getOrgName(id)}
-                  <button onClick={() => removeOrg(id)} className="ml-1 hover:opacity-70">
+                  <button aria-label="Remove" onClick={() => removeOrg(id)} className="ml-1 hover:opacity-70">
                     <X className="h-3 w-3" />
                   </button>
                 </Badge>

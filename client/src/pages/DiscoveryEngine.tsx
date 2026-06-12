@@ -291,8 +291,8 @@ export default function DiscoveryEngine() {
                           <a href={`/audit-log?resourceId=${asset.id}&resourceType=asset`} title="View Audit Trail" className="p-1 rounded hover:bg-muted/60 text-muted-foreground hover:text-foreground transition-colors"><FileSearch className="h-3 w-3" /></a>
                           {isAdmin && (
                             <>
-                              <button onClick={() => { setAssetForm({ name: asset.name, assetType: asset.assetType ?? "", organizationId: String(asset.organizationId ?? ""), ipAddress: asset.ipAddress ?? "", hostname: asset.hostname ?? "", location: asset.location ?? "", isWithinBorders: asset.isWithinBorders ?? true, status: asset.status }); setEditAsset(asset); }} className="p-1 rounded hover:bg-muted/60 text-muted-foreground hover:text-foreground transition-colors"><Pencil className="h-3 w-3" /></button>
-                              <button onClick={() => setDeleteAsset(asset)} className="p-1 rounded hover:bg-red-500/10 text-muted-foreground hover:text-red-500 transition-colors"><Trash2 className="h-3 w-3" /></button>
+                              <button aria-label="Edit" onClick={() => { setAssetForm({ name: asset.name, assetType: asset.assetType ?? "", organizationId: String(asset.organizationId ?? ""), ipAddress: asset.ipAddress ?? "", hostname: asset.hostname ?? "", location: asset.location ?? "", isWithinBorders: asset.isWithinBorders ?? true, status: asset.status }); setEditAsset(asset); }} className="p-1 rounded hover:bg-muted/60 text-muted-foreground hover:text-foreground transition-colors"><Pencil className="h-3 w-3" /></button>
+                              <button aria-label="Delete" onClick={() => setDeleteAsset(asset)} className="p-1 rounded hover:bg-red-500/10 text-muted-foreground hover:text-red-500 transition-colors"><Trash2 className="h-3 w-3" /></button>
                             </>
                           )}
                         </div>

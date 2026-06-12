@@ -27,8 +27,8 @@ function EditableText({
               onKeyDown={e => { if (e.key === "Enter") save(); if (e.key === "Escape") cancel(); }} />
         }
         <span className="flex gap-1">
-          <button onClick={save} className="text-emerald-400 hover:text-emerald-300 text-xs flex items-center gap-0.5"><Check className="w-3 h-3" />Save</button>
-          <button onClick={cancel} className="text-muted-foreground hover:text-muted-foreground text-xs flex items-center gap-0.5"><X className="w-3 h-3" />Cancel</button>
+          <button aria-label="Remove" onClick={save} className="text-emerald-400 hover:text-emerald-300 text-xs flex items-center gap-0.5"><Check className="w-3 h-3" />Save</button>
+          <button onClick={cancel} className="text-muted-foreground hover:text-muted-foreground text-xs flex items-center gap-0.5" aria-label="Remove"><X className="w-3 h-3" />Cancel</button>
         </span>
       </span>
     );

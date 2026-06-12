@@ -123,7 +123,7 @@ export default function AiGovernanceScoring() {
                 {form.useCases.map((uc, i) => (
                   <span key={i} className="bg-card border border-border text-muted-foreground text-xs px-2 py-1 rounded-full flex items-center gap-1">
                     {uc}
-                    <button type="button" onClick={() => setForm(p => ({ ...p, useCases: p.useCases.filter((_, j) => j !== i) }))} className="text-muted-foreground hover:text-red-400"><XCircle className="w-3 h-3" /></button>
+                    <button aria-label="Close" type="button" onClick={() => setForm(p => ({ ...p, useCases: p.useCases.filter((_, j) => j !== i) }))} className="text-muted-foreground hover:text-red-400"><XCircle className="w-3 h-3" /></button>
                   </span>
                 ))}
               </div>

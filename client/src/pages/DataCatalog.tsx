@@ -280,8 +280,8 @@ export default function DataCatalog() {
                         <a href={`/audit-log?resourceId=${entry.id}&resourceType=catalog_entry`} title="View Audit Trail" className="p-1 rounded hover:bg-muted/60 text-muted-foreground hover:text-foreground transition-colors"><FileSearch className="h-3 w-3" /></a>
                         {isAdmin && (
                           <>
-                            <button onClick={() => { setForm({ name: entry.name, classification: entry.classification ?? "", format: entry.format ?? "", storageLocation: entry.storageLocation ?? "", description: entry.description ?? "" }); setEditEntry(entry); }} className="p-1 rounded hover:bg-muted/60 text-muted-foreground hover:text-foreground transition-colors"><Pencil className="h-3 w-3" /></button>
-                            <button onClick={() => setDeleteEntry(entry)} className="p-1 rounded hover:bg-red-500/10 text-muted-foreground hover:text-red-500 transition-colors"><Trash2 className="h-3 w-3" /></button>
+                            <button aria-label="Edit" onClick={() => { setForm({ name: entry.name, classification: entry.classification ?? "", format: entry.format ?? "", storageLocation: entry.storageLocation ?? "", description: entry.description ?? "" }); setEditEntry(entry); }} className="p-1 rounded hover:bg-muted/60 text-muted-foreground hover:text-foreground transition-colors"><Pencil className="h-3 w-3" /></button>
+                            <button aria-label="Delete" onClick={() => setDeleteEntry(entry)} className="p-1 rounded hover:bg-red-500/10 text-muted-foreground hover:text-red-500 transition-colors"><Trash2 className="h-3 w-3" /></button>
                           </>
                         )}
                       </div>
