@@ -107,7 +107,7 @@ export default function Phase13PenaltyCalculator() {
                 <div className="flex flex-wrap gap-2">
                   {AGGRAVATING_FACTORS.map(f => (
                     <button key={f} type="button"
-                      className={`text-xs px-2 py-1 rounded border transition-colors ${form.aggravating_factors.includes(f) ? "bg-red-100 border-red-400 text-red-700 dark:bg-red-950/40" : "border-border text-muted-foreground hover:border-red-500/30"}`}
+                      className={`text-xs px-2 py-1 rounded border transition-colors ${form.aggravating_factors.includes(f) ? "bg-red-500/15 border-red-500/30 text-red-600 dark:text-red-400" : "border-border text-muted-foreground hover:border-red-500/30"}`}
                       onClick={() => toggleFactor(form.aggravating_factors, f, v => setForm(prev => ({ ...prev, aggravating_factors: v })))}>
                       {f.replace(/_/g, " ")}
                     </button>
@@ -120,7 +120,7 @@ export default function Phase13PenaltyCalculator() {
                 <div className="flex flex-wrap gap-2">
                   {MITIGATING_FACTORS.map(f => (
                     <button key={f} type="button"
-                      className={`text-xs px-2 py-1 rounded border transition-colors ${form.mitigating_factors.includes(f) ? "bg-green-100 border-green-400 text-green-700 dark:bg-green-950/40" : "border-border text-muted-foreground hover:border-green-500/30"}`}
+                      className={`text-xs px-2 py-1 rounded border transition-colors ${form.mitigating_factors.includes(f) ? "bg-green-500/15 border-green-500/30 text-green-600 dark:text-green-400" : "border-border text-muted-foreground hover:border-green-500/30"}`}
                       onClick={() => toggleFactor(form.mitigating_factors, f, v => setForm(prev => ({ ...prev, mitigating_factors: v })))}>
                       {f.replace(/_/g, " ")}
                     </button>
