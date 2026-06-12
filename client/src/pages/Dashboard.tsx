@@ -161,6 +161,8 @@ export default function Dashboard() {
   ] : [];
 
   const topRiskOrgs = mlPredictions?.slice(0, 5) ?? [];
+  // ── Intel Aggregator — Cross-platform threat intelligence feed ──────────────
+  const { data: intelSummary } = trpc.intelAggregator.summary.useQuery(undefined, { refetchInterval: 60_000 });
   const { data: orchStatus } = trpc.orchestration.status.useQuery(undefined, { refetchInterval: 30000 });
   const orchServices: Array<{ name: string; status: string; latencyMs?: number }> = (orchStatus as any)?.services ?? [];
   const orchHealthy = orchServices.filter(s => s.status === "healthy").length;
@@ -323,6 +325,59 @@ export default function Dashboard() {
           <MetricCard label="Fraud Alerts (live)" value={liveFraudCount.toLocaleString()} sub="ML-flagged transactions" icon={AlertTriangle} trend={liveFraudCount > 0 ? "down" : "neutral"} />
         </div>
       </div>
+
+      {/* ── Intelligence Platform Status — Cross-platform data flow ── */}
+      {intelSummary && (
+        <Card className="modern-card border-primary/20">
+          <CardHeader className="pb-2">
+            <div className="flex items-center justify-between">
+              <div className="flex items-center gap-2">
+                <Shield className="h-4 w-4 text-primary" />
+                <CardTitle className="text-sm font-semibold">Intelligence Platform Status</CardTitle>
+                <Badge variant="outline" className="text-xs mono">{intelSummary.totalThreats} threats</Badge>
+                {intelSummary.criticalThreats > 0 && (
+                  <Badge variant="destructive" className="text-xs mono">{intelSummary.criticalThreats} critical</Badge>
+                )}
+              </div>
+              <div className="flex items-center gap-2">
+                <span className="data-label">{intelSummary.activeInvestigations} active investigations</span>
+                <Link href="/threat-intelligence" className="text-xs text-primary hover:underline mono">View All →</Link>
+              </div>
+            </div>
+          </CardHeader>
+          <CardContent>
+            <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-3">
+              {intelSummary.platforms.map((p: any) => (
+                <div key={p.name} className="flex items-center gap-2 p-2 rounded-lg border border-border/50 bg-card/50">
+                  <span className={`h-2 w-2 rounded-full shrink-0 ${p.status === "online" ? "bg-green-500" : p.status === "degraded" ? "bg-yellow-500" : "bg-red-500"}`} />
+                  <div className="min-w-0">
+                    <p className="text-xs font-medium text-foreground truncate">{p.name}</p>
+                    <p className="text-xs text-muted-foreground mono">{p.alertCount} alerts{p.criticalCount > 0 ? ` · ${p.criticalCount} crit` : ""}</p>
+                  </div>
+                </div>
+              ))}
+            </div>
+            {/* Recent cross-platform alerts */}
+            {intelSummary.recentAlerts.length > 0 && (
+              <div className="mt-3 pt-3 border-t border-border/30">
+                <div className="flex items-center gap-2 mb-2">
+                  <span className="data-label">Recent Intelligence Alerts</span>
+                </div>
+                <div className="space-y-1.5 max-h-32 overflow-y-auto">
+                  {intelSummary.recentAlerts.slice(0, 5).map((alert: any) => (
+                    <div key={alert.id} className="flex items-center gap-2 text-xs">
+                      <Badge variant={alert.severity === "critical" ? "destructive" : "outline"} className="text-xs shrink-0 w-14 justify-center">{alert.severity}</Badge>
+                      <span className="text-muted-foreground mono shrink-0">[{alert.source}]</span>
+                      <span className="text-foreground truncate">{alert.title}</span>
+                      {alert.affectsCompliance && <Badge variant="outline" className="text-xs border-yellow-500/40 text-yellow-500 shrink-0">COMPLIANCE</Badge>}
+                    </div>
+                  ))}
+                </div>
+              </div>
+            )}
+          </CardContent>
+        </Card>
+      )}
 
       {/* Charts Row */}
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-4">

@@ -13,6 +13,7 @@ export default function SecurityDashboard() {
   const score = trpc.securityAudit.getScore.useQuery();
   const findings = trpc.securityAudit.getFindings.useQuery();
   const latest = trpc.securityAudit.getLatest.useQuery();
+  const { data: intelCompliance } = trpc.intelAggregator.enrichCompliance.useQuery(undefined, { refetchInterval: 120_000 });
 
   const isLoading = score.isLoading || findings.isLoading;
   const error = score.error || findings.error;
@@ -58,6 +59,50 @@ export default function SecurityDashboard() {
           </Card>
         ))}
       </div>
+
+      {/* Wazuh SIEM Integration — NDPA Compliance from live monitoring */}
+      {intelCompliance && (
+        <Card className="border-l-4 border-l-blue-500/60">
+          <CardHeader className="pb-2">
+            <CardTitle className="text-sm flex items-center gap-2">
+              <Lock className="h-4 w-4 text-blue-500" />
+              Wazuh SIEM — NDPA Endpoint Compliance
+            </CardTitle>
+          </CardHeader>
+          <CardContent>
+            <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+              <div className="text-center">
+                <p className={`text-2xl font-bold ${intelCompliance.ndpaScore >= 80 ? "text-green-600" : intelCompliance.ndpaScore >= 60 ? "text-yellow-600" : "text-red-600"}`}>
+                  {intelCompliance.ndpaScore}%
+                </p>
+                <p className="text-xs text-muted-foreground">NDPA Score</p>
+              </div>
+              <div className="text-center">
+                <p className="text-2xl font-bold text-foreground">{intelCompliance.monitoredEndpoints}</p>
+                <p className="text-xs text-muted-foreground">Monitored Endpoints</p>
+              </div>
+              <div className="text-center">
+                <p className="text-2xl font-bold text-foreground">{intelCompliance.openVulnerabilities}</p>
+                <p className="text-xs text-muted-foreground">Open Vulnerabilities</p>
+              </div>
+              <div className="text-center">
+                <p className="text-2xl font-bold text-red-600">{intelCompliance.complianceGaps.length}</p>
+                <p className="text-xs text-muted-foreground">Compliance Gaps</p>
+              </div>
+            </div>
+            {intelCompliance.complianceGaps.length > 0 && (
+              <div className="mt-3 pt-3 border-t border-border/30">
+                <p className="text-xs font-medium text-muted-foreground mb-2">Compliance Gaps (from Wazuh NDPA audit)</p>
+                <div className="flex flex-wrap gap-1.5">
+                  {intelCompliance.complianceGaps.slice(0, 6).map((gap: string, i: number) => (
+                    <Badge key={i} variant="outline" className="text-xs">{gap}</Badge>
+                  ))}
+                </div>
+              </div>
+            )}
+          </CardContent>
+        </Card>
+      )}
 
       {/* Security Findings Table */}
       <Card>

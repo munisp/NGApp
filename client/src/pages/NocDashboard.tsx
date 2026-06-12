@@ -46,6 +46,7 @@ const statusColor: Record<string, string> = {
 function OverviewTab() {
   const { data: dashboard } = trpc.noc.dashboard.useQuery();
   const { data: alertStats } = trpc.noc.alertStats.useQuery();
+  const { data: intelFeed } = trpc.intelAggregator.nocFeed.useQuery(undefined, { refetchInterval: 60_000 });
   const stats = val<Record<string, number>>(alertStats);
   const dboard = val<Record<string, unknown>>(dashboard);
 
@@ -123,6 +124,52 @@ function OverviewTab() {
           ) : <Loader2 className="w-4 h-4 animate-spin text-muted-foreground" />}
         </CardContent>
       </Card>
+
+      {/* Cross-Platform Threat Intelligence Feed */}
+      {intelFeed && (
+        <Card className="bg-card border-border border-l-4 border-l-primary/60">
+          <CardHeader className="pb-2">
+            <div className="flex items-center justify-between">
+              <CardTitle className="text-sm flex items-center gap-2">
+                <Shield className="h-4 w-4 text-primary" />
+                Cross-Platform Threat Feed
+                <Badge variant="outline" className="text-xs mono ml-2">{intelFeed.totalAlerts} total</Badge>
+              </CardTitle>
+              <div className="flex items-center gap-2">
+                {Object.entries(intelFeed.bySeverity).map(([sev, count]) => (
+                  count > 0 ? <Badge key={sev} variant={sev === "critical" ? "destructive" : "outline"} className="text-xs mono">{count} {sev}</Badge> : null
+                ))}
+              </div>
+            </div>
+          </CardHeader>
+          <CardContent>
+            <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-2 mb-3">
+              {Object.entries(intelFeed.bySource).map(([source, count]) => (
+                <div key={source} className="flex items-center gap-1.5 p-2 rounded bg-muted/40 text-xs">
+                  <span className="h-2 w-2 rounded-full bg-primary shrink-0" />
+                  <span className="text-foreground font-medium">{source.replace("_", " ")}</span>
+                  <span className="text-muted-foreground ml-auto mono">{count as number}</span>
+                </div>
+              ))}
+            </div>
+            {/* Correlations */}
+            {intelFeed.correlations.length > 0 && (
+              <div className="space-y-2 pt-2 border-t border-border/30">
+                <p className="text-xs font-medium text-foreground">Threat Correlations</p>
+                {intelFeed.correlations.slice(0, 3).map((c: any) => (
+                  <div key={c.id} className="flex items-start gap-2 p-2 rounded bg-destructive/5 border border-destructive/20">
+                    <Badge variant="destructive" className="text-xs shrink-0 mt-0.5">{c.severity}</Badge>
+                    <div className="min-w-0">
+                      <p className="text-xs font-medium text-foreground">{c.title}</p>
+                      <p className="text-xs text-muted-foreground">Sources: {c.sources.join(", ")} · Sectors: {c.affectedSectors.join(", ")}</p>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            )}
+          </CardContent>
+        </Card>
+      )}
     </div>
   );
 }

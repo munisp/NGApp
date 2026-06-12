@@ -604,14 +604,20 @@ const watchlistRouter = router({
       const osirisResult = await enrichedSanctionsCheck(input.name, input.nationality?.slice(0, 2)).catch(() => null);
       const osirisMatches = osirisResult?.matches ?? [];
       const conflictRisk = osirisResult?.riskLevel ?? "none";
-      emitMutationEvent(EVENTS.KYC_VERIFICATION, { action: "watchlist_screened", osirisHits: osirisMatches.length, conflictRisk, ts: new Date().toISOString() }).catch((e: unknown) => logger.debug({ err: e instanceof Error ? e.message : String(e) }, "fire-and-forget failed"));
+      // Cross-reference with Phantom Tide maritime sanctions
+      const { enrichBankingWithMaritime } = await import("../intelAggregator");
+      const maritimeEnrich = await enrichBankingWithMaritime(input.name).catch(() => ({ sanctionMatches: [], vesselLinks: [], maritimeRiskLevel: "none" as const }));
+      emitMutationEvent(EVENTS.KYC_VERIFICATION, { action: "watchlist_screened", osirisHits: osirisMatches.length, conflictRisk, maritimeHits: maritimeEnrich.sanctionMatches.length, ts: new Date().toISOString() }).catch((e: unknown) => logger.debug({ err: e instanceof Error ? e.message : String(e) }, "fire-and-forget failed"));
       return {
         matches,
         osirisMatches: osirisMatches.slice(0, 10),
         conflictRisk,
         recommendation: osirisResult?.recommendation ?? null,
         screeningRef: genRef("SCR"),
-        matchCount: matches.length + osirisMatches.length,
+        matchCount: matches.length + osirisMatches.length + maritimeEnrich.sanctionMatches.length,
+        maritimeSanctions: maritimeEnrich.sanctionMatches.slice(0, 5),
+        maritimeRiskLevel: maritimeEnrich.maritimeRiskLevel,
+        vesselLinks: maritimeEnrich.vesselLinks,
       };
     }),
 

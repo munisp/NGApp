@@ -257,6 +257,7 @@ import { phantomTideRouter } from "./routers/phantomTide";
 import { wazuhRouter } from "./routers/wazuh";
 import { sigintRouter } from "./routers/sigint";
 import { estoridesRouter } from "./routers/estorides";
+import { getIntelSummary, getCrossplatformCorrelations, getNocThreatFeed, enrichBankingWithMaritime, enrichComplianceWithSiem } from "./intelAggregator";
 import { logger } from "./logger";
 
 export const appRouter = router({
@@ -295,6 +296,15 @@ export const appRouter = router({
   wazuh: wazuhRouter,
   sigint: sigintRouter,
   estorides: estoridesRouter,
+  intelAggregator: router({
+    summary: protectedProcedure.query(async () => getIntelSummary()),
+    correlations: protectedProcedure.query(async () => getCrossplatformCorrelations()),
+    nocFeed: protectedProcedure.query(async () => getNocThreatFeed()),
+    enrichBanking: protectedProcedure
+      .input(z.object({ entityName: z.string() }))
+      .query(async ({ input }) => enrichBankingWithMaritime(input.entityName)),
+    enrichCompliance: protectedProcedure.query(async () => enrichComplianceWithSiem()),
+  }),
   tiaAssessments: tiaAssessmentsRouter,
   transferImpact: transferImpactRouter,
   system: systemRouter,
