@@ -5,6 +5,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Activity, RefreshCw, Shield, AlertTriangle } from "lucide-react";
+import { Breadcrumbs } from "@/components/Breadcrumbs";
 
 export default function Phase13RateLimitDashboard() {
   const [hours, setHours] = useState(24);

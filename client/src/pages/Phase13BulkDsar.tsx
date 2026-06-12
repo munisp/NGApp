@@ -8,6 +8,7 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from 
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { toast } from "sonner";
 import { Users, Plus, Play, XCircle, ChevronLeft, ChevronRight } from "lucide-react";
+import { Breadcrumbs } from "@/components/Breadcrumbs";
 
 type JobType = "data_export" | "erasure" | "portability" | "consent_withdrawal" | "rectification";
 

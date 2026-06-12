@@ -9,6 +9,7 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from 
 import { Label } from "@/components/ui/label";
 import { toast } from "sonner";
 import { Plus, Search, FileText, AlertTriangle, CheckCircle, Clock } from "lucide-react";
+import { Breadcrumbs } from "@/components/Breadcrumbs";
 
 const STATUS_COLORS: Record<string, string> = {
   draft: "bg-muted text-foreground",
@@ -62,6 +63,8 @@ export default function CbnReports() {
 
   return (
     <div className="p-6 space-y-6">
+      <Breadcrumbs items={[{ label: "Banking", href: "/banking" }, { label: "CBN Reports" }]} />
+
       <div className="flex items-center justify-between">
         <div>
           <h1 className="text-2xl font-bold text-foreground">CBN Regulatory Reports</h1>

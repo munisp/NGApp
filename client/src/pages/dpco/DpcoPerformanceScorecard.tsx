@@ -4,6 +4,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { useState } from "react";
 import { Star, TrendingUp, Clock, CheckCircle2, AlertTriangle, Search, Award, BarChart3, Activity, Loader2 } from "lucide-react";
+import { Breadcrumbs } from "@/components/Breadcrumbs";
 
 type DpcoRow = {
   id: number;
@@ -28,6 +29,8 @@ function ScoreBadge({ score }: { score: number }) {
 function StarRating({ value }: { value: number }) {
   return (
     <div className="flex items-center gap-0.5">
+      <Breadcrumbs items={[{ label: "DPCO Portal", href: "/dpco" }, { label: "Performance Scorecard" }]} />
+
       {[1, 2, 3, 4, 5].map(i => (
         <Star
           key={i}
@@ -99,7 +102,7 @@ export default function DpcoPerformanceScorecard() {
       <div className="bg-background border-b border-border px-6 py-4">
         <div className="flex items-center justify-between">
           <div>
-            <h1 className="text-lg font-semibold text-foreground flex items-center gap-2">
+            <h1 className="text-2xl font-bold flex items-center gap-2">
               <Award className="w-5 h-5 text-amber-500" />
               DPCO Performance Scorecard
             </h1>

@@ -59,6 +59,7 @@ import {
   Mail,
   ExternalLink,
 } from "lucide-react";
+import { Breadcrumbs } from "@/components/Breadcrumbs";
 
 // Demo DPCO org ID — in production this comes from auth context
 const DEMO_DPCO_ORG_ID = 1;
@@ -531,6 +532,8 @@ export default function DpcoBilling() {  const [period, setPeriod] = useState<"7
 
   return (
     <div className="p-6 space-y-6">
+      <Breadcrumbs items={[{ label: "DPCO Portal", href: "/dpco" }, { label: "Billing" }]} />
+
       {/* Header */}
       <div className="flex items-center justify-between">
         <div>

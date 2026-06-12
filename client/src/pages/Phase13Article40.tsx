@@ -8,6 +8,7 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from 
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { toast } from "sonner";
 import { FileText, Plus, Search, CheckCircle, XCircle } from "lucide-react";
+import { Breadcrumbs } from "@/components/Breadcrumbs";
 
 const STATUS_COLORS: Record<string, "default" | "secondary" | "destructive"> = {
   approved: "default",

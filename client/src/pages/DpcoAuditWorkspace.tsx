@@ -201,7 +201,7 @@ export default function DpcoAuditWorkspace() {
             <ClipboardList className="w-5 h-5 text-primary" />
           </div>
           <div>
-            <h1 className="text-lg font-semibold text-foreground tracking-tight">Audit Workspace</h1>
+            <h1 className="text-2xl font-bold">Audit Workspace</h1>
             <p className="text-xs text-muted-foreground mt-0.5">NDPA 2023 §33 &amp; §44 — End-to-end compliance audit pipeline</p>
           </div>
         </div>

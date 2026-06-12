@@ -8,6 +8,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Brain, FileText, TrendingUp, Loader2, CheckCircle, AlertTriangle, XCircle, Minus, Sparkles, Copy, RefreshCw } from "lucide-react";
+import { Breadcrumbs } from "@/components/Breadcrumbs";
 import { SubscriptionGate } from "@/components/SubscriptionGate";
 
 const RATING_CONFIG: Record<string, { label: string; color: string; icon: any; iconColor: string }> = {
@@ -66,12 +67,14 @@ function DpcoAiToolsInner() {
 
   return (
     <div className="flex flex-col h-full min-h-0 bg-background">
+      <Breadcrumbs items={[{ label: "DPCO Portal", href: "/dpco" }, { label: "AI Audit Tools" }]} />
+
       <div className="flex items-center gap-3 px-6 py-4 border-b border-border bg-background/60">
         <div className="w-8 h-8 rounded-lg bg-violet-500/20 border border-violet-500/30 flex items-center justify-center">
           <Brain className="w-4 h-4 text-violet-400" />
         </div>
         <div>
-          <h1 className="text-sm font-semibold text-foreground">AI Audit Tools</h1>
+          <h1 className="text-2xl font-bold">AI Audit Tools</h1>
           <p className="text-xs text-muted-foreground">NDPA 2023 · Powered by NDSEP Intelligence Engine</p>
         </div>
         <Badge className="ml-auto bg-violet-500/20 text-violet-300 border-violet-500/30 text-xs">

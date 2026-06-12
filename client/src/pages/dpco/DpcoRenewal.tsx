@@ -10,6 +10,7 @@ import {
   RefreshCw, CheckCircle, AlertCircle, Clock, Calendar,
   FileText, ShieldCheck, Award, ExternalLink, ChevronRight
 } from "lucide-react";
+import { Breadcrumbs } from "@/components/Breadcrumbs";
 
 export default function DpcoRenewal() {
   const [indemnityUrl, setIndemnityUrl] = useState("");
@@ -52,6 +53,8 @@ export default function DpcoRenewal() {
   if (submitted) {
     return (
       <div className="p-6 max-w-lg mx-auto">
+      <Breadcrumbs items={[{ label: "DPCO Portal", href: "/dpco" }, { label: "Renewal" }]} />
+
         <div className="bg-background border border-border rounded-xl p-8 text-center">
           <div className="w-14 h-14 bg-emerald-500/10 rounded-full flex items-center justify-center mx-auto mb-4">
             <CheckCircle className="w-7 h-7 text-emerald-600" />

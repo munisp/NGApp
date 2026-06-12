@@ -10,6 +10,7 @@ import { Label } from "@/components/ui/label";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { toast } from "sonner";
 import { Plus, Search, TrendingUp, AlertTriangle, CheckCircle, Clock } from "lucide-react";
+import { Breadcrumbs } from "@/components/Breadcrumbs";
 
 const STATUS_COLORS: Record<string, string> = {
   completed: "bg-green-500/15 text-green-600 dark:text-green-400",
@@ -81,6 +82,8 @@ export default function PaymentsMonitor() {
 
   return (
     <div className="p-6 space-y-6">
+      <Breadcrumbs items={[{ label: "Banking", href: "/banking" }, { label: "Payments Monitor" }]} />
+
       <div className="flex items-center justify-between">
         <div>
           <h1 className="text-2xl font-bold text-foreground">Payment Rails Monitor</h1>

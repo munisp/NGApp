@@ -7,6 +7,7 @@ import {
   Building2, ShieldCheck, AlertTriangle, Globe, CreditCard,
   FileText, Users, TrendingUp, ArrowRight, Activity
 } from "lucide-react";
+import { Breadcrumbs } from "@/components/Breadcrumbs";
 
 export default function BankingDashboard() {
   const { data: instStats } = trpc.banking.institutions.institutionStats.useQuery();
@@ -131,6 +132,8 @@ export default function BankingDashboard() {
 
   return (
     <div className="p-6 space-y-6">
+      <Breadcrumbs items={[{ label: "Banking", href: "/banking" }, { label: "Dashboard" }]} />
+
       <div className="flex items-center justify-between">
         <div>
           <h1 className="text-2xl font-bold text-foreground">Banking Services</h1>

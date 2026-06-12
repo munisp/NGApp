@@ -9,6 +9,7 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from 
 import { Label } from "@/components/ui/label";
 import { toast } from "sonner";
 import { Search, Plus, Eye, CheckCircle, AlertTriangle, Clock, Shield, Download, Filter } from "lucide-react";
+import { Breadcrumbs } from "@/components/Breadcrumbs";
 
 const STATUS_COLORS: Record<string, string> = {
   pending: "bg-yellow-500/15 text-yellow-600 dark:text-yellow-400",
@@ -123,6 +124,8 @@ export default function KycManagement() {
 
   return (
     <div className="p-6 space-y-6">
+      <Breadcrumbs items={[{ label: "Banking", href: "/banking" }, { label: "KYC Management" }]} />
+
       {/* Header */}
       <div className="flex items-center justify-between">
         <div>

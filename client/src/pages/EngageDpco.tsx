@@ -144,7 +144,7 @@ export default function EngageDpco() {
               <Shield className="h-4 w-4 text-cyan-400" />
             </div>
             <div>
-              <h1 className="text-sm font-semibold text-foreground">Engage a DPCO</h1>
+              <h1 className="text-2xl font-bold">Engage a DPCO</h1>
               <p className="text-xs text-muted-foreground">Find and request a licensed Data Protection Compliance Organisation</p>
             </div>
           </div>

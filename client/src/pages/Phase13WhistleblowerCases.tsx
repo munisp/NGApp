@@ -8,6 +8,7 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/u
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { toast } from "sonner";
 import { Eye, Search, AlertTriangle, CheckCircle, UserX } from "lucide-react";
+import { Breadcrumbs } from "@/components/Breadcrumbs";
 import { EmptyState } from "@/components/EmptyState";
 
 type WBStatus = "new" | "under_investigation" | "resolved" | "closed" | "escalated";

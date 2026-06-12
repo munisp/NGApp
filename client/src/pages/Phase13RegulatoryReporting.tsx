@@ -8,6 +8,7 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from 
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { toast } from "sonner";
 import { FileBarChart, Plus, Search, Send, Eye } from "lucide-react";
+import { Breadcrumbs } from "@/components/Breadcrumbs";
 
 type ReportType = "quarterly_national" | "annual_breach" | "sector_benchmark" | "cross_border_annual" | "dsar_summary" | "enforcement_summary";
 

@@ -25,6 +25,7 @@ import {
   Calendar,
   AlertTriangle,
 } from "lucide-react";
+import { Breadcrumbs } from "@/components/Breadcrumbs";
 
 // ─── Constants ────────────────────────────────────────────────────────────────
 const DEMO_DPCO_ORG_ID = 1;
@@ -236,6 +237,8 @@ export default function DpcoSubscription() {
 
   return (
     <div className="p-6 max-w-6xl mx-auto space-y-8">
+      <Breadcrumbs items={[{ label: "DPCO Portal", href: "/dpco" }, { label: "Subscription" }]} />
+
       {/* Header */}
       <div>
         <h1 className="text-2xl font-bold">DPCO Subscription</h1>

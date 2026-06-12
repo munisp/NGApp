@@ -8,6 +8,7 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from 
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { toast } from "sonner";
 import { Globe, Plus, Search, Eye, Upload } from "lucide-react";
+import { Breadcrumbs } from "@/components/Breadcrumbs";
 
 type ComplianceStatus = "compliant" | "partially_compliant" | "non_compliant" | "pending";
 

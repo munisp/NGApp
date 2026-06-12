@@ -17,6 +17,7 @@ import {
   ScanFace, ShieldCheck, Camera, AlertTriangle, Eye, Activity,
   CheckCircle2, XCircle, Upload, History, Brain, Fingerprint,
 } from "lucide-react";
+import { Breadcrumbs } from "@/components/Breadcrumbs";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
@@ -79,6 +80,8 @@ function ScoreBadge({ score, label }: { score: number; label: string }) {
   const bg = score >= 80 ? "bg-green-50" : score >= 50 ? "bg-yellow-50" : "bg-red-50";
   return (
     <div className={`${bg} rounded-lg p-3 text-center`}>
+      <Breadcrumbs items={[{ label: "Banking", href: "/banking" }, { label: "Liveness Verification" }]} />
+
       <div className={`text-2xl font-bold ${color}`}>{score.toFixed(1)}</div>
       <div className="text-xs text-muted-foreground">{label}</div>
     </div>

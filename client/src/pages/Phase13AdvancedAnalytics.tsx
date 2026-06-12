@@ -6,6 +6,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Badge } from "@/components/ui/badge";
 import { toast } from "sonner";
 import { BarChart3, TrendingUp, Download, Activity } from "lucide-react";
+import { Breadcrumbs } from "@/components/Breadcrumbs";
 
 export default function Phase13AdvancedAnalytics() {
   const [metric, setMetric] = useState("compliance_score");

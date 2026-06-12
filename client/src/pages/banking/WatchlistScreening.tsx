@@ -9,6 +9,7 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from 
 import { Label } from "@/components/ui/label";
 import { toast } from "sonner";
 import { Search, Plus, Shield, AlertTriangle, CheckCircle, Globe } from "lucide-react";
+import { Breadcrumbs } from "@/components/Breadcrumbs";
 
 const CATEGORY_COLORS: Record<string, string> = {
   sanctions: "bg-red-500/15 text-red-600 dark:text-red-400",
@@ -87,6 +88,8 @@ export default function WatchlistScreening() {
 
   return (
     <div className="p-6 space-y-6">
+      <Breadcrumbs items={[{ label: "Banking", href: "/banking" }, { label: "Watchlist Screening" }]} />
+
       <div className="flex items-center justify-between">
         <div>
           <h1 className="text-2xl font-bold text-foreground">Watchlist Screening</h1>
