@@ -10,6 +10,7 @@ import { Label } from "@/components/ui/label";
 import { Clock, Plus, Search, Trash2, Archive, Shield } from "lucide-react";
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from "@/components/ui/alert-dialog";
 
+import { Breadcrumbs } from "@/components/Breadcrumbs";
 const ACTION_COLORS: Record<string, string> = { delete: "bg-red-500/20 text-red-400 border-red-500/30", anonymize: "bg-blue-500/20 text-primary border-blue-500/30", archive: "bg-yellow-500/20 text-yellow-400 border-yellow-500/30" };
 
 export default function RetentionPolicies() {
@@ -29,6 +30,7 @@ export default function RetentionPolicies() {
 
   return (
     <div className="space-y-6">
+      <Breadcrumbs items={[{ label: "Compliance", href: "/compliance" }, { label: "Retention Policies" }]} className="mb-4" />
       <div className="rounded-lg border border-border bg-card">
         <div className="px-6 py-8">
           <div className="flex items-center gap-3 mb-3">

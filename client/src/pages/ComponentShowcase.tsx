@@ -194,7 +194,7 @@ export default function ComponentsShowcase() {
   const [isChatLoading, setIsChatLoading] = useState(false);
 
   const handleDialogSubmit = () => {
-    console.log("Dialog submitted with value:", dialogInput);
+    // Dialog submitted callback
     sonnerToast.success("Submitted successfully", {
       description: `Input: ${dialogInput}`,
     });

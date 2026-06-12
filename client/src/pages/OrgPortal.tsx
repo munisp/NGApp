@@ -16,6 +16,7 @@ import {
   Award, ChevronRight, ChevronLeft, Globe, Phone, Mail, Hash, AlertCircle,
   Loader2, Database, HardDrive, Network, Server, Cloud, Cpu, Scale, ReceiptText, Copy, ExternalLink
 } from "lucide-react";
+import { Breadcrumbs } from "@/components/Breadcrumbs";
 
 const SECTORS = [
   { value: "bank", label: "Commercial Bank", icon: "🏦" },
@@ -191,6 +192,7 @@ export default function OrgPortal() {
   if (submitted && submissionToken) {
     return (
       <div className="min-h-screen bg-background flex items-center justify-center p-6">
+      <Breadcrumbs items={[{ label: "Dashboard", href: "/" }, { label: "Org Portal" }]} className="mb-4" />
         <Card className="max-w-lg w-full border-primary/30 bg-card/80">
           <CardContent className="pt-8 pb-8 flex flex-col items-center gap-6 text-center">
             <div className="h-16 w-16 rounded-full bg-primary/10 flex items-center justify-center">

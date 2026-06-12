@@ -12,6 +12,7 @@ import {
   Building2, Zap, Play, BarChart3, Target, Clock, Layers, FlaskConical,
   Scale, GitCompare, Landmark, DollarSign, Network, Boxes,
 } from "lucide-react";
+import { Breadcrumbs } from "@/components/Breadcrumbs";
 
 // ── Pre-built Nigerian regulatory scenarios ─────────────────────────────────
 
@@ -1160,6 +1161,7 @@ export default function DigitalTwinPage() {
 
   return (
     <div className="p-6 space-y-6">
+      <Breadcrumbs items={[{ label: "NOC", href: "/noc" }, { label: "Digital Twin" }]} className="mb-4" />
       <div>
         <h1 className="text-2xl font-bold flex items-center gap-3">
           <Boxes className="h-8 w-8 text-primary" />

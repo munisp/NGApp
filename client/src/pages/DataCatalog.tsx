@@ -16,6 +16,7 @@ import { Database, Globe, Tag, GitBranch, Star } from "lucide-react";
 import { toast } from "sonner";
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from "@/components/ui/alert-dialog";
 
+import { Breadcrumbs } from "@/components/Breadcrumbs";
 const CLASS_COLORS: Record<string, string> = {
   top_secret: "#ef4444", secret: "#f97316", confidential: "#f59e0b",
   restricted: "#8b5cf6", public: "#10b981",
@@ -90,6 +91,7 @@ export default function DataCatalog() {
 
   return (
     <div className="space-y-6">
+      <Breadcrumbs items={[{ label: "Data", href: "/catalog" }, { label: "Data Catalog" }]} className="mb-4" />
       <div className="flex items-start justify-between">
         <div>
           <div className="flex items-center gap-2 mb-1">

@@ -4,6 +4,7 @@ import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/com
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Badge } from "@/components/ui/badge";
 
+import { Breadcrumbs } from "@/components/Breadcrumbs";
 type SectionProps = { title: string; description: string; children: React.ReactNode };
 function Section({ title, description, children }: SectionProps) {
   return (
@@ -155,6 +156,7 @@ export default function PlatformIntelligencePage() {
 
   return (
     <div className="p-6 space-y-6">
+      <Breadcrumbs items={[{ label: "Admin", href: "/" }, { label: "Platform Intelligence" }]} className="mb-4" />
       <div>
         <h1 className="text-2xl font-bold">Platform Intelligence</h1>
         <p className="text-muted-foreground mt-1">Next-generation capabilities: AI, blockchain, quantum crypto, federated learning, and digital twin simulation</p>

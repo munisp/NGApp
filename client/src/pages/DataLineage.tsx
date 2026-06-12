@@ -7,6 +7,7 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@
 import { GitBranch, Database, ArrowRight, Shield, AlertTriangle, Eye } from "lucide-react";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 
+import { Breadcrumbs } from "@/components/Breadcrumbs";
 const nodeTypeColors: Record<string, string> = {
   system: "bg-blue-500/20 text-blue-400 border-blue-500/30",
   dataset: "bg-purple-500/20 text-purple-400 border-purple-500/30",
@@ -30,6 +31,7 @@ export default function DataLineage() {
 
   return (
     <div className="p-6 space-y-6">
+      <Breadcrumbs items={[{ label: "Data", href: "/catalog" }, { label: "Data Lineage" }]} className="mb-4" />
       <div>
         <h1 className="text-2xl font-bold text-foreground">Data Lineage & Provenance</h1>
         <p className="text-muted-foreground text-sm mt-1">NDPA Article 19 — Track data flows from source to consumption for full audit compliance</p>

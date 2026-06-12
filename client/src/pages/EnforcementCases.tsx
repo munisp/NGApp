@@ -16,6 +16,7 @@ import {
   ChevronRight, Building2, FileText, RefreshCw, Download, CheckCheck, History,
   Trash2, Plus
 } from "lucide-react";
+import { Breadcrumbs } from "@/components/Breadcrumbs";
 
 const STATUS_META: Record<string, { label: string; color: string; bg: string; icon: React.ComponentType<any> }> = {
   open:                   { label: "Open",                  color: "text-red-400",    bg: "border-red-500/40 bg-red-950/20",    icon: AlertTriangle },
@@ -163,6 +164,7 @@ export default function EnforcementCases() {
 
   return (
     <div className="space-y-6">
+      <Breadcrumbs items={[{ label: "Enforcement", href: "/enforcement" }, { label: "Enforcement Cases" }]} className="mb-4" />
       {/* Header */}
       <div className="flex items-start justify-between">
         <div>

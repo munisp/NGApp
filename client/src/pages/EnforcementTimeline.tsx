@@ -6,6 +6,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Gavel, Filter, TrendingUp, AlertCircle, CheckCircle, Clock } from "lucide-react";
 import { EmptyState } from "@/components/EmptyState";
+import { Breadcrumbs } from "@/components/Breadcrumbs";
 
 const SECTOR_COLORS: Record<string, string> = {
   banking: "text-blue-400 bg-blue-500/10 border-blue-500/30",
@@ -90,6 +91,7 @@ export default function EnforcementTimeline() {
                   const sectorColor = SECTOR_COLORS[String(action.sector ?? "banking")] ?? SECTOR_COLORS.banking;
                   return (
                     <div key={i} className="relative">
+      <Breadcrumbs items={[{ label: "Enforcement", href: "/enforcement" }, { label: "Enforcement Timeline" }]} className="mb-4" />
                       <div className="absolute -left-8 top-1 w-4 h-4 rounded-full bg-muted border-2 border-border flex items-center justify-center">
                         <div className="w-2 h-2 rounded-full bg-red-400" />
                       </div>

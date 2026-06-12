@@ -3,6 +3,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { BarChart2, TrendingUp, AlertTriangle } from "lucide-react";
 
+import { Breadcrumbs } from "@/components/Breadcrumbs";
 const fmtNGN = (n:number) => `₦${(n/1e6).toFixed(1)}M`;
 
 export default function AdvancedAnalytics() {
@@ -12,6 +13,7 @@ export default function AdvancedAnalytics() {
   const scoreColor = (s:number) => s>=80?"text-green-600":s>=60?"text-yellow-600":"text-red-600";
   return (
     <div className="p-6 space-y-6">
+      <Breadcrumbs items={[{ label: "Analytics", href: "/analytics" }, { label: "Advanced Analytics" }]} className="mb-4" />
       <div className="flex items-center gap-3"><BarChart2 className="h-7 w-7 text-primary"/><div><h1 className="text-2xl font-bold">Advanced Analytics</h1><p className="text-muted-foreground text-sm">Cross-sector compliance intelligence and penalty analytics</p></div></div>
       <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
         <Card><CardHeader><CardTitle>Sector Compliance Comparison</CardTitle></CardHeader><CardContent>

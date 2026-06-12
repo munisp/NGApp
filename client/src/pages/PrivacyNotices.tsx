@@ -13,6 +13,7 @@ import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { ScrollText, Plus, Search, Eye, FileText, CheckCircle , Trash2 } from "lucide-react";
 
+import { Breadcrumbs } from "@/components/Breadcrumbs";
 const STATUS_COLORS: Record<string, string> = { draft: "bg-muted/400/20 text-muted-foreground border-border/30", published: "bg-green-500/20 text-green-400 border-green-500/30", archived: "bg-yellow-500/20 text-yellow-400 border-yellow-500/30", under_review: "bg-blue-500/20 text-primary border-blue-500/30" };
 const NOTICE_TYPES = ["general","employee","customer","website","mobile_app","service_specific"];
 
@@ -40,6 +41,7 @@ export default function PrivacyNotices() {
 
   return (
     <div className="space-y-6">
+      <Breadcrumbs items={[{ label: "Compliance", href: "/compliance" }, { label: "Privacy Notices" }]} className="mb-4" />
       <div className="rounded-lg border border-border bg-card">
         <div className="px-6 py-8">
           <div className="flex items-center gap-3 mb-3">

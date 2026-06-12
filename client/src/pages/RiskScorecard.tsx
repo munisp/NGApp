@@ -6,6 +6,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Shield, TrendingDown, TrendingUp } from "lucide-react";
 
+import { Breadcrumbs } from "@/components/Breadcrumbs";
 const riskColor = (s:number) => s>=80?"text-green-600 bg-green-50":s>=60?"text-yellow-600 bg-yellow-50":s>=40?"text-orange-600 bg-orange-50":"text-red-600 bg-red-50";
 const riskLabel = (s:number) => s>=80?"Low Risk":s>=60?"Medium Risk":s>=40?"High Risk":"Critical Risk";
 
@@ -17,6 +18,7 @@ export default function RiskScorecard() {
   const SECTORS = ["banking","telecom","healthcare","energy","insurance","fintech"];
   return (
     <div className="p-6 space-y-6">
+      <Breadcrumbs items={[{ label: "Compliance", href: "/compliance" }, { label: "Risk Scorecard" }]} className="mb-4" />
       <div className="flex items-center gap-3"><Shield className="h-7 w-7 text-primary"/><div><h1 className="text-2xl font-bold">Risk Scorecard</h1><p className="text-muted-foreground text-sm">Multi-dimensional compliance risk assessment across all organizations</p></div></div>
       <div className="flex gap-3">
         <Select value={sector} onValueChange={setSector}><SelectTrigger className="w-40"><SelectValue/></SelectTrigger><SelectContent><SelectItem value="all">All Sectors</SelectItem>{SECTORS.map(s=><SelectItem key={s} value={s}>{s}</SelectItem>)}</SelectContent></Select>

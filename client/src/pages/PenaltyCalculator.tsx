@@ -8,6 +8,7 @@ import { Label } from "@/components/ui/label";
 import { Calculator, TrendingUp } from "lucide-react";
 import { toast } from "sonner";
 
+import { Breadcrumbs } from "@/components/Breadcrumbs";
 const fmtNGN = (n:number) => `₦${n.toLocaleString()}`;
 
 export default function PenaltyCalculator() {
@@ -17,6 +18,7 @@ export default function PenaltyCalculator() {
   const calcM = trpc.penaltyCalculator.calculate.useMutation({ onSuccess:(r)=>setResult(r), onError:(e)=>toast.error((e instanceof Error ? e.message : String(e))) });
   return (
     <div className="p-6 space-y-6">
+      <Breadcrumbs items={[{ label: "Enforcement", href: "/enforcement" }, { label: "Penalty Calculator" }]} className="mb-4" />
       <div className="flex items-center gap-3"><Calculator className="h-7 w-7 text-primary"/><div><h1 className="text-2xl font-bold">Penalty Calculator</h1><p className="text-muted-foreground text-sm">NDPA 2023 Section 48 — Administrative fine estimation tool</p></div></div>
       <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
         <Card><CardHeader><CardTitle>Calculate Penalty</CardTitle></CardHeader><CardContent className="space-y-4">

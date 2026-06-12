@@ -8,6 +8,7 @@ import { Input } from "@/components/ui/input";
 import { toast } from "sonner";
 import { exportToCsv } from "@/lib/safeExport";
 
+import { Breadcrumbs } from "@/components/Breadcrumbs";
 const SECTOR_COLORS: Record<string, string> = {
   banking: "bg-blue-500/15 text-blue-600 dark:text-blue-400",
   telecom: "bg-purple-500/15 text-purple-600 dark:text-purple-400",
@@ -108,6 +109,7 @@ export default function CrossSectorAlerts() {
 
   return (
     <div className="p-6 space-y-6">
+      <Breadcrumbs items={[{ label: "Analytics", href: "/analytics" }, { label: "Cross Sector Alerts" }]} className="mb-4" />
       <div className="flex items-center justify-between">
         <div>
           <h1 className="text-2xl font-bold">Cross-Sector Enforcement Alerts</h1>

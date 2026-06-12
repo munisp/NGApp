@@ -23,6 +23,7 @@ import {
 } from "lucide-react";
 import { AreaChart, Area, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from "recharts";
 
+import { Breadcrumbs } from "@/components/Breadcrumbs";
 interface BgpRoute {
   id: number;
   prefix: string;
@@ -183,6 +184,7 @@ export default function BgpRoutes() {
 
   return (
     <div className="p-6 space-y-6">
+      <Breadcrumbs items={[{ label: "NOC", href: "/noc" }, { label: "Bgp Routes" }]} className="mb-4" />
       {/* Header */}
       <div className="flex items-center justify-between">
         <div>

@@ -6,6 +6,7 @@ import { Badge } from "@/components/ui/badge";
 import { AreaChart, Area, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from "recharts";
 import { Waves, Activity, Zap, Database, Shield, Network, DollarSign } from "lucide-react";
 
+import { Breadcrumbs } from "@/components/Breadcrumbs";
 type StreamEvent = {
   id: string;
   topic: string;
@@ -177,6 +178,7 @@ export default function StreamingEvents() {
 
   return (
     <div className="space-y-6">
+      <Breadcrumbs items={[{ label: "NOC", href: "/noc" }, { label: "Streaming Events" }]} className="mb-4" />
       <div className="flex items-start justify-between">
         <div>
           <div className="flex items-center gap-2 mb-1">

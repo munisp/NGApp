@@ -11,6 +11,7 @@ import { Label } from "@/components/ui/label";
 import { toast } from "sonner";
 import { Users, Plus, Calendar, TrendingUp, FileCheck, AlertTriangle, RefreshCw, Building2 , Trash2 } from "lucide-react";
 
+import { Breadcrumbs } from "@/components/Breadcrumbs";
 const STATUS_COLORS: Record<string, string> = {
   active: "bg-emerald-500/15 text-emerald-600 dark:text-emerald-400 border-emerald-500/30",
   completed: "bg-blue-500/15 text-blue-600 dark:text-blue-400 border-blue-500/30",
@@ -64,6 +65,7 @@ export default function DpcoClients() {
 
   return (
     <div className="px-6 py-6 space-y-6">
+      <Breadcrumbs items={[{ label: "Dashboard", href: "/" }, { label: "Dpco Clients" }]} className="mb-4" />
       <div className="flex items-center justify-between">
         <div>
           <h1 className="text-2xl font-bold text-primary font-mono">DPCO Client Portfolio</h1>

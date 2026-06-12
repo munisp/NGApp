@@ -10,6 +10,7 @@ import { Label } from "@/components/ui/label";
 import { toast } from "sonner";
 import { Plus, Users, CheckCircle, XCircle, Clock } from "lucide-react";
 
+import { Breadcrumbs } from "@/components/Breadcrumbs";
 export default function ConsentRecordManager() {
   const [page, setPage] = useState(1);
   const [statusFilter, setStatusFilter] = useState("all");
@@ -24,6 +25,7 @@ export default function ConsentRecordManager() {
   const STATUS_COLORS: Record<string,string> = { active:"bg-green-500/15 text-green-600 dark:text-green-400", withdrawn:"bg-red-500/15 text-red-600 dark:text-red-400", expired:"bg-muted text-foreground", pending:"bg-yellow-500/15 text-yellow-600 dark:text-yellow-400" };
   return (
     <div className="p-6 space-y-6">
+      <Breadcrumbs items={[{ label: "Compliance", href: "/compliance" }, { label: "Consent Record Manager" }]} className="mb-4" />
       <div className="flex items-center justify-between">
         <div><h1 className="text-2xl font-bold">Consent Record Manager</h1><p className="text-muted-foreground text-sm">NDPA 2023 — Lawful basis & consent lifecycle management</p></div>
         <Dialog open={open} onOpenChange={setOpen}>

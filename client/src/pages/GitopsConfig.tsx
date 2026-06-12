@@ -10,6 +10,7 @@ import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { GitBranch, RefreshCw, Download, CheckCircle , Trash2 } from "lucide-react";
 
+import { Breadcrumbs } from "@/components/Breadcrumbs";
 export default function GitopsConfig() {
   const [showSnapshot, setShowSnapshot] = useState(false);
   const [snapshotType, setSnapshotType] = useState("policy");
@@ -39,6 +40,7 @@ export default function GitopsConfig() {
 
   return (
     <div className="p-6 space-y-6">
+      <Breadcrumbs items={[{ label: "Dashboard", href: "/" }, { label: "Gitops Config" }]} className="mb-4" />
       <div className="flex items-center justify-between">
         <div>
           <h1 className="text-2xl font-bold text-foreground">GitOps Config Sync</h1>

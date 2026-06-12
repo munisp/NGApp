@@ -13,6 +13,7 @@ import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { GraduationCap, Plus, Search, CheckCircle, Clock, Users , Trash2 } from "lucide-react";
 
+import { Breadcrumbs } from "@/components/Breadcrumbs";
 const STATUS_COLORS: Record<string, string> = { scheduled: "bg-blue-500/20 text-primary border-blue-500/30", in_progress: "bg-yellow-500/20 text-yellow-400 border-yellow-500/30", completed: "bg-green-500/20 text-green-400 border-green-500/30", cancelled: "bg-muted/400/20 text-muted-foreground border-border/30" };
 const TRAINING_TYPES = ["data_protection_basics","ndpa_compliance","breach_response","dpia_methodology","rights_handling","security_awareness","custom"];
 
@@ -41,6 +42,7 @@ export default function StaffTraining() {
 
   return (
     <div className="space-y-6">
+      <Breadcrumbs items={[{ label: "AI Hub", href: "/ai-hub" }, { label: "Staff Training" }]} className="mb-4" />
       <div className="rounded-lg border border-border bg-card">
         <div className="px-6 py-8">
           <div className="flex items-center gap-3 mb-3">

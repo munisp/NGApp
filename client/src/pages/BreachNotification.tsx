@@ -14,6 +14,7 @@ import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, 
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
 import { Sheet, SheetContent, SheetHeader, SheetTitle } from "@/components/ui/sheet";
 
+import { Breadcrumbs } from "@/components/Breadcrumbs";
 const SEVERITY_COLORS: Record<string, string> = {
   low: "bg-blue-500/20 text-primary border-blue-500/30",
   medium: "bg-yellow-500/20 text-yellow-400 border-yellow-500/30",
@@ -258,6 +259,7 @@ export default function BreachNotification() {
 
   return (
     <div className="space-y-6">
+      <Breadcrumbs items={[{ label: "Compliance", href: "/compliance" }, { label: "Breach Notification" }]} className="mb-4" />
       <div className="rounded-lg border border-border bg-card">
         <div className="px-6 py-8">
           <div className="flex items-center gap-3 mb-3">

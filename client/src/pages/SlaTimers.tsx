@@ -7,6 +7,7 @@ import { exportToCsv } from "@/lib/safeExport";
 import { Button } from "@/components/ui/button";
 import { toast } from "sonner";
 
+import { Breadcrumbs } from "@/components/Breadcrumbs";
 // Nigerian regulatory SLA definitions (in hours)
 const REGULATORY_SLAS = [
   { id: "ndpa_breach_72h", label: "NDPA Data Breach Notification", sector: "NDPA", hours: 72, description: "Notify NITDA within 72 hours of discovering a personal data breach (NDPA §40)" },
@@ -121,6 +122,7 @@ export default function SlaTimers() {
 
   return (
     <div className="p-6 space-y-6">
+      <Breadcrumbs items={[{ label: "Dashboard", href: "/" }, { label: "Sla Timers" }]} className="mb-4" />
       <div className="flex items-center justify-between">
         <div>
           <h1 className="text-2xl font-bold">Regulatory SLA Timers</h1>

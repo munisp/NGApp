@@ -8,6 +8,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { toast } from "sonner";
 import { Shield, Search, FileText, Clock, CheckCircle2, AlertCircle, ChevronRight } from "lucide-react";
 
+import { Breadcrumbs } from "@/components/Breadcrumbs";
 const REQUEST_TYPES = [
   { value: "access", label: "Access — Request a copy of your personal data" },
   { value: "rectification", label: "Rectification — Correct inaccurate personal data" },
@@ -82,6 +83,7 @@ export default function DsarPublicPortal() {
 
   return (
     <div className="space-y-6">
+      <Breadcrumbs items={[{ label: "Compliance", href: "/compliance" }, { label: "Dsar Public Portal" }]} className="mb-4" />
       {/* Header */}
       <header className="border-b border-border bg-background/80 backdrop-blur sticky top-0 z-10">
         <div className="max-w-4xl mx-auto px-6 py-4 flex items-center gap-3">

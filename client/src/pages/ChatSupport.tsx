@@ -336,7 +336,7 @@ export default function ChatSupport() {
                       rows={2}
                       className="resize-none"
                     />
-                    <Button onClick={handleSend} disabled={!input.trim() || isSending} className="shrink-0">
+                    <Button onClick={handleSend} disabled={!input.trim() || isSending} className="shrink-0" aria-label="Send">
                       <Send className="h-4 w-4" />
                     </Button>
                   </div>

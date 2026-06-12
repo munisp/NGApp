@@ -13,6 +13,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Globe, Plus, AlertTriangle, CheckCircle, Clock, FileSearch, CheckCircle2, XCircle, Send, ListChecks , Trash2 } from "lucide-react";
 import { useAuth } from "@/_core/hooks/useAuth";
 
+import { Breadcrumbs } from "@/components/Breadcrumbs";
 const RISK_COLORS: Record<string, string> = {
   low: "bg-green-500/20 text-green-400",
   medium: "bg-yellow-500/20 text-yellow-400",
@@ -120,6 +121,7 @@ export default function TiaAssessments() {
 
   return (
     <div className="p-6 space-y-6">
+      <Breadcrumbs items={[{ label: "Dashboard", href: "/" }, { label: "Tia Assessments" }]} className="mb-4" />
       {/* Header */}
       <div className="flex items-center justify-between">
         <div>

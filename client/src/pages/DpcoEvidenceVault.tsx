@@ -17,6 +17,7 @@ import {
 } from "lucide-react";
 import { toast } from "sonner";
 
+import { Breadcrumbs } from "@/components/Breadcrumbs";
 const CATEGORIES = [
   { value: "privacy_policy",   label: "Privacy Policy",         color: "bg-blue-500/15 text-blue-600 dark:text-blue-400" },
   { value: "dpia",             label: "DPIA",                   color: "bg-purple-500/15 text-purple-600 dark:text-purple-400" },
@@ -191,6 +192,7 @@ export default function DpcoEvidenceVault() {
 
   return (
     <div className="p-6 space-y-6">
+      <Breadcrumbs items={[{ label: "Dashboard", href: "/" }, { label: "Dpco Evidence Vault" }]} className="mb-4" />
       {/* Header */}
       <div className="flex items-center justify-between">
         <div>

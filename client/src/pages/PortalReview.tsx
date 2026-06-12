@@ -15,6 +15,7 @@ import {
 } from "lucide-react";
 import { EmptyState } from "@/components/EmptyState";
 
+import { Breadcrumbs } from "@/components/Breadcrumbs";
 const PHASE_ORDER = ["registration", "asset_inventory", "data_catalog", "self_assessment", "initial_audit", "remediation", "certified"];
 const PHASE_LABELS: Record<string, string> = {
   registration: "Registration",
@@ -181,6 +182,7 @@ export default function PortalReview() {
 
   return (
     <div className="space-y-6">
+      <Breadcrumbs items={[{ label: "Dashboard", href: "/" }, { label: "Portal Review" }]} className="mb-4" />
       {/* Header */}
       <div className="flex items-start justify-between">
         <div>

@@ -6,6 +6,7 @@ import { Badge } from "@/components/ui/badge";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter, DialogDescription } from "@/components/ui/dialog";
 import { ShieldCheck, RotateCcw, AlertTriangle, CheckCircle2, Clock, Hash, Building2, Calendar } from "lucide-react";
 
+import { Breadcrumbs } from "@/components/Breadcrumbs";
 export default function CertificateRotation() {
   const [showConfirm, setShowConfirm] = useState(false);
 
@@ -34,6 +35,7 @@ export default function CertificateRotation() {
 
   return (
     <div className="p-6 max-w-3xl">
+      <Breadcrumbs items={[{ label: "Security", href: "/security-audit" }, { label: "Certificate Rotation" }]} className="mb-4" />
       <div className="flex items-center gap-3 mb-6">
         <div className="w-10 h-10 rounded-xl bg-primary/10 flex items-center justify-center">
           <ShieldCheck className="w-5 h-5 text-primary" />

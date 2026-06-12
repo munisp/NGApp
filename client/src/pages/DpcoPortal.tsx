@@ -14,6 +14,7 @@ import {
   TrendingUp, AlertTriangle, CheckCircle, Clock, ArrowRight, BarChart3,
   BookOpen, Scale, Briefcase, Search, Bell, Receipt, Award
 } from "lucide-react";
+import { Breadcrumbs } from "@/components/Breadcrumbs";
 
 const QUICK_ACTIONS = [
   { label: "DPCO Registry", desc: "Browse all licensed DPCOs", href: "/dpco/registry", icon: Building2 },
@@ -65,6 +66,7 @@ export default function DpcoPortal() {
 
   return (
     <div className="p-6 space-y-6">
+      <Breadcrumbs items={[{ label: "Dashboard", href: "/" }, { label: "Dpco Portal" }]} className="mb-4" />
       {/* Header — matches Dashboard pattern */}
       <div data-tour="dpco-header" className="flex items-center justify-between">
         <div>

@@ -8,6 +8,7 @@ import {
   BarChart3, Activity, RefreshCw, TrendingUp, TrendingDown,
   AlertTriangle, CheckCircle2, Cpu, Database, Network, Shield
 } from "lucide-react";
+import { Breadcrumbs } from "@/components/Breadcrumbs";
 
 const METRIC_GROUPS = [
   {
@@ -125,6 +126,7 @@ export default function PrometheusMetrics() {
 
   return (
     <div className="p-6 space-y-6">
+      <Breadcrumbs items={[{ label: "Dashboard", href: "/" }, { label: "Prometheus Metrics" }]} className="mb-4" />
       {/* Header */}
       <div className="flex items-center justify-between">
         <div>

@@ -12,6 +12,7 @@ import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { Bot, Plus, Search, Eye, AlertTriangle, UserCheck, Trash2, CheckCircle } from "lucide-react";
 
+import { Breadcrumbs } from "@/components/Breadcrumbs";
 export default function AutomatedDecisions() {
   const [showCreate, setShowCreate] = useState(false);
   const [searchQuery, setSearchQuery] = useState("");
@@ -41,6 +42,7 @@ export default function AutomatedDecisions() {
 
   return (
     <div className="space-y-6">
+      <Breadcrumbs items={[{ label: "Compliance", href: "/compliance" }, { label: "Automated Decisions" }]} className="mb-4" />
       <div className="rounded-lg border border-border bg-card">
         <div className="px-6 py-8">
           <div className="flex items-center gap-3 mb-3">

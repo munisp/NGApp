@@ -12,6 +12,7 @@ import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { Bot, Plus, AlertTriangle, CheckCircle, Clock , Trash2 } from "lucide-react";
 
+import { Breadcrumbs } from "@/components/Breadcrumbs";
 const RISK_COLORS: Record<string, string> = {
   minimal: "bg-green-500/20 text-green-400 border-green-500/30",
   limited: "bg-blue-500/20 text-blue-400 border-blue-500/30",
@@ -57,6 +58,7 @@ export default function AiGovernance() {
 
   return (
     <div className="p-6 space-y-6">
+      <Breadcrumbs items={[{ label: "AI Hub", href: "/ai-hub" }, { label: "Ai Governance" }]} className="mb-4" />
       <div className="flex items-center justify-between">
         <div>
           <h1 className="text-2xl font-bold text-foreground">AI Governance Registry</h1>

@@ -17,6 +17,7 @@ import {
 import { EmptyState } from "@/components/EmptyState";
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from "@/components/ui/alert-dialog";
 
+import { Breadcrumbs } from "@/components/Breadcrumbs";
 const COUNTRIES = [
   "Nigeria", "Ghana", "Kenya", "South Africa", "Egypt", "Ethiopia",
   "Tanzania", "Rwanda", "Senegal", "Côte d'Ivoire", "Cameroon", "Uganda",
@@ -137,6 +138,7 @@ export default function TransferApprovals() {
 
   return (
     <div className="p-6 space-y-6">
+      <Breadcrumbs items={[{ label: "Dashboard", href: "/" }, { label: "Transfer Approvals" }]} className="mb-4" />
       {/* Header */}
       <div className="flex items-start justify-between">
         <div>

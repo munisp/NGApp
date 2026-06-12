@@ -9,6 +9,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Lock, Users, CheckCircle2, XCircle, RefreshCw } from "lucide-react";
 import { toast } from "sonner";
 
+import { Breadcrumbs } from "@/components/Breadcrumbs";
 const ROLES: NdsepRole[] = ["admin", "government_staff", "org_admin", "auditor", "user"];
 
 const PERMISSION_MATRIX: { label: string; key: string }[] = [
@@ -65,6 +66,7 @@ export default function RoleManagement() {
 
   return (
     <div className="space-y-6">
+      <Breadcrumbs items={[{ label: "Dashboard", href: "/" }, { label: "Role Management" }]} className="mb-4" />
       <div className="flex items-start justify-between">
         <div>
           <div className="flex items-center gap-2 mb-1">

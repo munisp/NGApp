@@ -11,6 +11,7 @@ import { Input } from "@/components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Wrench, CheckCircle2, Clock, AlertCircle, RotateCcw, Trash2, Plus } from "lucide-react";
 
+import { Breadcrumbs } from "@/components/Breadcrumbs";
 const STATUS_COLORS: Record<string, string> = {
   open: "bg-red-500/20 text-red-400",
   in_progress: "bg-yellow-500/20 text-yellow-400",
@@ -70,6 +71,7 @@ export default function RemediationWorkflows() {
 
   return (
     <div className="p-6 space-y-6">
+      <Breadcrumbs items={[{ label: "Dashboard", href: "/" }, { label: "Remediation Workflows" }]} className="mb-4" />
       {/* Header */}
       <div className="flex items-center justify-between">
         <div>

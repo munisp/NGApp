@@ -457,8 +457,7 @@ export default function SectorComplianceDetail() {
                     className="pl-9 h-8 w-64 text-sm"
                   />
                 </div>
-                <Button variant="outline" size="sm" onClick={handleRefetch}>
-                  <RefreshCw className="w-3 h-3" />
+                <Button variant="outline" size="sm" onClick={handleRefetch} aria-label="Refresh"><RefreshCw className="w-3 h-3" />
                 </Button>
               </div>
             </div>

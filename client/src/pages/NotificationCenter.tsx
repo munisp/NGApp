@@ -6,6 +6,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { toast } from "sonner";
 import { Bell, CheckCheck, Info, AlertTriangle, XCircle, CheckCircle } from "lucide-react";
 
+import { Breadcrumbs } from "@/components/Breadcrumbs";
 const SEV_ICONS: Record<string,any> = { info:Info, warning:AlertTriangle, error:XCircle, success:CheckCircle };
 const SEV_COLORS: Record<string,string> = { info:"text-blue-600 bg-blue-50", warning:"text-yellow-600 bg-yellow-50", error:"text-red-600 bg-red-50", success:"text-green-600 bg-green-50" };
 
@@ -17,6 +18,7 @@ export default function NotificationCenter() {
   const markAllM = trpc.notificationCenter.markAllRead.useMutation({ onSuccess:()=>{ toast.success("All notifications marked as read"); refetch(); } });
   return (
     <div className="p-6 space-y-6">
+      <Breadcrumbs items={[{ label: "Dashboard", href: "/" }, { label: "Notification Center" }]} className="mb-4" />
       <div className="flex items-center justify-between">
         <div className="flex items-center gap-3"><Bell className="h-7 w-7 text-primary"/><div><h1 className="text-2xl font-bold">Notification Center</h1><p className="text-muted-foreground text-sm">System alerts, compliance deadlines, and enforcement notifications</p></div></div>
         <div className="flex gap-2">

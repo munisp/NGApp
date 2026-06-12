@@ -12,6 +12,7 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "
 import { Brain, Plus, AlertTriangle, CheckCircle, Scale } from "lucide-react";
 import { toast } from "sonner";
 
+import { Breadcrumbs } from "@/components/Breadcrumbs";
 const riskColors: Record<string, string> = {
   unacceptable: "bg-red-500/20 text-red-400",
   high: "bg-orange-500/20 text-orange-400",
@@ -54,6 +55,7 @@ export default function AIEthicsBoard() {
 
   return (
     <div className="p-6 space-y-6">
+      <Breadcrumbs items={[{ label: "AI Hub", href: "/ai-hub" }, { label: "AI Ethics Board" }]} className="mb-4" />
       <div className="flex items-center justify-between">
         <div>
           <h1 className="text-2xl font-bold text-foreground flex items-center gap-2">

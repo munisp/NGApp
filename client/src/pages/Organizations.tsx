@@ -51,6 +51,7 @@ function OrgSparkline({ orgId, complianceScore }: { orgId: number; complianceSco
 import { toast } from "sonner";
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from "@/components/ui/alert-dialog";
 
+import { Breadcrumbs } from "@/components/Breadcrumbs";
 const STATUS_COLORS: Record<string, string> = {
   compliant: "#10b981", non_compliant: "#ef4444", under_review: "#f59e0b", suspended: "#8b5cf6"
 };
@@ -121,6 +122,7 @@ export default function Organizations() {
 
   return (
     <div className="space-y-6">
+      <Breadcrumbs items={[{ label: "Admin", href: "/" }, { label: "Organizations" }]} className="mb-4" />
       <div className="flex items-start justify-between">
         <div>
           <div className="flex items-center gap-2 mb-1">

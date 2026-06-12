@@ -18,21 +18,21 @@ function val<T>(data: unknown): T {
 
 function severityBadge(severity: string) {
   const colors: Record<string, string> = {
-    critical: "bg-red-600 text-white",
-    high: "bg-orange-500 text-white",
+    critical: "bg-red-600 text-foreground",
+    high: "bg-orange-500 text-foreground",
     medium: "bg-yellow-500 text-black",
-    low: "bg-blue-500 text-white",
+    low: "bg-blue-500 text-foreground",
   };
   return <Badge className={colors[severity] || "bg-muted text-foreground"}>{severity}</Badge>;
 }
 
 function outcomeBadge(outcome: string) {
   const colors: Record<string, string> = {
-    success: "bg-green-600 text-white",
+    success: "bg-green-600 text-foreground",
     partial_success: "bg-yellow-500 text-black",
-    failure: "bg-red-600 text-white",
-    pending: "bg-blue-500 text-white",
-    queued_for_approval: "bg-purple-500 text-white",
+    failure: "bg-red-600 text-foreground",
+    pending: "bg-blue-500 text-foreground",
+    queued_for_approval: "bg-purple-500 text-foreground",
   };
   return <Badge className={colors[outcome] || "bg-muted text-foreground"}>{outcome.replace(/_/g, " ")}</Badge>;
 }
@@ -87,7 +87,7 @@ export default function NocAgentDashboard() {
       <div className="flex items-center gap-3">
         <Bot className="h-8 w-8 text-purple-400" />
         <div>
-          <h1 className="text-2xl font-bold text-white">AI NOC Agent</h1>
+          <h1 className="text-2xl font-bold text-foreground">AI NOC Agent</h1>
           <p className="text-sm text-zinc-400">Autonomous perception → reasoning → action loop</p>
         </div>
       </div>
@@ -132,7 +132,7 @@ export default function NocAgentDashboard() {
                   <Eye className="h-5 w-5 text-blue-400" />
                   <div>
                     <p className="text-xs text-zinc-400">Anomalies Detected</p>
-                    <p className="text-2xl font-bold text-white">{Number(anomalyData.total || 0)}</p>
+                    <p className="text-2xl font-bold text-foreground">{Number(anomalyData.total || 0)}</p>
                   </div>
                 </div>
               </CardContent>
@@ -143,7 +143,7 @@ export default function NocAgentDashboard() {
                   <Brain className="h-5 w-5 text-purple-400" />
                   <div>
                     <p className="text-xs text-zinc-400">Diagnoses Made</p>
-                    <p className="text-2xl font-bold text-white">{diagList.length}</p>
+                    <p className="text-2xl font-bold text-foreground">{diagList.length}</p>
                   </div>
                 </div>
               </CardContent>
@@ -154,7 +154,7 @@ export default function NocAgentDashboard() {
                   <Zap className="h-5 w-5 text-yellow-400" />
                   <div>
                     <p className="text-xs text-zinc-400">Remediations</p>
-                    <p className="text-2xl font-bold text-white">{execList.length}</p>
+                    <p className="text-2xl font-bold text-foreground">{execList.length}</p>
                   </div>
                 </div>
               </CardContent>
@@ -165,7 +165,7 @@ export default function NocAgentDashboard() {
                   <TrendingUp className="h-5 w-5 text-green-400" />
                   <div>
                     <p className="text-xs text-zinc-400">Predictions Active</p>
-                    <p className="text-2xl font-bold text-white">{predList.length}</p>
+                    <p className="text-2xl font-bold text-foreground">{predList.length}</p>
                   </div>
                 </div>
               </CardContent>
@@ -194,7 +194,7 @@ export default function NocAgentDashboard() {
                   {pendingList.slice(0, 5).map((p, i) => (
                     <div key={i} className="flex items-center justify-between p-2 bg-zinc-800 rounded">
                       <div>
-                        <p className="text-sm text-white">{String(p.root_cause || "").slice(0, 80)}</p>
+                        <p className="text-sm text-foreground">{String(p.root_cause || "").slice(0, 80)}</p>
                         <p className="text-xs text-zinc-400">Confidence: {Number(Number(p.confidence) * 100).toFixed(0)}% · {String(p.review_reason)}</p>
                       </div>
                       <Badge className="bg-purple-600">Awaiting Approval</Badge>
@@ -231,11 +231,11 @@ export default function NocAgentDashboard() {
                         <td className="p-2">{severityBadge(String(a.severity))}</td>
                         <td className="p-2 text-zinc-300">{String(a.service_name)}</td>
                         <td className="p-2 text-zinc-400">{String(a.metric_name)}</td>
-                        <td className="p-2 text-right text-white">{Number(a.current_value).toFixed(2)}</td>
-                        <td className="p-2 text-right text-white">{Number(a.z_score).toFixed(2)}</td>
-                        <td className="p-2 text-right text-white">{Number(a.isolation_score).toFixed(3)}</td>
+                        <td className="p-2 text-right text-foreground">{Number(a.current_value).toFixed(2)}</td>
+                        <td className="p-2 text-right text-foreground">{Number(a.z_score).toFixed(2)}</td>
+                        <td className="p-2 text-right text-foreground">{Number(a.isolation_score).toFixed(3)}</td>
                         <td className="p-2 text-zinc-400">{String(a.detection_method)}</td>
-                        <td className="p-2 text-right text-white">{(Number(a.confidence) * 100).toFixed(0)}%</td>
+                        <td className="p-2 text-right text-foreground">{(Number(a.confidence) * 100).toFixed(0)}%</td>
                       </tr>
                     ))}
                   </tbody>
@@ -256,7 +256,7 @@ export default function NocAgentDashboard() {
                     <div className="flex items-center justify-between mb-2">
                       <div className="flex items-center gap-2">
                         <Brain className="h-4 w-4 text-purple-400" />
-                        <span className="text-sm font-medium text-white">{String(d.root_cause_category || "").replace(/_/g, " ")}</span>
+                        <span className="text-sm font-medium text-foreground">{String(d.root_cause_category || "").replace(/_/g, " ")}</span>
                       </div>
                       <div className="flex items-center gap-2">
                         <Badge variant="outline">{(Number(d.confidence) * 100).toFixed(0)}% confidence</Badge>
@@ -291,7 +291,7 @@ export default function NocAgentDashboard() {
             <Card className="bg-zinc-900 border-zinc-700">
               <CardContent className="pt-4">
                 <p className="text-xs text-zinc-400">Total Executions</p>
-                <p className="text-2xl font-bold text-white">{execList.length}</p>
+                <p className="text-2xl font-bold text-foreground">{execList.length}</p>
               </CardContent>
             </Card>
             <Card className="bg-zinc-900 border-zinc-700">
@@ -334,8 +334,8 @@ export default function NocAgentDashboard() {
                       <tr key={i} className="border-b border-zinc-800 hover:bg-zinc-800">
                         <td className="p-2">{outcomeBadge(String(e.outcome))}</td>
                         <td className="p-2">{e.was_auto_executed ? <CheckCircle2 className="h-4 w-4 text-green-400" /> : <Clock className="h-4 w-4 text-yellow-400" />}</td>
-                        <td className="p-2 text-right text-white">{(Number(e.confidence) * 100).toFixed(0)}%</td>
-                        <td className="p-2 text-right text-white">{String(e.steps_succeeded)}/{String(e.steps_total)}</td>
+                        <td className="p-2 text-right text-foreground">{(Number(e.confidence) * 100).toFixed(0)}%</td>
+                        <td className="p-2 text-right text-foreground">{String(e.steps_succeeded)}/{String(e.steps_total)}</td>
                         <td className="p-2 text-right text-zinc-300">{Number(e.duration_ms)}ms</td>
                         <td className="p-2 text-zinc-400 max-w-xs truncate">{String(e.outcome_details || "").slice(0, 80)}</td>
                       </tr>
@@ -356,7 +356,7 @@ export default function NocAgentDashboard() {
                 {kbPatterns.map((p, i) => (
                   <div key={i} className="p-3 bg-zinc-800 rounded border border-zinc-700">
                     <div className="flex items-center justify-between mb-2">
-                      <span className="text-sm font-medium text-white">{String(p.incident_type || "").replace(/_/g, " ")}</span>
+                      <span className="text-sm font-medium text-foreground">{String(p.incident_type || "").replace(/_/g, " ")}</span>
                       <Badge variant="outline">{(Number(p.success_rate || 0) * 100).toFixed(0)}% success</Badge>
                     </div>
                     <p className="text-xs text-zinc-400 mb-2">{String(p.root_cause || "").slice(0, 120)}</p>
@@ -389,7 +389,7 @@ export default function NocAgentDashboard() {
                   {predList.map((p, i) => (
                     <div key={i} className="p-3 bg-zinc-800 rounded border border-zinc-700">
                       <div className="flex items-center justify-between mb-1">
-                        <span className="text-sm font-medium text-white">{String(p.prediction_type || "").replace(/_/g, " ")}</span>
+                        <span className="text-sm font-medium text-foreground">{String(p.prediction_type || "").replace(/_/g, " ")}</span>
                         <Badge variant="outline">{(Number(p.confidence) * 100).toFixed(0)}% confidence</Badge>
                       </div>
                       <p className="text-sm text-zinc-300">{String(p.predicted_event || "")}</p>

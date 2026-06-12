@@ -11,6 +11,7 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "
 import { CreditCard, Search, CheckCircle, XCircle, Clock, Shield } from "lucide-react";
 import { toast } from "sonner";
 
+import { Breadcrumbs } from "@/components/Breadcrumbs";
 const statusColors: Record<string, string> = {
   verified: "bg-green-500/20 text-green-400",
   failed: "bg-red-500/20 text-red-400",
@@ -50,6 +51,7 @@ export default function NationalIDVerification() {
 
   return (
     <div className="p-6 space-y-6">
+      <Breadcrumbs items={[{ label: "Admin", href: "/" }, { label: "National I D Verification" }]} className="mb-4" />
       <div className="flex items-center justify-between">
         <div>
           <h1 className="text-2xl font-bold text-foreground flex items-center gap-2">

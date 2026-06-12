@@ -10,6 +10,7 @@ import { Label } from "@/components/ui/label";
 import { toast } from "sonner";
 import { Plus, UserCheck, AlertTriangle, CheckCircle, Clock } from "lucide-react";
 
+import { Breadcrumbs } from "@/components/Breadcrumbs";
 export default function DpoAppointmentRegistry() {
   const [page, setPage] = useState(1);
   const [open, setOpen] = useState(false);
@@ -22,6 +23,7 @@ export default function DpoAppointmentRegistry() {
   const CRED_COLORS: Record<string,string> = { verified:"bg-green-500/15 text-green-600 dark:text-green-400", pending:"bg-yellow-500/15 text-yellow-600 dark:text-yellow-400", expired:"bg-red-500/15 text-red-600 dark:text-red-400", suspended:"bg-muted text-foreground" };
   return (
     <div className="p-6 space-y-6">
+      <Breadcrumbs items={[{ label: "Compliance", href: "/compliance" }, { label: "Dpo Appointment Registry" }]} className="mb-4" />
       <div className="flex items-center justify-between">
         <div><h1 className="text-2xl font-bold">DPO Appointment Registry</h1><p className="text-muted-foreground text-sm">NDPA 2023 — Data Protection Officer appointment & credential tracking</p></div>
         <Dialog open={open} onOpenChange={setOpen}>

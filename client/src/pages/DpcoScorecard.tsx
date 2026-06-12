@@ -12,6 +12,7 @@ import {
 } from "lucide-react";
 import { toast } from "sonner";
 
+import { Breadcrumbs } from "@/components/Breadcrumbs";
 const TIER_COLORS: Record<string, string> = {
   platinum: "bg-purple-500/15 text-purple-600 dark:text-purple-400 border-purple-500/30",
   gold:     "bg-yellow-500/15 text-yellow-600 dark:text-yellow-400 border-yellow-500/30",
@@ -133,6 +134,7 @@ export default function DpcoScorecard() {
 
   return (
     <div className="p-6 space-y-6">
+      <Breadcrumbs items={[{ label: "Compliance", href: "/compliance" }, { label: "Dpco Scorecard" }]} className="mb-4" />
       {/* Header */}
       <div className="flex items-center justify-between">
         <div>

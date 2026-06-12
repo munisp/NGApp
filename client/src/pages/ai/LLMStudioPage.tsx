@@ -132,7 +132,7 @@ export default function LLMStudioPage() {
           <div className="flex gap-2">
             <Input value={prompt} onChange={(e) => setPrompt(e.target.value)} placeholder="Type a message..."
               onKeyDown={(e) => e.key === "Enter" && handleSend()} />
-            <Button onClick={handleSend} disabled={!prompt.trim() || generateM.isPending}><Send className="h-4 w-4" /></Button>
+            <Button onClick={handleSend} disabled={!prompt.trim() || generateM.isPending} aria-label="Send"><Send className="h-4 w-4" /></Button>
           </div>
         </CardContent>
       </Card>

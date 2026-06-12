@@ -15,6 +15,7 @@ import { Server, Cloud, HardDrive, Wifi, Monitor, AlertTriangle, CheckCircle2, X
 import { toast } from "sonner";
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from "@/components/ui/alert-dialog";
 
+import { Breadcrumbs } from "@/components/Breadcrumbs";
 function NetBoxTopologyPanel() {
   const { data: metrics } = trpc.workers.metrics.useQuery({ workerId: "netbox-ipam" }, { refetchInterval: 10000 });
   const m = (metrics as any) ?? {};
@@ -142,6 +143,7 @@ export default function DiscoveryEngine() {
 
   return (
     <div className="space-y-6">
+      <Breadcrumbs items={[{ label: "Dashboard", href: "/" }, { label: "Discovery Engine" }]} className="mb-4" />
       <div className="flex items-start justify-between">
         <div>
           <div className="flex items-center gap-2 mb-1">

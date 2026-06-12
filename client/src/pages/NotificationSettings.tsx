@@ -11,6 +11,7 @@ import { Badge } from "@/components/ui/badge";
 import { toast } from "sonner";
 import { Bell, Mail, Shield, Gavel, Award, RefreshCw, Save, AlertTriangle, CheckCircle2, Users, Clock } from "lucide-react";
 
+import { Breadcrumbs } from "@/components/Breadcrumbs";
 const TOGGLE_GROUPS = [
   {
     label: "Financial Enforcement",
@@ -135,6 +136,7 @@ export default function NotificationSettings() {
 
   return (
     <div className="p-6 max-w-4xl mx-auto space-y-6">
+      <Breadcrumbs items={[{ label: "Dashboard", href: "/" }, { label: "Notification Settings" }]} className="mb-4" />
       {/* Header */}
       <div className="flex items-start justify-between">
         <div>

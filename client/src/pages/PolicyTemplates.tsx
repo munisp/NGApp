@@ -12,6 +12,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { Label } from "@/components/ui/label";
 import { FileText, Plus, Zap, Search, Filter , Trash2 } from "lucide-react";
 
+import { Breadcrumbs } from "@/components/Breadcrumbs";
 const FRAMEWORKS = ["All", "NDPR", "GDPR", "PIPL", "DPDP", "HIPAA", "SOC2", "ISO27001", "DOJ_EO_14117", "CUSTOM"];
 const FRAMEWORK_COLORS: Record<string, string> = {
   NDPR: "bg-green-500/20 text-green-400 border-green-500/30",
@@ -59,6 +60,7 @@ export default function PolicyTemplates() {
 
   return (
     <div className="p-6 space-y-6">
+      <Breadcrumbs items={[{ label: "Dashboard", href: "/" }, { label: "Policy Templates" }]} className="mb-4" />
       <div className="flex items-center justify-between">
         <div>
           <h1 className="text-2xl font-bold text-foreground">Policy Templates Library</h1>

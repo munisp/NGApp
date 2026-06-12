@@ -13,6 +13,7 @@ import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { ClipboardCheck, Plus, Search, AlertTriangle, Shield, FileText , Trash2 } from "lucide-react";
 
+import { Breadcrumbs } from "@/components/Breadcrumbs";
 const STATUS_COLORS: Record<string, string> = { draft: "bg-muted/400/20 text-muted-foreground border-border/30", in_review: "bg-yellow-500/20 text-yellow-400 border-yellow-500/30", approved: "bg-green-500/20 text-green-400 border-green-500/30", rejected: "bg-red-500/20 text-red-400 border-red-500/30", requires_ndpc_consultation: "bg-purple-500/20 text-primary border-purple-500/30" };
 const RISK_COLORS: Record<string, string> = { low: "bg-blue-500/20 text-primary", medium: "bg-yellow-500/20 text-yellow-400", high: "bg-orange-500/20 text-primary", critical: "bg-red-500/20 text-red-400" };
 
@@ -41,6 +42,7 @@ export default function DpiaAssessments() {
 
   return (
     <div className="space-y-6">
+      <Breadcrumbs items={[{ label: "Compliance", href: "/compliance" }, { label: "Dpia Assessments" }]} className="mb-4" />
       <div className="rounded-lg border border-border bg-card">
         <div className="px-6 py-8">
           <div className="flex items-center gap-3 mb-3">

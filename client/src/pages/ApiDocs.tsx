@@ -8,6 +8,7 @@ import {
   Database, Shield, Award, BarChart3, FileText, Network, DollarSign,
   Copy, CheckCircle2
 } from "lucide-react";
+import { Breadcrumbs } from "@/components/Breadcrumbs";
 
 type Endpoint = {
   method: "GET" | "POST" | "QUERY" | "MUTATION";
@@ -301,6 +302,7 @@ export default function ApiDocs() {
 
   return (
     <div className="min-h-screen bg-background">
+      <Breadcrumbs items={[{ label: "Developer", href: "/" }, { label: "API Documentation" }]} className="mb-4" />
       {/* Header */}
       <div className="border-b bg-card/50 backdrop-blur sticky top-0 z-40">
         <div className="max-w-5xl mx-auto px-4 py-3 flex items-center justify-between">

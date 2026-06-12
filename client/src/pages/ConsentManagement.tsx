@@ -12,6 +12,7 @@ import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { ShieldCheck, Plus, Search, Users, FileCheck, AlertTriangle , Trash2 } from "lucide-react";
 
+import { Breadcrumbs } from "@/components/Breadcrumbs";
 const LAWFUL_BASES = [
   { value: "consent", label: "Consent" },
   { value: "contract", label: "Contract" },
@@ -75,6 +76,7 @@ export default function ConsentManagement() {
 
   return (
     <div className="space-y-6">
+      <Breadcrumbs items={[{ label: "Compliance", href: "/compliance" }, { label: "Consent Management" }]} className="mb-4" />
       <div className="rounded-lg border border-border bg-card">
         <div className="px-6 py-8">
           <div className="flex items-center gap-3 mb-3">

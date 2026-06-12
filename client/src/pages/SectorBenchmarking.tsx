@@ -1,6 +1,7 @@
 import { useState } from "react";
 import { trpc } from "@/lib/trpc";
 import { BarChart2, TrendingUp, TrendingDown, Minus, Award, AlertTriangle , Loader2 } from "lucide-react";
+import { Breadcrumbs } from "@/components/Breadcrumbs";
 const SECTOR_COLORS: Record<string, string> = {
   fintech: "bg-blue-600",
   health: "bg-green-600",
@@ -16,6 +17,7 @@ function ComplianceBar({ value, max = 100 }: { value: number; max?: number }) {
   const pct = Math.min(100, Math.round((value / max) * 100));
   return (
     <div className="flex items-center gap-2">
+      <Breadcrumbs items={[{ label: "Analytics", href: "/analytics" }, { label: "Sector Benchmarking" }]} className="mb-4" />
       <div className="flex-1 h-2 bg-card rounded-full overflow-hidden">
         <div className={`h-full rounded-full ${pct >= 75 ? "bg-green-500" : pct >= 50 ? "bg-yellow-500" : "bg-red-500"}`} style={{ width: `${pct}%` }} />
       </div>

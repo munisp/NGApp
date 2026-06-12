@@ -8,6 +8,7 @@ import {
   Activity, CheckCircle2, Clock, AlertTriangle, XCircle,
   RefreshCw, GitBranch, Zap, Shield, DollarSign, Search, Database
 } from "lucide-react";
+import { Breadcrumbs } from "@/components/Breadcrumbs";
 
 const WORKFLOW_TYPES = [
   {
@@ -162,6 +163,7 @@ export default function TemporalWorkflows() {
 
   return (
     <div className="p-6 space-y-6">
+      <Breadcrumbs items={[{ label: "Dashboard", href: "/" }, { label: "Temporal Workflows" }]} className="mb-4" />
       {/* Header */}
       <div className="flex items-center justify-between">
         <div>

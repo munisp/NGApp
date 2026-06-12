@@ -10,6 +10,7 @@ import { EmptyState } from "@/components/EmptyState";
 import { LineChart, Line, Tooltip, ResponsiveContainer } from "recharts";
 import { toast } from "sonner";
 
+import { Breadcrumbs } from "@/components/Breadcrumbs";
 const statusColor: Record<string, string> = {
   compliant: "bg-emerald-500/15 text-emerald-600 dark:text-emerald-400",
   non_compliant: "bg-red-500/15 text-red-600 dark:text-red-400",
@@ -213,6 +214,7 @@ export default function ComplianceLeaderboard() {
 
   return (
     <div className="p-6 space-y-6 max-w-6xl mx-auto">
+      <Breadcrumbs items={[{ label: "Compliance", href: "/compliance" }, { label: "Compliance Leaderboard" }]} className="mb-4" />
       {/* Header */}
       <div className="flex items-start justify-between gap-4 flex-wrap">
         <div>

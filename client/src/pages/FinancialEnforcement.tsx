@@ -14,6 +14,7 @@ import { Wallet, DollarSign, AlertTriangle, CheckCircle2, Clock, TrendingUp, Plu
 import { useRef } from "react";
 import { toast } from "sonner";
 
+import { Breadcrumbs } from "@/components/Breadcrumbs";
 const STATUS_COLORS: Record<string, string> = {
   pending: "#f59e0b", completed: "#10b981", overdue: "#ef4444",
   disputed: "#8b5cf6", waived: "#6b7280", processing: "#3b82f6"
@@ -208,6 +209,7 @@ export default function FinancialEnforcement() {
 
   return (
     <div className="space-y-6">
+      <Breadcrumbs items={[{ label: "Banking", href: "/financial" }, { label: "Financial Enforcement" }]} className="mb-4" />
       <div className="flex items-start justify-between">
         <div>
           <div className="flex items-center gap-2 mb-1">

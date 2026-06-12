@@ -7,6 +7,7 @@ import { Activity, AlertTriangle, CheckCircle, Circle, Cpu, RefreshCw, RotateCcw
 import { useState } from "react";
 import { Button } from "@/components/ui/button";
 
+import { Breadcrumbs } from "@/components/Breadcrumbs";
 const LANG_COLORS: Record<string, string> = {
   Go: "bg-cyan-500/15 text-cyan-400 border-cyan-500/30",
   Python: "bg-yellow-500/15 text-yellow-400 border-yellow-500/30",
@@ -144,6 +145,7 @@ export default function WorkerProcesses() {
 
   return (
     <div className="space-y-6">
+      <Breadcrumbs items={[{ label: "Dashboard", href: "/" }, { label: "Worker Processes" }]} className="mb-4" />
       {/* Header */}
       <div className="flex items-center justify-between">
         <div>

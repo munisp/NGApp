@@ -65,6 +65,7 @@ import { Scale, CheckCircle2, XCircle, Clock, AlertTriangle, Workflow, Play, Ref
 import { Input } from "@/components/ui/input";
 import { toast } from "sonner";
 
+import { Breadcrumbs } from "@/components/Breadcrumbs";
 const SEV_COLORS: Record<string, string> = {
   critical: "#ef4444", high: "#f97316", medium: "#f59e0b", low: "#10b981"
 };
@@ -192,6 +193,7 @@ export default function ComplianceEngine() {
 
   return (
     <div className="space-y-6">
+      <Breadcrumbs items={[{ label: "Compliance", href: "/compliance" }, { label: "Compliance Engine" }]} className="mb-4" />
       <div className="flex items-start justify-between">
         <div>
           <div className="flex items-center gap-2 mb-1">

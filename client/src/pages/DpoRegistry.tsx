@@ -12,6 +12,7 @@ import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { UserCheck, Plus, Search, Shield, Award , Trash2 } from "lucide-react";
 
+import { Breadcrumbs } from "@/components/Breadcrumbs";
 const CRED_COLORS: Record<string, string> = { pending: "bg-yellow-500/20 text-yellow-400 border-yellow-500/30", verified: "bg-green-500/20 text-green-400 border-green-500/30", expired: "bg-red-500/20 text-red-400 border-red-500/30", revoked: "bg-muted/400/20 text-muted-foreground border-border/30" };
 
 export default function DpoRegistry() {
@@ -38,6 +39,7 @@ export default function DpoRegistry() {
 
   return (
     <div className="space-y-6">
+      <Breadcrumbs items={[{ label: "Compliance", href: "/compliance" }, { label: "Dpo Registry" }]} className="mb-4" />
       <div className="rounded-lg border border-border bg-card">
         <div className="px-6 py-8">
           <div className="flex items-center gap-3 mb-3">

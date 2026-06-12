@@ -7,6 +7,7 @@ import { Input } from "@/components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Globe, Search, TrendingUp } from "lucide-react";
 
+import { Breadcrumbs } from "@/components/Breadcrumbs";
 export default function PublicComplianceRegistry() {
   const [page, setPage] = useState(1);
   const [query, setQuery] = useState("");
@@ -18,6 +19,7 @@ export default function PublicComplianceRegistry() {
   const scoreColor = (s:number) => s>=80?"text-green-600":s>=60?"text-yellow-600":"text-red-600";
   return (
     <div className="p-6 space-y-6">
+      <Breadcrumbs items={[{ label: "Compliance", href: "/compliance" }, { label: "Public Compliance Registry" }]} className="mb-4" />
       <div className="flex items-center gap-3">
         <Globe className="h-7 w-7 text-primary"/>
         <div><h1 className="text-2xl font-bold">Public Compliance Registry</h1><p className="text-muted-foreground text-sm">Publicly searchable NDPA compliance status for all registered organizations</p></div>

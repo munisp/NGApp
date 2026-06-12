@@ -14,6 +14,7 @@ import {
 import { SkeletonTable } from "@/components/SkeletonTable";
 import { Pagination } from "@/components/Pagination";
 
+import { Breadcrumbs } from "@/components/Breadcrumbs";
 // ─── 9-State Machine ─────────────────────────────────────────────────────────
 
 type AccreditationState =
@@ -117,6 +118,7 @@ export default function AccreditationWorkflow() {
 
   return (
     <div className="space-y-6 p-6">
+      <Breadcrumbs items={[{ label: "Admin", href: "/accreditation" }, { label: "Accreditation Workflow" }]} className="mb-4" />
       <div className="flex items-center justify-between">
         <div>
           <h1 className="text-2xl font-bold">Accreditation Workflow</h1>

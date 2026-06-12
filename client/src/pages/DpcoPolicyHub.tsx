@@ -13,6 +13,7 @@ import {
   BookOpen, Download, Search, FileText, Shield, Users,
   AlertTriangle, Database, Globe, Lock, CheckCircle, ExternalLink, UserPlus
 } from "lucide-react";
+import { Breadcrumbs } from "@/components/Breadcrumbs";
 
 interface PolicyTemplate {
   id: string;
@@ -770,6 +771,7 @@ export default function DpcoPolicyHub() {
 
   return (
     <div className="px-6 py-6 space-y-6">
+      <Breadcrumbs items={[{ label: "Dashboard", href: "/" }, { label: "Dpco Policy Hub" }]} className="mb-4" />
       {/* Header */}
       <div className="flex items-start justify-between">
         <div>

@@ -11,6 +11,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from "@/components/ui/alert-dialog";
 
+import { Breadcrumbs } from "@/components/Breadcrumbs";
 const TYPE_COLORS: Record<string, string> = {
   server: "#3b82f6",
   database: "#10b981",
@@ -82,8 +83,7 @@ function AssetDrawer({ node, onClose }: { node: GraphNode; onClose: () => void }
             <div className="text-xs text-muted-foreground">Asset #{node.id} · {node.assetType}</div>
           </div>
         </div>
-        <Button size="sm" variant="ghost" className="text-muted-foreground hover:text-foreground" onClick={onClose}>
-          <X className="w-4 h-4" />
+        <Button size="sm" variant="ghost" className="text-muted-foreground hover:text-foreground" onClick={onClose} aria-label="Close"><X className="w-4 h-4" />
         </Button>
       </div>
 
@@ -326,6 +326,7 @@ export default function AssetGraph() {
 
   return (
     <div className="p-6 space-y-4 h-full flex flex-col">
+      <Breadcrumbs items={[{ label: "Dashboard", href: "/" }, { label: "Asset Graph" }]} className="mb-4" />
       {/* Header */}
       <div className="flex items-center justify-between">
         <div>

@@ -12,6 +12,7 @@ import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { Database, Plus, Search, FileText, Globe, Shield, Trash2, Download } from "lucide-react";
 
+import { Breadcrumbs } from "@/components/Breadcrumbs";
 export default function RopaRecords() {
   const [showCreate, setShowCreate] = useState(false);
   const [searchQuery, setSearchQuery] = useState("");
@@ -57,6 +58,7 @@ export default function RopaRecords() {
 
   return (
     <div className="space-y-6">
+      <Breadcrumbs items={[{ label: "Compliance", href: "/compliance" }, { label: "Ropa Records" }]} className="mb-4" />
       <div className="rounded-lg border border-border bg-card">
         <div className="px-6 py-8">
           <div className="flex items-center gap-3 mb-3">

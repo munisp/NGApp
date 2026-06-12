@@ -11,6 +11,7 @@ import {
   Bell, Mail, MessageSquare, Siren, CheckCircle2, XCircle,
   Send, RefreshCw, ShieldAlert, Zap, Settings2
 } from "lucide-react";
+import { Breadcrumbs } from "@/components/Breadcrumbs";
 
 function StatusBadge({ configured, label }: { configured: boolean; label: string }) {
   return configured ? (
@@ -59,6 +60,7 @@ export default function AlertingSettings() {
 
   return (
     <div className="p-6 max-w-4xl mx-auto space-y-6">
+      <Breadcrumbs items={[{ label: "Admin", href: "/" }, { label: "Alerting Settings" }]} className="mb-4" />
       {/* Header */}
       <div className="flex items-start justify-between">
         <div>

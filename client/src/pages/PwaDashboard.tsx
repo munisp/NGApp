@@ -209,7 +209,7 @@ export default function PwaDashboard() {
           </div>
           <div className="flex items-center gap-2">
             <button onClick={refetchAll}
-              className="p-1.5 rounded-lg text-muted-foreground hover:text-cyan-400 hover:bg-card transition-colors">
+              className="p-1.5 rounded-lg text-muted-foreground hover:text-cyan-400 hover:bg-card transition-colors" aria-label="Refresh">
               <RefreshCw className={`h-4 w-4 ${isLoading ? "animate-spin" : ""}`} />
             </button>
             <Link href="/alerts">

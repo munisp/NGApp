@@ -10,6 +10,7 @@ import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { useAuth } from "@/_core/hooks/useAuth";
 import { Users, Plus, Clock, CheckCircle, Shield, Search, ChevronRight, RefreshCw, AlertCircle, XCircle, CheckCircle2 , Loader2 } from "lucide-react";
+import { Breadcrumbs } from "@/components/Breadcrumbs";
 
 const REQUEST_TYPES = [
   { value: "access", label: "Right of Access", desc: "Request a copy of your personal data held by an organisation" },
@@ -92,6 +93,7 @@ export default function CitizenRightsPortal() {
 
   return (
     <div className="min-h-screen bg-background text-foreground">
+      <Breadcrumbs items={[{ label: "Portal", href: "/" }, { label: "Citizen Rights Portal" }]} className="mb-4" />
       {/* Hero Header */}
       <div className="bg-gradient-to-br from-teal-900/40 via-gray-900 to-gray-950 border-b border-border">
         <div className="px-6 py-8">

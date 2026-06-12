@@ -14,6 +14,7 @@ import {
   Calendar, Users, FileText, Loader2, Copy, AlertCircle,
   Star, BadgeCheck, ArrowRight, RefreshCw
 } from "lucide-react";
+import { Breadcrumbs } from "@/components/Breadcrumbs";
 
 const SECTORS = [
   { value: "bank", label: "Commercial Bank" },
@@ -136,6 +137,7 @@ export default function EngageDpco() {
 
   return (
     <div className="space-y-6">
+      <Breadcrumbs items={[{ label: "Dashboard", href: "/" }, { label: "Engage Dpco" }]} className="mb-4" />
       {/* Header */}
       <div className="border-b border-border bg-background/80 backdrop-blur-sm sticky top-0 z-10">
         <div className="max-w-5xl mx-auto px-6 py-4 flex items-center justify-between">

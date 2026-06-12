@@ -11,6 +11,7 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "
 import { Building2, Shield, AlertTriangle, Plus, Star, TrendingDown } from "lucide-react";
 import { toast } from "sonner";
 
+import { Breadcrumbs } from "@/components/Breadcrumbs";
 const riskColors: Record<string, string> = {
   critical: "bg-red-500/20 text-red-400 border-red-500/30",
   high: "bg-orange-500/20 text-orange-400 border-orange-500/30",
@@ -42,6 +43,7 @@ export default function VendorRisk() {
 
   return (
     <div className="p-6 space-y-6">
+      <Breadcrumbs items={[{ label: "Compliance", href: "/compliance" }, { label: "Vendor Risk" }]} className="mb-4" />
       <div className="flex items-center justify-between">
         <div>
           <h1 className="text-2xl font-bold text-foreground">Vendor Risk Management</h1>

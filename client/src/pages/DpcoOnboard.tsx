@@ -15,6 +15,7 @@ import {
 } from "lucide-react";
 import { toast } from "sonner";
 
+import { Breadcrumbs } from "@/components/Breadcrumbs";
 const STEPS = [
   { id: 1, title: "Organisation Details",  icon: Building2,  desc: "Basic company information" },
   { id: 2, title: "Key Personnel",         icon: User,       desc: "DPO and principal officers" },
@@ -218,6 +219,7 @@ export default function DpcoOnboard() {
   if (submitted) {
     return (
       <div className="p-6 max-w-2xl mx-auto">
+      <Breadcrumbs items={[{ label: "Dashboard", href: "/" }, { label: "Dpco Onboard" }]} className="mb-4" />
         <Card className="border-green-500/20 bg-green-50">
           <CardContent className="pt-8 pb-8 text-center">
             <CheckCircle className="w-16 h-16 text-green-600 mx-auto mb-4" />

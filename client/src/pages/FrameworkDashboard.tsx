@@ -5,6 +5,7 @@ import { Button } from "@/components/ui/button";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Shield, CheckCircle2, XCircle, AlertTriangle, TrendingUp, FileDown, Loader2 } from "lucide-react";
 import { toast } from "sonner";
+import { Breadcrumbs } from "@/components/Breadcrumbs";
 
 const FRAMEWORKS = [
   {
@@ -129,6 +130,7 @@ export default function FrameworkDashboard() {
 
   return (
     <div className="p-6 space-y-6">
+      <Breadcrumbs items={[{ label: "Compliance", href: "/compliance" }, { label: "Framework Dashboard" }]} className="mb-4" />
       {/* Header */}
       <div className="flex items-center justify-between">
         <div>

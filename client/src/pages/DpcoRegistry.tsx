@@ -11,6 +11,7 @@ import { Label } from "@/components/ui/label";
 import { toast } from "sonner";
 import { Search, Plus, ExternalLink, AlertTriangle, CheckCircle, XCircle, Clock, Building2, RefreshCw , Trash2 } from "lucide-react";
 
+import { Breadcrumbs } from "@/components/Breadcrumbs";
 const STATUS_COLORS: Record<string, string> = {
   active: "bg-emerald-500/15 text-emerald-600 dark:text-emerald-400 border-emerald-500/30",
   expired: "bg-red-500/15 text-red-600 dark:text-red-400 border-red-500/30",
@@ -77,6 +78,7 @@ export default function DpcoRegistry() {
 
   return (
     <div className="px-6 py-6 space-y-6">
+      <Breadcrumbs items={[{ label: "Dashboard", href: "/" }, { label: "Dpco Registry" }]} className="mb-4" />
       {/* Header */}
       <div className="flex items-center justify-between">
         <div>

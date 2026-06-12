@@ -5,6 +5,7 @@ import { Badge } from "@/components/ui/badge";
 import { Bot, Send, User, Loader2, Zap, Shield, AlertTriangle, TrendingUp } from "lucide-react";
 import { Streamdown } from "streamdown";
 
+import { Breadcrumbs } from "@/components/Breadcrumbs";
 type Message = {
   id: string;
   role: "user" | "assistant";
@@ -75,6 +76,7 @@ export default function AIAssistant() {
 
   return (
     <div className="space-y-4 h-[calc(100vh-8rem)] flex flex-col">
+      <Breadcrumbs items={[{ label: "AI Hub", href: "/ai-hub" }, { label: "AI Assistant" }]} className="mb-4" />
       <div className="flex items-start justify-between shrink-0">
         <div>
           <div className="flex items-center gap-2 mb-1">

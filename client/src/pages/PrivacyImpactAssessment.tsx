@@ -12,6 +12,7 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "
 import { FileSearch, Plus, CheckCircle } from "lucide-react";
 import { toast } from "sonner";
 
+import { Breadcrumbs } from "@/components/Breadcrumbs";
 const riskColors: Record<string, string> = {
   critical: "bg-red-500/20 text-red-400",
   high: "bg-orange-500/20 text-orange-400",
@@ -56,6 +57,7 @@ export default function PrivacyImpactAssessment() {
 
   return (
     <div className="p-6 space-y-6">
+      <Breadcrumbs items={[{ label: "Compliance", href: "/compliance" }, { label: "Privacy Impact Assessment" }]} className="mb-4" />
       <div className="flex items-center justify-between">
         <div>
           <h1 className="text-2xl font-bold text-foreground flex items-center gap-2">

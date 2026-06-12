@@ -6,6 +6,7 @@ import { Progress } from "@/components/ui/progress";
 import { toast } from "sonner";
 import { Clock, CheckCircle, AlertTriangle, XCircle, RefreshCw, Download, Shield } from "lucide-react";
 
+import { Breadcrumbs } from "@/components/Breadcrumbs";
 const timerColor: Record<string,string> = { completed:"bg-green-500/15 text-green-600 dark:text-green-400", on_track:"bg-blue-500/15 text-blue-600 dark:text-blue-400", warning:"bg-yellow-500/15 text-yellow-600 dark:text-yellow-400", critical:"bg-orange-500/15 text-orange-600 dark:text-orange-400", overdue:"bg-red-500/15 text-red-600 dark:text-red-400" };
 
 export default function Article40Tracker() {
@@ -32,6 +33,7 @@ export default function Article40Tracker() {
 
   return (
     <div className="p-6 space-y-6">
+      <Breadcrumbs items={[{ label: "Dashboard", href: "/" }, { label: "Article40 Tracker" }]} className="mb-4" />
       <div className="flex items-center justify-between">
         <div className="flex items-center gap-3">
           <Clock className="h-7 w-7 text-primary"/>

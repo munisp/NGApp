@@ -9,6 +9,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Activity, Globe, AlertTriangle, RefreshCw, Plus } from "lucide-react";
 import { toast } from "sonner";
 
+import { Breadcrumbs } from "@/components/Breadcrumbs";
 const JURISDICTIONS = ["Nigeria", "USA", "EU", "China", "UK", "India", "UAE", "South Africa"];
 const COLORS = ["#3b82f6", "#10b981", "#f59e0b", "#ef4444", "#8b5cf6", "#06b6d4", "#f97316", "#ec4899"];
 
@@ -104,6 +105,7 @@ export default function DataFlowVisualization() {
 
   return (
     <div className="p-6 space-y-6">
+      <Breadcrumbs items={[{ label: "Data", href: "/catalog" }, { label: "Data Flow Visualization" }]} className="mb-4" />
       <div className="flex items-center justify-between">
         <div>
           <h1 className="text-2xl font-bold text-foreground">Cross-Border Data Flow Visualization</h1>

@@ -12,6 +12,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { toast } from "sonner";
 import { AlertTriangle, Clock, CheckCircle, XCircle, Plus, RefreshCw, Shield, Eye } from "lucide-react";
 
+import { Breadcrumbs } from "@/components/Breadcrumbs";
 const STATUS_COLORS: Record<string,string> = { detected:"bg-red-500/15 text-red-600 dark:text-red-400", assessing:"bg-orange-500/15 text-orange-600 dark:text-orange-400", ndpc_notified:"bg-blue-500/15 text-blue-600 dark:text-blue-400", individuals_notified:"bg-purple-500/15 text-purple-600 dark:text-purple-400", contained:"bg-yellow-500/15 text-yellow-600 dark:text-yellow-400", resolved:"bg-green-500/15 text-green-600 dark:text-green-400", closed:"bg-muted text-foreground" };
 const SEV_COLORS: Record<string,string> = { low:"bg-green-500/15 text-green-600 dark:text-green-400", medium:"bg-yellow-500/15 text-yellow-600 dark:text-yellow-400", high:"bg-orange-500/15 text-orange-600 dark:text-orange-400", critical:"bg-red-500/15 text-red-600 dark:text-red-400" };
 const WF_STATUS_COLORS: Record<string,string> = { completed:"text-green-600", in_progress:"text-blue-600", overdue:"text-red-600", pending:"text-muted-foreground" };
@@ -33,6 +34,7 @@ export default function BreachIncidentCenter() {
   const fmtH = (h:number) => h<0?`${Math.abs(Math.round(h))}h overdue`:h<1?`${Math.round(h*60)}m left`:`${Math.round(h)}h left`;
   return (
     <div className="p-6 space-y-6">
+      <Breadcrumbs items={[{ label: "Compliance", href: "/compliance" }, { label: "Breach Incident Center" }]} className="mb-4" />
       <div className="flex items-center justify-between">
         <div><h1 className="text-2xl font-bold">Breach Incident Center</h1><p className="text-muted-foreground text-sm">NDPA 2023 Art. 40 — 72-hour NDPC notification tracker</p></div>
         <div className="flex gap-2">

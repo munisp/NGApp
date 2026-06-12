@@ -24,6 +24,7 @@ import {
 import { toast } from "sonner";
 import { Zap, RefreshCw, Send, Activity, Radio, AlertTriangle, CheckCircle2, Clock } from "lucide-react";
 
+import { Breadcrumbs } from "@/components/Breadcrumbs";
 // ── Topic registry ─────────────────────────────────────────────────────────────
 const KNOWN_TOPICS = [
   { id: "ndsep.penalty.issued", label: "Penalty Issued", layer: "FIN", description: "Fired when a financial penalty is created" },
@@ -160,6 +161,7 @@ export default function EventBusMonitor() {
 
   return (
     <div className="p-6 space-y-6 max-w-7xl mx-auto">
+      <Breadcrumbs items={[{ label: "Dashboard", href: "/" }, { label: "Event Bus Monitor" }]} className="mb-4" />
       {/* Header */}
       <div className="flex items-center justify-between">
         <div className="flex items-center gap-3">

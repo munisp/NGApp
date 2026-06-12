@@ -10,6 +10,7 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "
 import { Label } from "@/components/ui/label";
 import { Shield, Download, Plus, CheckCircle, ShieldCheck, ShieldAlert, FileJson , Trash2 } from "lucide-react";
 
+import { Breadcrumbs } from "@/components/Breadcrumbs";
 export default function EvidencePackages() {
   const [showGenerate, setShowGenerate] = useState(false);
   const [verifyTarget, setVerifyTarget] = useState<{ contentHash: string; hmacSignature: string } | null>(null);
@@ -46,6 +47,7 @@ export default function EvidencePackages() {
 
   return (
     <div className="p-6 space-y-6">
+      <Breadcrumbs items={[{ label: "Dashboard", href: "/" }, { label: "Evidence Packages" }]} className="mb-4" />
       <div className="flex items-center justify-between">
         <div>
           <h1 className="text-2xl font-bold text-foreground">Evidence Packages</h1>

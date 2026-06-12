@@ -12,6 +12,7 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "
 import { Share2, Plus, ArrowRight, CheckCircle, XCircle, Clock } from "lucide-react";
 import { toast } from "sonner";
 
+import { Breadcrumbs } from "@/components/Breadcrumbs";
 const statusColors: Record<string, string> = {
   pending: "bg-yellow-500/20 text-yellow-400",
   approved: "bg-green-500/20 text-green-400",
@@ -50,6 +51,7 @@ export default function CrossAgencySharing() {
 
   return (
     <div className="p-6 space-y-6">
+      <Breadcrumbs items={[{ label: "Compliance", href: "/compliance" }, { label: "Cross Agency Sharing" }]} className="mb-4" />
       <div className="flex items-center justify-between">
         <div>
           <h1 className="text-2xl font-bold text-foreground flex items-center gap-2">

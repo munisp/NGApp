@@ -11,6 +11,7 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "
 import { Label } from "@/components/ui/label";
 import { Download, Plus, Search, Clock, CheckCircle, AlertTriangle, HardDrive , Trash2 } from "lucide-react";
 
+import { Breadcrumbs } from "@/components/Breadcrumbs";
 const STATUS_COLORS: Record<string, string> = { pending: "bg-yellow-500/20 text-yellow-400 border-yellow-500/30", processing: "bg-blue-500/20 text-primary border-blue-500/30", completed: "bg-green-500/20 text-green-400 border-green-500/30", failed: "bg-red-500/20 text-red-400 border-red-500/30", expired: "bg-muted/400/20 text-muted-foreground border-border/30" };
 const EXPORT_FORMATS = ["json","csv","xml","parquet"];
 
@@ -38,6 +39,7 @@ export default function DataExportJobs() {
 
   return (
     <div className="space-y-6">
+      <Breadcrumbs items={[{ label: "Data", href: "/catalog" }, { label: "Data Export Jobs" }]} className="mb-4" />
       <div className="rounded-lg border border-border bg-card">
         <div className="px-6 py-8">
           <div className="flex items-center gap-3 mb-3">

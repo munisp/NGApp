@@ -11,6 +11,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { toast } from "sonner";
 import { CalendarDays, Clock, AlertTriangle, Plus, Pencil, Trash2, Search, RefreshCw } from "lucide-react";
 
+import { Breadcrumbs } from "@/components/Breadcrumbs";
 const PRIORITY_COLORS: Record<string, string> = {
   critical: "bg-red-500/15 text-red-600 dark:text-red-400 border-red-500/20",
   warning: "bg-yellow-500/15 text-yellow-600 dark:text-yellow-400 border-yellow-500/20",
@@ -113,6 +114,7 @@ export default function ComplianceCalendar() {
 
   return (
     <div className="p-6 space-y-6">
+      <Breadcrumbs items={[{ label: "Compliance", href: "/compliance" }, { label: "Compliance Calendar" }]} className="mb-4" />
       <div className="flex items-center justify-between">
         <div className="flex items-center gap-3">
           <CalendarDays className="h-7 w-7 text-primary"/>

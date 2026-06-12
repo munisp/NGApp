@@ -9,6 +9,7 @@ import {
   HardDrive, Search, RefreshCw, AlertTriangle, Activity,
   Network, Lock, Unlock, Eye, Filter, Download, Clock, Globe, Shield
 } from "lucide-react";
+import { Breadcrumbs } from "@/components/Breadcrumbs";
 
 const PROTOCOLS = ["ALL", "TCP", "UDP", "ICMP", "TLS", "HTTP", "HTTPS", "DNS", "SMTP", "SSH", "FTP"];
 const IXP_SITES = ["IXP-NGA-LAG", "IXP-GHA-ACC", "IXP-KEN-NAI", "IXP-ZAF-JNB"];
@@ -125,6 +126,7 @@ export default function ArkimePcap() {
 
   return (
     <div className="space-y-6">
+      <Breadcrumbs items={[{ label: "NOC", href: "/noc" }, { label: "Arkime Pcap" }]} className="mb-4" />
       {/* Header */}
       <div className="flex items-start justify-between">
         <div>

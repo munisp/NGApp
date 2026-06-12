@@ -8,6 +8,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { AlertTriangle, BookOpen, Scale, Bell, ExternalLink, Clock, Filter } from "lucide-react";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 
+import { Breadcrumbs } from "@/components/Breadcrumbs";
 const impactColors: Record<string, string> = {
   critical: "bg-red-500/20 text-red-400 border-red-500/30",
   high: "bg-orange-500/20 text-orange-400 border-orange-500/30",
@@ -40,6 +41,7 @@ export default function RegulatoryIntelligence() {
 
   return (
     <div className="p-6 space-y-6">
+      <Breadcrumbs items={[{ label: "Compliance", href: "/compliance" }, { label: "Regulatory Intelligence" }]} className="mb-4" />
       <div>
         <h1 className="text-2xl font-bold text-foreground">Regulatory Intelligence Hub</h1>
         <p className="text-muted-foreground text-sm mt-1">NDPC, CBN, NCC, NITDA — Real-time regulatory updates and compliance obligations</p>

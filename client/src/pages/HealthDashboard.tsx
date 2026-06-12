@@ -8,6 +8,7 @@ import {
   Activity, Server, Database, Zap, Shield, Globe,
   BarChart3, Cpu, HardDrive, Network
 } from "lucide-react";
+import { Breadcrumbs } from "@/components/Breadcrumbs";
 
 // ─── Types ───────────────────────────────────────────────────────────────────
 
@@ -143,6 +144,7 @@ export default function HealthDashboard() {
 
   return (
     <div className="space-y-6 p-6">
+      <Breadcrumbs items={[{ label: "Sectors", href: "/compliance" }, { label: "Healthcare Dashboard" }]} className="mb-4" />
       {/* Header */}
       <div className="flex items-center justify-between">
         <div>

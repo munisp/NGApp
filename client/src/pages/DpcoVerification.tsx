@@ -11,6 +11,7 @@ import { Label } from "@/components/ui/label";
 import { toast } from "sonner";
 import { ShieldCheck, Plus, Download, FileText, CheckCircle, Clock, XCircle, RefreshCw, Key , Trash2 } from "lucide-react";
 
+import { Breadcrumbs } from "@/components/Breadcrumbs";
 const STATUS_COLORS: Record<string, string> = {
   draft: "bg-muted-foreground/20 text-foreground border-border/30",
   issued: "bg-emerald-500/15 text-emerald-600 dark:text-emerald-400 border-emerald-500/30",
@@ -68,6 +69,7 @@ export default function DpcoVerification() {
 
   return (
     <div className="px-6 py-6 space-y-6">
+      <Breadcrumbs items={[{ label: "Dashboard", href: "/" }, { label: "Dpco Verification" }]} className="mb-4" />
       <div className="flex items-center justify-between">
         <div>
           <h1 className="text-2xl font-bold text-primary font-mono">DPCO Verification Statements</h1>

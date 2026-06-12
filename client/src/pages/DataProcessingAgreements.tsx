@@ -12,6 +12,7 @@ import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { FileSignature, Plus, Search, CheckCircle, Clock, AlertTriangle , Trash2 } from "lucide-react";
 
+import { Breadcrumbs } from "@/components/Breadcrumbs";
 const STATUS_COLORS: Record<string, string> = { draft: "bg-muted/400/20 text-muted-foreground border-border/30", active: "bg-green-500/20 text-green-400 border-green-500/30", expired: "bg-red-500/20 text-red-400 border-red-500/30", terminated: "bg-orange-500/20 text-primary border-orange-500/30", under_review: "bg-yellow-500/20 text-yellow-400 border-yellow-500/30" };
 
 export default function DataProcessingAgreements() {
@@ -39,6 +40,7 @@ export default function DataProcessingAgreements() {
 
   return (
     <div className="space-y-6">
+      <Breadcrumbs items={[{ label: "Data", href: "/catalog" }, { label: "Data Processing Agreements" }]} className="mb-4" />
       <div className="rounded-lg border border-border bg-card">
         <div className="px-6 py-8">
           <div className="flex items-center gap-3 mb-3">

@@ -10,6 +10,7 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@
 import { Activity, Database, GitBranch, Play, Pause, RefreshCw, TrendingUp, AlertCircle, CheckCircle } from "lucide-react";
 import { toast } from "sonner";
 
+import { Breadcrumbs } from "@/components/Breadcrumbs";
 const engineColors: Record<string, string> = {
   nifi: "bg-blue-500/20 text-blue-400 border-blue-500/30",
   dbt: "bg-orange-500/20 text-orange-400 border-orange-500/30",
@@ -45,6 +46,7 @@ export default function DataPipeline() {
 
   return (
     <div className="p-6 space-y-6">
+      <Breadcrumbs items={[{ label: "Data", href: "/catalog" }, { label: "Data Pipeline" }]} className="mb-4" />
       <div className="flex items-center justify-between">
         <div>
           <h1 className="text-2xl font-bold text-foreground">Data Pipeline Orchestration</h1>

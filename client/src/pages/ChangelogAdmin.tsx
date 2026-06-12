@@ -32,6 +32,7 @@ import {
 import { toast } from "sonner";
 import { Plus, Pencil, Trash2, Sparkles, ShieldAlert } from "lucide-react";
 
+import { Breadcrumbs } from "@/components/Breadcrumbs";
 type Category = "feature" | "security" | "improvement" | "bugfix" | "compliance";
 
 const CATEGORY_COLORS: Record<Category, string> = {
@@ -352,6 +353,7 @@ function EntryForm({
 }) {
   return (
     <div className="space-y-4">
+      <Breadcrumbs items={[{ label: "Admin", href: "/" }, { label: "Changelog Admin" }]} className="mb-4" />
       <div className="grid grid-cols-2 gap-4">
         <div className="space-y-1.5">
           <Label>Version *</Label>

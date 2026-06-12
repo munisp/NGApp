@@ -22,6 +22,7 @@ import {
 } from "lucide-react";
 import { toast } from "sonner";
 
+import { Breadcrumbs } from "@/components/Breadcrumbs";
 function ScoreBadge({ score }: { score: number }) {
   const cls = score >= 80 ? "bg-green-500/15 text-green-400 border-green-500/30"
     : score >= 60 ? "bg-yellow-500/15 text-yellow-400 border-yellow-500/30"
@@ -280,6 +281,7 @@ export default function MyOrg() {
 
   return (
     <div className="p-6 space-y-6">
+      <Breadcrumbs items={[{ label: "Dashboard", href: "/" }, { label: "My Org" }]} className="mb-4" />
       {/* Header */}
       <div className="flex items-start justify-between">
         <div>

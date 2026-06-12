@@ -10,6 +10,7 @@ import {
   RefreshCw, Shield, Database, Cpu, Globe, BarChart3, Zap, Bell,
   ChevronDown, ChevronUp, Eye, Target, Timer, AlertCircle
 } from "lucide-react";
+import { Breadcrumbs } from "@/components/Breadcrumbs";
 
 const SNAPSHOT_TYPES = [
   { value: "all", label: "All Snapshots" },
@@ -89,6 +90,7 @@ export default function ContinuousMonitoring() {
 
   return (
     <div className="p-6 space-y-6">
+      <Breadcrumbs items={[{ label: "Compliance", href: "/compliance" }, { label: "Continuous Monitoring" }]} className="mb-4" />
       {/* Header */}
       <div className="flex items-start justify-between">
         <div>

@@ -11,6 +11,7 @@ import { AreaChart, Area, BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, R
 import { Network, ArrowUpRight, ArrowDownLeft, Ban, Filter } from "lucide-react";
 import { toast } from "sonner";
 
+import { Breadcrumbs } from "@/components/Breadcrumbs";
 const PROTO_COLORS: Record<string, string> = {
   TCP: "#2563eb", UDP: "#8b5cf6", HTTP: "#10b981", HTTPS: "#06b6d4",
   DNS: "#f59e0b", SMTP: "#ec4899", FTP: "#ef4444", SSH: "#f97316",
@@ -72,6 +73,7 @@ export default function NetworkDPI() {
 
   return (
     <div className="space-y-6">
+      <Breadcrumbs items={[{ label: "NOC", href: "/noc" }, { label: "Network D P I" }]} className="mb-4" />
       <div className="flex items-start justify-between">
         <div>
           <div className="flex items-center gap-2 mb-1">

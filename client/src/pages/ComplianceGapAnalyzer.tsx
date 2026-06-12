@@ -9,6 +9,7 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@
 import { Target, AlertTriangle, CheckCircle, TrendingUp, RefreshCw } from "lucide-react";
 import { toast } from "sonner";
 
+import { Breadcrumbs } from "@/components/Breadcrumbs";
 const priorityColors: Record<string, string> = {
   critical: "bg-red-500/20 text-red-400 border-red-500/30",
   high: "bg-orange-500/20 text-orange-400 border-orange-500/30",
@@ -47,6 +48,7 @@ export default function ComplianceGapAnalyzer() {
 
   return (
     <div className="p-6 space-y-6">
+      <Breadcrumbs items={[{ label: "Compliance", href: "/compliance" }, { label: "Compliance Gap Analyzer" }]} className="mb-4" />
       <div className="flex items-center justify-between">
         <div>
           <h1 className="text-2xl font-bold text-foreground">Compliance Gap Analyzer</h1>

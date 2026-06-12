@@ -12,6 +12,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { ClipboardList, Plus, Search, CheckCircle, AlertTriangle, FileText, Download, Trash2 } from "lucide-react";
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from "@/components/ui/alert-dialog";
 
+import { Breadcrumbs } from "@/components/Breadcrumbs";
 const STATUS_COLORS: Record<string, string> = { draft: "bg-muted/400/20 text-muted-foreground border-border/30", submitted: "bg-blue-500/20 text-primary border-blue-500/30", under_review: "bg-yellow-500/20 text-yellow-400 border-yellow-500/30", accepted: "bg-green-500/20 text-green-400 border-green-500/30", rejected: "bg-red-500/20 text-red-400 border-red-500/30", requires_remediation: "bg-orange-500/20 text-primary border-orange-500/30" };
 
 export default function ComplianceAuditReturns() {
@@ -33,6 +34,7 @@ export default function ComplianceAuditReturns() {
 
   return (
     <div className="space-y-6">
+      <Breadcrumbs items={[{ label: "Compliance", href: "/compliance" }, { label: "Compliance Audit Returns" }]} className="mb-4" />
       <div className="rounded-lg border border-border bg-card">
         <div className="px-6 py-8">
           <div className="flex items-center gap-3 mb-3">
