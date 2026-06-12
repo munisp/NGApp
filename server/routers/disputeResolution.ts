@@ -3,6 +3,7 @@
  * Dispute Resolution — DB-backed dispute CRUD and dashboard
  * Sprint 54: Full PostgreSQL + middleware integration
  */
+import crypto from "crypto";
 import { z } from "zod";
 import { router, protectedProcedure } from "../_core/trpc";
 import { getDb, writeAuditLog } from "../db";
@@ -336,7 +337,7 @@ export const disputeResolutionRouter = router({
 
         // Create refund record when dispute is resolved in customer's favor
         if (input.status === "resolved" && u.amount) {
-          const refundRef = `REF-${Date.now()}-${Math.random().toString(36).slice(2, 8).toUpperCase()}`;
+          const refundRef = `REF-${Date.now()}-${crypto.randomBytes(4).toString("hex").toUpperCase()}`;
           await db.insert(refunds).values({
             ref: refundRef,
             disputeId: input.disputeId,
