@@ -77,14 +77,14 @@ function StatusBadge({ status }: { status: string }) {
     active: "bg-emerald-500/20 text-emerald-400",
     overdue: "bg-amber-500/20 text-amber-400",
     sent: "bg-cyan-500/20 text-cyan-400",
-    draft: "bg-slate-600/40 text-muted-foreground",
+    draft: "bg-muted text-muted-foreground",
     pending: "bg-amber-500/20 text-amber-400",
     completed: "bg-emerald-500/20 text-emerald-400",
     "in-progress": "bg-cyan-500/20 text-cyan-400",
     open: "bg-cyan-500/20 text-cyan-400",
   };
   return (
-    <span className={`text-[9px] font-semibold px-1.5 py-0.5 rounded uppercase tracking-wide ${map[status] ?? "bg-slate-600/40 text-muted-foreground"}`}>
+    <span className={`text-[9px] font-semibold px-1.5 py-0.5 rounded uppercase tracking-wide ${map[status] ?? "bg-muted text-muted-foreground"}`}>
       {status}
     </span>
   );
@@ -296,7 +296,7 @@ function ClientsTab({ dpcoOrgId }: { dpcoOrgId: number }) {
             return acc;
           }, {} as Record<string, number>)
         ).map(([sector, count]) => (
-          <span key={sector} className={`text-[9px] font-medium px-2 py-0.5 rounded-full ${sectorColors[sector] ?? "bg-slate-600/40 text-muted-foreground"}`}>
+          <span key={sector} className={`text-[9px] font-medium px-2 py-0.5 rounded-full ${sectorColors[sector] ?? "bg-muted text-muted-foreground"}`}>
             {sector} ({count})
           </span>
         ))}
@@ -315,7 +315,7 @@ function ClientsTab({ dpcoOrgId }: { dpcoOrgId: number }) {
                   <p className="text-sm font-semibold text-foreground truncate">{c.organisation_name}</p>
                 </div>
                 <div className="flex items-center gap-2 mt-1.5 ml-7.5">
-                  <span className={`text-[9px] px-1.5 py-0.5 rounded-full ${sectorColors[c.sector] ?? "bg-slate-600/40 text-muted-foreground"}`}>{c.sector}</span>
+                  <span className={`text-[9px] px-1.5 py-0.5 rounded-full ${sectorColors[c.sector] ?? "bg-muted text-muted-foreground"}`}>{c.sector}</span>
                   {c.city && <span className="text-[9px] text-muted-foreground flex items-center gap-0.5"><MapPin className="h-2.5 w-2.5" />{c.city}</span>}
                 </div>
               </div>
@@ -435,7 +435,7 @@ function BillingTab({ dpcoOrgId }: { dpcoOrgId: number }) {
                 <div className="flex gap-2">
                   <button
                     onClick={(e) => { e.stopPropagation(); window.open(`/api/invoices/${inv.id}/invoice.pdf`, "_blank"); }}
-                    className="flex-1 text-[10px] bg-muted/60 hover:bg-slate-600/60 text-cyan-400 rounded-lg py-1.5 flex items-center justify-center gap-1"
+                    className="flex-1 text-[10px] bg-muted/60 hover:bg-muted text-cyan-400 rounded-lg py-1.5 flex items-center justify-center gap-1"
                   >
                     <Download className="h-3 w-3" /> PDF
                   </button>
@@ -541,7 +541,7 @@ function AuditTab() {
                 <div
                   className={`h-full rounded-full transition-all ${
                     audit.status === "completed" ? "bg-emerald-500" :
-                    audit.status === "in-progress" ? "bg-cyan-500" : "bg-slate-600"
+                    audit.status === "in-progress" ? "bg-cyan-500" : "bg-muted"
                   }`}
                   style={{ width: `${audit.progress}%` }}
                 />
@@ -648,7 +648,7 @@ function SettingsTab() {
                   </div>
                   <button
                     onClick={item.onToggle}
-                    className={`w-9 h-5 rounded-full transition-colors relative ${item.value ? "bg-cyan-500" : "bg-slate-600"}`}
+                    className={`w-9 h-5 rounded-full transition-colors relative ${item.value ? "bg-cyan-500" : "bg-muted"}`}
                   >
                     <span className={`absolute top-0.5 w-4 h-4 bg-background rounded-full shadow transition-transform ${item.value ? "translate-x-4" : "translate-x-0.5"}`} />
                   </button>
@@ -702,7 +702,7 @@ function PhoneFrame({ tab, active, onSelect, dpcoOrgId }: { tab: Tab; active: Ta
       {/* Phone shell */}
       <div className="w-72 bg-background rounded-[2.5rem] border-4 border-border shadow-2xl overflow-hidden" style={{ height: 580 }}>
         {/* Status bar */}
-        <div className="bg-slate-950 px-5 pt-3 pb-1 flex items-center justify-between">
+        <div className="bg-background px-5 pt-3 pb-1 flex items-center justify-between">
           <span className="text-[9px] text-muted-foreground font-medium">9:41</span>
           <div className="w-16 h-5 bg-background rounded-full" />
           <div className="flex items-center gap-1">
@@ -713,7 +713,7 @@ function PhoneFrame({ tab, active, onSelect, dpcoOrgId }: { tab: Tab; active: Ta
         </div>
 
         {/* App header */}
-        <div className="bg-slate-950 px-4 pb-2 flex items-center justify-between">
+        <div className="bg-background px-4 pb-2 flex items-center justify-between">
           <div className="flex items-center gap-2">
             <div className="w-6 h-6 rounded-lg bg-cyan-500/20 flex items-center justify-center">
               <Shield className="h-3.5 w-3.5 text-cyan-400" />
@@ -724,7 +724,7 @@ function PhoneFrame({ tab, active, onSelect, dpcoOrgId }: { tab: Tab; active: Ta
         </div>
 
         {/* Tab content */}
-        <div className="overflow-y-auto px-3 py-3 bg-slate-950" style={{ height: 460 }}>
+        <div className="overflow-y-auto px-3 py-3 bg-background" style={{ height: 460 }}>
           {tabContent[tab]}
         </div>
 
@@ -756,7 +756,7 @@ export default function DpcoPwaUI() {
   return (
     <div className="min-h-screen bg-gradient-to-br from-slate-950 via-slate-900 to-slate-950">
       {/* Header */}
-      <div className="border-b border-border bg-slate-950/80 backdrop-blur-sm sticky top-0 z-20">
+      <div className="border-b border-border bg-background/80 backdrop-blur-sm sticky top-0 z-20">
         <div className="max-w-7xl mx-auto px-4 py-3 flex items-center justify-between">
           <div className="flex items-center gap-3">
             <div className="w-8 h-8 rounded-xl bg-cyan-500/20 border border-cyan-500/30 flex items-center justify-center">
@@ -809,7 +809,7 @@ export default function DpcoPwaUI() {
         <div className="flex justify-center mb-8">
           <div className="w-72 bg-background rounded-[2.5rem] border-4 border-cyan-500/40 shadow-[0_0_60px_rgba(6,182,212,0.15)] overflow-hidden" style={{ height: 620 }}>
             {/* Status bar */}
-            <div className="bg-slate-950 px-5 pt-3 pb-1 flex items-center justify-between">
+            <div className="bg-background px-5 pt-3 pb-1 flex items-center justify-between">
               <span className="text-[9px] text-muted-foreground font-medium">9:41</span>
               <div className="w-16 h-5 bg-background rounded-full" />
               <div className="flex items-center gap-1">
@@ -820,7 +820,7 @@ export default function DpcoPwaUI() {
             </div>
 
             {/* App header */}
-            <div className="bg-slate-950 px-4 pb-2 flex items-center justify-between">
+            <div className="bg-background px-4 pb-2 flex items-center justify-between">
               <div className="flex items-center gap-2">
                 <div className="w-6 h-6 rounded-lg bg-cyan-500/20 flex items-center justify-center">
                   <Shield className="h-3.5 w-3.5 text-cyan-400" />
@@ -834,7 +834,7 @@ export default function DpcoPwaUI() {
             </div>
 
             {/* Tab content */}
-            <div className="overflow-y-auto px-3 py-3 bg-slate-950" style={{ height: 500 }}>
+            <div className="overflow-y-auto px-3 py-3 bg-background" style={{ height: 500 }}>
               {activeTab === "home" && <HomeTab dpcoOrgId={DEMO_ORG_ID} />}
               {activeTab === "clients" && <ClientsTab dpcoOrgId={DEMO_ORG_ID} />}
               {activeTab === "billing" && <BillingTab dpcoOrgId={DEMO_ORG_ID} />}
@@ -865,7 +865,7 @@ export default function DpcoPwaUI() {
             {TABS.map((t) => (
               <div key={t.id} onClick={() => setActiveTab(t.id)} className={`cursor-pointer transition-all ${activeTab === t.id ? "ring-2 ring-cyan-500 ring-offset-2 ring-offset-slate-950 rounded-[2rem]" : "opacity-60 hover:opacity-80"}`}>
                 <div className="w-44 bg-background rounded-[2rem] border-2 border-border overflow-hidden shadow-xl" style={{ height: 360 }}>
-                  <div className="bg-slate-950 px-3 pt-2 pb-1 flex items-center justify-between">
+                  <div className="bg-background px-3 pt-2 pb-1 flex items-center justify-between">
                     <span className="text-[7px] text-muted-foreground">9:41</span>
                     <div className="w-8 h-3 bg-background rounded-full" />
                     <div className="flex gap-0.5">
@@ -873,11 +873,11 @@ export default function DpcoPwaUI() {
                       <Wifi className="h-1.5 w-1.5 text-muted-foreground" />
                     </div>
                   </div>
-                  <div className="bg-slate-950 px-2 pb-1 flex items-center gap-1">
+                  <div className="bg-background px-2 pb-1 flex items-center gap-1">
                     <Shield className="h-2.5 w-2.5 text-cyan-400" />
                     <span className="text-[7px] font-bold text-foreground">NDSEP DPCO</span>
                   </div>
-                  <div className="overflow-hidden px-2 py-1.5 bg-slate-950" style={{ height: 290, transform: "scale(0.6)", transformOrigin: "top left", width: "167%", pointerEvents: "none" }}>
+                  <div className="overflow-hidden px-2 py-1.5 bg-background" style={{ height: 290, transform: "scale(0.6)", transformOrigin: "top left", width: "167%", pointerEvents: "none" }}>
                     {t.id === "home" && <HomeTab dpcoOrgId={DEMO_ORG_ID} />}
                     {t.id === "clients" && <ClientsTab dpcoOrgId={DEMO_ORG_ID} />}
                     {t.id === "billing" && <BillingTab dpcoOrgId={DEMO_ORG_ID} />}

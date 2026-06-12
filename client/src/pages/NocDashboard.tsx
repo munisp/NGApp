@@ -93,7 +93,7 @@ function OverviewTab() {
               const health = (dboard?.subsystems as Record<string, Record<string, unknown>> | undefined)?.[sub];
               const st = String(health?.status ?? "unknown");
               return (
-                <div key={sub} className="flex items-center gap-2 p-3 rounded-lg bg-slate-700/40">
+                <div key={sub} className="flex items-center gap-2 p-3 rounded-lg bg-muted/50">
                   <div className={`w-3 h-3 rounded-full ${st === "healthy" ? "bg-emerald-500" : "bg-red-500"}`} />
                   <div>
                     <p className="text-sm font-medium capitalize">{sub}</p>
@@ -113,8 +113,8 @@ function OverviewTab() {
           {dboard?.middleware ? (
             <div className="grid grid-cols-2 md:grid-cols-4 gap-2">
               {(val<{ services: Array<{ name: string; status: string; latencyMs: number }> }>(dboard.middleware)).services?.map((svc) => (
-                <div key={svc.name} className="flex items-center gap-2 p-2 rounded bg-slate-700/30">
-                  <div className={`w-2 h-2 rounded-full ${svc.status === "healthy" ? "bg-emerald-500" : svc.status === "unconfigured" ? "bg-slate-500" : "bg-red-500"}`} />
+                <div key={svc.name} className="flex items-center gap-2 p-2 rounded bg-muted/40">
+                  <div className={`w-2 h-2 rounded-full ${svc.status === "healthy" ? "bg-emerald-500" : svc.status === "unconfigured" ? "bg-muted-foreground" : "bg-red-500"}`} />
                   <span className="text-xs">{svc.name}</span>
                   {svc.latencyMs > 0 && <span className="text-xs text-muted-foreground ml-auto">{svc.latencyMs}ms</span>}
                 </div>
@@ -418,7 +418,7 @@ function EscalationTab() {
         <CardContent>
           <div className="grid gap-3">
             {(pols ?? []).map((p, i) => (
-              <div key={i} className="p-3 rounded-lg bg-slate-700/40">
+              <div key={i} className="p-3 rounded-lg bg-muted/50">
                 <div className="flex items-center justify-between mb-1">
                   <p className="font-medium text-sm">{String(p.policy_name)}</p>
                   <Badge variant="outline" className="text-xs">{String((p.severity_filter as string[])?.join(", "))}</Badge>
@@ -443,7 +443,7 @@ function EscalationTab() {
         <CardContent>
           <div className="grid gap-3">
             {(scheds ?? []).map((s, i) => (
-              <div key={i} className="p-3 rounded-lg bg-slate-700/40">
+              <div key={i} className="p-3 rounded-lg bg-muted/50">
                 <div className="flex items-center justify-between mb-1">
                   <p className="font-medium text-sm">{String(s.schedule_name)}</p>
                   <Badge className="bg-emerald-500/20 text-emerald-400">{String(s.rotation_type)}</Badge>
@@ -656,13 +656,13 @@ function CorrelationTab() {
         <CardContent>
           <div className="grid gap-3">
             {pats?.patterns?.map((p, i) => (
-              <div key={i} className="p-3 rounded-lg bg-slate-700/40">
+              <div key={i} className="p-3 rounded-lg bg-muted/50">
                 <div className="flex items-center justify-between mb-1">
                   <p className="font-medium text-sm">{String(p.name)}</p>
                   <Badge className={severityColor[String(p.severity)] ?? ""}>{String(p.severity)}</Badge>
                 </div>
                 <p className="text-xs text-muted-foreground">{String(p.root_cause)}</p>
-                <p className="text-xs mt-1">Trigger: <code className="bg-slate-600 px-1 rounded">{JSON.stringify(p.trigger)}</code> → {String(p.effects_count)} effects</p>
+                <p className="text-xs mt-1">Trigger: <code className="bg-muted px-1 rounded">{JSON.stringify(p.trigger)}</code> → {String(p.effects_count)} effects</p>
               </div>
             ))}
           </div>

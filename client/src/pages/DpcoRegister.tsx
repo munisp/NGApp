@@ -164,7 +164,7 @@ export default function DpcoRegister() {
   };
 
   return (
-    <div className="min-h-screen bg-slate-950 text-foreground">
+    <div className="min-h-screen bg-background text-foreground">
       {/* Header */}
       <header className="border-b border-cyan-900/40 bg-background/80 backdrop-blur-sm">
         <div className="max-w-4xl mx-auto px-6 py-4 flex items-center justify-between">

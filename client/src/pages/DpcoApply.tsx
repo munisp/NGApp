@@ -116,7 +116,7 @@ export default function DpcoApply() {
 
   if (submitted) {
     return (
-      <div className="min-h-screen bg-slate-950 flex items-center justify-center p-6">
+      <div className="min-h-screen bg-background flex items-center justify-center p-6">
         <div className="max-w-lg w-full">
           <div className="bg-background border border-border rounded-xl p-8 text-center">
             <div className="w-16 h-16 bg-emerald-500/10 rounded-full flex items-center justify-center mx-auto mb-4">
@@ -150,7 +150,7 @@ export default function DpcoApply() {
   }
 
   return (
-    <div className="min-h-screen bg-slate-950 text-foreground">
+    <div className="min-h-screen bg-background text-foreground">
       {/* Header */}
       <div className="border-b border-border bg-background/50">
         <div className="max-w-4xl mx-auto px-6 py-4 flex items-center gap-4">

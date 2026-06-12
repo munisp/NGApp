@@ -111,7 +111,7 @@ function DpcoSearchWidget() {
         <button onClick={() => setSelectedDpco(null)} className="text-xs text-emerald-600 hover:underline mb-4 flex items-center gap-1">
           ← Back to results
         </button>
-        <div className="bg-slate-50 rounded-xl border border-border p-5 mb-5">
+        <div className="bg-muted/50 rounded-xl border border-border p-5 mb-5">
           <div className="flex items-start gap-3">
             <div className="w-10 h-10 rounded-lg bg-emerald-700 flex items-center justify-center shrink-0">
               <Building2 className="w-5 h-5 text-foreground" />
@@ -300,7 +300,7 @@ export default function DpcoLanding() {
       </section>
 
       {/* Modules */}
-      <section id="modules" className="py-20 bg-slate-50">
+      <section id="modules" className="py-20 bg-muted/50">
         <div className="max-w-6xl mx-auto px-6">
           <div className="text-center mb-12">
             <h2 className="text-3xl font-bold text-foreground mb-3">Everything a DPCO Needs</h2>
@@ -396,7 +396,7 @@ export default function DpcoLanding() {
       </section>
 
       {/* Pricing */}
-      <section id="pricing" className="py-20 bg-slate-50">
+      <section id="pricing" className="py-20 bg-muted/50">
         <div className="max-w-5xl mx-auto px-6">
           <div className="text-center mb-12">
             <h2 className="text-3xl font-bold text-foreground mb-3">Subscription Tiers</h2>

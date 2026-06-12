@@ -385,7 +385,7 @@ function NotificationsHeader({ isMobile, activeMenuLabel }: { isMobile: boolean;
     sev === "critical" ? "bg-red-500/20 text-red-400" :
     sev === "warning"  ? "bg-orange-500/20 text-orange-400" :
     sev === "info"     ? "bg-blue-500/20 text-blue-400" :
-                         "bg-slate-500/20 text-slate-400";
+                         "bg-muted text-muted-foreground";
 
   return (
     <div className="flex h-14 items-center justify-between px-4 sticky top-0 z-40 transition-colors header-bar">
@@ -590,7 +590,7 @@ export default function DashboardLayout({
             <h1 className="text-2xl font-semibold tracking-tight text-center text-white heading-display">
               Sign in to continue
             </h1>
-            <p className="text-sm text-slate-400 text-center max-w-sm leading-relaxed">
+            <p className="text-sm text-muted-foreground text-center max-w-sm leading-relaxed">
               Access to this dashboard requires authentication. Sign in with your Manus account or preview the DPCO portal in demo mode.
             </p>
           </div>
@@ -604,9 +604,9 @@ export default function DashboardLayout({
               Sign in with Manus
             </Button>
             <div className="relative flex items-center gap-2 my-1">
-              <div className="flex-1 h-px bg-slate-700/50" />
-              <span className="text-xs text-slate-500">or</span>
-              <div className="flex-1 h-px bg-slate-700/50" />
+              <div className="flex-1 h-px bg-border" />
+              <span className="text-xs text-muted-foreground">or</span>
+              <div className="flex-1 h-px bg-border" />
             </div>
             <Button
               variant="outline"
@@ -615,7 +615,7 @@ export default function DashboardLayout({
                 const returnTo = window.location.pathname + window.location.search;
                 window.location.href = `/api/demo-login?returnTo=${encodeURIComponent(returnTo)}`;
               }}
-              className="w-full border-slate-600/60 text-slate-300 hover:bg-slate-700/30 hover:text-white transition-all duration-200"
+              className="w-full border-border text-muted-foreground hover:bg-muted hover:text-white transition-all duration-200"
             >
               Preview as Demo DPCO
             </Button>
@@ -629,7 +629,7 @@ export default function DashboardLayout({
             >
               Preview as NDPC Admin
             </Button>
-            <p className="text-xs text-slate-500 text-center mt-1 leading-relaxed">
+            <p className="text-xs text-muted-foreground text-center mt-1 leading-relaxed">
               Demo mode uses sample accounts — no real credentials required. DPCO: DataGuard Ltd &middot; Admin: NDPC Staff.
             </p>
           </div>

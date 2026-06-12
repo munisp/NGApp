@@ -244,11 +244,11 @@ export default function DpcoPwaDashboard() {
   ];
 
   return (
-    <div className="min-h-screen bg-slate-950 text-foreground">
+    <div className="min-h-screen bg-background text-foreground">
       <OfflineIndicator />
 
       {/* ── Header ── */}
-      <header className="sticky top-0 z-30 bg-slate-950/95 backdrop-blur border-b border-border/60">
+      <header className="sticky top-0 z-30 bg-background/95 backdrop-blur border-b border-border/60">
         <div className="max-w-lg mx-auto px-4 py-3 flex items-center justify-between">
           <div className="flex items-center gap-2.5">
             <div className="w-8 h-8 rounded-lg bg-cyan-500 flex items-center justify-center shadow-lg shadow-cyan-500/30">

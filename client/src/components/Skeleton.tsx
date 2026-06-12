@@ -35,7 +35,7 @@ export function Skeleton({
 
   return (
     <div
-      className={`bg-gray-200 dark:bg-gray-700 ${animate ? "animate-pulse" : ""} ${className}`}
+      className={`bg-muted ${animate ? "animate-pulse" : ""} ${className}`}
       style={style}
       role="status"
       aria-label="Loading..."

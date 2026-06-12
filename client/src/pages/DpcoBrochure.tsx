@@ -105,7 +105,7 @@ export default function DpcoBrochure() {
   };
 
   return (
-    <div className="min-h-screen bg-slate-100">
+    <div className="min-h-screen bg-muted">
       {/* Editor Toolbar */}
       <div className="sticky top-0 z-50 bg-background border-b border-border px-6 py-2 flex items-center gap-3 shadow-sm print:hidden">
         <div className="flex items-center gap-2">

@@ -23,7 +23,7 @@ function severityBadge(severity: string) {
     medium: "bg-yellow-500 text-black",
     low: "bg-blue-500 text-white",
   };
-  return <Badge className={colors[severity] || "bg-gray-500 text-white"}>{severity}</Badge>;
+  return <Badge className={colors[severity] || "bg-muted text-foreground"}>{severity}</Badge>;
 }
 
 function outcomeBadge(outcome: string) {
@@ -34,7 +34,7 @@ function outcomeBadge(outcome: string) {
     pending: "bg-blue-500 text-white",
     queued_for_approval: "bg-purple-500 text-white",
   };
-  return <Badge className={colors[outcome] || "bg-gray-500 text-white"}>{outcome.replace(/_/g, " ")}</Badge>;
+  return <Badge className={colors[outcome] || "bg-muted text-foreground"}>{outcome.replace(/_/g, " ")}</Badge>;
 }
 
 function statusDot(status: string) {
@@ -44,7 +44,7 @@ function statusDot(status: string) {
     degraded: "bg-yellow-500",
     down: "bg-red-500",
   };
-  return <span className={`inline-block w-3 h-3 rounded-full ${colors[status] || "bg-gray-400"}`} />;
+  return <span className={`inline-block w-3 h-3 rounded-full ${colors[status] || "bg-muted-foreground"}`} />;
 }
 
 export default function NocAgentDashboard() {

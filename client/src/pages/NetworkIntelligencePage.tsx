@@ -78,7 +78,7 @@ function severityColor(sev: string): string {
     case "high": return "bg-orange-500 text-white";
     case "medium": return "bg-yellow-500 text-black";
     case "low": return "bg-blue-400 text-white";
-    default: return "bg-gray-400 text-white";
+    default: return "bg-muted-foreground text-white";
   }
 }
 
@@ -184,7 +184,7 @@ export default function NetworkIntelligencePage() {
                   <ProtoBar label="UDP" count={protocolStats.udp} total={protocolStats.total} color="bg-green-500" />
                   <ProtoBar label="ICMP" count={protocolStats.icmp} total={protocolStats.total} color="bg-yellow-500" />
                   <ProtoBar label="ARP" count={protocolStats.arp} total={protocolStats.total} color="bg-purple-500" />
-                  <ProtoBar label="Other" count={protocolStats.other} total={protocolStats.total} color="bg-gray-400" />
+                  <ProtoBar label="Other" count={protocolStats.other} total={protocolStats.total} color="bg-muted-foreground" />
                 </div>
               </CardContent>
             </Card>

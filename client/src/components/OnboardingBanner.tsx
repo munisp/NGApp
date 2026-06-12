@@ -36,7 +36,7 @@ export function OnboardingBanner() {
           </span>
         </div>
         {/* Progress bar */}
-        <div className="w-full bg-slate-700/50 rounded-full h-1.5">
+        <div className="w-full bg-muted rounded-full h-1.5">
           <div
             className="bg-gradient-to-r from-indigo-500 to-cyan-400 h-1.5 rounded-full transition-all duration-500"
             style={{ width: `${percentComplete}%` }}

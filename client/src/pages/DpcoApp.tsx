@@ -123,18 +123,18 @@ function StatusBadge({ status }: { status: string }) {
     paid: "bg-emerald-500/20 text-emerald-400",
     overdue: "bg-amber-500/20 text-amber-400",
     sent: "bg-cyan-500/20 text-cyan-400",
-    draft: "bg-slate-600/40 text-muted-foreground",
+    draft: "bg-muted text-muted-foreground",
     active: "bg-emerald-500/20 text-emerald-400",
     pending: "bg-amber-500/20 text-amber-400",
     completed: "bg-cyan-500/20 text-cyan-400",
     "in-progress": "bg-violet-500/20 text-violet-400",
-    open: "bg-slate-600/40 text-muted-foreground",
+    open: "bg-muted text-muted-foreground",
     low: "bg-emerald-500/20 text-emerald-400",
     medium: "bg-amber-500/20 text-amber-400",
     high: "bg-rose-500/20 text-rose-400",
   };
   return (
-    <span className={`text-[10px] font-semibold px-2 py-0.5 rounded-full ${map[status] ?? "bg-slate-600/40 text-muted-foreground"}`}>
+    <span className={`text-[10px] font-semibold px-2 py-0.5 rounded-full ${map[status] ?? "bg-muted text-muted-foreground"}`}>
       {status}
     </span>
   );
@@ -731,7 +731,7 @@ function AuditTab() {
                   </div>
                   <div className="h-2 bg-card rounded-full overflow-hidden">
                     <div
-                      className={`h-full rounded-full transition-all ${status === "completed" ? "bg-emerald-500" : status === "in-progress" ? "bg-violet-500" : "bg-slate-600"}`}
+                      className={`h-full rounded-full transition-all ${status === "completed" ? "bg-emerald-500" : status === "in-progress" ? "bg-violet-500" : "bg-muted"}`}
                       style={{ width: `${progress}%` }}
                     />
                   </div>
@@ -848,7 +848,7 @@ function SettingsTab({ lock }: { lock: ReturnType<typeof usePwaLock> }) {
 // ─── SIDEBAR NAV (desktop) ────────────────────────────────────────────────────
 function SidebarNav({ active, onChange }: { active: Tab; onChange: (t: Tab) => void }) {
   return (
-    <aside className="hidden lg:flex flex-col w-60 bg-slate-950 border-r border-border/60 h-screen sticky top-0 overflow-y-auto">
+    <aside className="hidden lg:flex flex-col w-60 bg-background border-r border-border/60 h-screen sticky top-0 overflow-y-auto">
       {/* Logo */}
       <div className="px-5 py-5 border-b border-border/60">
         <div className="flex items-center gap-3">
@@ -920,10 +920,10 @@ function BottomNav({ active, onChange }: { active: Tab; onChange: (t: Tab) => vo
   const isMoreActive = moreItems.some(i => i.id === active);
 
   return (
-    <nav className="lg:hidden fixed bottom-0 left-0 right-0 z-40 bg-slate-950/95 backdrop-blur border-t border-border/60">
+    <nav className="lg:hidden fixed bottom-0 left-0 right-0 z-40 bg-background/95 backdrop-blur border-t border-border/60">
       {/* More menu overlay */}
       {moreOpen && (
-        <div className="absolute bottom-full left-0 right-0 bg-slate-950/98 backdrop-blur border-t border-border/60 p-3 grid grid-cols-4 gap-2">
+        <div className="absolute bottom-full left-0 right-0 bg-background/98 backdrop-blur border-t border-border/60 p-3 grid grid-cols-4 gap-2">
           {moreItems.map(({ id, label, icon: Icon }) => (
             <button
               key={id}
@@ -992,14 +992,14 @@ export default function DpcoApp() {
 
   return (
     <DpcoOrgContext.Provider value={dpcoOrgId}>
-    <div className="min-h-screen bg-slate-950 text-foreground flex">
+    <div className="min-h-screen bg-background text-foreground flex">
       {/* Desktop sidebar */}
       <SidebarNav active={activeTab} onChange={setActiveTab} />
 
       {/* Main area */}
       <div className="flex-1 flex flex-col min-w-0">
         {/* Top header */}
-        <header className="sticky top-0 z-30 bg-slate-950/95 backdrop-blur border-b border-border/60 px-4 lg:px-6 py-3 flex items-center justify-between">
+        <header className="sticky top-0 z-30 bg-background/95 backdrop-blur border-b border-border/60 px-4 lg:px-6 py-3 flex items-center justify-between">
           <div className="flex items-center gap-3">
             {/* Mobile logo */}
             <div className="lg:hidden flex items-center gap-2.5">
