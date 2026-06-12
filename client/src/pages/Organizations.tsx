@@ -10,7 +10,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, Cell } from "recharts";
-import { Building2, Shield, AlertTriangle, CheckCircle2, XCircle, Plus, Pencil, Trash2, ChevronLeft, ChevronRight, Download, FileSearch, Mail, Gavel, TrendingUp, TrendingDown, Minus } from "lucide-react";
+import { Building2, Shield, AlertTriangle, CheckCircle2, XCircle, Plus, Pencil, Trash2, ChevronLeft, ChevronRight, Download, FileSearch, Mail, Gavel, TrendingUp, TrendingDown, Minus , Loader2 } from "lucide-react";
 
 // Lazy-loaded sparkline: only fetches data when hovered
 function OrgSparkline({ orgId, complianceScore }: { orgId: number; complianceScore: number }) {
@@ -399,7 +399,7 @@ export default function Organizations() {
           <DialogHeader><DialogTitle>Enforcement Case History — {caseHistoryOrg?.name}</DialogTitle></DialogHeader>
           <div className="py-2">
             {!orgCases ? (
-              <p className="text-xs text-muted-foreground text-center py-6">Loading...</p>
+              <div className="flex justify-center py-6"><Loader2 className="w-4 h-4 animate-spin text-muted-foreground" /></div>
             ) : (orgCases as any[]).length === 0 ? (
               <p className="text-xs text-muted-foreground text-center py-6">No enforcement cases found for this organisation.</p>
             ) : (

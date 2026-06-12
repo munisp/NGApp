@@ -10,7 +10,7 @@ import {
 import {
   Activity, AlertTriangle, CheckCircle2, XCircle, Shield, Network, Radio,
   Server, Cpu, Clock, ArrowLeft, RefreshCw, Zap, Eye, Bell, GitBranch,
-  Workflow, Globe, BarChart3, Timer, TrendingUp,
+  Workflow, Globe, BarChart3, Timer, TrendingUp, Loader2,
 } from "lucide-react";
 import { Link } from "wouter";
 import { Breadcrumbs } from "@/components/Breadcrumbs";
@@ -120,7 +120,7 @@ function OverviewTab() {
                 </div>
               ))}
             </div>
-          ) : <p className="text-sm text-muted-foreground">Loading...</p>}
+          ) : <Loader2 className="w-4 h-4 animate-spin text-muted-foreground" />}
         </CardContent>
       </Card>
     </div>

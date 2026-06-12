@@ -9,7 +9,7 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { useAuth } from "@/_core/hooks/useAuth";
-import { Users, Plus, Clock, CheckCircle, Shield, Search, ChevronRight, RefreshCw, AlertCircle, XCircle, CheckCircle2 } from "lucide-react";
+import { Users, Plus, Clock, CheckCircle, Shield, Search, ChevronRight, RefreshCw, AlertCircle, XCircle, CheckCircle2 , Loader2 } from "lucide-react";
 
 const REQUEST_TYPES = [
   { value: "access", label: "Right of Access", desc: "Request a copy of your personal data held by an organisation" },
@@ -275,7 +275,7 @@ export default function CitizenRightsPortal() {
                 </thead>
                 <tbody>
                   {isLoading ? (
-                    <tr><td colSpan={6} className="text-center py-8 text-muted-foreground">Loading...</td></tr>
+                    <tr><td colSpan={6} className="text-center py-8"><Loader2 className="w-5 h-5 animate-spin text-muted-foreground mx-auto" /></td></tr>
                   ) : filteredRequests.length === 0 ? (
                     <tr><td colSpan={6} className="text-center py-8 text-muted-foreground"><Users className="w-8 h-8 mx-auto mb-2 opacity-30" /><p>No requests found</p></td></tr>
                   ) : filteredRequests.map((r: any) => (

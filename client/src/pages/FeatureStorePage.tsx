@@ -6,6 +6,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog";
 import { trpc } from "@/lib/trpc";
+import { EmptyState } from "@/components/EmptyState";
 import { Database, GitBranch, Search, RefreshCw, Activity, Plus } from "lucide-react";
 import { toast } from "sonner";
 
@@ -111,7 +112,7 @@ export default function FeatureStorePage() {
                 {featuresLoading ? (
                   <div className="text-center py-8 text-muted-foreground">Loading features...</div>
                 ) : filteredFeatures.length === 0 ? (
-                  <div className="text-center py-8 text-muted-foreground">No features found. Register a feature group above.</div>
+                  <EmptyState title="No features found" description="Register a feature group above to get started" />
                 ) : (
                   <div className="overflow-x-auto">
                     <table className="w-full text-sm">

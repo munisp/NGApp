@@ -1,5 +1,6 @@
 import { useState } from "react";
 import { trpc } from "@/lib/trpc";
+import { EmptyState } from "@/components/EmptyState";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -144,7 +145,7 @@ export default function Phase13DataResidency() {
             {isLoading ? (
               <div className="text-center py-8 text-muted-foreground">Loading locations...</div>
             ) : list.length === 0 ? (
-              <div className="text-center py-8 text-muted-foreground">No data residency locations recorded</div>
+              <EmptyState title="No data residency locations" description="No data residency locations have been recorded yet" />
             ) : (
               <div className="overflow-x-auto">
                 <table className="w-full text-sm">

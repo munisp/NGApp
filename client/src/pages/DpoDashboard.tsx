@@ -3,7 +3,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { trpc } from "@/lib/trpc";
-import { ShieldCheck, AlertTriangle, FileText, Users, RefreshCw, Clock, CheckCircle, XCircle } from "lucide-react";
+import { ShieldCheck, AlertTriangle, FileText, Users, RefreshCw, Clock, CheckCircle, XCircle, Loader2 } from "lucide-react";
 import { toast } from "sonner";
 import { Link } from "wouter";
 
@@ -114,7 +114,7 @@ export default function DpoDashboard() {
               </CardHeader>
               <CardContent>
                 {dsarQuery.isLoading ? (
-                  <div className="text-center py-4 text-muted-foreground text-sm">Loading...</div>
+                  <div className="flex justify-center py-4"><Loader2 className="w-4 h-4 animate-spin text-muted-foreground" /></div>
                 ) : overdueDsars.length === 0 ? (
                   <div className="flex items-center gap-2 py-4 text-emerald-400 text-sm">
                     <CheckCircle className="h-4 w-4" /> No overdue DSARs
@@ -149,7 +149,7 @@ export default function DpoDashboard() {
               </CardHeader>
               <CardContent>
                 {noticesQuery.isLoading ? (
-                  <div className="text-center py-4 text-muted-foreground text-sm">Loading...</div>
+                  <div className="flex justify-center py-4"><Loader2 className="w-4 h-4 animate-spin text-muted-foreground" /></div>
                 ) : expiringNotices.length === 0 ? (
                   <div className="flex items-center gap-2 py-4 text-emerald-400 text-sm">
                     <CheckCircle className="h-4 w-4" /> No notices expiring soon
@@ -179,7 +179,7 @@ export default function DpoDashboard() {
               </CardHeader>
               <CardContent>
                 {decisionsQuery.isLoading ? (
-                  <div className="text-center py-4 text-muted-foreground text-sm">Loading...</div>
+                  <div className="flex justify-center py-4"><Loader2 className="w-4 h-4 animate-spin text-muted-foreground" /></div>
                 ) : pendingDecisions.length === 0 ? (
                   <div className="flex items-center gap-2 py-4 text-emerald-400 text-sm">
                     <CheckCircle className="h-4 w-4" /> No pending reviews
@@ -212,7 +212,7 @@ export default function DpoDashboard() {
               </CardHeader>
               <CardContent>
                 {ropaQuery.isLoading ? (
-                  <div className="text-center py-4 text-muted-foreground text-sm">Loading...</div>
+                  <div className="flex justify-center py-4"><Loader2 className="w-4 h-4 animate-spin text-muted-foreground" /></div>
                 ) : (Array.isArray(ropaRecords) ? ropaRecords : []).length === 0 ? (
                   <div className="text-center py-4 text-muted-foreground text-sm">No ROPA records yet.</div>
                 ) : (
@@ -243,7 +243,7 @@ export default function DpoDashboard() {
             </CardHeader>
             <CardContent>
               {dsarQuery.isLoading ? (
-                <div className="text-center py-8 text-muted-foreground">Loading...</div>
+                <div className="flex justify-center py-8"><Loader2 className="w-5 h-5 animate-spin text-muted-foreground" /></div>
               ) : overdueDsars.length === 0 ? (
                 <div className="text-center py-8 text-emerald-400">No overdue DSARs — all requests are within deadline.</div>
               ) : (
@@ -290,7 +290,7 @@ export default function DpoDashboard() {
             </CardHeader>
             <CardContent>
               {ropaQuery.isLoading ? (
-                <div className="text-center py-8 text-muted-foreground">Loading...</div>
+                <div className="flex justify-center py-8"><Loader2 className="w-5 h-5 animate-spin text-muted-foreground" /></div>
               ) : (Array.isArray(ropaRecords) ? ropaRecords : []).length === 0 ? (
                 <div className="text-center py-8 text-muted-foreground">No ROPA records. Add them via the ROPA Register.</div>
               ) : (
@@ -333,7 +333,7 @@ export default function DpoDashboard() {
             </CardHeader>
             <CardContent>
               {noticesQuery.isLoading ? (
-                <div className="text-center py-8 text-muted-foreground">Loading...</div>
+                <div className="flex justify-center py-8"><Loader2 className="w-5 h-5 animate-spin text-muted-foreground" /></div>
               ) : (Array.isArray(notices) ? notices : []).length === 0 ? (
                 <div className="text-center py-8 text-muted-foreground">No privacy notices yet.</div>
               ) : (
@@ -384,7 +384,7 @@ export default function DpoDashboard() {
             </CardHeader>
             <CardContent>
               {decisionsQuery.isLoading ? (
-                <div className="text-center py-8 text-muted-foreground">Loading...</div>
+                <div className="flex justify-center py-8"><Loader2 className="w-5 h-5 animate-spin text-muted-foreground" /></div>
               ) : (Array.isArray(decisions) ? decisions : []).length === 0 ? (
                 <div className="text-center py-8 text-muted-foreground">No automated decisions recorded.</div>
               ) : (

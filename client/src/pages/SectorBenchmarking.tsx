@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { trpc } from "@/lib/trpc";
-import { BarChart2, TrendingUp, TrendingDown, Minus, Award, AlertTriangle } from "lucide-react";
+import { BarChart2, TrendingUp, TrendingDown, Minus, Award, AlertTriangle , Loader2 } from "lucide-react";
 const SECTOR_COLORS: Record<string, string> = {
   fintech: "bg-blue-600",
   health: "bg-green-600",
@@ -79,7 +79,7 @@ export default function SectorBenchmarking() {
               <h2 className="font-semibold text-foreground">Sector Overview</h2>
             </div>
             {isLoading ? (
-              <div className="p-8 text-center text-muted-foreground">Loading...</div>
+              <div className="flex justify-center py-8"><Loader2 className="w-5 h-5 animate-spin text-muted-foreground" /></div>
             ) : (benchmarks as any[]).length === 0 ? (
               <div className="p-8 text-center text-muted-foreground">No sector data available. Run sector benchmarking to populate.</div>
             ) : (

@@ -1,5 +1,6 @@
 import { useState } from "react";
 import { trpc } from "@/lib/trpc";
+import { EmptyState } from "@/components/EmptyState";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -164,7 +165,7 @@ export default function WebhookManagement() {
                 <div className="border-t border-border bg-background">
                   <div className="px-5 py-3 text-xs text-muted-foreground font-medium uppercase tracking-wide">Recent Deliveries</div>
                   {(deliveries as any[]).length === 0 ? (
-                    <div className="px-5 pb-4 text-muted-foreground text-sm">No deliveries yet.</div>
+                    <EmptyState title="No deliveries" description="Webhook deliveries will appear here" className="py-4" />
                   ) : (
                     <div className="divide-y divide-gray-800">
                       {(deliveries as any[]).slice(0, 10).map((d: any) => (
