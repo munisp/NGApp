@@ -35,7 +35,7 @@ import {
   Heart, Zap as ZapIcon, HeartPulse, FlaskConical, AlertCircle, Clock, UserCog, MonitorDot,
   Calculator, CalendarDays, HeartHandshake, Mail, Brain,
   Workflow, Share2, FileSearch, Eye, Microscope,
-  MapPin, ArrowRightLeft, Star
+  MapPin, ArrowRightLeft, Star, Ship, Plane, Skull, Flame
 } from "lucide-react";
 import { useRbac, getRoleBadgeColor, getRoleLabel } from "@/hooks/useRbac";
 import { CSSProperties, useEffect, useRef, useState, useCallback, useMemo } from "react";
@@ -71,6 +71,11 @@ const menuSections: MenuSection[] = [
       { icon: Radio, label: "Network Intelligence", path: "/network-intelligence" },
       { icon: Activity, label: "NOC Dashboard", path: "/noc" },
       { icon: Shield, label: "Threat Intelligence", path: "/threat-intelligence" },
+      { icon: Skull, label: "SOCint CTI Hub", path: "/socint" },
+      { icon: Ship, label: "Maritime Intel", path: "/phantom-tide" },
+      { icon: ShieldAlert, label: "Wazuh SIEM", path: "/wazuh" },
+      { icon: Plane, label: "SIGINT Correlation", path: "/sigint" },
+      { icon: Brain, label: "Estorides Graph", path: "/estorides" },
       { icon: Bot, label: "AI NOC Agent", path: "/noc-agent" },
       { icon: GitBranch, label: "BGP Routes", path: "/bgp" },
       { icon: HardDrive, label: "Arkime PCAP", path: "/pcap" },

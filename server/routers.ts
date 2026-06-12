@@ -252,6 +252,11 @@ import { phase13Router } from "./routers/phase13Features";
 import { productionReadinessRouter } from "./routers/productionReadiness";
 import { temporalRouter, searchRouter as opensearchRouter, wafRouter, gatewayRouter, authzRouter, kafkaMetricsRouter, ledgerRouter } from "./routers/middlewareWiring";
 import { osirisIntelRouter } from "./routers/osirisIntel";
+import { socintRouter } from "./routers/socint";
+import { phantomTideRouter } from "./routers/phantomTide";
+import { wazuhRouter } from "./routers/wazuh";
+import { sigintRouter } from "./routers/sigint";
+import { estoridesRouter } from "./routers/estorides";
 import { logger } from "./logger";
 
 export const appRouter = router({
@@ -285,6 +290,11 @@ export const appRouter = router({
   streamingEvents: streamingEventsDbRouter,
   threatIntelligence: threatIntelligenceRouter,
   osirisIntel: osirisIntelRouter,
+  socint: socintRouter,
+  phantomTide: phantomTideRouter,
+  wazuh: wazuhRouter,
+  sigint: sigintRouter,
+  estorides: estoridesRouter,
   tiaAssessments: tiaAssessmentsRouter,
   transferImpact: transferImpactRouter,
   system: systemRouter,
