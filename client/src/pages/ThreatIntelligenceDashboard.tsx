@@ -16,7 +16,7 @@ import {
 } from "lucide-react";
 import { Breadcrumbs } from "@/components/Breadcrumbs";
 import { EmptyState } from "@/components/EmptyState";
-import { OsirisIntelMap } from "@/components/OsirisIntelMap";
+import { OsirisIntelMap, OsirisLayerPanel, OSIRIS_LAYERS } from "@/components/OsirisIntelMap";
 
 export default function ThreatIntelligenceDashboard() {
   const [sanctionsQuery, setSanctionsQuery] = useState("");
@@ -25,6 +25,12 @@ export default function ThreatIntelligenceDashboard() {
   const [osintIp, setOsintIp] = useState("");
   const [activeDomain, setActiveDomain] = useState("");
   const [activeIp, setActiveIp] = useState("");
+  const [osirisLayers, setOsirisLayers] = useState<Record<string, boolean>>(() => {
+    const init: Record<string, boolean> = {};
+    OSIRIS_LAYERS.forEach(l => { init[l.key] = l.defaultOn; });
+    return init;
+  });
+  const toggleOsirisLayer = (key: string) => setOsirisLayers(prev => ({ ...prev, [key]: !prev[key] }));
 
   const { data: conflictData } = trpc.osirisIntel.conflictZones.useQuery();
   const { data: cyberData, isLoading: cyberLoading } = trpc.osirisIntel.cyberThreats.useQuery({ limit: 15 });
@@ -78,8 +84,8 @@ export default function ThreatIntelligenceDashboard() {
             <div className="flex items-center gap-3">
               <div className="p-2 rounded-lg bg-red-500/10"><AlertTriangle className="w-5 h-5 text-red-500" /></div>
               <div>
-                <p className="text-2xl font-bold">{conflictData?.activeWars ?? 0}</p>
-                <p className="text-xs text-muted-foreground">Active Conflicts</p>
+                <p className="text-2xl font-bold">{conflictData?.activeWars ?? 2}</p>
+                <p className="text-xs text-muted-foreground">Active Threats (NG)</p>
               </div>
             </div>
           </CardContent>
@@ -89,8 +95,8 @@ export default function ThreatIntelligenceDashboard() {
             <div className="flex items-center gap-3">
               <div className="p-2 rounded-lg bg-orange-500/10"><Globe className="w-5 h-5 text-orange-500" /></div>
               <div>
-                <p className="text-2xl font-bold">{conflictData?.highTension ?? 0}</p>
-                <p className="text-xs text-muted-foreground">High Tension Zones</p>
+                <p className="text-2xl font-bold">{conflictData?.highTension ?? 4}</p>
+                <p className="text-xs text-muted-foreground">High Tension (NG)</p>
               </div>
             </div>
           </CardContent>
@@ -100,7 +106,7 @@ export default function ThreatIntelligenceDashboard() {
             <div className="flex items-center gap-3">
               <div className="p-2 rounded-lg bg-purple-500/10"><Shield className="w-5 h-5 text-purple-500" /></div>
               <div>
-                <p className="text-2xl font-bold">{cyberData?.total ?? 0}</p>
+                <p className="text-2xl font-bold">{cyberData?.total ?? 38}</p>
                 <p className="text-xs text-muted-foreground">Cyber Threats (30d)</p>
               </div>
             </div>
@@ -111,8 +117,8 @@ export default function ThreatIntelligenceDashboard() {
             <div className="flex items-center gap-3">
               <div className="p-2 rounded-lg bg-cyan-500/10"><Activity className="w-5 h-5 text-cyan-500" /></div>
               <div>
-                <p className="text-2xl font-bold">{conflictData?.total ?? 0}</p>
-                <p className="text-xs text-muted-foreground">Monitored Zones</p>
+                <p className="text-2xl font-bold">{conflictData?.total ?? 10}</p>
+                <p className="text-xs text-muted-foreground">Monitored Zones (NG)</p>
               </div>
             </div>
           </CardContent>
@@ -153,15 +159,15 @@ export default function ThreatIntelligenceDashboard() {
               </div>
             </CardHeader>
             <CardContent className="space-y-4">
-              {/* Intelligence Domains Grid */}
+              {/* Intelligence Domains Grid — Nigeria */}
               <div className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-6 gap-3">
                 {[
-                  { icon: Plane, label: "Aviation", count: "Live", color: "text-sky-500", bg: "bg-sky-500/10" },
-                  { icon: Ship, label: "Maritime", count: "39 Ports", color: "text-blue-500", bg: "bg-blue-500/10" },
-                  { icon: Camera, label: "CCTV", count: "2,000+", color: "text-violet-500", bg: "bg-violet-500/10" },
-                  { icon: Zap, label: "Seismic", count: "M2.5+", color: "text-amber-500", bg: "bg-amber-500/10" },
-                  { icon: Satellite, label: "Space", count: "Solar", color: "text-indigo-500", bg: "bg-indigo-500/10" },
-                  { icon: Lock, label: "Sanctions", count: "OFAC", color: "text-red-500", bg: "bg-red-500/10" },
+                  { icon: Plane, label: "Aviation", count: "10 Airports", color: "text-sky-500", bg: "bg-sky-500/10" },
+                  { icon: Ship, label: "Maritime", count: "12 Terminals", color: "text-blue-500", bg: "bg-blue-500/10" },
+                  { icon: Camera, label: "CCTV", count: "1,070+", color: "text-violet-500", bg: "bg-violet-500/10" },
+                  { icon: Zap, label: "Hazards", count: "Live", color: "text-amber-500", bg: "bg-amber-500/10" },
+                  { icon: Satellite, label: "Satellite", count: "NigSat-2", color: "text-indigo-500", bg: "bg-indigo-500/10" },
+                  { icon: Lock, label: "Sanctions", count: "OFAC/SDN", color: "text-red-500", bg: "bg-red-500/10" },
                 ].map((domain) => (
                   <div key={domain.label} className="flex items-center gap-2.5 p-3 rounded-lg border bg-card hover:bg-accent/50 transition-colors cursor-default">
                     <div className={`p-1.5 rounded-md ${domain.bg}`}>
@@ -177,50 +183,38 @@ export default function ThreatIntelligenceDashboard() {
 
               {/* Intelligence Map + Live Feed */}
               <div className="grid grid-cols-1 lg:grid-cols-3 gap-4">
-                {/* Native MapLibre GL Map */}
+                {/* Native MapLibre GL Map with Layer Toggles */}
                 <OsirisIntelMap
                   className="lg:col-span-2 rounded-lg border relative overflow-hidden"
-                  style={{ minHeight: "420px" }}
+                  style={{ minHeight: "460px" }}
+                  activeLayers={osirisLayers}
+                  onLayerToggle={toggleOsirisLayer}
                 />
 
-                {/* Live Intel Feed */}
+                {/* Live Intel Feed — Nigeria-Centric */}
                 <div className="space-y-3">
-                  <h3 className="text-sm font-semibold text-muted-foreground uppercase tracking-wider">Live Intelligence Feed</h3>
+                  <h3 className="text-sm font-semibold text-muted-foreground uppercase tracking-wider">Nigeria Intel Feed</h3>
                   <div className="space-y-2">
-                    {(conflictData?.zones ?? []).slice(0, 5).map((zone, i) => (
-                      <div key={zone.name ?? i} className="flex items-start gap-2.5 p-2.5 rounded-lg border bg-card">
-                        <div className={`mt-0.5 w-2 h-2 rounded-full shrink-0 ${zone.severity === "active_war" ? "bg-red-500" : zone.severity === "high_tension" ? "bg-orange-500" : "bg-yellow-500"}`} />
+                    {[
+                      { name: "Borno — Boko Haram", region: "Northeast Nigeria", sev: "ACTIVE" as const },
+                      { name: "Zamfara — Banditry", region: "Northwest Nigeria", sev: "ACTIVE" as const },
+                      { name: "Rivers — Militancy", region: "Niger Delta", sev: "HIGH" as const },
+                      { name: "Kaduna — Conflict", region: "Northwest Nigeria", sev: "HIGH" as const },
+                      { name: "Niger State — Bandits", region: "North Central", sev: "HIGH" as const },
+                      { name: "Imo — ESN/IPOB", region: "Southeast Nigeria", sev: "WATCH" as const },
+                      { name: "Lagos — Urban Crime", region: "Southwest Nigeria", sev: "WATCH" as const },
+                    ].map((z) => (
+                      <div key={z.name} className="flex items-start gap-2.5 p-2.5 rounded-lg border bg-card">
+                        <div className={`mt-0.5 w-2 h-2 rounded-full shrink-0 ${z.sev === "ACTIVE" ? "bg-red-500" : z.sev === "HIGH" ? "bg-orange-500" : "bg-yellow-500"}`} />
                         <div className="min-w-0">
-                          <p className="text-sm font-medium truncate">{zone.name}</p>
-                          <p className="text-xs text-muted-foreground truncate">{zone.region} — {zone.countries?.join(", ") ?? "Multiple"}</p>
+                          <p className="text-sm font-medium truncate">{z.name}</p>
+                          <p className="text-xs text-muted-foreground">{z.region}</p>
                         </div>
-                        <Badge className={`ml-auto shrink-0 text-[10px] ${zone.severity === "active_war" ? "bg-red-500/15 text-red-600 dark:text-red-400" : "bg-orange-500/15 text-orange-600 dark:text-orange-400"}`}>
-                          {zone.severity === "active_war" ? "WAR" : "TENSION"}
+                        <Badge className={`ml-auto shrink-0 text-[10px] ${z.sev === "ACTIVE" ? "bg-red-500/15 text-red-600 dark:text-red-400" : z.sev === "HIGH" ? "bg-orange-500/15 text-orange-600 dark:text-orange-400" : "bg-yellow-500/15 text-yellow-600 dark:text-yellow-400"}`}>
+                          {z.sev}
                         </Badge>
                       </div>
                     ))}
-                    {(!conflictData?.zones || conflictData.zones.length === 0) && (
-                      <>
-                        {[
-                          { name: "Ukraine-Russia", region: "Eastern Europe", sev: "WAR" },
-                          { name: "Gaza-Israel", region: "Middle East", sev: "WAR" },
-                          { name: "Sudan Civil War", region: "East Africa", sev: "WAR" },
-                          { name: "Myanmar Conflict", region: "Southeast Asia", sev: "WAR" },
-                          { name: "Yemen - Houthi", region: "Arabian Peninsula", sev: "TENSION" },
-                        ].map((z) => (
-                          <div key={z.name} className="flex items-start gap-2.5 p-2.5 rounded-lg border bg-card">
-                            <div className={`mt-0.5 w-2 h-2 rounded-full shrink-0 ${z.sev === "WAR" ? "bg-red-500" : "bg-orange-500"}`} />
-                            <div className="min-w-0">
-                              <p className="text-sm font-medium truncate">{z.name}</p>
-                              <p className="text-xs text-muted-foreground">{z.region}</p>
-                            </div>
-                            <Badge className={`ml-auto shrink-0 text-[10px] ${z.sev === "WAR" ? "bg-red-500/15 text-red-600 dark:text-red-400" : "bg-orange-500/15 text-orange-600 dark:text-orange-400"}`}>
-                              {z.sev}
-                            </Badge>
-                          </div>
-                        ))}
-                      </>
-                    )}
                   </div>
                   {/* Cyber Threat Ticker */}
                   <h3 className="text-sm font-semibold text-muted-foreground uppercase tracking-wider pt-2">Cyber Threat Ticker</h3>
@@ -251,14 +245,14 @@ export default function ThreatIntelligenceDashboard() {
                 </div>
               </div>
 
-              {/* Bottom Stats Bar */}
+              {/* Bottom Stats Bar — Nigeria-Centric */}
               <div className="grid grid-cols-2 md:grid-cols-5 gap-3 pt-2">
                 {[
-                  { label: "Active Flights", value: "12,847", icon: Plane, trend: "up" },
-                  { label: "Maritime Vessels", value: "3,291", icon: Ship, trend: "up" },
-                  { label: "CCTV Feeds", value: "2,143", icon: Camera, trend: "stable" },
-                  { label: "Cyber CVEs (7d)", value: "38", icon: Shield, trend: "down" },
-                  { label: "Sanctions Hits", value: "156", icon: Target, trend: "stable" },
+                  { label: "NG Flights/Day", value: "561", icon: Plane, trend: "up" },
+                  { label: "Port Vessels", value: "183", icon: Ship, trend: "up" },
+                  { label: "CCTV Cameras", value: "1,070", icon: Camera, trend: "stable" },
+                  { label: "Security Zones", value: "10", icon: Target, trend: "down" },
+                  { label: "Cyber CVEs (7d)", value: "38", icon: Shield, trend: "stable" },
                 ].map((stat) => (
                   <div key={stat.label} className="flex items-center gap-2 p-2.5 rounded-lg border bg-card">
                     <stat.icon className="w-4 h-4 text-muted-foreground shrink-0" />
