@@ -23,7 +23,29 @@ import type {
   Producer,
   Kafka as KafkaClient,
   EachMessagePayload,
+  IHeaders,
 } from "kafkajs";
+import { trace, context, SpanKind, SpanStatusCode } from "@opentelemetry/api";
+import { W3CTraceContextPropagator } from "@opentelemetry/core";
+
+// ─── OTel Trace Context Propagation ─────────────────────────────────────────
+
+const tracer = trace.getTracer("kafka-event-consumer", "1.0.0");
+const propagator = new W3CTraceContextPropagator();
+
+/** Extract W3C trace context from Kafka message headers */
+function extractTraceContext(headers: IHeaders | undefined) {
+  if (!headers) return context.active();
+  const carrier: Record<string, string> = {};
+  for (const [key, value] of Object.entries(headers)) {
+    if (value)
+      carrier[key] = Buffer.isBuffer(value) ? value.toString() : String(value);
+  }
+  return propagator.extract(context.active(), carrier, {
+    get: (c, k) => c[k],
+    keys: c => Object.keys(c),
+  });
+}
 
 // ─── Configuration ──────────────────────────────────────────────────────────
 
@@ -436,48 +458,79 @@ export class PosEventConsumer {
     const startTime = Date.now();
     this.metrics.messagesConsumed++;
 
-    try {
-      const value = message.value?.toString();
-      if (!value) return;
+    // Extract trace context from Kafka headers for distributed tracing
+    const parentContext = extractTraceContext(message.headers);
 
-      const event: PosEvent = JSON.parse(value);
-
-      // Idempotency check
-      if (this.config.enableIdempotency && this.processedIds.has(event.id)) {
-        return; // Already processed
-      }
-
-      // Find and execute handler
-      const handler = eventHandlers.get(event.type);
-      if (handler) {
-        await handler(event);
-        this.metrics.messagesProcessed++;
-      } else {
-        console.warn(
-          `[Kafka Consumer] No handler for event type: ${event.type}`
-        );
-      }
-
-      // Mark as processed
-      if (this.config.enableIdempotency) {
-        this.processedIds.add(event.id);
-        if (this.processedIds.size > 100_000) {
-          const arr = Array.from(this.processedIds);
-          this.processedIds = new Set(arr.slice(-50_000));
-        }
-      }
-
-      this.metrics.lastMessageAt = Date.now();
-    } catch (error: any) {
-      this.metrics.messagesFailed++;
-      console.error(
-        `[Kafka Consumer] Processing error on ${topic}:${partition}:`,
-        error.message
+    await context.with(parentContext, async () => {
+      const span = tracer.startSpan(
+        `kafka.consume ${topic}`,
+        {
+          kind: SpanKind.CONSUMER,
+          attributes: {
+            "messaging.system": "kafka",
+            "messaging.destination": topic,
+            "messaging.kafka.partition": partition,
+            "messaging.kafka.offset": message.offset,
+          },
+        },
+        parentContext
       );
 
-      // Send to DLQ
-      await this.sendToDLQ(message, topic, partition, error.message);
-    }
+      try {
+        const value = message.value?.toString();
+        if (!value) {
+          span.end();
+          return;
+        }
+
+        const event: PosEvent = JSON.parse(value);
+        span.setAttribute("messaging.kafka.event_type", event.type);
+
+        // Idempotency check
+        if (this.config.enableIdempotency && this.processedIds.has(event.id)) {
+          span.setAttribute("messaging.kafka.deduplicated", true);
+          span.end();
+          return;
+        }
+
+        // Find and execute handler
+        const handler = eventHandlers.get(event.type);
+        if (handler) {
+          await handler(event);
+          this.metrics.messagesProcessed++;
+          span.setStatus({ code: SpanStatusCode.OK });
+        } else {
+          console.warn(
+            `[Kafka Consumer] No handler for event type: ${event.type}`
+          );
+          span.setAttribute("messaging.kafka.unhandled", true);
+        }
+
+        // Mark as processed
+        if (this.config.enableIdempotency) {
+          this.processedIds.add(event.id);
+          if (this.processedIds.size > 100_000) {
+            const arr = Array.from(this.processedIds);
+            this.processedIds = new Set(arr.slice(-50_000));
+          }
+        }
+
+        this.metrics.lastMessageAt = Date.now();
+      } catch (error: any) {
+        this.metrics.messagesFailed++;
+        span.setStatus({ code: SpanStatusCode.ERROR, message: error.message });
+        span.recordException(error);
+        console.error(
+          `[Kafka Consumer] Processing error on ${topic}:${partition}:`,
+          error.message
+        );
+
+        // Send to DLQ
+        await this.sendToDLQ(message, topic, partition, error.message);
+      } finally {
+        span.end();
+      }
+    });
 
     // Update avg processing time
     const elapsed = Date.now() - startTime;

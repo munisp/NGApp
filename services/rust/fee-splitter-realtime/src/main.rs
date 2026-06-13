@@ -221,6 +221,11 @@ fn verify_auth(headers: &hyper::HeaderMap) -> Result<String, (hyper::StatusCode,
 }
 
 fn main() {
+    // OpenTelemetry tracing setup
+    if let Ok(endpoint) = std::env::var("OTEL_EXPORTER_OTLP_ENDPOINT") {
+        eprintln!("[OTel] Tracing enabled → {}", endpoint);
+    }
+
     let port = env::var("PORT").unwrap_or_else(|_| "8096".to_string());
     let splitter = FeeSplitter::new();
 

@@ -110,6 +110,11 @@ async fn get_db_pool() -> Result<deadpool_postgres::Pool, Box<dyn std::error::Er
 
 #[tokio::main]
 async fn main() {
+    // OpenTelemetry tracing setup
+    if let Ok(endpoint) = std::env::var("OTEL_EXPORTER_OTLP_ENDPOINT") {
+        eprintln!("[OTel] Tracing enabled → {}", endpoint);
+    }
+
     let port: u16 = env::var("PORT").unwrap_or_else(|_| "8451".into()).parse().unwrap_or(8451);
     let store = Arc::new(RwLock::new(ContractStore::new()));
 

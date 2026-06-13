@@ -120,11 +120,22 @@ export async function publishEvent<T>(
   };
 
   try {
+    // Inject W3C trace context into Kafka headers for distributed tracing
+    const headers: Record<string, string> = {};
+    try {
+      const { context: otelContext, propagation } = await import(
+        "@opentelemetry/api"
+      );
+      propagation.inject(otelContext.active(), headers);
+    } catch {
+      // OTel not available — continue without trace propagation
+    }
+
     const producer = await getProducer();
     if (producer) {
       await producer.send({
         topic,
-        messages: [{ key, value: JSON.stringify(event) }],
+        messages: [{ key, value: JSON.stringify(event), headers }],
       });
       return true;
     }

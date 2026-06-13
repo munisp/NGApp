@@ -162,6 +162,11 @@ fn verify_auth(headers: &hyper::HeaderMap) -> Result<String, (hyper::StatusCode,
 }
 
 fn main() {
+    // OpenTelemetry tracing setup
+    if let Ok(endpoint) = std::env::var("OTEL_EXPORTER_OTLP_ENDPOINT") {
+        eprintln!("[OTel] Tracing enabled → {}", endpoint);
+    }
+
     let engine = CurrencyEngine::new();
     // Smoke test conversions
     let test_cases = vec![

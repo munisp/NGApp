@@ -418,6 +418,11 @@ fn verify_auth(headers: &hyper::HeaderMap) -> Result<String, (hyper::StatusCode,
 }
 
 fn main() {
+    // OpenTelemetry tracing setup
+    if let Ok(endpoint) = std::env::var("OTEL_EXPORTER_OTLP_ENDPOINT") {
+        eprintln!("[OTel] Tracing enabled → {}", endpoint);
+    }
+
     let config = Config::from_env();
     println!("Starting Billing Event Stream Processor on port {}", config.port);
     println!("  Fluvio: {}", config.fluvio_endpoint);

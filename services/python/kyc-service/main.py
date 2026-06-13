@@ -64,6 +64,31 @@ atexit.register(lambda: logging.info("[shutdown] atexit handler called"))
 
 KYC_CORE_URL = os.getenv("KYC_CORE_SERVICE_URL", "http://kyc-service:8015")
 
+
+# ── OpenTelemetry Tracing ────────────────────────────────────────────────────
+_otel_endpoint = os.environ.get("OTEL_EXPORTER_OTLP_ENDPOINT")
+if _otel_endpoint:
+    try:
+        from opentelemetry import trace
+        from opentelemetry.sdk.trace import TracerProvider
+        from opentelemetry.sdk.trace.export import BatchSpanProcessor
+        from opentelemetry.exporter.otlp.proto.http.trace_exporter import OTLPSpanExporter
+        from opentelemetry.sdk.resources import Resource
+        from opentelemetry.instrumentation.fastapi import FastAPIInstrumentor
+
+        _resource = Resource.create({
+            "service.name": os.environ.get("OTEL_SERVICE_NAME", "kyc-service"),
+            "service.version": os.environ.get("OTEL_SERVICE_VERSION", "1.0.0"),
+            "deployment.environment": os.environ.get("ENVIRONMENT", "production"),
+        })
+        _provider = TracerProvider(resource=_resource)
+        _exporter = OTLPSpanExporter(endpoint=f"{_otel_endpoint}/v1/traces")
+        _provider.add_span_processor(BatchSpanProcessor(_exporter))
+        trace.set_tracer_provider(_provider)
+        logging.getLogger(__name__).info(f"[OTel] Tracing enabled → {_otel_endpoint}")
+    except ImportError:
+        logging.getLogger(__name__).warning("[OTel] opentelemetry packages not installed — tracing disabled")
+
 app = FastAPI(
     title="KYC Service Gateway",
     description="Proxies to canonical KYC service at core-services/kyc-service",
@@ -72,6 +97,14 @@ app = FastAPI(
 apply_middleware(app, enable_auth=True)
 app.add_middleware(CORSMiddleware, allow_origins=["*"], allow_credentials=True,
                    allow_methods=["*"], allow_headers=["*"])
+# Instrument FastAPI with OpenTelemetry
+if _otel_endpoint:
+    try:
+        from opentelemetry.instrumentation.fastapi import FastAPIInstrumentor
+        FastAPIInstrumentor.instrument_app(app)
+    except (ImportError, Exception):
+        pass
+
 
 async def verify_token(authorization: str = Header(...)):
     if not authorization.startswith("Bearer "):

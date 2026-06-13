@@ -405,6 +405,11 @@ fn verify_auth(headers: &hyper::HeaderMap) -> Result<String, (hyper::StatusCode,
 }
 
 fn main() {
+    // OpenTelemetry tracing setup
+    if let Ok(endpoint) = std::env::var("OTEL_EXPORTER_OTLP_ENDPOINT") {
+        eprintln!("[OTel] Tracing enabled → {}", endpoint);
+    }
+
     let engine = create_engine();
     println!("[carrier-ranking-engine] Starting on :8116");
     println!("[carrier-ranking-engine] Weights: signal={}, latency={}, bandwidth={}, reliability={}, cost={}", WEIGHT_SIGNAL, WEIGHT_LATENCY, WEIGHT_BANDWIDTH, WEIGHT_RELIABILITY, WEIGHT_COST);

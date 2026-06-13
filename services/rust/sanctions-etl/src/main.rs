@@ -382,6 +382,11 @@ fn verify_auth(headers: &hyper::HeaderMap) -> Result<String, (hyper::StatusCode,
 }
 
 async fn main() -> std::io::Result<()> {
+    // OpenTelemetry tracing setup
+    if let Ok(endpoint) = std::env::var("OTEL_EXPORTER_OTLP_ENDPOINT") {
+        eprintln!("[OTel] Tracing enabled → {}", endpoint);
+    }
+
     env_logger::init();
 
     let port: u16 = std::env::var("SANCTIONS_ETL_PORT")

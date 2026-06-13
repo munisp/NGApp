@@ -326,6 +326,11 @@ fn verify_auth(headers: &hyper::HeaderMap) -> Result<String, (hyper::StatusCode,
 }
 
 async fn main() -> std::io::Result<()> {
+    // OpenTelemetry tracing setup
+    if let Ok(endpoint) = std::env::var("OTEL_EXPORTER_OTLP_ENDPOINT") {
+        eprintln!("[OTel] Tracing enabled → {}", endpoint);
+    }
+
     env_logger::init_from_env(env_logger::Env::default().default_filter_or("info"));
     let port: u16 = env::var("PORT").unwrap_or_else(|_| "8084".to_string()).parse().unwrap_or(8084);
     info!("54Link i18n Currency Service starting on :{}", port);

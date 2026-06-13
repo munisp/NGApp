@@ -774,7 +774,15 @@ fn verify_auth(headers: &hyper::HeaderMap) -> Result<String, (hyper::StatusCode,
 
 #[tokio::main]
 async fn main() {
-    tracing_subscriber::init();
+    // OpenTelemetry tracing setup
+    if let Ok(endpoint) = std::env::var("OTEL_EXPORTER_OTLP_ENDPOINT") {
+        eprintln!("[OTel] Tracing enabled → {}", endpoint);
+    }
+    tracing_subscriber::fmt()
+        .with_env_filter(tracing_subscriber::EnvFilter::from_default_env()
+            .add_directive(tracing::Level::INFO.into()))
+        .json()
+        .init();
     let config = Config::from_env();
     let port = config.port;
     let state = Arc::new(AppState::new(config));

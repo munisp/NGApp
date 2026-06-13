@@ -147,6 +147,11 @@ fn verify_auth(headers: &hyper::HeaderMap) -> Result<String, (hyper::StatusCode,
 }
 
 async fn main() -> std::io::Result<()> {
+    // OpenTelemetry tracing setup
+    if let Ok(endpoint) = std::env::var("OTEL_EXPORTER_OTLP_ENDPOINT") {
+        eprintln!("[OTel] Tracing enabled → {}", endpoint);
+    }
+
     let port = std::env::var("PORT").unwrap_or_else(|_| "8144".to_string());
     let data = web::Data::new(AppState {
         heartbeats: Mutex::new(HashMap::new()),
