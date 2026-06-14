@@ -87,15 +87,14 @@ export const cashInRouter = router({
             });
 
           // Check agent float limit (can't exceed max float)
-          const [agent] = await db
-            .select({
-              floatBalance: agents.floatBalance,
-              floatLimit: agents.floatLimit,
-              floatLocked: agents.floatLocked,
-            })
-            .from(agents)
-            .where(eq(agents.id, session.id))
-            .limit(1);
+          // Uses FOR UPDATE to prevent concurrent balance race conditions
+          const [agent] = (await db.execute(
+            sql`SELECT "float_balance" AS "floatBalance", "float_limit" AS "floatLimit", "float_locked" AS "floatLocked" FROM ${agents} WHERE id = ${session.id} LIMIT 1 FOR UPDATE`
+          )) as unknown as {
+            floatBalance: string;
+            floatLimit: string;
+            floatLocked: boolean;
+          }[];
 
           if (!agent)
             throw new TRPCError({

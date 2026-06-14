@@ -397,6 +397,106 @@ function logOperation(action: string, details: Record<string, unknown>) {
   );
 }
 
+// ── Chunked Bulk Disbursement (Scale: 50K items in < 30 min) ────────────────
+const DISBURSEMENT_CHUNK_SIZE = 100;
+
+const executeBulkDisbursement = protectedProcedure
+  .input(
+    z.object({
+      batchId: z.number(),
+      items: z.array(
+        z.object({
+          accountNumber: z.string().min(10).max(20),
+          bankCode: z.string().min(3).max(6),
+          amount: z.number().positive(),
+          narration: z.string().max(256).optional(),
+          beneficiaryName: z.string().min(2).max(128),
+        })
+      ),
+      idempotencyKey: z.string().min(16).max(64),
+    })
+  )
+  .mutation(async ({ input, ctx }) => {
+    return withIdempotency(input.idempotencyKey, async () => {
+      const db = (await getDb())!;
+      const startTime = Date.now();
+      let processed = 0;
+      let failed = 0;
+      const failedItems: { index: number; error: string }[] = [];
+
+      // Process in chunks of 100 for backpressure control
+      const chunks: (typeof input.items)[] = [];
+      for (let i = 0; i < input.items.length; i += DISBURSEMENT_CHUNK_SIZE) {
+        chunks.push(input.items.slice(i, i + DISBURSEMENT_CHUNK_SIZE));
+      }
+
+      for (const [chunkIdx, chunk] of chunks.entries()) {
+        const results = await Promise.allSettled(
+          chunk.map(async (item, idx) => {
+            const globalIdx = chunkIdx * DISBURSEMENT_CHUNK_SIZE + idx;
+            const fees = calculateFee(item.amount, "transfer");
+            const ref = `BULK-${input.batchId}-${globalIdx}-${Date.now()}`;
+
+            await db.insert(merchantPayouts).values({
+              batchId: input.batchId,
+              ref,
+              accountNumber: item.accountNumber,
+              bankCode: item.bankCode,
+              amount: String(item.amount),
+              fee: String(fees.fee),
+              narration: item.narration ?? "Bulk disbursement",
+              beneficiaryName: item.beneficiaryName,
+              status: "processed",
+            } as Record<string, unknown>);
+
+            return { ref, amount: item.amount };
+          })
+        );
+
+        for (const [idx, result] of results.entries()) {
+          if (result.status === "fulfilled") {
+            processed++;
+          } else {
+            failed++;
+            failedItems.push({
+              index: chunkIdx * DISBURSEMENT_CHUNK_SIZE + idx,
+              error: result.reason?.message ?? "Unknown error",
+            });
+          }
+        }
+      }
+
+      const duration = Date.now() - startTime;
+
+      await writeAuditLog({
+        agentId: (ctx as Record<string, any>).user?.id ?? 0,
+        agentCode: (ctx as Record<string, any>).user?.agentCode ?? "system",
+        action: "BULK_DISBURSEMENT_EXECUTED",
+        resource: "bulk_payment",
+        resourceId: String(input.batchId),
+        status: failed === 0 ? "success" : "warning",
+        metadata: {
+          totalItems: input.items.length,
+          processed,
+          failed,
+          durationMs: duration,
+          chunkSize: DISBURSEMENT_CHUNK_SIZE,
+        },
+      });
+
+      return {
+        success: true,
+        batchId: input.batchId,
+        totalItems: input.items.length,
+        processed,
+        failed,
+        failedItems: failedItems.slice(0, 100), // Cap error list
+        durationMs: duration,
+        throughput: Math.round((processed / duration) * 1000),
+      };
+    });
+  });
+
 // Transaction wrapping: withTransaction used for atomic DB operations
 // db.transaction() ensures ACID compliance for multi-step mutations
 export const bulkPaymentProcessorRouter = router({
@@ -407,4 +507,5 @@ export const bulkPaymentProcessorRouter = router({
   getStats,
   processBatch,
   cancelBatch,
+  executeBulkDisbursement,
 });

@@ -85,14 +85,10 @@ export const cashOutRouter = router({
             });
 
           // Check sufficient float balance
-          const [agent] = await db
-            .select({
-              floatBalance: agents.floatBalance,
-              floatLocked: agents.floatLocked,
-            })
-            .from(agents)
-            .where(eq(agents.id, session.id))
-            .limit(1);
+          // Uses FOR UPDATE to prevent concurrent withdrawal race conditions
+          const [agent] = (await db.execute(
+            sql`SELECT "float_balance" AS "floatBalance", "float_locked" AS "floatLocked" FROM ${agents} WHERE id = ${session.id} LIMIT 1 FOR UPDATE`
+          )) as unknown as { floatBalance: string; floatLocked: boolean }[];
 
           if (!agent)
             throw new TRPCError({

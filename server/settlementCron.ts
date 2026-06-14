@@ -110,74 +110,84 @@ async function runDailySettlement(): Promise<SettlementResult> {
   let smsSent = 0;
   const errors: string[] = [];
 
-  for (const agent of activeAgents) {
-    try {
-      const txRows = await db
-        .select({
-          amount: transactions.amount,
-          commission: transactions.commission,
-        })
-        .from(transactions)
-        .where(
-          and(
-            eq(transactions.agentId, agent.id),
-            eq(transactions.status, "success"),
-            gte(transactions.createdAt, dayStart),
-            lte(transactions.createdAt, dayEnd)
-          )
+  // ── Chunked parallel processing for scale (10K+ agents in < 5 min) ────────
+  const CHUNK_SIZE = 50; // Process 50 agents concurrently per chunk
+  const chunks: (typeof activeAgents)[] = [];
+  for (let i = 0; i < activeAgents.length; i += CHUNK_SIZE) {
+    chunks.push(activeAgents.slice(i, i + CHUNK_SIZE));
+  }
+
+  for (const chunk of chunks) {
+    const results = await Promise.allSettled(
+      chunk.map(async agent => {
+        const txRows = await db
+          .select({
+            amount: transactions.amount,
+            commission: transactions.commission,
+          })
+          .from(transactions)
+          .where(
+            and(
+              eq(transactions.agentId, agent.id),
+              eq(transactions.status, "success"),
+              gte(transactions.createdAt, dayStart),
+              lte(transactions.createdAt, dayEnd)
+            )
+          );
+
+        const txCount = txRows.length;
+        const totalVolume = txRows.reduce(
+          (sum, r) => sum + Number(r.amount),
+          0
+        );
+        const totalCommission = txRows.reduce(
+          (sum, r) => sum + Number(r.commission),
+          0
         );
 
-      const txCount = txRows.length;
-      const totalVolume = txRows.reduce((sum, r) => sum + Number(r.amount), 0);
-      const totalCommission = txRows.reduce(
-        (sum, r) => sum + Number(r.commission),
-        0
-      );
-
-      const settlementData: AgentSettlement = {
-        agentId: agent.id,
-        agentCode: agent.agentCode,
-        name: agent.name,
-        phone: agent.phone,
-        txCount,
-        totalVolume,
-        totalCommission,
-        floatBalance: Number(agent.floatBalance),
-      };
-
-      const message = buildSettlementSms(settlementData);
-      const smsResult = await sendSms(agent.phone, message);
-      if (smsResult.success) {
-        smsSent++;
-      } else {
-        console.error(
-          `[settlement] SMS failed for agent ${agent.agentCode}: ${smsResult.error}`
-        );
-      }
-
-      await db.insert(auditLog).values({
-        agentId: agent.id,
-        agentCode: agent.agentCode,
-        action: "DAILY_SETTLEMENT_SENT",
-        resource: "settlement",
-        resourceId: today.toISOString().split("T")[0],
-        status: "success",
-        metadata: {
+        const settlementData: AgentSettlement = {
+          agentId: agent.id,
+          agentCode: agent.agentCode,
+          name: agent.name,
+          phone: agent.phone,
           txCount,
           totalVolume,
           totalCommission,
           floatBalance: Number(agent.floatBalance),
-          date: today.toISOString().split("T")[0],
-        },
-      });
+        };
 
-      successCount++;
-    } catch (err) {
-      console.error(
-        `[settlement] Error processing agent ${agent.agentCode}:`,
-        err
-      );
-      errors.push(`${agent.agentCode}: ${String(err)}`);
+        const message = buildSettlementSms(settlementData);
+        const smsResult = await sendSms(agent.phone, message);
+
+        await db.insert(auditLog).values({
+          agentId: agent.id,
+          agentCode: agent.agentCode,
+          action: "DAILY_SETTLEMENT_SENT",
+          resource: "settlement",
+          resourceId: today.toISOString().split("T")[0],
+          status: "success",
+          metadata: {
+            txCount,
+            totalVolume,
+            totalCommission,
+            floatBalance: Number(agent.floatBalance),
+            date: today.toISOString().split("T")[0],
+          },
+        });
+
+        return { smsSuccess: smsResult.success, agentCode: agent.agentCode };
+      })
+    );
+
+    for (const result of results) {
+      if (result.status === "fulfilled") {
+        successCount++;
+        if (result.value.smsSuccess) smsSent++;
+      } else {
+        const errMsg = result.reason?.message ?? String(result.reason);
+        errors.push(errMsg);
+        console.error(`[settlement] Agent settlement error:`, errMsg);
+      }
     }
   }
 

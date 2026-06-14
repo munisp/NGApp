@@ -11,6 +11,26 @@ import {
 } from "../../drizzle/schema";
 import { TRPCError } from "@trpc/server";
 import { validateInput } from "../lib/routerHelpers";
+import { getRedisClient } from "../lib/redisClient";
+
+// ── Redis Cache Helper (TTL in seconds) ──────────────────────────────────────
+async function withCache<T>(
+  key: string,
+  ttlSeconds: number,
+  fn: () => Promise<T>
+): Promise<T> {
+  try {
+    const redis = getRedisClient();
+    const cached = await redis.get(key);
+    if (cached) return JSON.parse(cached) as T;
+    const result = await fn();
+    await redis.set(key, JSON.stringify(result), "EX", ttlSeconds);
+    return result;
+  } catch {
+    // Redis unavailable — fall through to DB
+    return fn();
+  }
+}
 
 import {
   validateAmount,
@@ -139,29 +159,31 @@ export const analyticsDashboardRouter = router({
       }
     }),
   getOverview: protectedProcedure.query(async () => {
-    const db = (await getDb())!;
-    const [agentCount] = await db
-      .select({ value: count() })
-      .from(agents)
-      .limit(100);
-    const [txCount] = await db
-      .select({ value: count() })
-      .from(transactions)
-      .limit(100);
-    const [txVolume] = await db
-      .select({ value: sum(transactions.amount) })
-      .from(transactions)
-      .limit(100);
-    const [dashCount] = await db
-      .select({ value: count() })
-      .from(analyticsDashboards)
-      .limit(100);
-    return {
-      totalAgents: Number(agentCount.value),
-      totalTransactions: Number(txCount.value),
-      totalVolume: Number(txVolume.value ?? 0),
-      totalDashboards: Number(dashCount.value),
-    };
+    return withCache("analytics:overview", 60, async () => {
+      const db = (await getDb())!;
+      const [agentCount] = await db
+        .select({ value: count() })
+        .from(agents)
+        .limit(100);
+      const [txCount] = await db
+        .select({ value: count() })
+        .from(transactions)
+        .limit(100);
+      const [txVolume] = await db
+        .select({ value: sum(transactions.amount) })
+        .from(transactions)
+        .limit(100);
+      const [dashCount] = await db
+        .select({ value: count() })
+        .from(analyticsDashboards)
+        .limit(100);
+      return {
+        totalAgents: Number(agentCount.value),
+        totalTransactions: Number(txCount.value),
+        totalVolume: Number(txVolume.value ?? 0),
+        totalDashboards: Number(dashCount.value),
+      };
+    });
   }),
   create: protectedProcedure
     .input(
