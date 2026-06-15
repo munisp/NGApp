@@ -1,3 +1,4 @@
+import httpx
 """
 USSD Menu Builder — Python microservice
 Dynamic menu tree for POS operations (*384# style)
@@ -344,6 +345,24 @@ if __name__ == "__main__":
 
 import psycopg2
 import psycopg2.extras
+
+# ── Middleware: Kafka via Dapr ─────────────────────────────────────────────────
+
+DAPR_HTTP_PORT = os.environ.get("DAPR_HTTP_PORT", "3500")
+
+async def publish_kafka(topic: str, data: dict):
+    """Publish domain event to Kafka via Dapr sidecar."""
+    try:
+        async with httpx.AsyncClient(timeout=5.0) as client:
+            url = f"http://localhost:{DAPR_HTTP_PORT}/v1.0/publish/kafka-pubsub/{topic}"
+            resp = await client.post(url, json=data)
+            if resp.status_code < 300:
+                logger.info(f"Published to {topic}")
+            else:
+                logger.warning(f"Dapr publish to {topic} returned {resp.status_code}")
+    except Exception as e:
+        logger.warning(f"Failed to publish to {topic}: {e}")
+
 
 DATABASE_URL = os.environ.get("DATABASE_URL", "postgres://postgres:postgres@localhost:5432/ussd_menu_builder")
 

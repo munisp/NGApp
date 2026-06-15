@@ -1,3 +1,5 @@
+import os
+import httpx
 from fastapi import FastAPI, Depends, HTTPException, status, Security
 import sys as _sys2, os as _os2
 _sys2.path.insert(0, _os2.path.join(_os2.path.dirname(_os2.path.abspath(__file__)), ".."))
@@ -105,6 +107,24 @@ if _otel_endpoint:
         logging.getLogger(__name__).info(f"[OTel] Tracing enabled → {_otel_endpoint}")
     except ImportError:
         logging.getLogger(__name__).warning("[OTel] opentelemetry packages not installed — tracing disabled")
+
+
+# ── Middleware: Kafka via Dapr ─────────────────────────────────────────────────
+
+DAPR_HTTP_PORT = os.environ.get("DAPR_HTTP_PORT", "3500")
+
+async def publish_kafka(topic: str, data: dict):
+    """Publish domain event to Kafka via Dapr sidecar."""
+    try:
+        async with httpx.AsyncClient(timeout=5.0) as client:
+            url = f"http://localhost:{DAPR_HTTP_PORT}/v1.0/publish/kafka-pubsub/{topic}"
+            resp = await client.post(url, json=data)
+            if resp.status_code < 300:
+                logger.info(f"Published to {topic}")
+            else:
+                logger.warning(f"Dapr publish to {topic} returned {resp.status_code}")
+    except Exception as e:
+        logger.warning(f"Failed to publish to {topic}: {e}")
 
 app = FastAPI(title=settings.PROJECT_NAME, version=settings.PROJECT_VERSION)
 apply_middleware(app, enable_auth=True)
@@ -418,3 +438,12 @@ def delete_transaction(transaction_id: str, db: Session = Depends(get_db)):
     db.commit()
     logger.info(f"Transaction with ID: {transaction_id} deleted successfully.")
     return
+
+
+@app.on_event("startup")
+async def startup_event():
+    """Register service with Kafka on startup."""
+    await publish_kafka("database.started", {
+        "service": "database",
+        "timestamp": datetime.utcnow().isoformat() if "datetime" in dir() else "startup",
+    })

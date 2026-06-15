@@ -1,3 +1,4 @@
+import httpx
 import os
 
 from fastapi import FastAPI
@@ -30,6 +31,24 @@ if _otel_endpoint:
         logging.getLogger(__name__).info(f"[OTel] Tracing enabled → {_otel_endpoint}")
     except ImportError:
         logging.getLogger(__name__).warning("[OTel] opentelemetry packages not installed — tracing disabled")
+
+
+# ── Middleware: Kafka via Dapr ─────────────────────────────────────────────────
+
+DAPR_HTTP_PORT = os.environ.get("DAPR_HTTP_PORT", "3500")
+
+async def publish_kafka(topic: str, data: dict):
+    """Publish domain event to Kafka via Dapr sidecar."""
+    try:
+        async with httpx.AsyncClient(timeout=5.0) as client:
+            url = f"http://localhost:{DAPR_HTTP_PORT}/v1.0/publish/kafka-pubsub/{topic}"
+            resp = await client.post(url, json=data)
+            if resp.status_code < 300:
+                logger.info(f"Published to {topic}")
+            else:
+                logger.warning(f"Dapr publish to {topic} returned {resp.status_code}")
+    except Exception as e:
+        logger.warning(f"Failed to publish to {topic}: {e}")
 
 app = FastAPI(title="fraud-ml-pipeline")
 apply_middleware(app, enable_auth=True)
@@ -326,3 +345,12 @@ def main():
 
 if __name__ == "__main__":
     main()
+
+
+@app.on_event("startup")
+async def startup_event():
+    """Register service with Kafka on startup."""
+    await publish_kafka("fraud.ml.pipeline.started", {
+        "service": "fraud-ml-pipeline",
+        "timestamp": datetime.utcnow().isoformat() if "datetime" in dir() else "startup",
+    })

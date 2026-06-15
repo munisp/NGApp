@@ -1,3 +1,4 @@
+import httpx
 """
 Agent Training Academy - FastAPI microservice
 Comprehensive training platform with video courses, quizzes, certifications, and gamified learning paths
@@ -65,6 +66,24 @@ if _otel_endpoint:
         logging.getLogger(__name__).info(f"[OTel] Tracing enabled → {_otel_endpoint}")
     except ImportError:
         logging.getLogger(__name__).warning("[OTel] opentelemetry packages not installed — tracing disabled")
+
+
+# ── Middleware: Kafka via Dapr ─────────────────────────────────────────────────
+
+DAPR_HTTP_PORT = os.environ.get("DAPR_HTTP_PORT", "3500")
+
+async def publish_kafka(topic: str, data: dict):
+    """Publish domain event to Kafka via Dapr sidecar."""
+    try:
+        async with httpx.AsyncClient(timeout=5.0) as client:
+            url = f"http://localhost:{DAPR_HTTP_PORT}/v1.0/publish/kafka-pubsub/{topic}"
+            resp = await client.post(url, json=data)
+            if resp.status_code < 300:
+                logger.info(f"Published to {topic}")
+            else:
+                logger.warning(f"Dapr publish to {topic} returned {resp.status_code}")
+    except Exception as e:
+        logger.warning(f"Failed to publish to {topic}: {e}")
 
 app = FastAPI(title="Agent Training Academy", description="Comprehensive training platform with video courses, quizzes, certifications, and gamified learning paths", version="1.0.0")
 apply_middleware(app, enable_auth=True)
@@ -184,3 +203,12 @@ async def submit_quiz(quiz_id: str, agent_id: str, answers: dict):
 if __name__ == "__main__":
     import uvicorn
     uvicorn.run(app, host="0.0.0.0", port=int(os.environ.get("PORT", 8000)))
+
+
+@app.on_event("startup")
+async def startup_event():
+    """Register service with Kafka on startup."""
+    await publish_kafka("agent.training.academy.started", {
+        "service": "agent-training-academy",
+        "timestamp": datetime.utcnow().isoformat() if "datetime" in dir() else "startup",
+    })

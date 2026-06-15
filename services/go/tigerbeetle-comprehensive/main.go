@@ -1,6 +1,7 @@
 package main
 
 import (
+	"bytes"
     "context"
     "crypto/rand"
     "crypto/sha256"
@@ -367,6 +368,7 @@ func (s *TigerBeetleService) healthCheck(w http.ResponseWriter, r *http.Request)
     
     w.Header().Set("Content-Type", "application/json")
     json.NewEncoder(w).Encode(response)
+		go publishEvent("tigerbeetle.comprehensive.completed", map[string]interface{}{"service": "tigerbeetle-comprehensive", "timestamp": time.Now().UTC().Format(time.RFC3339)})
 }
 
 type HealthStatus struct {
@@ -529,6 +531,7 @@ func (s *TigerBeetleService) createAccount(w http.ResponseWriter, r *http.Reques
     
     w.Header().Set("Content-Type", "application/json")
     json.NewEncoder(w).Encode(response)
+		go publishEvent("tigerbeetle.comprehensive.completed", map[string]interface{}{"service": "tigerbeetle-comprehensive", "timestamp": time.Now().UTC().Format(time.RFC3339)})
 }
 
 // Continue with more comprehensive methods...
@@ -576,6 +579,7 @@ func (s *TigerBeetleService) getBalance(w http.ResponseWriter, r *http.Request) 
     
     w.Header().Set("Content-Type", "application/json")
     json.NewEncoder(w).Encode(response)
+		go publishEvent("tigerbeetle.comprehensive.completed", map[string]interface{}{"service": "tigerbeetle-comprehensive", "timestamp": time.Now().UTC().Format(time.RFC3339)})
 }
 
 // Add many more comprehensive methods to reach substantial file size...
@@ -680,3 +684,27 @@ func main() {
     _ = ctx
     log.Println("[tigerbeetle-comprehensive] Shutdown complete")
 }
+
+// publishEvent publishes a domain event via Dapr sidecar to Kafka
+func publishEvent(topic string, data interface{}) error {
+	daprPort := os.Getenv("DAPR_HTTP_PORT")
+	if daprPort == "" {
+		daprPort = "3500"
+	}
+	payload, err := json.Marshal(data)
+	if err != nil {
+		return fmt.Errorf("marshal event: %w", err)
+	}
+	url := fmt.Sprintf("http://localhost:%s/v1.0/publish/kafka-pubsub/%s", daprPort, topic)
+	resp, err := http.Post(url, "application/json", bytes.NewReader(payload))
+	if err != nil {
+		log.Printf("[WARN] Failed to publish to %s: %v", topic, err)
+		return err
+	}
+	defer resp.Body.Close()
+	if resp.StatusCode >= 300 {
+		log.Printf("[WARN] Dapr publish to %s returned %d", topic, resp.StatusCode)
+	}
+	return nil
+}
+

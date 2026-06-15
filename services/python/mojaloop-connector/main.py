@@ -1,3 +1,4 @@
+import httpx
 """
 Mojaloop ILP Connector — Sprint 86 (S86-32)
 Interledger Protocol (ILP) integration for cross-border mobile money transfers.
@@ -76,6 +77,24 @@ def _init_persistence():
         return conn
     except Exception as e:
         import logging
+
+# ── Middleware: Kafka via Dapr ─────────────────────────────────────────────────
+
+DAPR_HTTP_PORT = os.environ.get("DAPR_HTTP_PORT", "3500")
+
+async def publish_kafka(topic: str, data: dict):
+    """Publish domain event to Kafka via Dapr sidecar."""
+    try:
+        async with httpx.AsyncClient(timeout=5.0) as client:
+            url = f"http://localhost:{DAPR_HTTP_PORT}/v1.0/publish/kafka-pubsub/{topic}"
+            resp = await client.post(url, json=data)
+            if resp.status_code < 300:
+                logger.info(f"Published to {topic}")
+            else:
+                logger.warning(f"Dapr publish to {topic} returned {resp.status_code}")
+    except Exception as e:
+        logger.warning(f"Failed to publish to {topic}: {e}")
+
         logging.warning(f"Database unavailable ({e}) — running in-memory only")
         return None
 

@@ -1,3 +1,4 @@
+import httpx
 """
 54Link Agency Banking Platform - Unified Production API
 Version: 14.0.0
@@ -113,6 +114,24 @@ if _otel_endpoint:
         logging.getLogger(__name__).info(f"[OTel] Tracing enabled → {_otel_endpoint}")
     except ImportError:
         logging.getLogger(__name__).warning("[OTel] opentelemetry packages not installed — tracing disabled")
+
+
+# ── Middleware: Kafka via Dapr ─────────────────────────────────────────────────
+
+DAPR_HTTP_PORT = os.environ.get("DAPR_HTTP_PORT", "3500")
+
+async def publish_kafka(topic: str, data: dict):
+    """Publish domain event to Kafka via Dapr sidecar."""
+    try:
+        async with httpx.AsyncClient(timeout=5.0) as client:
+            url = f"http://localhost:{DAPR_HTTP_PORT}/v1.0/publish/kafka-pubsub/{topic}"
+            resp = await client.post(url, json=data)
+            if resp.status_code < 300:
+                logger.info(f"Published to {topic}")
+            else:
+                logger.warning(f"Dapr publish to {topic} returned {resp.status_code}")
+    except Exception as e:
+        logger.warning(f"Failed to publish to {topic}: {e}")
 
 app = FastAPI(
     title="54Link Agency Banking Platform API",
@@ -2267,3 +2286,12 @@ async def assign_geofence_zone(terminal_id: str, data: dict = Body(...), db=Depe
     except Exception:
         pass
     return {"terminal_id": terminal_id, "zone_id": zone_id, "status": "assigned"}
+
+
+@app.on_event("startup")
+async def startup_event():
+    """Register service with Kafka on startup."""
+    await publish_kafka("unified.api.started", {
+        "service": "unified-api",
+        "timestamp": datetime.utcnow().isoformat() if "datetime" in dir() else "startup",
+    })

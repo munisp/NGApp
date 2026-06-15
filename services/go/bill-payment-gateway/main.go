@@ -1,6 +1,7 @@
 package main
 
 import (
+	"bytes"
 	"database/sql"
 	_ "github.com/lib/pq"
 	"syscall"
@@ -301,3 +302,27 @@ func getState(key string) string {
 	db.QueryRow("SELECT value FROM state_store WHERE key = $1", key).Scan(&val)
 	return val
 }
+
+// publishEvent publishes a domain event via Dapr sidecar to Kafka
+func publishEvent(topic string, data interface{}) error {
+	daprPort := os.Getenv("DAPR_HTTP_PORT")
+	if daprPort == "" {
+		daprPort = "3500"
+	}
+	payload, err := json.Marshal(data)
+	if err != nil {
+		return fmt.Errorf("marshal event: %w", err)
+	}
+	url := fmt.Sprintf("http://localhost:%s/v1.0/publish/kafka-pubsub/%s", daprPort, topic)
+	resp, err := http.Post(url, "application/json", bytes.NewReader(payload))
+	if err != nil {
+		log.Printf("[WARN] Failed to publish to %s: %v", topic, err)
+		return err
+	}
+	defer resp.Body.Close()
+	if resp.StatusCode >= 300 {
+		log.Printf("[WARN] Dapr publish to %s returned %d", topic, resp.StatusCode)
+	}
+	return nil
+}
+
