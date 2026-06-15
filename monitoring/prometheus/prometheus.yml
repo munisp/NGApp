@@ -1,0 +1,88 @@
+global:
+  scrape_interval: 15s
+  evaluation_interval: 15s
+  scrape_timeout: 10s
+
+rule_files:
+  - "rules.yml"
+
+alerting:
+  alertmanagers:
+    - static_configs:
+        - targets:
+            - "alertmanager:9093"
+
+scrape_configs:
+  # ── 54Link API Server ──
+  - job_name: "54link-api"
+    metrics_path: "/metrics"
+    static_configs:
+      - targets: ["api:3001"]
+        labels:
+          service: "54link-api"
+          environment: "production"
+
+  # ── Go Microservices ──
+  - job_name: "go-services"
+    static_configs:
+      - targets:
+          - "goaml-service:8210"
+          - "kyc-gateway:8211"
+          - "aml-case-manager:8212"
+          - "agent-store-service:8220"
+        labels:
+          language: "go"
+
+  # ── Rust Microservices ──
+  - job_name: "rust-services"
+    static_configs:
+      - targets:
+          - "cbn-kyc-engine:8213"
+          - "sanctions-rescreener:8214"
+          - "payment-split-engine:8221"
+        labels:
+          language: "rust"
+
+  # ── Python Microservices ──
+  - job_name: "python-services"
+    static_configs:
+      - targets:
+          - "kyc-orchestrator:8215"
+          - "kyc-event-consumer:8216"
+          - "store-analytics:8222"
+        labels:
+          language: "python"
+
+  # ── PostgreSQL ──
+  - job_name: "postgres"
+    static_configs:
+      - targets: ["postgres-exporter:9187"]
+        labels:
+          service: "postgresql"
+
+  # ── Redis ──
+  - job_name: "redis"
+    static_configs:
+      - targets: ["redis-exporter:9121"]
+        labels:
+          service: "redis"
+
+  # ── Kafka ──
+  - job_name: "kafka"
+    static_configs:
+      - targets: ["kafka-exporter:9308"]
+        labels:
+          service: "kafka"
+
+  # ── Keycloak ──
+  - job_name: "keycloak"
+    metrics_path: "/auth/realms/master/metrics"
+    static_configs:
+      - targets: ["keycloak:8080"]
+        labels:
+          service: "keycloak"
+
+  # ── Node Exporter (host metrics) ──
+  - job_name: "node"
+    static_configs:
+      - targets: ["node-exporter:9100"]

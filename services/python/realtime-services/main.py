@@ -1,0 +1,243 @@
+import httpx
+"""
+Real-time Event Services - FastAPI microservice
+WebSocket-based real-time event broadcasting for transaction updates, alerts, and dashboard feeds
+"""
+import os
+import sys
+import logging
+from datetime import datetime, date
+from typing import Optional, List, Dict, Any
+from fastapi import FastAPI, HTTPException, Query, Path
+import sys as _sys2, os as _os2
+_sys2.path.insert(0, _os2.path.join(_os2.path.dirname(_os2.path.abspath(__file__)), ".."))
+from shared.middleware import apply_middleware, ErrorResponse
+from fastapi.middleware.cors import CORSMiddleware
+from pydantic import BaseModel
+
+# --- Production: Graceful Shutdown ---
+import signal
+import sys
+import atexit
+import logging
+
+_shutdown_handlers = []
+
+def register_shutdown(handler):
+    _shutdown_handlers.append(handler)
+
+def _graceful_shutdown(signum, frame):
+    sig_name = signal.Signals(signum).name if hasattr(signal, 'Signals') else str(signum)
+    logging.info(f"[shutdown] Received {sig_name}, shutting down gracefully...")
+    for handler in reversed(_shutdown_handlers):
+        try:
+            handler()
+        except Exception as e:
+            logging.warning(f"[shutdown] Handler error: {e}")
+    logging.info("[shutdown] Cleanup complete, exiting")
+    sys.exit(0)
+
+signal.signal(signal.SIGTERM, _graceful_shutdown)
+signal.signal(signal.SIGINT, _graceful_shutdown)
+atexit.register(lambda: logging.info("[shutdown] atexit handler called"))
+
+logging.basicConfig(level=logging.INFO)
+logger = logging.getLogger(__name__)
+
+
+# ── OpenTelemetry Tracing ────────────────────────────────────────────────────
+_otel_endpoint = os.environ.get("OTEL_EXPORTER_OTLP_ENDPOINT")
+if _otel_endpoint:
+    try:
+        from opentelemetry import trace
+        from opentelemetry.sdk.trace import TracerProvider
+        from opentelemetry.sdk.trace.export import BatchSpanProcessor
+        from opentelemetry.exporter.otlp.proto.http.trace_exporter import OTLPSpanExporter
+        from opentelemetry.sdk.resources import Resource
+        from opentelemetry.instrumentation.fastapi import FastAPIInstrumentor
+
+        _resource = Resource.create({
+            "service.name": os.environ.get("OTEL_SERVICE_NAME", "realtime-services"),
+            "service.version": os.environ.get("OTEL_SERVICE_VERSION", "1.0.0"),
+            "deployment.environment": os.environ.get("ENVIRONMENT", "production"),
+        })
+        _provider = TracerProvider(resource=_resource)
+        _exporter = OTLPSpanExporter(endpoint=f"{_otel_endpoint}/v1/traces")
+        _provider.add_span_processor(BatchSpanProcessor(_exporter))
+        trace.set_tracer_provider(_provider)
+        logging.getLogger(__name__).info(f"[OTel] Tracing enabled → {_otel_endpoint}")
+    except ImportError:
+        logging.getLogger(__name__).warning("[OTel] opentelemetry packages not installed — tracing disabled")
+
+
+# ── Middleware: Kafka via Dapr ─────────────────────────────────────────────────
+
+DAPR_HTTP_PORT = os.environ.get("DAPR_HTTP_PORT", "3500")
+
+async def publish_kafka(topic: str, data: dict):
+    """Publish domain event to Kafka via Dapr sidecar."""
+    try:
+        async with httpx.AsyncClient(timeout=5.0) as client:
+            url = f"http://localhost:{DAPR_HTTP_PORT}/v1.0/publish/kafka-pubsub/{topic}"
+            resp = await client.post(url, json=data)
+            if resp.status_code < 300:
+                logger.info(f"Published to {topic}")
+            else:
+                logger.warning(f"Dapr publish to {topic} returned {resp.status_code}")
+    except Exception as e:
+        logger.warning(f"Failed to publish to {topic}: {e}")
+
+app = FastAPI(
+# Instrument FastAPI with OpenTelemetry
+if _otel_endpoint:
+    try:
+        from opentelemetry.instrumentation.fastapi import FastAPIInstrumentor
+        FastAPIInstrumentor.instrument_app(app)
+    except (ImportError, Exception):
+        pass
+
+
+import psycopg2
+import psycopg2.extras
+import os
+
+DATABASE_URL = os.environ.get("DATABASE_URL", "postgres://postgres:postgres@localhost:5432/realtime_services")
+apply_middleware(app, enable_auth=True)
+
+def get_db():
+    conn = psycopg2.connect(DATABASE_URL)
+    conn.autocommit = False
+    return conn
+
+def init_db():
+    conn = get_db()
+    for stmt in """CREATE TABLE IF NOT EXISTS items (
+            id SERIAL PRIMARY KEY,
+            name TEXT, status TEXT, data TEXT, created_at TEXT
+        )""".split(";"):
+        stmt = stmt.strip()
+        if stmt:
+            conn.execute(stmt)
+    conn.commit()
+    conn.close()
+
+init_db()
+
+@app.get("/api/v1/items")
+async def list_items():
+    conn = get_db()
+    cursor = conn.cursor()
+    cursor.execute("SELECT id, name, status, data, created_at FROM items ORDER BY created_at DESC LIMIT 100")
+    rows = cursor.fetchall()
+    conn.close()
+    return {"items": [{"id": r[0], "name": r[1], "status": r[2], "data": r[3], "created_at": r[4]} for r in rows]}
+
+@app.post("/api/v1/items")
+async def create_item(request: Request):
+    body = await request.json()
+    name = body.get("name", "")
+    if not name:
+        raise HTTPException(status_code=400, detail="Name required")
+    conn = get_db()
+    cursor = conn.cursor()
+    cursor.execute("INSERT INTO items (name, status, data, created_at) VALUES (%s, 'active', %s, NOW())",
+                   (name, str(body)))
+    conn.commit()
+    item_id = cursor.fetchone()[0]
+    conn.close()
+    return {"id": item_id, "name": name, "status": "active"}
+
+@app.get("/api/v1/items/{item_id}")
+async def get_item(item_id: int):
+    conn = get_db()
+    cursor = conn.cursor()
+    cursor.execute("SELECT * FROM items WHERE id = %s", (item_id,))
+    row = cursor.fetchone()
+    conn.close()
+    if not row:
+        raise HTTPException(status_code=404, detail="Item not found")
+    return {"id": row[0], "name": row[1], "status": row[2]}
+
+@app.put("/api/v1/items/{item_id}")
+async def update_item(item_id: int, request: Request):
+    body = await request.json()
+    conn = get_db()
+    cursor = conn.cursor()
+    cursor.execute("UPDATE items SET name = %s, status = %s, data = %s WHERE id = %s",
+                   (body.get("name", ""), body.get("status", "active"), str(body), item_id))
+    conn.commit()
+    conn.close()
+    return {"id": item_id, "status": "updated"}
+
+@app.delete("/api/v1/items/{item_id}")
+async def delete_item(item_id: int):
+    conn = get_db()
+    cursor = conn.cursor()
+    cursor.execute("DELETE FROM items WHERE id = %s", (item_id,))
+    conn.commit()
+    conn.close()
+    return {"id": item_id, "status": "deleted"}
+    title="Real-time Event Services",
+    description="WebSocket-based real-time event broadcasting for transaction updates, alerts, and dashboard feeds",
+    version="1.0.0",
+)
+
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=["*"],
+    allow_credentials=True,
+    allow_methods=["*"],
+    allow_headers=["*"],
+)
+
+@app.get("/health")
+async def health_check():
+    """Service health check endpoint."""
+    return {"status": "healthy", "service": "realtime-services", "version": "1.0.0", "timestamp": datetime.utcnow().isoformat()}
+
+@app.get("/api/v1/events/subscribe")
+async def get_subscription_info():
+    """Get WebSocket subscription endpoint and available channels."""
+    return {
+        "websocket_url": "/ws/events",
+        "channels": [
+            {"name": "transactions", "description": "Real-time transaction updates"},
+            {"name": "alerts", "description": "System and fraud alerts"},
+            {"name": "settlements", "description": "Settlement status updates"},
+            {"name": "agent_status", "description": "Agent online/offline status"},
+        ],
+        "auth_required": True,
+    }
+
+@app.post("/api/v1/events/publish")
+async def publish_event(channel: str, event_type: str, payload: dict):
+    """Publish an event to a channel (internal use)."""
+    valid_channels = ["transactions", "alerts", "settlements", "agent_status"]
+    if channel not in valid_channels:
+        raise HTTPException(status_code=400, detail=f"Invalid channel. Must be one of: {valid_channels}")
+    return {
+        "event_id": f"EVT-{int(__import__('time').time())}",
+        "channel": channel,
+        "event_type": event_type,
+        "published_at": __import__('datetime').datetime.utcnow().isoformat(),
+        "subscribers_notified": 0,
+    }
+
+@app.get("/api/v1/events/history")
+async def get_event_history(channel: str = None, limit: int = 50):
+    """Get recent event history for replay."""
+    return {"events": [], "total": 0, "channel": channel, "limit": limit}
+
+if __name__ == "__main__":
+    import uvicorn
+    port = int(os.environ.get("PORT", 8000))
+    uvicorn.run(app, host="0.0.0.0", port=port)
+
+
+@app.on_event("startup")
+async def startup_event():
+    """Register service with Kafka on startup."""
+    await publish_kafka("realtime.services.started", {
+        "service": "realtime-services",
+        "timestamp": datetime.utcnow().isoformat() if "datetime" in dir() else "startup",
+    })
