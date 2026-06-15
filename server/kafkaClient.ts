@@ -87,7 +87,23 @@ export type KafkaTopic =
   | "pos.kyc.rejected"
   | "pos.disputes.opened"
   | "pos.disputes.resolved"
-  | "pos.fraud.alert_raised";
+  | "pos.fraud.alert_raised"
+  | "pos.remittance.initiated"
+  | "pos.remittance.completed"
+  | "pos.payroll.disbursed"
+  | "pos.pension.collected"
+  | "pos.education.payment"
+  | "pos.agritech.payment"
+  | "pos.insurance.premium"
+  | "pos.insurance.claim"
+  | "pos.settlement.netted"
+  | "pos.settlement.scheduled"
+  | "pos.wearable.payment"
+  | "pos.smartcontract.executed"
+  | "pos.dynamicqr.payment"
+  | "pos.commission.cascaded"
+  | "pos.healthinsurance.payment"
+  | "pos.float.reconciled";
 
 export interface KafkaEvent<T = unknown> {
   eventId: string;

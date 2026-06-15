@@ -93,7 +93,8 @@ export const agentManagementRouter = router({
       const rows = await db
         .select()
         .from(agents)
-        .orderBy(asc(agents.agentCode));
+        .orderBy(asc(agents.agentCode))
+        .limit(500);
       return rows.map((a: any) => ({
         id: a.id,
         agentCode: a.agentCode,

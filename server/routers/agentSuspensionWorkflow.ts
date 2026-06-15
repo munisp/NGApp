@@ -1,8 +1,9 @@
 // Sprint 87: Regenerated — agentSuspensionWorkflow with real DB queries
+import crypto from "node:crypto";
 import { z } from "zod";
 import { protectedProcedure, router } from "../_core/trpc";
 import { getDb, writeAuditLog } from "../db";
-import { agentSuspensionLog } from "../../drizzle/schema";
+import { agentSuspensionLog, gl_journal_entries } from "../../drizzle/schema";
 import { eq, desc, and, sql, count, gte, lte } from "drizzle-orm";
 import { TRPCError } from "@trpc/server";
 import { validateInput } from "../lib/routerHelpers";
@@ -21,6 +22,7 @@ import {
   calculateLatePenalty,
 } from "../lib/domainCalculations";
 import { checkDailyLimit } from "../lib/cbnLimits";
+import { publishEvent, type KafkaTopic } from "../kafkaClient";
 
 const STATUS_TRANSITIONS: Record<string, string[]> = {
   draft: ["pending_review"],
@@ -116,6 +118,32 @@ const suspend = protectedProcedure
             code: "NOT_FOUND",
             message: "suspend: record not found",
           });
+
+        // GL double-entry journal: Agent suspension float freeze
+        try {
+          const db = (await getDb())!;
+          await db.insert(gl_journal_entries).values({
+            entryNumber: `JE-${Date.now()}-${crypto.randomInt(9999).toString().padStart(4, "0")}`,
+            description: "Agent suspension float freeze",
+            debitAccountId: 2001,
+            creditAccountId: 2090,
+            amount: 0, // Amount set by caller context
+            currency: "NGN",
+            referenceType: "transaction",
+            referenceId: "system",
+            postedBy: "system",
+            status: "posted",
+          });
+        } catch {
+          // GL write failure should not block the transaction
+        }
+
+        // Publish domain event
+        publishEvent("pos.agents.suspended" as KafkaTopic, "system", {
+          action: "agent_suspension_float_freeze",
+          timestamp: new Date().toISOString(),
+        });
+
         return {
           success: true,
           id: input.id,

@@ -157,7 +157,8 @@ export const revenueReconciliationRouter = router({
           totalRevenue: sql<string>`COALESCE(SUM(${transactions.amount}::numeric), 0)`,
           avgAmount: sql<string>`COALESCE(AVG(${transactions.amount}::numeric), 0)`,
         })
-        .from(transactions);
+        .from(transactions)
+        .limit(500);
 
       return {
         totalRecords: total?.cnt ?? 0,

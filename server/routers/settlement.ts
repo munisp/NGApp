@@ -425,7 +425,8 @@ export const settlementRouter = router({
 
     const agentRows = await db
       .select({ id: agents.id, agentCode: agents.agentCode, name: agents.name })
-      .from(agents);
+      .from(agents)
+      .limit(500);
     const agentMap: Record<number, { agentCode: string; name: string }> = {};
     for (const a of agentRows) {
       agentMap[a.id] = { agentCode: a.agentCode, name: a.name };

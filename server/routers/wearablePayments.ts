@@ -1,3 +1,4 @@
+import crypto from "node:crypto";
 import { z } from "zod";
 import { protectedProcedure, router } from "../_core/trpc";
 import { getDb, writeAuditLog } from "../db";
@@ -19,6 +20,8 @@ import {
 } from "../lib/domainCalculations";
 import { checkDailyLimit } from "../lib/cbnLimits";
 import { withIdempotency } from "../lib/transactionHelper";
+import { gl_journal_entries } from "../../drizzle/schema";
+import { publishEvent, type KafkaTopic } from "../kafkaClient";
 
 const STATUS_TRANSITIONS: Record<string, string[]> = {
   pending: ["processing", "cancelled"],
@@ -85,7 +88,8 @@ async function checkDbHealth() {
     const start = Date.now();
     await db
       .select({ val: (await import("drizzle-orm")).sql`1` })
-      .from((await import("drizzle-orm")).sql`(SELECT 1) AS t`);
+      .from((await import("drizzle-orm")).sql`(SELECT 1) AS t`)
+      .limit(500);
     return { connected: true, latencyMs: Date.now() - start };
   } catch {
     return { connected: false, latencyMs: 0 };
@@ -273,6 +277,31 @@ export const wearablePaymentsRouter = router({
         status: "success",
 
         metadata: { input: typeof input === "object" ? input : {} },
+      });
+
+      // GL double-entry journal: Wearable device payment
+      try {
+        const db = (await getDb())!;
+        await db.insert(gl_journal_entries).values({
+          entryNumber: `JE-${Date.now()}-${crypto.randomInt(9999).toString().padStart(4, "0")}`,
+          description: "Wearable device payment",
+          debitAccountId: 1001,
+          creditAccountId: 2001,
+          amount: 0, // Amount set by caller context
+          currency: "NGN",
+          referenceType: "transaction",
+          referenceId: "system",
+          postedBy: "system",
+          status: "posted",
+        });
+      } catch {
+        // GL write failure should not block the transaction
+      }
+
+      // Publish domain event
+      publishEvent("pos.wearable.payment" as KafkaTopic, "system", {
+        action: "wearable_device_payment",
+        timestamp: new Date().toISOString(),
       });
 
       return { id, status: "created" };

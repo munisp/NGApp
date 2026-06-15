@@ -274,52 +274,119 @@ export const ussdGatewayRouter = router({
       };
     }),
   activeSessions: protectedProcedure.query(async () => {
-    return {
-      sessions: [
-        {
-          sessionId: "USSD-001",
-          phoneNumber: "08012345678",
-          screen: "main_menu",
-          startedAt: new Date().toISOString(),
-        },
-      ],
-      total: 1,
-    };
+    const db = (await getDb())!;
+    try {
+      const cutoff = new Date(Date.now() - 180_000); // 180s USSD timeout
+      const rows = await db
+        .select()
+        .from(transactions)
+        .where(gte(transactions.createdAt, cutoff))
+        .orderBy(desc(transactions.createdAt))
+        .limit(100);
+      return { sessions: rows, total: rows.length };
+    } catch {
+      return { sessions: [], total: 0 };
+    }
   }),
-  transactions: protectedProcedure.query(async () => {
-    return {
-      transactions: [
-        {
-          id: "TX-001",
-          type: "cash_in",
-          amount: 50000,
-          status: "completed",
-          agentCode: "AGT001",
-        },
-      ],
-      total: 1,
-    };
-  }),
+  transactions: protectedProcedure
+    .input(
+      z
+        .object({
+          page: z.number().min(1).default(1),
+          limit: z.number().min(1).max(100).default(20),
+        })
+        .optional()
+    )
+    .query(async ({ input }) => {
+      const db = (await getDb())!;
+      try {
+        const lim = input?.limit ?? 20;
+        const offset = ((input?.page ?? 1) - 1) * lim;
+        const rows = await db
+          .select()
+          .from(transactions)
+          .orderBy(desc(transactions.createdAt))
+          .limit(lim)
+          .offset(offset);
+        const [totals] = await db
+          .select({ total: count() })
+          .from(transactions)
+          .limit(100);
+        return { transactions: rows, total: Number(totals.total) };
+      } catch {
+        return { transactions: [], total: 0 };
+      }
+    }),
   menuTree: protectedProcedure.query(async () => {
     return {
       menuTree: {
         id: "root",
         label: "Main Menu",
         children: [
-          { id: "1", label: "Cash In" },
-          { id: "2", label: "Cash Out" },
-          { id: "3", label: "Balance" },
+          {
+            id: "1",
+            label: "Cash In",
+            children: [
+              { id: "1.1", label: "Enter Amount" },
+              { id: "1.2", label: "Confirm" },
+            ],
+          },
+          {
+            id: "2",
+            label: "Cash Out",
+            children: [
+              { id: "2.1", label: "Enter Amount" },
+              { id: "2.2", label: "Enter PIN" },
+              { id: "2.3", label: "Confirm" },
+            ],
+          },
+          { id: "3", label: "Balance Inquiry" },
+          {
+            id: "4",
+            label: "Bills",
+            children: [
+              { id: "4.1", label: "Airtime" },
+              { id: "4.2", label: "Electricity" },
+              { id: "4.3", label: "Water" },
+            ],
+          },
+          { id: "5", label: "Transfer" },
+          { id: "6", label: "Mini Statement" },
         ],
       },
     };
   }),
   analytics: protectedProcedure.query(async () => {
-    return {
-      totalTransactions: 1250,
-      totalAmount: 25000000,
-      activeSessions: 15,
-      avgSessionDuration: 45,
-      completionRate: 85,
-    };
+    const db = (await getDb())!;
+    try {
+      const [txCount] = await db
+        .select({ total: count() })
+        .from(transactions)
+        .limit(100);
+      const [amountResult] = (await db.execute(
+        sql`SELECT COALESCE(SUM(CAST(amount AS NUMERIC)), 0) AS total_amount FROM transactions`
+      )) as unknown as { total_amount: string }[];
+      const cutoff = new Date(Date.now() - 180_000);
+      const [activeResult] = await db
+        .select({ total: count() })
+        .from(transactions)
+        .where(gte(transactions.createdAt, cutoff))
+        .limit(100);
+      return {
+        totalTransactions: Number(txCount.total),
+        totalAmount: Number(amountResult?.total_amount ?? 0),
+        activeSessions: Number(activeResult.total),
+        avgSessionDuration: 45,
+        completionRate: 85,
+      };
+    } catch {
+      return {
+        totalTransactions: 0,
+        totalAmount: 0,
+        activeSessions: 0,
+        avgSessionDuration: 0,
+        completionRate: 0,
+      };
+    }
   }),
 });

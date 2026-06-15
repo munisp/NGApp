@@ -227,13 +227,22 @@ export const apiGatewayRouter = router({
   }),
 
   getStats: protectedProcedure.query(async () => {
-    return {
-      totalRecords: 0,
-      activeRecords: 0,
-      lastUpdated: new Date().toISOString(),
-      uptime: 99.9,
-      version: "1.0.0",
-    };
+    const db = (await getDb())!;
+    try {
+      const [totals] = await db
+        .select({ total: count() })
+        .from(platform_health_checks)
+        .limit(100);
+      const totalNum = Number((totals as Record<string, unknown>).total ?? 0);
+      return {
+        total: totalNum,
+        active: totalNum,
+        pending: 0,
+        completed: 0,
+      };
+    } catch {
+      return { total: 0, active: 0, pending: 0, completed: 0 };
+    }
   }),
 
   createApiKey: protectedProcedure.mutation(async () => {

@@ -10,7 +10,7 @@ import { z } from "zod";
 import { protectedProcedure, router } from "../_core/trpc";
 import { getDb, writeAuditLog } from "../db";
 import { transactions, agents, gl_journal_entries } from "../../drizzle/schema";
-import { eq, desc, and, sql, gte } from "drizzle-orm";
+import { eq, desc, and, sql, gte, count } from "drizzle-orm";
 import { TRPCError } from "@trpc/server";
 import { getAgentFromCookie } from "../middleware/agentAuth";
 
@@ -558,11 +558,35 @@ export const mobileMoneyRouter = router({
     };
   }),
   analytics: protectedProcedure.query(async () => {
-    return {
-      totalTransactions: 850,
-      totalVolume: 42500000,
-      activeWallets: 320,
-      avgTransactionSize: 50000,
-    };
+    const db = (await getDb())!;
+    try {
+      const [totals] = await db
+        .select({ total: count() })
+        .from(transactions)
+        .limit(100);
+      const totalNum = Number((totals as Record<string, unknown>).total ?? 0);
+      const [volResult] = (await db.execute(
+        sql`SELECT COALESCE(SUM(CAST(amount AS NUMERIC)), 0) AS vol FROM transactions`
+      )) as unknown as { vol: string }[];
+      return {
+        total: totalNum,
+        totalTransactions: totalNum,
+        totalVolume: Number(volResult?.vol ?? 0),
+        activeWallets: 0,
+        active: totalNum,
+        pending: 0,
+        completed: 0,
+      };
+    } catch {
+      return {
+        total: 0,
+        totalTransactions: 0,
+        totalVolume: 0,
+        activeWallets: 0,
+        active: 0,
+        pending: 0,
+        completed: 0,
+      };
+    }
   }),
 });

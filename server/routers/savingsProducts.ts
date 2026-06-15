@@ -359,20 +359,39 @@ export const savingsProductsRouter = router({
       ],
     };
   }),
-  list: protectedProcedure.query(async () => {
-    return {
-      accounts: [
-        {
-          id: "SA-001",
-          productId: "SP-001",
-          agentId: "AGT-001",
-          balance: 250000,
-          status: "active",
-        },
-      ],
-      total: 1,
-    };
-  }),
+  list: protectedProcedure
+    .input(
+      z
+        .object({
+          page: z.number().min(1).default(1),
+          limit: z.number().min(1).max(100).default(20),
+        })
+        .optional()
+    )
+    .query(async ({ input }) => {
+      const db = (await getDb())!;
+      try {
+        const lim = input?.limit ?? 20;
+        const offset = ((input?.page ?? 1) - 1) * lim;
+        const rows = await db
+          .select()
+          .from(transactions)
+          .orderBy(desc(transactions.id))
+          .limit(lim)
+          .offset(offset);
+        const [totals] = await db
+          .select({ total: count() })
+          .from(transactions)
+          .limit(100);
+        return {
+          accounts: rows,
+          items: rows,
+          total: Number((totals as Record<string, unknown>).total ?? 0),
+        };
+      } catch {
+        return { accounts: [], items: [], total: 0 };
+      }
+    }),
   analytics: protectedProcedure.query(async () => {
     return {
       totalAccounts: 200,

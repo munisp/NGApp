@@ -375,7 +375,8 @@ export const lakehouseRouter = router({
       .where(gte(transactions.createdAt, today));
     const [fraudTotal] = await db
       .select({ count: sql<number>`count(*)::int` })
-      .from(fraudAlerts);
+      .from(fraudAlerts)
+      .limit(500);
 
     return {
       transactions: { total: txTotal?.count ?? 0, today: txToday?.count ?? 0 },

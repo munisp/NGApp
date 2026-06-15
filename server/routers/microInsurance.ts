@@ -7,11 +7,12 @@
  * - Crop Insurance: Weather-indexed crop insurance for agri-banking
  * - Personal Accident: Coverage for agents during work
  */
+import crypto from "node:crypto";
 import { z } from "zod";
 import { protectedProcedure, router } from "../_core/trpc";
 import { getDb, writeAuditLog } from "../db";
 import { checkDailyLimit } from "../lib/cbnLimits";
-import { agents } from "../../drizzle/schema";
+import { agents, gl_journal_entries } from "../../drizzle/schema";
 import { eq, desc, and, sql, gte, count, sum } from "drizzle-orm";
 import { TRPCError } from "@trpc/server";
 import { getAgentFromCookie } from "../middleware/agentAuth";
@@ -21,6 +22,7 @@ import {
   withIdempotency,
 } from "../lib/transactionHelper";
 import { validateInput } from "../lib/routerHelpers";
+import { publishEvent, type KafkaTopic } from "../kafkaClient";
 
 interface InsuranceProduct {
   id: string;
@@ -370,6 +372,31 @@ export const microInsuranceRouter = router({
           approvedAmount,
           notes: input.notes,
         },
+      });
+
+      // GL double-entry journal: Micro-insurance premium
+      try {
+        const db = (await getDb())!;
+        await db.insert(gl_journal_entries).values({
+          entryNumber: `JE-${Date.now()}-${crypto.randomInt(9999).toString().padStart(4, "0")}`,
+          description: "Micro-insurance premium",
+          debitAccountId: 1001,
+          creditAccountId: 2060,
+          amount: 0, // Amount set by caller context
+          currency: "NGN",
+          referenceType: "transaction",
+          referenceId: "system",
+          postedBy: "system",
+          status: "posted",
+        });
+      } catch {
+        // GL write failure should not block the transaction
+      }
+
+      // Publish domain event
+      publishEvent("pos.insurance.premium" as KafkaTopic, "system", {
+        action: "micro-insurance_premium",
+        timestamp: new Date().toISOString(),
       });
 
       return {

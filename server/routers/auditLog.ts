@@ -81,7 +81,8 @@ async function checkDbHealth() {
     const start = Date.now();
     await db
       .select({ val: (await import("drizzle-orm")).sql`1` })
-      .from((await import("drizzle-orm")).sql`(SELECT 1) AS t`);
+      .from((await import("drizzle-orm")).sql`(SELECT 1) AS t`)
+      .limit(500);
     return { connected: true, latencyMs: Date.now() - start };
   } catch {
     return { connected: false, latencyMs: 0 };

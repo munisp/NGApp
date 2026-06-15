@@ -14,7 +14,7 @@ import {
   agents,
   merchants,
 } from "../../drizzle/schema";
-import { eq, desc, and, sql, gte, like } from "drizzle-orm";
+import { eq, desc, and, sql, gte, like, count } from "drizzle-orm";
 import { TRPCError } from "@trpc/server";
 import { getAgentFromCookie } from "../middleware/agentAuth";
 
@@ -334,20 +334,39 @@ export const merchantPaymentsRouter = router({
     }
   }),
 
-  list: protectedProcedure.query(async () => {
-    return {
-      merchants: [
-        {
-          id: "MC-001",
-          name: "Lagos Supermarket",
-          category: "retail",
-          status: "active",
-          monthlyVolume: 5000000,
-        },
-      ],
-      total: 1,
-    };
-  }),
+  list: protectedProcedure
+    .input(
+      z
+        .object({
+          page: z.number().min(1).default(1),
+          limit: z.number().min(1).max(100).default(20),
+        })
+        .optional()
+    )
+    .query(async ({ input }) => {
+      const db = (await getDb())!;
+      try {
+        const lim = input?.limit ?? 20;
+        const offset = ((input?.page ?? 1) - 1) * lim;
+        const rows = await db
+          .select()
+          .from(merchants)
+          .orderBy(desc(merchants.id))
+          .limit(lim)
+          .offset(offset);
+        const [totals] = await db
+          .select({ total: count() })
+          .from(merchants)
+          .limit(100);
+        return {
+          merchants: rows,
+          items: rows,
+          total: Number((totals as Record<string, unknown>).total ?? 0),
+        };
+      } catch {
+        return { merchants: [], items: [], total: 0 };
+      }
+    }),
   analytics: protectedProcedure.query(async () => {
     return {
       totalMerchants: 500,

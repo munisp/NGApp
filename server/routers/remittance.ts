@@ -238,18 +238,57 @@ export const remittanceRouter = router({
     };
   }),
   analytics: protectedProcedure.query(async () => {
-    return {
-      totalTransactions: 2000,
-      totalRemittances: 2000,
-      totalVolume: 500000000,
-      totalFees: 5000000,
-      totalCommission: 2500000,
-      avgAmount: 250000,
-      topCorridors: [{ corridor: "UK-NG", volume: 200000000 }],
-      byPartner: [
-        { partner: "WorldRemit", volume: 300000000, count: 1200 },
-        { partner: "Flutterwave", volume: 200000000, count: 800 },
-      ],
-    };
+    const db = (await getDb())!;
+    try {
+      const [totals] = await db
+        .select({ total: count() })
+        .from(transactions)
+        .limit(100);
+      const totalNum = Number((totals as Record<string, unknown>).total ?? 0);
+      const [volumeResult] = (await db.execute(
+        sql`SELECT COALESCE(SUM(CAST(amount AS NUMERIC)), 0) AS vol FROM transactions`
+      )) as unknown as { vol: string }[];
+      return {
+        total: totalNum,
+        totalTransactions: totalNum,
+        totalVolume: Number(volumeResult?.vol ?? 0),
+        totalFees: 0,
+        totalCommission: 0,
+        active: totalNum,
+        pending: 0,
+        completed: 0,
+        byPartner: [] as {
+          id: string;
+          baseCurrency: string;
+          quoteCurrency: string;
+          buyRate: number;
+          sellRate: number;
+          midRate: number;
+          provider: string;
+          updatedAt: string;
+        }[],
+      };
+    } catch {
+      return {
+        total: 0,
+        totalTransactions: 0,
+        totalVolume: 0,
+        totalFees: 0,
+        totalCommission: 0,
+        active: 0,
+        pending: 0,
+        completed: 0,
+        byPartner: [] as {
+          id: string;
+          baseCurrency: string;
+          quoteCurrency: string;
+          buyRate: number;
+          sellRate: number;
+          midRate: number;
+          provider: string;
+          updatedAt: string;
+        }[],
+      };
+    }
   }),
 });

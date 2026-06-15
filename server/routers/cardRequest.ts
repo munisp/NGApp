@@ -89,7 +89,8 @@ async function checkDbHealth() {
     const start = Date.now();
     await db
       .select({ val: (await import("drizzle-orm")).sql`1` })
-      .from((await import("drizzle-orm")).sql`(SELECT 1) AS t`);
+      .from((await import("drizzle-orm")).sql`(SELECT 1) AS t`)
+      .limit(500);
     return { connected: true, latencyMs: Date.now() - start };
   } catch {
     return { connected: false, latencyMs: 0 };
@@ -181,20 +182,39 @@ export const cardRequestRouter = router({
       return results;
     }),
 
-  list: protectedProcedure.query(async () => {
-    return {
-      requests: [
-        {
-          id: "CR-001",
-          agentId: "AGT-001",
-          cardType: "debit",
-          status: "delivered",
-          requestedAt: "2024-06-01",
-        },
-      ],
-      total: 1,
-    };
-  }),
+  list: protectedProcedure
+    .input(
+      z
+        .object({
+          page: z.number().min(1).default(1),
+          limit: z.number().min(1).max(100).default(20),
+        })
+        .optional()
+    )
+    .query(async ({ input }) => {
+      const db = (await getDb())!;
+      try {
+        const lim = input?.limit ?? 20;
+        const offset = ((input?.page ?? 1) - 1) * lim;
+        const rows = await db
+          .select()
+          .from(transactions)
+          .orderBy(desc(transactions.id))
+          .limit(lim)
+          .offset(offset);
+        const [totals] = await db
+          .select({ total: count() })
+          .from(transactions)
+          .limit(100);
+        return {
+          requests: rows,
+          items: rows,
+          total: Number((totals as Record<string, unknown>).total ?? 0),
+        };
+      } catch {
+        return { requests: [], items: [], total: 0 };
+      }
+    }),
   analytics: protectedProcedure.query(async () => {
     return {
       total: 300,

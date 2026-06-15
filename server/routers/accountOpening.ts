@@ -336,20 +336,39 @@ export const accountOpeningRouter = router({
       }
     }),
 
-  list: protectedProcedure.query(async () => {
-    return {
-      applications: [
-        {
-          id: "AO-001",
-          customerName: "Fatima Ibrahim",
-          accountType: "savings",
-          status: "approved",
-          createdAt: "2024-06-01",
-        },
-      ],
-      total: 1,
-    };
-  }),
+  list: protectedProcedure
+    .input(
+      z
+        .object({
+          page: z.number().min(1).default(1),
+          limit: z.number().min(1).max(100).default(20),
+        })
+        .optional()
+    )
+    .query(async ({ input }) => {
+      const db = (await getDb())!;
+      try {
+        const lim = input?.limit ?? 20;
+        const offset = ((input?.page ?? 1) - 1) * lim;
+        const rows = await db
+          .select()
+          .from(customers)
+          .orderBy(desc(customers.id))
+          .limit(lim)
+          .offset(offset);
+        const [totals] = await db
+          .select({ total: count() })
+          .from(customers)
+          .limit(100);
+        return {
+          applications: rows,
+          items: rows,
+          total: Number((totals as Record<string, unknown>).total ?? 0),
+        };
+      } catch {
+        return { applications: [], items: [], total: 0 };
+      }
+    }),
   analytics: protectedProcedure.query(async () => {
     return {
       total: 1500,

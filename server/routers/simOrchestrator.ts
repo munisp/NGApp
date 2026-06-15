@@ -605,7 +605,8 @@ export const simOrchestratorRouter = router({
       return db
         .select()
         .from(simOrchestratorConfig)
-        .orderBy(simOrchestratorConfig.terminalId);
+        .orderBy(simOrchestratorConfig.terminalId)
+        .limit(500);
     } catch (error) {
       if (error instanceof TRPCError) throw error;
       throw new TRPCError({

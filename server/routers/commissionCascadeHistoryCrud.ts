@@ -2,7 +2,10 @@
 import { z } from "zod";
 import { protectedProcedure, router } from "../_core/trpc";
 import { getDb } from "../db";
-import { commissionCascadeHistory } from "../../drizzle/schema";
+import {
+  commissionCascadeHistory,
+  gl_journal_entries,
+} from "../../drizzle/schema";
 import { eq, desc, and, sql, count, sum } from "drizzle-orm";
 import { TRPCError } from "@trpc/server";
 import {
@@ -16,6 +19,7 @@ import {
   auditFinancialAction,
   withTransaction,
 } from "../lib/transactionHelper";
+import { publishEvent, type KafkaTopic } from "../kafkaClient";
 
 const HIERARCHY_SPLIT_RULES: Record<string, number> = {
   agent: 0.6,

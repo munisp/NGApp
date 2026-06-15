@@ -89,7 +89,8 @@ async function checkDbHealth() {
     const start = Date.now();
     await db
       .select({ val: (await import("drizzle-orm")).sql`1` })
-      .from((await import("drizzle-orm")).sql`(SELECT 1) AS t`);
+      .from((await import("drizzle-orm")).sql`(SELECT 1) AS t`)
+      .limit(500);
     return { connected: true, latencyMs: Date.now() - start };
   } catch {
     return { connected: false, latencyMs: 0 };
@@ -178,21 +179,39 @@ export const referralProgramRouter = router({
       return results;
     }),
 
-  list: protectedProcedure.query(async () => {
-    return {
-      referrals: [
-        {
-          id: "RF-001",
-          referrerId: "AGT-001",
-          referredId: "AGT-005",
-          status: "active",
-          reward: 5000,
-          createdAt: "2024-06-01",
-        },
-      ],
-      total: 1,
-    };
-  }),
+  list: protectedProcedure
+    .input(
+      z
+        .object({
+          page: z.number().min(1).default(1),
+          limit: z.number().min(1).max(100).default(20),
+        })
+        .optional()
+    )
+    .query(async ({ input }) => {
+      const db = (await getDb())!;
+      try {
+        const lim = input?.limit ?? 20;
+        const offset = ((input?.page ?? 1) - 1) * lim;
+        const rows = await db
+          .select()
+          .from(users)
+          .orderBy(desc(users.id))
+          .limit(lim)
+          .offset(offset);
+        const [totals] = await db
+          .select({ total: count() })
+          .from(users)
+          .limit(100);
+        return {
+          referrals: rows,
+          items: rows,
+          total: Number((totals as Record<string, unknown>).total ?? 0),
+        };
+      } catch {
+        return { referrals: [], items: [], total: 0 };
+      }
+    }),
   tiers: protectedProcedure.query(async () => {
     return {
       tiers: [
