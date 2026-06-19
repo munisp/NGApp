@@ -73,6 +73,12 @@ export function serveStatic(app: Express) {
     express.static(distPath, {
       maxAge: "1h",
       setHeaders(res, filePath) {
+        // Never cache HTML (express.static serves index.html for "/" before SPA fallback)
+        if (filePath.endsWith(".html")) {
+          res.setHeader("Cache-Control", "no-cache, no-store, must-revalidate");
+          res.setHeader("Pragma", "no-cache");
+          res.setHeader("Expires", "0");
+        }
         // Never cache the service worker — must always be fresh
         if (filePath.endsWith("sw.js") || filePath.endsWith("registerSW.js")) {
           res.setHeader("Cache-Control", "no-cache, no-store, must-revalidate");
