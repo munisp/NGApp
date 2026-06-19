@@ -59,10 +59,33 @@ export function serveStatic(app: Express) {
     );
   }
 
-  app.use(express.static(distPath));
+  // Hashed assets (JS/CSS/fonts) — immutable, cache forever
+  app.use(
+    "/assets",
+    express.static(path.resolve(distPath, "assets"), {
+      maxAge: "1y",
+      immutable: true,
+    })
+  );
 
-  // fall through to index.html if the file doesn't exist
+  // All other static files (icons, manifest, etc.) — short cache with revalidation
+  app.use(
+    express.static(distPath, {
+      maxAge: "1h",
+      setHeaders(res, filePath) {
+        // Never cache the service worker — must always be fresh
+        if (filePath.endsWith("sw.js") || filePath.endsWith("registerSW.js")) {
+          res.setHeader("Cache-Control", "no-cache, no-store, must-revalidate");
+        }
+      },
+    })
+  );
+
+  // SPA fallback — index.html must never be cached
   app.use("*", (_req, res) => {
+    res.setHeader("Cache-Control", "no-cache, no-store, must-revalidate");
+    res.setHeader("Pragma", "no-cache");
+    res.setHeader("Expires", "0");
     res.sendFile(path.resolve(distPath, "index.html"));
   });
 }

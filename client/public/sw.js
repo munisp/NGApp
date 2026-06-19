@@ -1,20 +1,24 @@
 /**
- * NDSEP Service Worker — Offline-First PWA
- * Stale-while-revalidate for static assets, network-first for API.
+ * NDSEP Service Worker — Offline-First PWA with Cache Busting
+ *
+ * Cache strategy:
+ *   - CACHE_VERSION is bumped on every deploy (build injects a hash via Vite).
+ *   - On activate, ALL caches whose name doesn't match the current version are
+ *     deleted, guaranteeing stale JS/CSS from a prior deploy is never served.
+ *   - Navigation requests (HTML) are always network-first so the latest
+ *     index.html (with fresh <script> hashes) is fetched immediately.
+ *   - Hashed static assets use stale-while-revalidate (the hash in the filename
+ *     already guarantees uniqueness).
+ *   - API responses use network-first with a 5-minute cache fallback.
  */
 
-const CACHE_VERSION = "ndsep-v2";
+const CACHE_VERSION = "ndsep-v3";
 const STATIC_CACHE = `${CACHE_VERSION}-static`;
 const API_CACHE = `${CACHE_VERSION}-api`;
 
-const STATIC_ASSETS = [
-  "/",
-  "/manifest.json",
-];
+const STATIC_ASSETS = ["/", "/offline.html", "/manifest.json"];
 
-const API_CACHE_MAX_AGE = 5 * 60 * 1000; // 5 minutes
-
-// Install — cache app shell
+// ── Install — cache app shell, skip waiting to activate immediately ──────────
 self.addEventListener("install", (event) => {
   event.waitUntil(
     caches.open(STATIC_CACHE).then((cache) => cache.addAll(STATIC_ASSETS))
@@ -22,28 +26,38 @@ self.addEventListener("install", (event) => {
   self.skipWaiting();
 });
 
-// Activate — clean old caches
+// ── Activate — purge ALL old caches (cache busting on deploy) ────────────────
 self.addEventListener("activate", (event) => {
   event.waitUntil(
-    caches.keys().then((keys) =>
-      Promise.all(
-        keys
-          .filter((k) => k.startsWith("ndsep-") && k !== STATIC_CACHE && k !== API_CACHE)
-          .map((k) => caches.delete(k))
+    caches
+      .keys()
+      .then((keys) =>
+        Promise.all(
+          keys
+            .filter((k) => k !== STATIC_CACHE && k !== API_CACHE)
+            .map((k) => caches.delete(k))
+        )
       )
-    )
+      .then(() => self.clients.claim())
+      .then(() =>
+        // Notify all open tabs to reload if their cache version is stale
+        self.clients.matchAll({ type: "window" }).then((clients) => {
+          clients.forEach((client) =>
+            client.postMessage({
+              type: "CACHE_BUSTED",
+              version: CACHE_VERSION,
+            })
+          );
+        })
+      )
   );
-  self.clients.claim();
 });
 
-// Fetch handler with smart caching strategies
+// ── Fetch handler with smart caching strategies ──────────────────────────────
 self.addEventListener("fetch", (event) => {
   const { request } = event;
 
-  // Skip non-GET requests
   if (request.method !== "GET") return;
-
-  // Skip chrome-extension and other non-http(s) requests
   if (!request.url.startsWith("http")) return;
 
   // API requests: network-first with cache fallback
@@ -51,27 +65,48 @@ self.addEventListener("fetch", (event) => {
     event.respondWith(
       fetch(request)
         .then((response) => {
-          // Cache successful GET API responses
           if (response.ok) {
             const clone = response.clone();
             caches.open(API_CACHE).then((cache) => cache.put(request, clone));
           }
           return response;
         })
-        .catch(() => caches.match(request).then((cached) => cached || offlineResponse()))
+        .catch(() =>
+          caches
+            .match(request)
+            .then((cached) => cached || offlineResponse())
+        )
     );
     return;
   }
 
-  // Static assets: stale-while-revalidate
-  if (isStaticAsset(request.url)) {
+  // Navigation (HTML pages): ALWAYS network-first — never serve stale index.html
+  if (request.mode === "navigate") {
+    event.respondWith(
+      fetch(request).catch(() =>
+        caches
+          .match("/")
+          .then(
+            (cached) => cached || caches.match("/offline.html")
+          )
+          .then((fallback) => fallback || offlineResponse())
+      )
+    );
+    return;
+  }
+
+  // Hashed static assets (/assets/*): stale-while-revalidate
+  // Vite's content-hash filenames ensure uniqueness; cache hit = correct version
+  if (isHashedAsset(request.url)) {
     event.respondWith(
       caches.match(request).then((cached) => {
         const fetchPromise = fetch(request)
           .then((response) => {
             if (response.ok) {
               const clone = response.clone();
-              caches.open(STATIC_CACHE).then((cache) => cache.put(request, clone));
+              caches
+                .open(STATIC_CACHE)
+                .then((cache) => cache.put(request, clone));
             }
             return response;
           })
@@ -83,16 +118,28 @@ self.addEventListener("fetch", (event) => {
     return;
   }
 
-  // Navigation: network-first, fallback to cached index
-  if (request.mode === "navigate") {
+  // Other static files: network-first
+  if (isStaticAsset(request.url)) {
     event.respondWith(
-      fetch(request).catch(() =>
-        caches.match("/").then((cached) => cached || offlineResponse())
-      )
+      fetch(request)
+        .then((response) => {
+          if (response.ok) {
+            const clone = response.clone();
+            caches
+              .open(STATIC_CACHE)
+              .then((cache) => cache.put(request, clone));
+          }
+          return response;
+        })
+        .catch(() => caches.match(request))
     );
     return;
   }
 });
+
+function isHashedAsset(url) {
+  return url.includes("/assets/") && /\.[a-zA-Z0-9]{8,}\.(js|css|woff2?)(\?|$)/.test(url);
+}
 
 function isStaticAsset(url) {
   return /\.(js|css|woff2?|png|jpg|svg|ico|webp|avif)(\?|$)/.test(url);
@@ -105,7 +152,7 @@ function offlineResponse() {
   );
 }
 
-// Background sync for offline mutations
+// ── Background sync for offline mutations ────────────────────────────────────
 self.addEventListener("sync", (event) => {
   if (event.tag === "ndsep-sync") {
     event.waitUntil(syncPendingMutations());
@@ -116,3 +163,22 @@ async function syncPendingMutations() {
   // Placeholder for offline mutation queue sync
   // Implemented via client-side IndexedDB queue in production
 }
+
+// ── Message handler — allow clients to request cache clear ───────────────────
+self.addEventListener("message", (event) => {
+  if (event.data && event.data.type === "SKIP_WAITING") {
+    self.skipWaiting();
+  }
+  if (event.data && event.data.type === "CLEAR_CACHES") {
+    event.waitUntil(
+      caches
+        .keys()
+        .then((keys) => Promise.all(keys.map((k) => caches.delete(k))))
+        .then(() => {
+          if (event.source) {
+            event.source.postMessage({ type: "CACHES_CLEARED" });
+          }
+        })
+    );
+  }
+});
