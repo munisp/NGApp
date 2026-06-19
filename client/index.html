@@ -4,6 +4,10 @@
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=5, viewport-fit=cover" />
+    <!-- Cache busting: prevent browsers and proxies from caching the HTML shell -->
+    <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate" />
+    <meta http-equiv="Pragma" content="no-cache" />
+    <meta http-equiv="Expires" content="0" />
     <title>NDSEP — National Data Sovereignty Enforcement Platform</title>
     <meta name="description" content="National Data Sovereignty Enforcement Platform — real-time compliance monitoring, enforcement, and audit management for financial institutions and regulated entities." />
     <meta name="theme-color" content="#f4f2f7" media="(prefers-color-scheme: light)" />
@@ -49,11 +53,32 @@
       </div>
     </div>
     <script type="module" src="/src/main.tsx"></script>
-    <!-- Service Worker Registration -->
+    <!-- Service Worker Registration + Cache Bust Listener -->
     <script>
       if ('serviceWorker' in navigator) {
         window.addEventListener('load', function() {
-          navigator.serviceWorker.register('/sw.js').catch(function() {});
+          navigator.serviceWorker.register('/sw.js').then(function(reg) {
+            // Check for updates every 60 seconds
+            setInterval(function() { reg.update(); }, 60000);
+            // When a new SW is installed, tell it to activate immediately
+            reg.addEventListener('updatefound', function() {
+              var newWorker = reg.installing;
+              if (newWorker) {
+                newWorker.addEventListener('statechange', function() {
+                  if (newWorker.state === 'activated') {
+                    // New version deployed — reload to pick up fresh assets
+                    window.location.reload();
+                  }
+                });
+              }
+            });
+          }).catch(function() {});
+          // Listen for CACHE_BUSTED message from SW
+          navigator.serviceWorker.addEventListener('message', function(event) {
+            if (event.data && event.data.type === 'CACHE_BUSTED') {
+              window.location.reload();
+            }
+          });
         });
       }
     </script>
