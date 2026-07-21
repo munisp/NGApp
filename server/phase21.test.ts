@@ -43,10 +43,13 @@ describe("SectorComplianceDetail page", () => {
     expect(c).toContain("trpc.insurance.listCompanies.useQuery");
     expect(c).toContain("trpc.telecom.listOperators.useQuery");
   });
-  it("shows compliance score per sector", () => {
+  it("sources the sector baseline from the DB (sectorBenchmarks), not hardcoded scores", () => {
     const c = fs.readFileSync(detailPath, "utf-8");
-    expect(c).toContain("fintech: 87");
-    expect(c).toContain("healthcare: 92");
+    expect(c).toContain("trpc.sectorBenchmarks.list.useQuery");
+    expect(c).toContain("avg_compliance_score");
+    // Guard against reintroducing the old hardcoded baseline map
+    expect(c).not.toContain("fintech: 87");
+    expect(c).not.toContain("BASELINE_SCORES");
   });
   it("has pagination controls", () => {
     const c = fs.readFileSync(detailPath, "utf-8");
