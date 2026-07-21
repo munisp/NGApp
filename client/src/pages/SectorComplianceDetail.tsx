@@ -27,17 +27,6 @@ import {
 } from "lucide-react";
 
 // Rendered inside DashboardLayout via App.tsx router
-// ─── Sector compliance baseline scores (last audit cycle) ────────────────────
-// TODO: migrate to DB-driven config (e.g. /api/trpc/sectorConfig.baselines)
-// so scores update per audit cycle without redeploying.
-const BASELINE_SCORES: Record<string, number> = {
-  fintech: 87,
-  healthcare: 92,
-  energy: 78,
-  insurance: 85,
-  telecom: 81,
-};
-
 // ─── Sector metadata ──────────────────────────────────────────────────────────
 const SECTOR_META: Record<string, {
   name: string;
@@ -243,6 +232,17 @@ export default function SectorComplianceDetail() {
 
   const workersQuery = trpc.workers.status.useQuery(undefined, { refetchInterval: 30000 });
 
+  // Sector baseline (DB-driven — latest sector_benchmarks snapshot)
+  const benchmarkQuery = trpc.sectorBenchmarks.list.useQuery(
+    { sector },
+    { enabled: !!sector }
+  );
+  const baselineScore = (() => {
+    const rows = (benchmarkQuery.data ?? []) as Array<{ avg_compliance_score?: number | string }>;
+    const v = rows[0]?.avg_compliance_score;
+    return v != null && !Number.isNaN(Number(v)) ? Math.round(Number(v)) : null;
+  })();
+
   // ── Resolve active query ─────────────────────────────────────────────────
   type EntityRow = Record<string, unknown>;
   let entities: EntityRow[] = [];
@@ -371,8 +371,8 @@ export default function SectorComplianceDetail() {
               <div className="text-xs text-muted-foreground mb-1">Compliance Score</div>
               <div className="text-3xl font-bold text-foreground">{score}%</div>
               <Progress value={score} className="mt-2 h-1.5" />
-              {BASELINE_SCORES[sector] && (
-                <div className="text-xs text-muted-foreground mt-1">Baseline: {BASELINE_SCORES[sector]}%</div>
+              {baselineScore != null && (
+                <div className="text-xs text-muted-foreground mt-1">Sector baseline: {baselineScore}%</div>
               )}
             </CardContent>
           </Card>
