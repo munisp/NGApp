@@ -1,0 +1,435 @@
+---
+# Disaster Recovery / BCP Service (Go)
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: disaster-recovery
+  namespace: ag-insurance
+  labels:
+    app: disaster-recovery
+    tier: infrastructure
+spec:
+  replicas: 2
+  selector:
+    matchLabels:
+      app: disaster-recovery
+  template:
+    metadata:
+      labels:
+        app: disaster-recovery
+      annotations:
+        dapr.io/enabled: "true"
+        dapr.io/app-id: "disaster-recovery"
+        dapr.io/app-port: "8090"
+    spec:
+      containers:
+        - name: disaster-recovery
+          image: ag-insurance/disaster-recovery:latest
+          ports:
+            - containerPort: 8090
+          env:
+            - name: DATABASE_URL
+              valueFrom:
+                secretKeyRef:
+                  name: postgres-credentials
+                  key: url
+            - name: REDIS_URL
+              value: "redis-master.ag-insurance.svc.cluster.local:6379"
+            - name: KAFKA_BROKER
+              value: "kafka.ag-insurance.svc.cluster.local:9092"
+            - name: TEMPORAL_ADDR
+              value: "temporal.ag-insurance.svc.cluster.local:7233"
+          resources:
+            requests:
+              memory: "128Mi"
+              cpu: "100m"
+            limits:
+              memory: "512Mi"
+              cpu: "500m"
+          livenessProbe:
+            httpGet:
+              path: /health
+              port: 8090
+            initialDelaySeconds: 10
+            periodSeconds: 30
+          readinessProbe:
+            httpGet:
+              path: /health
+              port: 8090
+            initialDelaySeconds: 5
+            periodSeconds: 10
+---
+# NAICOM Compliance Module (Go)
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: naicom-compliance
+  namespace: ag-insurance
+  labels:
+    app: naicom-compliance
+    tier: compliance
+spec:
+  replicas: 2
+  selector:
+    matchLabels:
+      app: naicom-compliance
+  template:
+    metadata:
+      labels:
+        app: naicom-compliance
+      annotations:
+        dapr.io/enabled: "true"
+        dapr.io/app-id: "naicom-compliance"
+        dapr.io/app-port: "8091"
+    spec:
+      containers:
+        - name: naicom-compliance
+          image: ag-insurance/naicom-compliance:latest
+          ports:
+            - containerPort: 8091
+          env:
+            - name: DATABASE_URL
+              valueFrom:
+                secretKeyRef:
+                  name: postgres-credentials
+                  key: url
+            - name: REDIS_URL
+              value: "redis-master.ag-insurance.svc.cluster.local:6379"
+            - name: KAFKA_BROKER
+              value: "kafka.ag-insurance.svc.cluster.local:9092"
+            - name: OPENSEARCH_URL
+              value: "http://opensearch.ag-insurance.svc.cluster.local:9200"
+            - name: TEMPORAL_ADDR
+              value: "temporal.ag-insurance.svc.cluster.local:7233"
+          resources:
+            requests:
+              memory: "128Mi"
+              cpu: "100m"
+            limits:
+              memory: "512Mi"
+              cpu: "500m"
+---
+# IFRS 17 Engine (Python)
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: ifrs17-engine
+  namespace: ag-insurance
+  labels:
+    app: ifrs17-engine
+    tier: financial
+spec:
+  replicas: 2
+  selector:
+    matchLabels:
+      app: ifrs17-engine
+  template:
+    metadata:
+      labels:
+        app: ifrs17-engine
+      annotations:
+        dapr.io/enabled: "true"
+        dapr.io/app-id: "ifrs17-engine"
+        dapr.io/app-port: "8092"
+    spec:
+      containers:
+        - name: ifrs17-engine
+          image: ag-insurance/ifrs17-engine:latest
+          ports:
+            - containerPort: 8092
+          env:
+            - name: DATABASE_URL
+              value: "postgresql+asyncpg://postgres:postgres@postgres.ag-insurance.svc.cluster.local:5432/ngapp"
+            - name: REDIS_URL
+              value: "redis://redis-master.ag-insurance.svc.cluster.local:6379"
+            - name: KAFKA_BROKER
+              value: "kafka.ag-insurance.svc.cluster.local:9092"
+          resources:
+            requests:
+              memory: "256Mi"
+              cpu: "200m"
+            limits:
+              memory: "1Gi"
+              cpu: "1000m"
+---
+# USSD Gateway (Go)
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: ussd-gateway
+  namespace: ag-insurance
+  labels:
+    app: ussd-gateway
+    tier: channels
+spec:
+  replicas: 3
+  selector:
+    matchLabels:
+      app: ussd-gateway
+  template:
+    metadata:
+      labels:
+        app: ussd-gateway
+    spec:
+      containers:
+        - name: ussd-gateway
+          image: ag-insurance/ussd-gateway:latest
+          ports:
+            - containerPort: 8093
+          env:
+            - name: DATABASE_URL
+              valueFrom:
+                secretKeyRef:
+                  name: postgres-credentials
+                  key: url
+            - name: REDIS_URL
+              value: "redis-master.ag-insurance.svc.cluster.local:6379"
+            - name: KAFKA_BROKER
+              value: "kafka.ag-insurance.svc.cluster.local:9092"
+          resources:
+            requests:
+              memory: "64Mi"
+              cpu: "100m"
+            limits:
+              memory: "256Mi"
+              cpu: "500m"
+---
+# Security Operations / SIEM (Rust)
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: security-operations
+  namespace: ag-insurance
+  labels:
+    app: security-operations
+    tier: security
+spec:
+  replicas: 2
+  selector:
+    matchLabels:
+      app: security-operations
+  template:
+    metadata:
+      labels:
+        app: security-operations
+    spec:
+      containers:
+        - name: security-operations
+          image: ag-insurance/security-operations:latest
+          ports:
+            - containerPort: 8094
+          env:
+            - name: DATABASE_URL
+              valueFrom:
+                secretKeyRef:
+                  name: postgres-credentials
+                  key: url
+            - name: REDIS_URL
+              value: "redis://redis-master.ag-insurance.svc.cluster.local:6379"
+            - name: KAFKA_BROKER
+              value: "kafka.ag-insurance.svc.cluster.local:9092"
+            - name: OPENSEARCH_URL
+              value: "http://opensearch.ag-insurance.svc.cluster.local:9200"
+          resources:
+            requests:
+              memory: "128Mi"
+              cpu: "100m"
+            limits:
+              memory: "512Mi"
+              cpu: "500m"
+---
+# Enterprise MDM (Go)
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: enterprise-mdm
+  namespace: ag-insurance
+  labels:
+    app: enterprise-mdm
+    tier: data
+spec:
+  replicas: 2
+  selector:
+    matchLabels:
+      app: enterprise-mdm
+  template:
+    metadata:
+      labels:
+        app: enterprise-mdm
+      annotations:
+        dapr.io/enabled: "true"
+        dapr.io/app-id: "enterprise-mdm"
+        dapr.io/app-port: "8095"
+    spec:
+      containers:
+        - name: enterprise-mdm
+          image: ag-insurance/enterprise-mdm:latest
+          ports:
+            - containerPort: 8095
+          env:
+            - name: DATABASE_URL
+              valueFrom:
+                secretKeyRef:
+                  name: postgres-credentials
+                  key: url
+            - name: REDIS_URL
+              value: "redis-master.ag-insurance.svc.cluster.local:6379"
+            - name: KAFKA_BROKER
+              value: "kafka.ag-insurance.svc.cluster.local:9092"
+            - name: OPENSEARCH_URL
+              value: "http://opensearch.ag-insurance.svc.cluster.local:9200"
+---
+# Zero-Trust Network (Rust)
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: zero-trust-network
+  namespace: ag-insurance
+  labels:
+    app: zero-trust-network
+    tier: security
+spec:
+  replicas: 2
+  selector:
+    matchLabels:
+      app: zero-trust-network
+  template:
+    metadata:
+      labels:
+        app: zero-trust-network
+    spec:
+      containers:
+        - name: zero-trust-network
+          image: ag-insurance/zero-trust-network:latest
+          ports:
+            - containerPort: 8096
+          env:
+            - name: REDIS_URL
+              value: "redis://redis-master.ag-insurance.svc.cluster.local:6379"
+            - name: PERMIFY_URL
+              value: "http://permify.ag-insurance.svc.cluster.local:3476"
+            - name: APISIX_ADMIN_URL
+              value: "http://apisix-admin.ag-insurance.svc.cluster.local:9180"
+            - name: KEYCLOAK_URL
+              value: "http://keycloak.ag-insurance.svc.cluster.local:8080"
+---
+# API Marketplace (Go)
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: api-marketplace
+  namespace: ag-insurance
+  labels:
+    app: api-marketplace
+    tier: platform
+spec:
+  replicas: 2
+  selector:
+    matchLabels:
+      app: api-marketplace
+  template:
+    metadata:
+      labels:
+        app: api-marketplace
+    spec:
+      containers:
+        - name: api-marketplace
+          image: ag-insurance/api-marketplace:latest
+          ports:
+            - containerPort: 8097
+          env:
+            - name: DATABASE_URL
+              valueFrom:
+                secretKeyRef:
+                  name: postgres-credentials
+                  key: url
+            - name: REDIS_URL
+              value: "redis-master.ag-insurance.svc.cluster.local:6379"
+            - name: APISIX_ADMIN_URL
+              value: "http://apisix-admin.ag-insurance.svc.cluster.local:9180"
+            - name: TIGERBEETLE_ADDR
+              value: "tigerbeetle.ag-insurance.svc.cluster.local:3000"
+---
+# MLOps Governance (Python)
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: mlops-governance
+  namespace: ag-insurance
+  labels:
+    app: mlops-governance
+    tier: ai-ml
+spec:
+  replicas: 2
+  selector:
+    matchLabels:
+      app: mlops-governance
+  template:
+    metadata:
+      labels:
+        app: mlops-governance
+      annotations:
+        dapr.io/enabled: "true"
+        dapr.io/app-id: "mlops-governance"
+        dapr.io/app-port: "8098"
+    spec:
+      containers:
+        - name: mlops-governance
+          image: ag-insurance/mlops-governance:latest
+          ports:
+            - containerPort: 8098
+          env:
+            - name: DATABASE_URL
+              value: "postgresql+asyncpg://postgres:postgres@postgres.ag-insurance.svc.cluster.local:5432/ngapp"
+            - name: REDIS_URL
+              value: "redis://redis-master.ag-insurance.svc.cluster.local:6379"
+            - name: FLUVIO_URL
+              value: "fluvio.ag-insurance.svc.cluster.local:9003"
+          resources:
+            requests:
+              memory: "256Mi"
+              cpu: "200m"
+            limits:
+              memory: "1Gi"
+              cpu: "1000m"
+---
+# IT Governance / ITSM (Go)
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: it-governance-itsm
+  namespace: ag-insurance
+  labels:
+    app: it-governance-itsm
+    tier: governance
+spec:
+  replicas: 2
+  selector:
+    matchLabels:
+      app: it-governance-itsm
+  template:
+    metadata:
+      labels:
+        app: it-governance-itsm
+      annotations:
+        dapr.io/enabled: "true"
+        dapr.io/app-id: "it-governance-itsm"
+        dapr.io/app-port: "8099"
+    spec:
+      containers:
+        - name: it-governance-itsm
+          image: ag-insurance/it-governance-itsm:latest
+          ports:
+            - containerPort: 8099
+          env:
+            - name: DATABASE_URL
+              valueFrom:
+                secretKeyRef:
+                  name: postgres-credentials
+                  key: url
+            - name: REDIS_URL
+              value: "redis-master.ag-insurance.svc.cluster.local:6379"
+            - name: KAFKA_BROKER
+              value: "kafka.ag-insurance.svc.cluster.local:9092"
+            - name: TEMPORAL_ADDR
+              value: "temporal.ag-insurance.svc.cluster.local:7233"
