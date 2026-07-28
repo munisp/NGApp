@@ -1,0 +1,6 @@
+kafka:
+  bootstrap_servers: "kafka:9092" # Assumes Kafka is running in a service named 'kafka'
+  topic: "underwriting-events"
+  group_id: "openimis-risk-model-group"
+service:
+  port: "8081"

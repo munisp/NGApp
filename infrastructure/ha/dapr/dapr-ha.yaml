@@ -1,0 +1,492 @@
+---
+# Dapr HA — Control Plane with 3-replica Operator, Sidecar Injector, Placement, Sentry
+# mTLS, Prometheus metrics, PodDisruptionBudgets, HA placement service
+apiVersion: v1
+kind: Namespace
+metadata:
+  name: dapr-system
+  labels:
+    app.kubernetes.io/managed-by: helm
+---
+# Dapr Operator — manages Dapr components and configurations
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: dapr-operator
+  namespace: dapr-system
+  labels:
+    app: dapr-operator
+    app.kubernetes.io/component: operator
+    app.kubernetes.io/part-of: dapr
+spec:
+  replicas: 3
+  strategy:
+    type: RollingUpdate
+    rollingUpdate:
+      maxSurge: 1
+      maxUnavailable: 0
+  selector:
+    matchLabels:
+      app: dapr-operator
+  template:
+    metadata:
+      labels:
+        app: dapr-operator
+        app.kubernetes.io/component: operator
+      annotations:
+        prometheus.io/scrape: "true"
+        prometheus.io/port: "9090"
+    spec:
+      affinity:
+        podAntiAffinity:
+          requiredDuringSchedulingIgnoredDuringExecution:
+            - labelSelector:
+                matchLabels:
+                  app: dapr-operator
+              topologyKey: kubernetes.io/hostname
+      topologySpreadConstraints:
+        - maxSkew: 1
+          topologyKey: topology.kubernetes.io/zone
+          whenUnsatisfiable: DoNotSchedule
+          labelSelector:
+            matchLabels:
+              app: dapr-operator
+      serviceAccountName: dapr-operator
+      containers:
+        - name: dapr-operator
+          image: daprio/dapr:1.13.0
+          args:
+            - operator
+            - --watch-interval=0
+            - --max-pod-restarts-per-minute=20
+            - --log-level=info
+            - --log-as-json
+            - --enable-metrics
+            - --metrics-port=9090
+          ports:
+            - containerPort: 6500
+              name: grpc
+            - containerPort: 9090
+              name: metrics
+          resources:
+            requests:
+              cpu: "100m"
+              memory: "128Mi"
+            limits:
+              cpu: "1"
+              memory: "512Mi"
+          livenessProbe:
+            httpGet:
+              path: /healthz
+              port: 8080
+            initialDelaySeconds: 15
+            periodSeconds: 10
+            failureThreshold: 3
+          readinessProbe:
+            httpGet:
+              path: /healthz
+              port: 8080
+            initialDelaySeconds: 5
+            periodSeconds: 5
+---
+# Dapr Sidecar Injector
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: dapr-sidecar-injector
+  namespace: dapr-system
+  labels:
+    app: dapr-sidecar-injector
+spec:
+  replicas: 3
+  strategy:
+    type: RollingUpdate
+    rollingUpdate:
+      maxSurge: 1
+      maxUnavailable: 0
+  selector:
+    matchLabels:
+      app: dapr-sidecar-injector
+  template:
+    metadata:
+      labels:
+        app: dapr-sidecar-injector
+      annotations:
+        prometheus.io/scrape: "true"
+        prometheus.io/port: "9090"
+    spec:
+      affinity:
+        podAntiAffinity:
+          requiredDuringSchedulingIgnoredDuringExecution:
+            - labelSelector:
+                matchLabels:
+                  app: dapr-sidecar-injector
+              topologyKey: kubernetes.io/hostname
+      topologySpreadConstraints:
+        - maxSkew: 1
+          topologyKey: topology.kubernetes.io/zone
+          whenUnsatisfiable: DoNotSchedule
+          labelSelector:
+            matchLabels:
+              app: dapr-sidecar-injector
+      serviceAccountName: dapr-sidecar-injector
+      containers:
+        - name: dapr-sidecar-injector
+          image: daprio/dapr:1.13.0
+          args:
+            - injector
+            - --log-level=info
+            - --log-as-json
+            - --enable-metrics
+            - --metrics-port=9090
+            - --healthz-port=8080
+          ports:
+            - containerPort: 4000
+              name: https
+            - containerPort: 9090
+              name: metrics
+            - containerPort: 8080
+              name: health
+          resources:
+            requests:
+              cpu: "100m"
+              memory: "128Mi"
+            limits:
+              cpu: "500m"
+              memory: "256Mi"
+          livenessProbe:
+            httpGet:
+              path: /healthz
+              port: 8080
+            initialDelaySeconds: 15
+            periodSeconds: 10
+          readinessProbe:
+            httpGet:
+              path: /healthz
+              port: 8080
+            initialDelaySeconds: 5
+            periodSeconds: 5
+          volumeMounts:
+            - name: dapr-trust-bundle
+              mountPath: /var/run/secrets/dapr.io/tls
+              readOnly: true
+      volumes:
+        - name: dapr-trust-bundle
+          secret:
+            secretName: dapr-trust-bundle
+---
+# Dapr Placement Service — HA with 3 replicas
+apiVersion: apps/v1
+kind: StatefulSet
+metadata:
+  name: dapr-placement-server
+  namespace: dapr-system
+  labels:
+    app: dapr-placement-server
+spec:
+  serviceName: dapr-placement-server
+  replicas: 3
+  podManagementPolicy: Parallel
+  selector:
+    matchLabels:
+      app: dapr-placement-server
+  template:
+    metadata:
+      labels:
+        app: dapr-placement-server
+      annotations:
+        prometheus.io/scrape: "true"
+        prometheus.io/port: "9090"
+    spec:
+      affinity:
+        podAntiAffinity:
+          requiredDuringSchedulingIgnoredDuringExecution:
+            - labelSelector:
+                matchLabels:
+                  app: dapr-placement-server
+              topologyKey: kubernetes.io/hostname
+      topologySpreadConstraints:
+        - maxSkew: 1
+          topologyKey: topology.kubernetes.io/zone
+          whenUnsatisfiable: DoNotSchedule
+          labelSelector:
+            matchLabels:
+              app: dapr-placement-server
+      serviceAccountName: dapr-placement
+      containers:
+        - name: dapr-placement-server
+          image: daprio/dapr:1.13.0
+          args:
+            - placement
+            - --log-level=info
+            - --log-as-json
+            - --enable-metrics
+            - --metrics-port=9090
+            - --healthz-port=8080
+            - --initial-cluster=dapr-placement-server-0=http://dapr-placement-server-0.dapr-placement-server.dapr-system.svc.cluster.local:8201,dapr-placement-server-1=http://dapr-placement-server-1.dapr-placement-server.dapr-system.svc.cluster.local:8201,dapr-placement-server-2=http://dapr-placement-server-2.dapr-placement-server.dapr-system.svc.cluster.local:8201
+            - --id=$(POD_NAME)
+            - --raft-logstore-path=/data/raft
+          env:
+            - name: POD_NAME
+              valueFrom:
+                fieldRef:
+                  fieldPath: metadata.name
+            - name: NAMESPACE
+              valueFrom:
+                fieldRef:
+                  fieldPath: metadata.namespace
+          ports:
+            - containerPort: 50005
+              name: api
+            - containerPort: 8201
+              name: raft
+            - containerPort: 9090
+              name: metrics
+            - containerPort: 8080
+              name: health
+          resources:
+            requests:
+              cpu: "250m"
+              memory: "256Mi"
+            limits:
+              cpu: "1"
+              memory: "1Gi"
+          livenessProbe:
+            httpGet:
+              path: /healthz
+              port: 8080
+            initialDelaySeconds: 15
+            periodSeconds: 10
+          readinessProbe:
+            httpGet:
+              path: /healthz
+              port: 8080
+            initialDelaySeconds: 5
+            periodSeconds: 5
+          volumeMounts:
+            - name: placement-data
+              mountPath: /data
+  volumeClaimTemplates:
+    - metadata:
+        name: placement-data
+      spec:
+        accessModes: ["ReadWriteOnce"]
+        storageClassName: standard
+        resources:
+          requests:
+            storage: 5Gi
+---
+# Dapr Sentry — Certificate Authority for mTLS
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: dapr-sentry
+  namespace: dapr-system
+  labels:
+    app: dapr-sentry
+spec:
+  replicas: 3
+  strategy:
+    type: RollingUpdate
+    rollingUpdate:
+      maxSurge: 1
+      maxUnavailable: 0
+  selector:
+    matchLabels:
+      app: dapr-sentry
+  template:
+    metadata:
+      labels:
+        app: dapr-sentry
+      annotations:
+        prometheus.io/scrape: "true"
+        prometheus.io/port: "9090"
+    spec:
+      affinity:
+        podAntiAffinity:
+          requiredDuringSchedulingIgnoredDuringExecution:
+            - labelSelector:
+                matchLabels:
+                  app: dapr-sentry
+              topologyKey: kubernetes.io/hostname
+      topologySpreadConstraints:
+        - maxSkew: 1
+          topologyKey: topology.kubernetes.io/zone
+          whenUnsatisfiable: DoNotSchedule
+          labelSelector:
+            matchLabels:
+              app: dapr-sentry
+      serviceAccountName: dapr-sentry
+      containers:
+        - name: dapr-sentry
+          image: daprio/dapr:1.13.0
+          args:
+            - sentry
+            - --log-level=info
+            - --log-as-json
+            - --enable-metrics
+            - --metrics-port=9090
+            - --healthz-port=8080
+            - --issuer-credentials=/var/run/secrets/dapr.io/credentials
+            - --trust-domain=cluster.local
+          ports:
+            - containerPort: 50001
+              name: grpc
+            - containerPort: 9090
+              name: metrics
+            - containerPort: 8080
+              name: health
+          resources:
+            requests:
+              cpu: "100m"
+              memory: "128Mi"
+            limits:
+              cpu: "500m"
+              memory: "256Mi"
+          livenessProbe:
+            httpGet:
+              path: /healthz
+              port: 8080
+            initialDelaySeconds: 15
+            periodSeconds: 10
+          readinessProbe:
+            httpGet:
+              path: /healthz
+              port: 8080
+            initialDelaySeconds: 5
+            periodSeconds: 5
+          volumeMounts:
+            - name: dapr-credentials
+              mountPath: /var/run/secrets/dapr.io/credentials
+              readOnly: true
+      volumes:
+        - name: dapr-credentials
+          secret:
+            secretName: dapr-trust-bundle
+---
+# Services
+apiVersion: v1
+kind: Service
+metadata:
+  name: dapr-api
+  namespace: dapr-system
+spec:
+  selector:
+    app: dapr-operator
+  ports:
+    - port: 6500
+      name: grpc
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: dapr-sidecar-injector
+  namespace: dapr-system
+spec:
+  selector:
+    app: dapr-sidecar-injector
+  ports:
+    - port: 443
+      targetPort: 4000
+      name: https
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: dapr-placement-server
+  namespace: dapr-system
+spec:
+  clusterIP: None
+  selector:
+    app: dapr-placement-server
+  ports:
+    - port: 50005
+      name: api
+    - port: 8201
+      name: raft
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: dapr-sentry
+  namespace: dapr-system
+spec:
+  selector:
+    app: dapr-sentry
+  ports:
+    - port: 443
+      targetPort: 50001
+      name: grpc
+---
+# PodDisruptionBudgets
+apiVersion: policy/v1
+kind: PodDisruptionBudget
+metadata:
+  name: dapr-operator-pdb
+  namespace: dapr-system
+spec:
+  minAvailable: 2
+  selector:
+    matchLabels:
+      app: dapr-operator
+---
+apiVersion: policy/v1
+kind: PodDisruptionBudget
+metadata:
+  name: dapr-sidecar-injector-pdb
+  namespace: dapr-system
+spec:
+  minAvailable: 2
+  selector:
+    matchLabels:
+      app: dapr-sidecar-injector
+---
+apiVersion: policy/v1
+kind: PodDisruptionBudget
+metadata:
+  name: dapr-placement-pdb
+  namespace: dapr-system
+spec:
+  minAvailable: 2
+  selector:
+    matchLabels:
+      app: dapr-placement-server
+---
+apiVersion: policy/v1
+kind: PodDisruptionBudget
+metadata:
+  name: dapr-sentry-pdb
+  namespace: dapr-system
+spec:
+  minAvailable: 2
+  selector:
+    matchLabels:
+      app: dapr-sentry
+---
+# Dapr Configuration — global settings
+apiVersion: dapr.io/v1alpha1
+kind: Configuration
+metadata:
+  name: dapr-config
+  namespace: dapr-system
+spec:
+  tracing:
+    samplingRate: "1"
+    zipkin:
+      endpointAddress: http://jaeger-collector.observability.svc.cluster.local:9411/api/v2/spans
+  mtls:
+    enabled: true
+    workloadCertTTL: 24h
+    allowedClockSkew: 15m
+  features:
+    - name: HotReload
+      enabled: true
+    - name: SchedulerReminders
+      enabled: true
+  metric:
+    enabled: true
+    rules:
+      - name: dapr_runtime_service_invocation_req_sent_total
+        labels:
+          - name: app_id
+            regex: {}

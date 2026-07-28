@@ -1,0 +1,1 @@
+Claims Service: Service Layer and API - Implement business logic service layer and 15+ REST API endpoints with Gin. Include validation, Dapr integration, Kafka events, metrics.

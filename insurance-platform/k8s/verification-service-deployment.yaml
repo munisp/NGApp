@@ -1,0 +1,66 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: verification-service
+  labels:
+    app: verification-service
+spec:
+  replicas: 2
+  selector:
+    matchLabels:
+      app: verification-service
+  template:
+    metadata:
+      labels:
+        app: verification-service
+    spec:
+      containers:
+      - name: verification-service
+        image: insurance-platform/verification-service:latest
+        ports:
+        - containerPort: 8000
+        envFrom:
+        - configMapRef:
+            name: verification-service-config
+        - secretRef:
+            name: verification-service-secret
+        resources:
+          requests:
+            cpu: "250m"
+            memory: "256Mi"
+          limits:
+            cpu: "500m"
+            memory: "512Mi"
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: verification-service
+spec:
+  selector:
+    app: verification-service
+  ports:
+  - protocol: TCP
+    port: 80
+    targetPort: 8000
+  type: ClusterIP
+---
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: verification-service-config
+data:
+  KAFKA_BOOTSTRAP_SERVERS: "kafka-0.kafka:9092,kafka-1.kafka:9092,kafka-2.kafka:9092"
+  KAFKA_VERIFICATION_TOPIC: "verification-events"
+  ENVIRONMENT: "production"
+---
+apiVersion: v1
+kind: Secret
+metadata:
+  name: verification-service-secret
+type: Opaque
+data:
+  NIMC_API_URL: aHR0cHM6Ly9hcGkubmltYy5nb3YubmcvdjE=
+  NIMC_API_KEY: c2VjcmV0X25pbWNfYXBpX2tleQ==
+  CAC_API_URL: aHR0cHM6Ly9hcGkuY2FjLmdvdi5uZy92MQ==
+  CAC_API_KEY: c2VjcmV0X2NhY19hcGlfa2V5

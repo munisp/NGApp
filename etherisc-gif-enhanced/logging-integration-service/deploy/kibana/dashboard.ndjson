@@ -1,0 +1,22 @@
+[
+  {
+    "_id": "gif-logging-dashboard",
+    "_type": "dashboard",
+    "_source": {
+      "title": "GIF Logging Integration Overview",
+      "hits": 0,
+      "description": "Dashboard for monitoring logs and metrics from the GIF Logging Integration Service.",
+      "panelsJSON": "[{\"gridData\":{\"x\":0,\"y\":0,\"w\":24,\"h\":15},\"panelIndex\":\"1\",\"type\":\"visualization\",\"embeddableConfig\":{\"title\":\"Log Count by Level (Last 24h)\",\"visType\":\"histogram\",\"params\":{\"field\":\"level\",\"interval\":\"auto\"}}},{\"gridData\":{\"x\":24,\"y\":0,\"w\":24,\"h\":15},\"panelIndex\":\"2\",\"type\":\"visualization\",\"embeddableConfig\":{\"title\":\"Critical Errors (Last 24h)\",\"visType\":\"data_table\",\"params\":{\"columns\":[{\"field\":\"@timestamp\",\"label\":\"Time\"},{\"field\":\"trace_id\",\"label\":\"Trace ID\"},{\"field\":\"message\",\"label\":\"Message\"},{\"field\":\"error_code\",\"label\":\"Error Code\"}],\"perPage\":10,\"sort\":{\"field\":\"@timestamp\",\"direction\":\"desc\"},\"filters\":[{\"query\":{\"match\":{\"level\":\"error\"}}}]}}},{\"gridData\":{\"x\":0,\"y\":15,\"w\":48,\"h\":15},\"panelIndex\":\"3\",\"type\":\"visualization\",\"embeddableConfig\":{\"title\":\"Request Duration Histogram\",\"visType\":\"histogram\",\"params\":{\"field\":\"http_request_duration_seconds\",\"interval\":\"auto\"}}}]",
+      "optionsJSON": "{\"darkTheme\":true}",
+      "version": 1,
+      "timeRestore": true,
+      "timeTo": "now",
+      "timeFrom": "now-24h",
+      "refreshInterval": {
+        "display": "5 seconds",
+        "pause": false,
+        "value": 5000
+      }
+    }
+  }
+]

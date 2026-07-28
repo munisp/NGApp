@@ -1,0 +1,69 @@
+# Default values for insurance-platform.
+
+# Microservices configuration
+paymentService:
+  replicaCount: 2
+  image:
+    repository: insurance-platform/payment-service
+    tag: latest
+    pullPolicy: IfNotPresent
+
+policyService:
+  replicaCount: 2
+  image:
+    repository: insurance-platform/policy-service
+    tag: latest
+    pullPolicy: IfNotPresent
+
+verificationService:
+  replicaCount: 2
+  image:
+    repository: insurance-platform/verification-service
+    tag: latest
+    pullPolicy: IfNotPresent
+
+# Dependencies configuration
+postgres:
+  global:
+    postgresql:
+      auth:
+        postgresPassword: "postgres"
+        database: "insurance"
+
+redis:
+  auth:
+    enabled: false
+
+kafka:
+  replicaCount: 3
+  zookeeper:
+    replicaCount: 3
+
+temporal:
+  server:
+    replicaCount: 2
+
+tigerbeetle:
+  replicaCount: 3
+
+apisix:
+  gateway:
+    type: LoadBalancer
+  dashboard:
+    enabled: true
+
+opensearch:
+  clusterName: "insurance-platform-cluster"
+  nodeGroup: "master"
+  replicas: 3
+
+wazuh:
+  manager:
+    replicaCount: 1
+  worker:
+    replicaCount: 2
+
+minio:
+  accessKey: "minioadmin"
+  secretKey: "minioadmin"
+  defaultBuckets: "lakehouse"

@@ -1,0 +1,44 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: insurance-ops-service
+  labels:
+    app: insurance-ops-service
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: insurance-ops-service
+  template:
+    metadata:
+      labels:
+        app: insurance-ops-service
+      annotations:
+        dapr.io/enabled: "true"
+        dapr.io/app-id: "insurance-ops-service"
+        dapr.io/app-port: "8081"
+        dapr.io/config: "openimis-resiliency-policy" # Apply resiliency policy
+    spec:
+      containers:
+      - name: insurance-ops-service
+        image: insurance-ops-service:latest # Placeholder for actual image
+        ports:
+        - containerPort: 8081
+        resources:
+          limits:
+            cpu: "200m"
+            memory: "256Mi"
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: insurance-ops-service
+spec:
+  type: ClusterIP
+  ports:
+  - port: 80
+    targetPort: 8081
+    protocol: TCP
+    name: http
+  selector:
+    app: insurance-ops-service

@@ -1,0 +1,13 @@
+Implement complete WhatsApp Business API integration service in Go with full production code:
+- WhatsApp Business API client (Twilio/Meta) with message sending, media upload, template messages
+- Chatbot engine with conversation state management for policy inquiries, claims submission, status updates, payment reminders
+- Document upload handler via WhatsApp
+- Kafka event producers/consumers for integration
+- Temporal workflows for conversation management and long-running operations
+- Dapr service invocation for policy/claims/payment services
+- REST API endpoints (10+) for webhook, message sending, conversation management
+- PostgreSQL schema with migrations for conversations, messages, templates
+- Prometheus metrics and Grafana dashboard
+- Kubernetes manifests with deployment, service, HPA, configmap
+- Complete error handling, retry logic, circuit breakers
+- Comprehensive test suite

@@ -1,0 +1,255 @@
+---
+# TigerBeetle HA — 3-node cluster (requires odd number for Viewstamped Replication)
+# NVMe-optimized persistent storage, Prometheus metrics sidecar, PodDisruptionBudget
+apiVersion: v1
+kind: Namespace
+metadata:
+  name: tigerbeetle
+---
+# Headless service for cluster discovery
+apiVersion: v1
+kind: Service
+metadata:
+  name: tigerbeetle-headless
+  namespace: tigerbeetle
+  labels:
+    app: tigerbeetle
+spec:
+  clusterIP: None
+  selector:
+    app: tigerbeetle
+  ports:
+    - name: cluster
+      port: 3001
+      targetPort: 3001
+---
+# External service for client connections
+apiVersion: v1
+kind: Service
+metadata:
+  name: tigerbeetle
+  namespace: tigerbeetle
+  labels:
+    app: tigerbeetle
+spec:
+  selector:
+    app: tigerbeetle
+  ports:
+    - name: cluster
+      port: 3001
+      targetPort: 3001
+---
+# TigerBeetle StatefulSet — 3-node Viewstamped Replication cluster
+apiVersion: apps/v1
+kind: StatefulSet
+metadata:
+  name: tigerbeetle
+  namespace: tigerbeetle
+  labels:
+    app: tigerbeetle
+spec:
+  serviceName: tigerbeetle-headless
+  replicas: 3
+  podManagementPolicy: Parallel
+  updateStrategy:
+    type: RollingUpdate
+    rollingUpdate:
+      maxUnavailable: 1
+  selector:
+    matchLabels:
+      app: tigerbeetle
+  template:
+    metadata:
+      labels:
+        app: tigerbeetle
+      annotations:
+        prometheus.io/scrape: "true"
+        prometheus.io/port: "9090"
+    spec:
+      terminationGracePeriodSeconds: 60
+      affinity:
+        podAntiAffinity:
+          requiredDuringSchedulingIgnoredDuringExecution:
+            - labelSelector:
+                matchLabels:
+                  app: tigerbeetle
+              topologyKey: kubernetes.io/hostname
+        nodeAffinity:
+          preferredDuringSchedulingIgnoredDuringExecution:
+            - weight: 100
+              preference:
+                matchExpressions:
+                  - key: topology.kubernetes.io/zone
+                    operator: In
+                    values: ["zone-a", "zone-b", "zone-c"]
+      topologySpreadConstraints:
+        - maxSkew: 1
+          topologyKey: topology.kubernetes.io/zone
+          whenUnsatisfiable: DoNotSchedule
+          labelSelector:
+            matchLabels:
+              app: tigerbeetle
+      initContainers:
+        - name: tigerbeetle-init
+          image: ghcr.io/tigerbeetle/tigerbeetle:0.15.3
+          command:
+            - /bin/sh
+            - -c
+            - |
+              ORDINAL=${HOSTNAME##*-}
+              REPLICA_ID=$ORDINAL
+              DATA_FILE=/data/0_${REPLICA_ID}.tigerbeetle
+              if [ ! -f "$DATA_FILE" ]; then
+                echo "Formatting TigerBeetle data file for replica $REPLICA_ID..."
+                /tigerbeetle format \
+                  --cluster=0 \
+                  --replica=$REPLICA_ID \
+                  --replica-count=3 \
+                  $DATA_FILE
+              fi
+          volumeMounts:
+            - name: tigerbeetle-data
+              mountPath: /data
+      containers:
+        - name: tigerbeetle
+          image: ghcr.io/tigerbeetle/tigerbeetle:0.15.3
+          command:
+            - /bin/sh
+            - -c
+            - |
+              ORDINAL=${HOSTNAME##*-}
+              REPLICA_ID=$ORDINAL
+              DATA_FILE=/data/0_${REPLICA_ID}.tigerbeetle
+              exec /tigerbeetle start \
+                --addresses=tigerbeetle-0.tigerbeetle-headless.tigerbeetle.svc.cluster.local:3001,tigerbeetle-1.tigerbeetle-headless.tigerbeetle.svc.cluster.local:3001,tigerbeetle-2.tigerbeetle-headless.tigerbeetle.svc.cluster.local:3001 \
+                $DATA_FILE
+          ports:
+            - containerPort: 3001
+              name: cluster
+          resources:
+            requests:
+              cpu: "2"
+              memory: "4Gi"
+            limits:
+              cpu: "8"
+              memory: "16Gi"
+          securityContext:
+            capabilities:
+              add:
+                - IPC_LOCK  # Required for memory locking
+          livenessProbe:
+            tcpSocket:
+              port: 3001
+            initialDelaySeconds: 30
+            periodSeconds: 10
+            failureThreshold: 3
+          readinessProbe:
+            tcpSocket:
+              port: 3001
+            initialDelaySeconds: 10
+            periodSeconds: 5
+            failureThreshold: 3
+          volumeMounts:
+            - name: tigerbeetle-data
+              mountPath: /data
+        - name: tigerbeetle-exporter
+          image: python:3.11-slim
+          command:
+            - /bin/sh
+            - -c
+            - |
+              pip install prometheus-client requests -q
+              python3 /scripts/exporter.py
+          ports:
+            - containerPort: 9090
+              name: metrics
+          resources:
+            requests:
+              cpu: "50m"
+              memory: "64Mi"
+            limits:
+              cpu: "100m"
+              memory: "128Mi"
+          volumeMounts:
+            - name: exporter-scripts
+              mountPath: /scripts
+      volumes:
+        - name: exporter-scripts
+          configMap:
+            name: tigerbeetle-exporter-scripts
+  volumeClaimTemplates:
+    - metadata:
+        name: tigerbeetle-data
+      spec:
+        accessModes: ["ReadWriteOnce"]
+        storageClassName: nvme-ssd  # Use NVMe storage for TigerBeetle
+        resources:
+          requests:
+            storage: 500Gi
+---
+# Exporter scripts ConfigMap
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: tigerbeetle-exporter-scripts
+  namespace: tigerbeetle
+data:
+  exporter.py: |
+    #!/usr/bin/env python3
+    """TigerBeetle Prometheus metrics exporter."""
+    import time
+    import os
+    from prometheus_client import start_http_server, Gauge, Counter, Histogram
+
+    # Metrics
+    tb_accounts_total = Gauge('tigerbeetle_accounts_total', 'Total number of accounts')
+    tb_transfers_total = Counter('tigerbeetle_transfers_total', 'Total number of transfers')
+    tb_transfers_pending = Gauge('tigerbeetle_transfers_pending', 'Pending transfers')
+    tb_cluster_status = Gauge('tigerbeetle_cluster_status', 'Cluster status (1=healthy)')
+    tb_replica_id = Gauge('tigerbeetle_replica_id', 'Replica ID')
+
+    def collect_metrics():
+        """Collect metrics from TigerBeetle via TCP probe."""
+        import socket
+        try:
+            s = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+            s.settimeout(5)
+            s.connect(('localhost', 3001))
+            s.close()
+            tb_cluster_status.set(1)
+        except Exception:
+            tb_cluster_status.set(0)
+
+        ordinal = int(os.environ.get('HOSTNAME', 'tigerbeetle-0').split('-')[-1])
+        tb_replica_id.set(ordinal)
+
+    if __name__ == '__main__':
+        start_http_server(9090)
+        while True:
+            collect_metrics()
+            time.sleep(15)
+---
+# PodDisruptionBudget — TigerBeetle needs quorum (2 of 3)
+apiVersion: policy/v1
+kind: PodDisruptionBudget
+metadata:
+  name: tigerbeetle-pdb
+  namespace: tigerbeetle
+spec:
+  minAvailable: 2
+  selector:
+    matchLabels:
+      app: tigerbeetle
+---
+# StorageClass for NVMe-optimized storage
+apiVersion: storage.k8s.io/v1
+kind: StorageClass
+metadata:
+  name: nvme-ssd
+provisioner: kubernetes.io/no-provisioner
+volumeBindingMode: WaitForFirstConsumer
+reclaimPolicy: Retain
+allowVolumeExpansion: false
+parameters:
+  type: io2
+  iopsPerGB: "50"

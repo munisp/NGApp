@@ -1,0 +1,10 @@
+server:
+  port: 8080
+
+openimis:
+  base_url: "http://openimis-actuarial-service:8081"
+  timeout: 10
+
+temporal:
+  host_port: "temporal-frontend:7233"
+  task_queue: "openimis-task-queue"

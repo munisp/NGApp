@@ -1,0 +1,441 @@
+heat_template_version: 2021-04-16
+description: HA OpenStack Infrastructure for Nigerian Insurance Platform
+
+parameters:
+  key_name:
+    type: string
+    description: SSH key pair name
+    default: insurance-platform-key
+  image:
+    type: string
+    description: Image ID for instances
+    default: ubuntu-22.04-lts
+  availability_zone_1:
+    type: string
+    default: nova-az1
+  availability_zone_2:
+    type: string
+    default: nova-az2
+  availability_zone_3:
+    type: string
+    default: nova-az3
+  external_network:
+    type: string
+    default: external-net
+  dns_servers:
+    type: comma_delimited_list
+    default: "8.8.8.8,8.8.4.4"
+
+resources:
+  insurance_network:
+    type: OS::Neutron::Net
+    properties:
+      name: insurance-platform-network
+      admin_state_up: true
+
+  insurance_subnet:
+    type: OS::Neutron::Subnet
+    properties:
+      name: insurance-platform-subnet
+      network_id: { get_resource: insurance_network }
+      cidr: 10.0.0.0/16
+      gateway_ip: 10.0.0.1
+      dns_nameservers: { get_param: dns_servers }
+      allocation_pools:
+        - start: 10.0.1.10
+          end: 10.0.255.250
+      ip_version: 4
+
+  insurance_router:
+    type: OS::Neutron::Router
+    properties:
+      name: insurance-platform-router
+      external_gateway_info:
+        network: { get_param: external_network }
+
+  router_interface:
+    type: OS::Neutron::RouterInterface
+    properties:
+      router_id: { get_resource: insurance_router }
+      subnet_id: { get_resource: insurance_subnet }
+
+  lb_security_group:
+    type: OS::Neutron::SecurityGroup
+    properties:
+      name: insurance-lb-sg
+      rules:
+        - direction: ingress
+          protocol: tcp
+          port_range_min: 80
+          port_range_max: 80
+          remote_ip_prefix: 0.0.0.0/0
+        - direction: ingress
+          protocol: tcp
+          port_range_min: 443
+          port_range_max: 443
+          remote_ip_prefix: 0.0.0.0/0
+        - direction: ingress
+          protocol: tcp
+          port_range_min: 6443
+          port_range_max: 6443
+          remote_ip_prefix: 10.0.0.0/16
+
+  k8s_master_security_group:
+    type: OS::Neutron::SecurityGroup
+    properties:
+      name: insurance-k8s-master-sg
+      rules:
+        - direction: ingress
+          protocol: tcp
+          port_range_min: 6443
+          port_range_max: 6443
+          remote_ip_prefix: 10.0.0.0/16
+        - direction: ingress
+          protocol: tcp
+          port_range_min: 2379
+          port_range_max: 2380
+          remote_ip_prefix: 10.0.0.0/16
+        - direction: ingress
+          protocol: tcp
+          port_range_min: 10250
+          port_range_max: 10252
+          remote_ip_prefix: 10.0.0.0/16
+        - direction: ingress
+          protocol: tcp
+          port_range_min: 22
+          port_range_max: 22
+          remote_ip_prefix: 10.0.0.0/16
+
+  k8s_worker_security_group:
+    type: OS::Neutron::SecurityGroup
+    properties:
+      name: insurance-k8s-worker-sg
+      rules:
+        - direction: ingress
+          protocol: tcp
+          port_range_min: 10250
+          port_range_max: 10250
+          remote_ip_prefix: 10.0.0.0/16
+        - direction: ingress
+          protocol: tcp
+          port_range_min: 30000
+          port_range_max: 32767
+          remote_ip_prefix: 10.0.0.0/16
+        - direction: ingress
+          protocol: tcp
+          port_range_min: 22
+          port_range_max: 22
+          remote_ip_prefix: 10.0.0.0/16
+
+  db_security_group:
+    type: OS::Neutron::SecurityGroup
+    properties:
+      name: insurance-db-sg
+      rules:
+        - direction: ingress
+          protocol: tcp
+          port_range_min: 5432
+          port_range_max: 5432
+          remote_ip_prefix: 10.0.0.0/16
+        - direction: ingress
+          protocol: tcp
+          port_range_min: 6379
+          port_range_max: 6379
+          remote_ip_prefix: 10.0.0.0/16
+        - direction: ingress
+          protocol: tcp
+          port_range_min: 9092
+          port_range_max: 9092
+          remote_ip_prefix: 10.0.0.0/16
+
+  k8s_master_1:
+    type: OS::Nova::Server
+    properties:
+      name: k8s-master-1
+      flavor: m1.xlarge
+      image: { get_param: image }
+      key_name: { get_param: key_name }
+      availability_zone: { get_param: availability_zone_1 }
+      networks:
+        - port: { get_resource: k8s_master_1_port }
+      user_data_format: RAW
+      user_data:
+        str_replace:
+          template: |
+            #!/bin/bash
+            set -e
+            hostnamectl set-hostname k8s-master-1
+            apt-get update && apt-get install -y apt-transport-https ca-certificates curl
+            curl -fsSL https://pkgs.k8s.io/core:/stable:/v1.29/deb/Release.key | gpg --dearmor -o /etc/apt/keyrings/kubernetes-apt-keyring.gpg
+            echo 'deb [signed-by=/etc/apt/keyrings/kubernetes-apt-keyring.gpg] https://pkgs.k8s.io/core:/stable:/v1.29/deb/ /' | tee /etc/apt/sources.list.d/kubernetes.list
+            apt-get update && apt-get install -y kubelet kubeadm kubectl containerd
+            apt-mark hold kubelet kubeadm kubectl
+            systemctl enable --now containerd kubelet
+          params:
+            $PLACEHOLDER: placeholder
+
+  k8s_master_1_port:
+    type: OS::Neutron::Port
+    properties:
+      network_id: { get_resource: insurance_network }
+      fixed_ips:
+        - subnet_id: { get_resource: insurance_subnet }
+          ip_address: 10.0.1.11
+      security_groups:
+        - { get_resource: k8s_master_security_group }
+
+  k8s_master_2:
+    type: OS::Nova::Server
+    properties:
+      name: k8s-master-2
+      flavor: m1.xlarge
+      image: { get_param: image }
+      key_name: { get_param: key_name }
+      availability_zone: { get_param: availability_zone_2 }
+      networks:
+        - port: { get_resource: k8s_master_2_port }
+      user_data_format: RAW
+      user_data:
+        str_replace:
+          template: |
+            #!/bin/bash
+            set -e
+            hostnamectl set-hostname k8s-master-2
+            apt-get update && apt-get install -y apt-transport-https ca-certificates curl
+            curl -fsSL https://pkgs.k8s.io/core:/stable:/v1.29/deb/Release.key | gpg --dearmor -o /etc/apt/keyrings/kubernetes-apt-keyring.gpg
+            echo 'deb [signed-by=/etc/apt/keyrings/kubernetes-apt-keyring.gpg] https://pkgs.k8s.io/core:/stable:/v1.29/deb/ /' | tee /etc/apt/sources.list.d/kubernetes.list
+            apt-get update && apt-get install -y kubelet kubeadm kubectl containerd
+            apt-mark hold kubelet kubeadm kubectl
+            systemctl enable --now containerd kubelet
+          params:
+            $PLACEHOLDER: placeholder
+
+  k8s_master_2_port:
+    type: OS::Neutron::Port
+    properties:
+      network_id: { get_resource: insurance_network }
+      fixed_ips:
+        - subnet_id: { get_resource: insurance_subnet }
+          ip_address: 10.0.1.12
+      security_groups:
+        - { get_resource: k8s_master_security_group }
+
+  k8s_master_3:
+    type: OS::Nova::Server
+    properties:
+      name: k8s-master-3
+      flavor: m1.xlarge
+      image: { get_param: image }
+      key_name: { get_param: key_name }
+      availability_zone: { get_param: availability_zone_3 }
+      networks:
+        - port: { get_resource: k8s_master_3_port }
+      user_data_format: RAW
+      user_data:
+        str_replace:
+          template: |
+            #!/bin/bash
+            set -e
+            hostnamectl set-hostname k8s-master-3
+            apt-get update && apt-get install -y apt-transport-https ca-certificates curl
+            curl -fsSL https://pkgs.k8s.io/core:/stable:/v1.29/deb/Release.key | gpg --dearmor -o /etc/apt/keyrings/kubernetes-apt-keyring.gpg
+            echo 'deb [signed-by=/etc/apt/keyrings/kubernetes-apt-keyring.gpg] https://pkgs.k8s.io/core:/stable:/v1.29/deb/ /' | tee /etc/apt/sources.list.d/kubernetes.list
+            apt-get update && apt-get install -y kubelet kubeadm kubectl containerd
+            apt-mark hold kubelet kubeadm kubectl
+            systemctl enable --now containerd kubelet
+          params:
+            $PLACEHOLDER: placeholder
+
+  k8s_master_3_port:
+    type: OS::Neutron::Port
+    properties:
+      network_id: { get_resource: insurance_network }
+      fixed_ips:
+        - subnet_id: { get_resource: insurance_subnet }
+          ip_address: 10.0.1.13
+      security_groups:
+        - { get_resource: k8s_master_security_group }
+
+  k8s_worker_group:
+    type: OS::Heat::AutoScalingGroup
+    properties:
+      min_size: 3
+      max_size: 20
+      desired_capacity: 6
+      resource:
+        type: OS::Nova::Server
+        properties:
+          flavor: m1.2xlarge
+          image: { get_param: image }
+          key_name: { get_param: key_name }
+          networks:
+            - network: { get_resource: insurance_network }
+          security_groups:
+            - { get_resource: k8s_worker_security_group }
+          user_data_format: RAW
+          user_data:
+            str_replace:
+              template: |
+                #!/bin/bash
+                set -e
+                apt-get update && apt-get install -y apt-transport-https ca-certificates curl
+                curl -fsSL https://pkgs.k8s.io/core:/stable:/v1.29/deb/Release.key | gpg --dearmor -o /etc/apt/keyrings/kubernetes-apt-keyring.gpg
+                echo 'deb [signed-by=/etc/apt/keyrings/kubernetes-apt-keyring.gpg] https://pkgs.k8s.io/core:/stable:/v1.29/deb/ /' | tee /etc/apt/sources.list.d/kubernetes.list
+                apt-get update && apt-get install -y kubelet kubeadm kubectl containerd
+                apt-mark hold kubelet kubeadm kubectl
+                systemctl enable --now containerd kubelet
+              params:
+                $PLACEHOLDER: placeholder
+
+  k8s_worker_scaleup_policy:
+    type: OS::Heat::ScalingPolicy
+    properties:
+      adjustment_type: change_in_capacity
+      auto_scaling_group_id: { get_resource: k8s_worker_group }
+      cooldown: 300
+      scaling_adjustment: 2
+
+  k8s_worker_scaledown_policy:
+    type: OS::Heat::ScalingPolicy
+    properties:
+      adjustment_type: change_in_capacity
+      auto_scaling_group_id: { get_resource: k8s_worker_group }
+      cooldown: 300
+      scaling_adjustment: -1
+
+  cpu_alarm_high:
+    type: OS::Aodh::GnocchiAggregationByResourcesAlarm
+    properties:
+      description: Scale up if CPU > 70%
+      metric: cpu_util
+      aggregation_method: mean
+      granularity: 300
+      evaluation_periods: 2
+      threshold: 70
+      resource_type: instance
+      comparison_operator: gt
+      alarm_actions:
+        - { get_attr: [k8s_worker_scaleup_policy, alarm_url] }
+      query:
+        str_replace:
+          template: '{"=": {"server_group": "STACK_ID"}}'
+          params:
+            STACK_ID: { get_param: "OS::stack_id" }
+
+  cpu_alarm_low:
+    type: OS::Aodh::GnocchiAggregationByResourcesAlarm
+    properties:
+      description: Scale down if CPU < 30%
+      metric: cpu_util
+      aggregation_method: mean
+      granularity: 300
+      evaluation_periods: 3
+      threshold: 30
+      resource_type: instance
+      comparison_operator: lt
+      alarm_actions:
+        - { get_attr: [k8s_worker_scaledown_policy, alarm_url] }
+      query:
+        str_replace:
+          template: '{"=": {"server_group": "STACK_ID"}}'
+          params:
+            STACK_ID: { get_param: "OS::stack_id" }
+
+  k8s_api_lb:
+    type: OS::Octavia::LoadBalancer
+    properties:
+      name: k8s-api-lb
+      vip_subnet: { get_resource: insurance_subnet }
+
+  k8s_api_listener:
+    type: OS::Octavia::Listener
+    properties:
+      name: k8s-api-listener
+      loadbalancer: { get_resource: k8s_api_lb }
+      protocol: TCP
+      protocol_port: 6443
+
+  k8s_api_pool:
+    type: OS::Octavia::Pool
+    properties:
+      name: k8s-api-pool
+      listener: { get_resource: k8s_api_listener }
+      lb_algorithm: ROUND_ROBIN
+      protocol: TCP
+
+  k8s_api_pool_member_1:
+    type: OS::Octavia::PoolMember
+    properties:
+      pool: { get_resource: k8s_api_pool }
+      address: 10.0.1.11
+      protocol_port: 6443
+
+  k8s_api_pool_member_2:
+    type: OS::Octavia::PoolMember
+    properties:
+      pool: { get_resource: k8s_api_pool }
+      address: 10.0.1.12
+      protocol_port: 6443
+
+  k8s_api_pool_member_3:
+    type: OS::Octavia::PoolMember
+    properties:
+      pool: { get_resource: k8s_api_pool }
+      address: 10.0.1.13
+      protocol_port: 6443
+
+  k8s_api_health_monitor:
+    type: OS::Octavia::HealthMonitor
+    properties:
+      pool: { get_resource: k8s_api_pool }
+      type: TCP
+      delay: 5
+      timeout: 5
+      max_retries: 3
+
+  k8s_api_floating_ip:
+    type: OS::Neutron::FloatingIP
+    properties:
+      floating_network: { get_param: external_network }
+      port_id: { get_attr: [k8s_api_lb, vip_port_id] }
+
+  db_volume_1:
+    type: OS::Cinder::Volume
+    properties:
+      name: db-volume-1
+      size: 500
+      volume_type: ssd
+
+  db_volume_2:
+    type: OS::Cinder::Volume
+    properties:
+      name: db-volume-2
+      size: 500
+      volume_type: ssd
+
+  db_volume_3:
+    type: OS::Cinder::Volume
+    properties:
+      name: db-volume-3
+      size: 500
+      volume_type: ssd
+
+outputs:
+  k8s_api_lb_ip:
+    description: Kubernetes API Load Balancer IP
+    value: { get_attr: [k8s_api_floating_ip, floating_ip_address] }
+  k8s_master_1_ip:
+    description: Kubernetes Master 1 IP
+    value: { get_attr: [k8s_master_1, first_address] }
+  k8s_master_2_ip:
+    description: Kubernetes Master 2 IP
+    value: { get_attr: [k8s_master_2, first_address] }
+  k8s_master_3_ip:
+    description: Kubernetes Master 3 IP
+    value: { get_attr: [k8s_master_3, first_address] }
+  network_id:
+    description: Insurance Platform Network ID
+    value: { get_resource: insurance_network }
+  subnet_id:
+    description: Insurance Platform Subnet ID
+    value: { get_resource: insurance_subnet }

@@ -1,0 +1,13 @@
+server:
+  port: "8080"
+
+temporal:
+  host_port: "temporal-frontend.temporal.svc.cluster.local:7233"
+  namespace: "default"
+
+kafka:
+  brokers:
+    - "kafka-broker-1.kafka.svc.cluster.local:9092"
+    - "kafka-broker-2.kafka.svc.cluster.local:9092"
+
+log_level: "info"

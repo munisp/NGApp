@@ -1,0 +1,57 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: performance-monitoring-dashboard
+  namespace: insurance-platform
+  labels:
+    app: performance-monitoring-dashboard
+spec:
+  replicas: 2
+  selector:
+    matchLabels:
+      app: performance-monitoring-dashboard
+  template:
+    metadata:
+      labels:
+        app: performance-monitoring-dashboard
+    spec:
+      containers:
+        - name: performance-monitoring-dashboard
+          image: performance-monitoring-dashboard:latest
+          ports:
+            - containerPort: 8103
+          env:
+            - name: PORT
+              value: "8103"
+          livenessProbe:
+            httpGet:
+              path: /health
+              port: 8103
+            initialDelaySeconds: 10
+            periodSeconds: 30
+          readinessProbe:
+            httpGet:
+              path: /ready
+              port: 8103
+            initialDelaySeconds: 5
+            periodSeconds: 10
+          resources:
+            requests:
+              memory: "128Mi"
+              cpu: "100m"
+            limits:
+              memory: "512Mi"
+              cpu: "500m"
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: performance-monitoring-dashboard
+  namespace: insurance-platform
+spec:
+  selector:
+    app: performance-monitoring-dashboard
+  ports:
+    - port: 8103
+      targetPort: 8103
+  type: ClusterIP

@@ -1,0 +1,556 @@
+---
+# =============================================================================
+# Grafana — Pre-provisioned dashboards for all platform services
+# =============================================================================
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: grafana
+  namespace: observability
+spec:
+  replicas: 2
+  selector:
+    matchLabels:
+      app: grafana
+  template:
+    metadata:
+      labels:
+        app: grafana
+    spec:
+      securityContext:
+        fsGroup: 472
+        runAsNonRoot: true
+        runAsUser: 472
+      affinity:
+        podAntiAffinity:
+          preferredDuringSchedulingIgnoredDuringExecution:
+            - weight: 100
+              podAffinityTerm:
+                labelSelector:
+                  matchLabels:
+                    app: grafana
+                topologyKey: kubernetes.io/hostname
+      containers:
+        - name: grafana
+          image: grafana/grafana:11.1.0
+          env:
+            - name: GF_SECURITY_ADMIN_USER
+              value: admin
+            - name: GF_SECURITY_ADMIN_PASSWORD
+              valueFrom:
+                secretKeyRef:
+                  name: grafana-secrets
+                  key: admin-password
+            - name: GF_SERVER_ROOT_URL
+              value: "https://monitoring.insurance-platform.com"
+            - name: GF_AUTH_GENERIC_OAUTH_ENABLED
+              value: "true"
+            - name: GF_AUTH_GENERIC_OAUTH_NAME
+              value: "Keycloak"
+            - name: GF_AUTH_GENERIC_OAUTH_CLIENT_ID
+              value: "grafana"
+            - name: GF_AUTH_GENERIC_OAUTH_CLIENT_SECRET
+              valueFrom:
+                secretKeyRef:
+                  name: grafana-secrets
+                  key: keycloak-client-secret
+            - name: GF_AUTH_GENERIC_OAUTH_SCOPES
+              value: "openid profile email roles"
+            - name: GF_AUTH_GENERIC_OAUTH_AUTH_URL
+              value: "https://auth.insurance-platform.com/realms/insurance/protocol/openid-connect/auth"
+            - name: GF_AUTH_GENERIC_OAUTH_TOKEN_URL
+              value: "https://auth.insurance-platform.com/realms/insurance/protocol/openid-connect/token"
+            - name: GF_AUTH_GENERIC_OAUTH_API_URL
+              value: "https://auth.insurance-platform.com/realms/insurance/protocol/openid-connect/userinfo"
+            - name: GF_AUTH_GENERIC_OAUTH_ROLE_ATTRIBUTE_PATH
+              value: "contains(roles[*], 'grafana-admin') && 'Admin' || contains(roles[*], 'grafana-editor') && 'Editor' || 'Viewer'"
+            - name: GF_FEATURE_TOGGLES_ENABLE
+              value: "traceqlEditor"
+            - name: GF_UNIFIED_ALERTING_ENABLED
+              value: "true"
+            - name: GF_ALERTING_ENABLED
+              value: "false"
+          ports:
+            - containerPort: 3000
+              name: http
+          resources:
+            requests:
+              memory: "512Mi"
+              cpu: "250m"
+            limits:
+              memory: "1Gi"
+              cpu: "1"
+          readinessProbe:
+            httpGet:
+              path: /api/health
+              port: 3000
+            initialDelaySeconds: 30
+            periodSeconds: 10
+          volumeMounts:
+            - name: grafana-data
+              mountPath: /var/lib/grafana
+            - name: datasources
+              mountPath: /etc/grafana/provisioning/datasources
+            - name: dashboards-config
+              mountPath: /etc/grafana/provisioning/dashboards
+            - name: dashboards
+              mountPath: /var/lib/grafana/dashboards
+      volumes:
+        - name: grafana-data
+          persistentVolumeClaim:
+            claimName: grafana-pvc
+        - name: datasources
+          configMap:
+            name: grafana-datasources
+        - name: dashboards-config
+          configMap:
+            name: grafana-dashboards-config
+        - name: dashboards
+          configMap:
+            name: grafana-dashboards
+---
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: grafana-datasources
+  namespace: observability
+data:
+  datasources.yaml: |
+    apiVersion: 1
+    datasources:
+      - name: Prometheus
+        type: prometheus
+        url: http://prometheus.observability.svc.cluster.local:9090
+        access: proxy
+        isDefault: true
+        jsonData:
+          timeInterval: 15s
+          queryTimeout: 60s
+          httpMethod: POST
+
+      - name: Loki
+        type: loki
+        url: http://loki.observability.svc.cluster.local:3100
+        access: proxy
+        jsonData:
+          maxLines: 1000
+          derivedFields:
+            - datasourceUid: jaeger
+              matcherRegex: '"trace_id":"(\w+)"'
+              name: TraceID
+              url: '$${__value.raw}'
+
+      - name: Jaeger
+        type: jaeger
+        url: http://jaeger-query.observability.svc.cluster.local:16686
+        access: proxy
+        uid: jaeger
+
+      - name: Alertmanager
+        type: alertmanager
+        url: http://alertmanager.observability.svc.cluster.local:9093
+        access: proxy
+        jsonData:
+          implementation: prometheus
+---
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: grafana-dashboards-config
+  namespace: observability
+data:
+  dashboards.yaml: |
+    apiVersion: 1
+    providers:
+      - name: insurance-platform
+        orgId: 1
+        folder: Insurance Platform
+        type: file
+        disableDeletion: false
+        updateIntervalSeconds: 30
+        options:
+          path: /var/lib/grafana/dashboards
+---
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: grafana-dashboards
+  namespace: observability
+data:
+  platform-overview.json: |
+    {
+      "title": "Insurance Platform Overview",
+      "uid": "insurance-overview",
+      "tags": ["insurance", "overview"],
+      "refresh": "30s",
+      "panels": [
+        {
+          "title": "API Request Rate",
+          "type": "graph",
+          "gridPos": {"h": 8, "w": 12, "x": 0, "y": 0},
+          "targets": [{
+            "expr": "sum(rate(http_requests_total{namespace=\"insurance-platform\"}[5m])) by (service)",
+            "legendFormat": "{{service}}"
+          }]
+        },
+        {
+          "title": "API Error Rate",
+          "type": "graph",
+          "gridPos": {"h": 8, "w": 12, "x": 12, "y": 0},
+          "targets": [{
+            "expr": "sum(rate(http_requests_total{namespace=\"insurance-platform\",status=~\"5..\"}[5m])) by (service) / sum(rate(http_requests_total{namespace=\"insurance-platform\"}[5m])) by (service) * 100",
+            "legendFormat": "{{service}} error %"
+          }]
+        },
+        {
+          "title": "P95 Latency",
+          "type": "graph",
+          "gridPos": {"h": 8, "w": 12, "x": 0, "y": 8},
+          "targets": [{
+            "expr": "histogram_quantile(0.95, sum(rate(http_request_duration_seconds_bucket{namespace=\"insurance-platform\"}[5m])) by (service, le))",
+            "legendFormat": "{{service}} p95"
+          }]
+        },
+        {
+          "title": "Active Claims",
+          "type": "stat",
+          "gridPos": {"h": 4, "w": 6, "x": 12, "y": 8},
+          "targets": [{
+            "expr": "insurance_claims_active_total",
+            "legendFormat": "Active Claims"
+          }]
+        },
+        {
+          "title": "Payment Volume (24h)",
+          "type": "stat",
+          "gridPos": {"h": 4, "w": 6, "x": 18, "y": 8},
+          "targets": [{
+            "expr": "sum(increase(insurance_payment_amount_total[24h]))",
+            "legendFormat": "Payment Volume"
+          }]
+        },
+        {
+          "title": "SLO Compliance",
+          "type": "gauge",
+          "gridPos": {"h": 8, "w": 12, "x": 12, "y": 12},
+          "options": {
+            "reduceOptions": {"calcs": ["lastNotNull"]},
+            "thresholds": {
+              "steps": [
+                {"color": "red", "value": 0},
+                {"color": "yellow", "value": 99},
+                {"color": "green", "value": 99.9}
+              ]
+            }
+          },
+          "targets": [{
+            "expr": "(1 - sum(rate(http_requests_total{namespace=\"insurance-platform\",status=~\"5..\"}[30d])) / sum(rate(http_requests_total{namespace=\"insurance-platform\"}[30d]))) * 100",
+            "legendFormat": "Availability %"
+          }]
+        }
+      ]
+    }
+---
+# =============================================================================
+# Loki — Log aggregation for all services
+# =============================================================================
+apiVersion: apps/v1
+kind: StatefulSet
+metadata:
+  name: loki
+  namespace: observability
+spec:
+  serviceName: loki
+  replicas: 3
+  selector:
+    matchLabels:
+      app: loki
+  template:
+    metadata:
+      labels:
+        app: loki
+    spec:
+      securityContext:
+        fsGroup: 10001
+        runAsNonRoot: true
+        runAsUser: 10001
+      affinity:
+        podAntiAffinity:
+          requiredDuringSchedulingIgnoredDuringExecution:
+            - labelSelector:
+                matchLabels:
+                  app: loki
+              topologyKey: kubernetes.io/hostname
+      containers:
+        - name: loki
+          image: grafana/loki:3.1.0
+          args:
+            - -config.file=/etc/loki/loki.yaml
+          ports:
+            - containerPort: 3100
+              name: http
+            - containerPort: 9095
+              name: grpc
+          resources:
+            requests:
+              memory: "1Gi"
+              cpu: "500m"
+            limits:
+              memory: "4Gi"
+              cpu: "2"
+          readinessProbe:
+            httpGet:
+              path: /ready
+              port: 3100
+            initialDelaySeconds: 30
+            periodSeconds: 10
+          volumeMounts:
+            - name: loki-config
+              mountPath: /etc/loki
+            - name: loki-data
+              mountPath: /loki
+      volumes:
+        - name: loki-config
+          configMap:
+            name: loki-config
+  volumeClaimTemplates:
+    - metadata:
+        name: loki-data
+      spec:
+        accessModes: ["ReadWriteOnce"]
+        storageClassName: fast-ssd
+        resources:
+          requests:
+            storage: 200Gi
+---
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: loki-config
+  namespace: observability
+data:
+  loki.yaml: |
+    auth_enabled: false
+
+    server:
+      http_listen_port: 3100
+      grpc_listen_port: 9095
+      log_level: info
+
+    common:
+      path_prefix: /loki
+      storage:
+        filesystem:
+          chunks_directory: /loki/chunks
+          rules_directory: /loki/rules
+      replication_factor: 3
+      ring:
+        kvstore:
+          store: memberlist
+
+    memberlist:
+      join_members:
+        - loki-0.loki.observability.svc.cluster.local:7946
+        - loki-1.loki.observability.svc.cluster.local:7946
+        - loki-2.loki.observability.svc.cluster.local:7946
+
+    schema_config:
+      configs:
+        - from: 2024-01-01
+          store: tsdb
+          object_store: filesystem
+          schema: v13
+          index:
+            prefix: index_
+            period: 24h
+
+    limits_config:
+      retention_period: 90d
+      ingestion_rate_mb: 64
+      ingestion_burst_size_mb: 128
+      max_query_series: 100000
+      max_query_parallelism: 32
+
+    compactor:
+      working_directory: /loki/compactor
+      retention_enabled: true
+      delete_request_store: filesystem
+
+    ruler:
+      alertmanager_url: http://alertmanager.observability.svc.cluster.local:9093
+
+---
+# =============================================================================
+# OpenTelemetry Collector — traces from all services
+# =============================================================================
+apiVersion: apps/v1
+kind: DaemonSet
+metadata:
+  name: otel-collector
+  namespace: observability
+spec:
+  selector:
+    matchLabels:
+      app: otel-collector
+  template:
+    metadata:
+      labels:
+        app: otel-collector
+    spec:
+      serviceAccountName: otel-collector
+      containers:
+        - name: otel-collector
+          image: otel/opentelemetry-collector-contrib:0.103.0
+          args:
+            - --config=/etc/otel/config.yaml
+          ports:
+            - containerPort: 4317
+              name: otlp-grpc
+            - containerPort: 4318
+              name: otlp-http
+            - containerPort: 9464
+              name: prometheus
+            - containerPort: 13133
+              name: health
+          resources:
+            requests:
+              memory: "256Mi"
+              cpu: "200m"
+            limits:
+              memory: "512Mi"
+              cpu: "500m"
+          livenessProbe:
+            httpGet:
+              path: /
+              port: 13133
+            initialDelaySeconds: 10
+            periodSeconds: 30
+          volumeMounts:
+            - name: otel-config
+              mountPath: /etc/otel
+      volumes:
+        - name: otel-config
+          configMap:
+            name: otel-collector-config
+---
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: otel-collector-config
+  namespace: observability
+data:
+  config.yaml: |
+    receivers:
+      otlp:
+        protocols:
+          grpc:
+            endpoint: 0.0.0.0:4317
+          http:
+            endpoint: 0.0.0.0:4318
+      prometheus:
+        config:
+          scrape_configs:
+            - job_name: otel-collector
+              static_configs:
+                - targets: [localhost:8888]
+      k8s_events:
+        namespaces: [insurance-platform, vault, keycloak, kafka, redis]
+      zipkin:
+        endpoint: 0.0.0.0:9411
+
+    processors:
+      batch:
+        timeout: 5s
+        send_batch_size: 1000
+        send_batch_max_size: 2000
+      memory_limiter:
+        check_interval: 1s
+        limit_mib: 400
+        spike_limit_mib: 100
+      resource:
+        attributes:
+          - key: cluster
+            value: insurance-platform
+            action: upsert
+          - key: environment
+            value: production
+            action: upsert
+      k8sattributes:
+        auth_type: serviceAccount
+        passthrough: false
+        extract:
+          metadata:
+            - k8s.pod.name
+            - k8s.pod.uid
+            - k8s.deployment.name
+            - k8s.namespace.name
+            - k8s.node.name
+            - k8s.pod.start_time
+          labels:
+            - tag_name: app
+              key: app
+              from: pod
+          annotations:
+            - tag_name: git_commit
+              key: git-commit
+              from: pod
+      tail_sampling:
+        decision_wait: 10s
+        num_traces: 100000
+        expected_new_traces_per_sec: 1000
+        policies:
+          - name: errors-policy
+            type: status_code
+            status_code: {status_codes: [ERROR]}
+          - name: slow-traces-policy
+            type: latency
+            latency: {threshold_ms: 1000}
+          - name: high-value-operations
+            type: string_attribute
+            string_attribute:
+              key: insurance.operation
+              values: [claim_submit, payment_process, policy_issue]
+
+    exporters:
+      jaeger:
+        endpoint: jaeger-collector.observability.svc.cluster.local:14250
+        tls:
+          insecure: false
+          ca_file: /etc/ssl/certs/ca.crt
+      prometheus:
+        endpoint: 0.0.0.0:9464
+        namespace: otel
+      loki:
+        endpoint: http://loki.observability.svc.cluster.local:3100/loki/api/v1/push
+        labels:
+          resource:
+            service.name: service_name
+            k8s.namespace.name: namespace
+            k8s.pod.name: pod
+      kafka:
+        brokers:
+          - kafka-0.kafka.svc.cluster.local:9092
+          - kafka-1.kafka.svc.cluster.local:9092
+          - kafka-2.kafka.svc.cluster.local:9092
+        topic: observability.traces
+        encoding: otlp_proto
+
+    service:
+      pipelines:
+        traces:
+          receivers: [otlp, zipkin]
+          processors: [memory_limiter, k8sattributes, resource, tail_sampling, batch]
+          exporters: [jaeger, kafka]
+        metrics:
+          receivers: [otlp, prometheus]
+          processors: [memory_limiter, resource, batch]
+          exporters: [prometheus]
+        logs:
+          receivers: [otlp, k8s_events]
+          processors: [memory_limiter, k8sattributes, resource, batch]
+          exporters: [loki]
+      telemetry:
+        logs:
+          level: info
+        metrics:
+          address: 0.0.0.0:8888

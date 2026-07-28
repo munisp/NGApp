@@ -1,0 +1,19 @@
+apiVersion: keda.sh/v1alpha1
+kind: ScaledObject
+metadata:
+  name: ray-serve-api-scaler
+spec:
+  minReplicaCount: 5
+  maxReplicaCount: 50
+  triggers:
+  - type: prometheus
+    metadata:
+      threshold: "200"
+  - type: cpu
+    metricType: Utilization
+    metadata:
+      value: "75"
+  - type: memory
+    metricType: Utilization
+    metadata:
+      value: "85"

@@ -1,0 +1,1 @@
+Claims Service: Temporal Workflows - Implement 6 complete workflows: FNOL, Adjudication, Settlement, Appeal, Subrogation, Medical Bill Review. Full business logic, activities, error handling, compensation.
