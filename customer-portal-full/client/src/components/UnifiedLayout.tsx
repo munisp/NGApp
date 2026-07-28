@@ -1,0 +1,560 @@
+import { Avatar, AvatarFallback } from "@/components/ui/avatar";
+import { Badge } from "@/components/ui/badge";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuSeparator,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
+import {
+  Sidebar,
+  SidebarContent,
+  SidebarFooter,
+  SidebarGroup,
+  SidebarGroupContent,
+  SidebarGroupLabel,
+  SidebarHeader,
+  SidebarInset,
+  SidebarMenu,
+  SidebarMenuButton,
+  SidebarMenuItem,
+  SidebarProvider,
+  SidebarSeparator,
+  SidebarTrigger,
+  useSidebar,
+} from "@/components/ui/sidebar";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
+import { useRole, UserRole } from "@/contexts/RoleContext";
+import { useIsMobile } from "@/hooks/useMobile";
+import {
+  LayoutDashboard,
+  LogOut,
+  FileText,
+  CreditCard,
+  User,
+  Users,
+  Gift,
+  Star,
+  Shield,
+  Link2,
+  AlertTriangle,
+  BarChart3,
+  MessageSquare,
+  Settings,
+  UserCog,
+  ClipboardList,
+  Briefcase,
+  DollarSign,
+  Scale,
+  CheckCircle,
+  ScrollText,
+  ChevronDown,
+  Bot,
+  Brain,
+  TrendingUp,
+  Gavel,
+  Scan,
+  Car,
+  UsersRound,
+  GitCompare,
+  Smartphone,
+  Sparkles,
+  PieChart,
+  MapPin,
+  FilePlus,
+  Leaf,
+  Key,
+  Trophy,
+  Lock,
+  Store,
+  MessageCircle,
+  Share2,
+  Target,
+  Activity,
+  Mic,
+  UserMinus,
+  Crown,
+  BookOpen,
+  Route,
+  Calculator,
+  Wallet,
+  Clock,
+  Siren,
+  HelpCircle,
+  Building2,
+  Phone,
+  Heart,
+  Camera,
+  Bell,
+  Package,
+  Zap,
+  PiggyBank,
+  Landmark,
+  Bike,
+  Building,
+  Coins,
+  Cloud,
+  Umbrella,
+  Database,
+  Scale as ScaleIcon,
+  ScrollText as ScrollTextIcon,
+  Gavel as GavelIcon,
+  RefreshCw,
+  Layers,
+  Eye,
+  FolderOpen,
+  MessageSquareText,
+  Coins as CoinsIcon,
+  Building2 as Building2Icon,
+  BarChart2,
+  Server,
+  FlaskConical,
+  Activity as ActivityIcon,
+} from "lucide-react";
+import { CSSProperties, ReactNode } from "react";
+import { useLocation } from "wouter";
+
+interface MenuItem {
+  icon: React.ElementType;
+  label: string;
+  path: string;
+  permission?: string;
+  badge?: string;
+}
+
+interface MenuGroup {
+  label: string;
+  items: MenuItem[];
+}
+
+const menuGroups: MenuGroup[] = [
+  {
+    label: "Overview",
+    items: [
+      { icon: LayoutDashboard, label: "Dashboard", path: "/dashboard", permission: "canViewDashboard" },
+    ],
+  },
+    {
+      label: "Insurance",
+      items: [
+        { icon: Store, label: "Marketplace", path: "/marketplace", permission: "canViewPolicies" },
+        { icon: Briefcase, label: "Browse Products", path: "/products", permission: "canViewPolicies" },
+        { icon: HelpCircle, label: "Find My Coverage", path: "/recommendation-quiz", permission: "canViewPolicies" },
+        { icon: Calculator, label: "Premium Calculator", path: "/premium-calculator", permission: "canViewPolicies" },
+        { icon: FileText, label: "My Applications", path: "/applications", permission: "canViewPolicies" },
+        { icon: FileText, label: "My Policies", path: "/policies", permission: "canViewPolicies" },
+        { icon: Wallet, label: "Digital Wallet", path: "/digital-wallet", permission: "canViewPolicies" },
+        { icon: ClipboardList, label: "My Claims", path: "/claims", permission: "canViewClaims" },
+        { icon: Clock, label: "Claims Timeline", path: "/claims-timeline", permission: "canViewClaims" },
+        { icon: CreditCard, label: "Payments", path: "/payments", permission: "canViewPayments" },
+        { icon: GitCompare, label: "Compare Policies", path: "/policy-comparison", permission: "canViewPolicies" },
+        { icon: UsersRound, label: "Family Policies", path: "/family-policies", permission: "canViewPolicies" },
+          { icon: Target, label: "Insurance Score", path: "/insurance-score", permission: "canViewPolicies" },
+          { icon: Siren, label: "Emergency SOS", path: "/emergency-sos", permission: "canViewPolicies" },
+                { icon: Phone, label: "Alternative Credit Score", path: "/telco-credit-scoring", permission: "canViewPolicies" },
+                { icon: Heart, label: "Microinsurance", path: "/microinsurance", permission: "canViewPolicies" },
+              ],
+            },
+    {
+      label: "Verification",
+    items: [
+      { icon: Shield, label: "KYC Status", path: "/kyc", permission: "canViewKYC" },
+      { icon: Link2, label: "Policy Protection", path: "/blockchain", permission: "canViewBlockchain" },
+    ],
+  },
+        {
+          label: "Engagement",
+          items: [
+            { icon: Trophy, label: "Rewards & Achievements", path: "/rewards", permission: "canViewReferrals" },
+            { icon: Crown, label: "Loyalty Program", path: "/loyalty-program", permission: "canViewReferrals" },
+            { icon: Share2, label: "Referral Program", path: "/referral-program", permission: "canViewReferrals" },
+            { icon: Gift, label: "Referrals", path: "/referrals", permission: "canViewReferrals" },
+            { icon: Star, label: "Reviews", path: "/reviews", permission: "canViewReviews" },
+            { icon: MessageSquare, label: "Communication", path: "/communication", permission: "canViewCommunication" },
+            { icon: MessageCircle, label: "AI Assistant", path: "/chatbot", permission: "canViewDashboard" },
+            { icon: Smartphone, label: "WhatsApp Integration", path: "/whatsapp", permission: "canViewCommunication" },
+            { icon: BookOpen, label: "Insurance Literacy", path: "/insurance-literacy", permission: "canViewDashboard" },
+          ],
+        },
+                {
+                  label: "AI Features",
+                  items: [
+                    { icon: Bot, label: "AI Advisor", path: "/ai-advisor", permission: "canViewDashboard" },
+                    { icon: Brain, label: "AI Claims Processing", path: "/ai-claims", permission: "canViewClaims" },
+                    { icon: Mic, label: "Voice Assistant", path: "/voice-assistant", permission: "canViewDashboard" },
+                    { icon: Scan, label: "Document Scanner", path: "/document-scanner", permission: "canViewClaims" },
+                    { icon: TrendingUp, label: "Dynamic Pricing", path: "/dynamic-pricing", permission: "canViewAnalytics" },
+                    { icon: Gavel, label: "Compliance Monitor", path: "/compliance", permission: "canViewAuditLogs" },
+                    { icon: Sparkles, label: "AI Knowledge Assistant", path: "/ai-assistant", permission: "canViewDashboard" },
+                    { icon: Activity, label: "Smart Risk Intelligence", path: "/mcmc-risk", permission: "canViewAnalytics" },
+                    { icon: Route, label: "Smart Claim Routing", path: "/smart-claim-routing", permission: "canViewClaims" },
+                                    { icon: UserMinus, label: "Churn Prediction", path: "/churn-prediction", permission: "canViewAnalytics" },
+                                    { icon: Shield, label: "AI Model Security", path: "/model-security", permission: "canViewAnalytics" },
+                                  ],
+                                },
+        {
+          label: "Risk & Compliance",
+      items: [
+                    { icon: AlertTriangle, label: "Fraud Alerts", path: "/fraud-alerts", permission: "canViewFraudAlerts", badge: "3" },
+                    { icon: Shield, label: "Insurance Radar", path: "/insurance-radar", permission: "canViewFraudAlerts", badge: "AI" },
+                    { icon: Scale, label: "Risk Assessment", path: "/risk-assessment", permission: "canViewRiskAssessment" },
+          { icon: CheckCircle, label: "Policy Approval", path: "/policy-approval", permission: "canViewPolicyApproval" },
+          { icon: Leaf, label: "Agricultural Underwriting", path: "/agricultural-underwriting", permission: "canViewRiskAssessment" },
+          { icon: Shield, label: "Fraud Network", path: "/fraud-network", permission: "canViewFraudAlerts" },
+          { icon: Link2, label: "Knowledge Graph", path: "/knowledge-graph", permission: "canViewAnalytics" },
+        ],
+      },
+    {
+      label: "Agent Tools",
+    items: [
+      { icon: Users, label: "Customers", path: "/customers", permission: "canViewCustomers" },
+      { icon: DollarSign, label: "Commission", path: "/commission", permission: "canViewCommission" },
+    ],
+  },
+  {
+    label: "Analytics",
+    items: [
+      { icon: BarChart3, label: "Analytics Dashboard", path: "/analytics", permission: "canViewAnalytics" },
+      { icon: PieChart, label: "Executive Dashboard", path: "/executive-dashboard", permission: "canViewAnalytics" },
+      { icon: ScrollText, label: "Audit Logs", path: "/audit-logs", permission: "canViewAuditLogs" },
+    ],
+  },
+        {
+          label: "Integrations",
+          items: [
+                { icon: Car, label: "Telematics", path: "/telematics", permission: "canViewPolicies" },
+                { icon: MapPin, label: "Geospatial Map", path: "/geospatial", permission: "canViewAnalytics" },
+                        { icon: Key, label: "Broker API", path: "/broker-api", permission: "canViewUserManagement" },
+                        { icon: Building2, label: "ERPNext Integration", path: "/erpnext-integration", permission: "canViewUserManagement" },
+                      ],
+                    },
+                    {
+                      label: "Infrastructure",
+                      items: [
+                        { icon: Database, label: "PostgreSQL Scaling", path: "/postgresql-scaling", permission: "canViewSystemSettings", badge: "New" },
+                      ],
+                    },
+  {
+    label: "Nigerian Market",
+    items: [
+      { icon: Phone, label: "USSD Gateway", path: "/ussd-gateway", permission: "canViewDashboard", badge: "New" },
+      { icon: Car, label: "NMID Integration", path: "/nmid-integration", permission: "canViewPolicies", badge: "New" },
+    ],
+  },
+  {
+    label: "Actuarial & Reinsurance",
+    items: [
+      { icon: Calculator, label: "Actuarial Module", path: "/actuarial-module", permission: "canViewAnalytics", badge: "New" },
+    ],
+  },
+  {
+    label: "Distribution Channels",
+    items: [
+      { icon: Users, label: "Agent Portal", path: "/agent-portal", permission: "canViewCommission", badge: "New" },
+      { icon: Building2, label: "Bancassurance Portal", path: "/bancassurance-portal", permission: "canViewAnalytics", badge: "New" },
+    ],
+  },
+  {
+    label: "Group & Pension",
+    items: [
+      { icon: UsersRound, label: "Group Life Admin", path: "/group-life-admin", permission: "canViewAnalytics", badge: "New" },
+      { icon: PiggyBank, label: "PFA Integration", path: "/pfa-integration", permission: "canViewAnalytics", badge: "New" },
+    ],
+  },
+                {
+                  label: "Administration",
+      items: [
+        { icon: FilePlus, label: "Create Policy", path: "/admin-policy-creation", permission: "canViewUserManagement" },
+        { icon: Calculator, label: "Rate Management", path: "/rate-management", permission: "canViewUserManagement" },
+        { icon: UserCog, label: "User Management", path: "/users", permission: "canViewUserManagement" },
+        { icon: Settings, label: "System Settings", path: "/settings", permission: "canViewSystemSettings" },
+      ],
+    },
+  {
+    label: "Account",
+    items: [
+      { icon: User, label: "Profile", path: "/profile", permission: "canViewProfile" },
+      { icon: Lock, label: "Security", path: "/security", permission: "canViewProfile" },
+    ],
+  },
+  {
+    label: "Agent Management",
+    items: [
+      { icon: Target, label: "Agent Performance", path: "/agent-performance", permission: "canViewAnalytics" },
+    ],
+  },
+  {
+    label: "New Products & Services",
+    items: [
+      { icon: Camera, label: "Claims Evidence", path: "/claims-evidence", permission: "canViewClaims" },
+      { icon: Bell, label: "Policy Renewal", path: "/policy-renewal", permission: "canViewPolicies" },
+      { icon: UsersRound, label: "Family Coverage", path: "/family-coverage", permission: "canViewPolicies" },
+      { icon: Package, label: "Claims Tracker", path: "/claims-tracker", permission: "canViewClaims" },
+      { icon: Heart, label: "Health & Wellness", path: "/health-wellness", permission: "canViewPolicies" },
+      { icon: Zap, label: "Embedded Insurance", path: "/embedded-insurance", permission: "canViewUserManagement" },
+      { icon: PiggyBank, label: "Savings & Investment", path: "/savings-investment", permission: "canViewPolicies" },
+      { icon: Coins, label: "P2P Insurance", path: "/p2p-insurance", permission: "canViewPolicies" },
+      { icon: Cloud, label: "Parametric Insurance", path: "/parametric-insurance", permission: "canViewPolicies" },
+      { icon: Landmark, label: "Bancassurance", path: "/bancassurance", permission: "canViewPolicies" },
+      { icon: Bike, label: "Gig Economy", path: "/gig-economy", permission: "canViewPolicies" },
+      { icon: Building, label: "SME Business", path: "/sme-business", permission: "canViewPolicies" },
+      { icon: Gift, label: "Loyalty & Rewards", path: "/loyalty-rewards", permission: "canViewReferrals" },
+      { icon: Wallet, label: "Financial Wellness", path: "/financial-wellness", permission: "canViewPolicies" },
+    ],
+  },
+  {
+    label: "Reinsurance",
+    items: [
+      { icon: Umbrella, label: "Reinsurance Management", path: "/reinsurance", permission: "canViewAnalytics" },
+    ],
+  },
+  {
+    label: "Lakehouse Analytics",
+    items: [
+      { icon: Database, label: "Operational Reports", path: "/operational-reports", permission: "canViewAnalytics" },
+    ],
+  },
+  {
+    label: "40 New Products (PR #31)",
+    items: [
+      { icon: Leaf, label: "Agricultural Insurance (13)", path: "/agricultural-insurance-suite", permission: "canViewPolicies", badge: "New" },
+      { icon: Zap, label: "Embedded Distribution (6)", path: "/embedded-distribution", permission: "canViewPolicies", badge: "New" },
+      { icon: Smartphone, label: "Digital Consumer (8)", path: "/digital-consumer-products", permission: "canViewPolicies", badge: "New" },
+      { icon: Crown, label: "Takaful Suite (6)", path: "/takaful-products-suite", permission: "canViewPolicies", badge: "New" },
+      { icon: Scale, label: "NIIRA 2025 (11)", path: "/niira-compulsory-insurance", permission: "canViewPolicies", badge: "New" },
+      { icon: Bot, label: "Tech Innovations (5)", path: "/insurance-tech-innovations", permission: "canViewPolicies", badge: "New" },
+    ],
+  },
+  {
+    label: "Platform Operations",
+    items: [
+      { icon: Shield, label: "NAICOM Compliance", path: "/naicom-compliance", permission: "canViewAuditLogs" },
+      { icon: ScrollTextIcon, label: "Audit Trail", path: "/audit-trail", permission: "canViewAuditLogs" },
+      { icon: GavelIcon, label: "Claims Adjudication", path: "/claims-adjudication", permission: "canViewClaims" },
+      { icon: RefreshCw, label: "Renewal Automation", path: "/policy-renewal-automation", permission: "canViewPolicies" },
+      { icon: DollarSign, label: "Agent Commissions", path: "/agent-commission", permission: "canViewCommission" },
+      { icon: Layers, label: "Batch Processing", path: "/batch-processing", permission: "canViewUserManagement" },
+      { icon: Eye, label: "Customer 360", path: "/customer-360", permission: "canViewCustomers" },
+      { icon: FolderOpen, label: "Document Management", path: "/document-management", permission: "canViewUserManagement" },
+      { icon: MessageSquareText, label: "Customer Feedback", path: "/customer-feedback", permission: "canViewAnalytics" },
+      { icon: CoinsIcon, label: "Multi-Currency", path: "/multi-currency", permission: "canViewPayments" },
+      { icon: Building2Icon, label: "Bank Integrations", path: "/bank-integrations", permission: "canViewPayments" },
+      { icon: BarChart2, label: "Reconciliation", path: "/reconciliation", permission: "canViewAnalytics" },
+      { icon: Server, label: "Disaster Recovery", path: "/disaster-recovery", permission: "canViewSystemSettings" },
+      { icon: FlaskConical, label: "A/B Testing", path: "/ab-testing", permission: "canViewAnalytics" },
+      { icon: ActivityIcon, label: "Performance Monitor", path: "/performance-monitoring", permission: "canViewAnalytics" },
+    ],
+  },
+];
+
+const roleLabels: Record<UserRole, string> = {
+  admin: "Administrator",
+  user: "Customer",
+  agent: "Insurance Agent",
+  underwriter: "Underwriter",
+};
+
+const roleColors: Record<UserRole, string> = {
+  admin: "bg-red-100 text-red-800",
+  user: "bg-blue-100 text-blue-800",
+  agent: "bg-green-100 text-green-800",
+  underwriter: "bg-purple-100 text-purple-800",
+};
+
+const DEMO_USER = {
+  name: "Demo User",
+  email: "demo@insureportal.ng",
+};
+
+export default function UnifiedLayout({ children }: { children: ReactNode }) {
+  return (
+    <SidebarProvider
+      style={
+        {
+          "--sidebar-width": "280px",
+        } as CSSProperties
+      }
+    >
+      <UnifiedLayoutContent>{children}</UnifiedLayoutContent>
+    </SidebarProvider>
+  );
+}
+
+function UnifiedLayoutContent({ children }: { children: ReactNode }) {
+  const [location, setLocation] = useLocation();
+  const { state } = useSidebar();
+  const isCollapsed = state === "collapsed";
+  const isMobile = useIsMobile();
+  const { role, setRole, hasPermission } = useRole();
+
+  const filteredMenuGroups = menuGroups
+    .map((group) => ({
+      ...group,
+      items: group.items.filter((item) => {
+        if (!item.permission) return true;
+        return hasPermission(item.permission as any);
+      }),
+    }))
+    .filter((group) => group.items.length > 0);
+
+  const activeMenuItem = menuGroups
+    .flatMap((g) => g.items)
+    .find((item) => item.path === location);
+
+  return (
+    <>
+      <Sidebar collapsible="icon" className="border-r">
+        <SidebarHeader className="h-16 justify-center border-b">
+          <div className="flex items-center gap-3 px-2 transition-all w-full">
+            <div className="h-8 w-8 flex items-center justify-center bg-blue-600 rounded-lg shrink-0">
+              <Shield className="h-5 w-5 text-white" />
+            </div>
+            {!isCollapsed && (
+              <div className="flex flex-col min-w-0">
+                <span className="font-bold text-lg tracking-tight truncate">
+                  InsurePortal
+                </span>
+                <span className="text-xs text-muted-foreground">
+                  Unified Platform
+                </span>
+              </div>
+            )}
+          </div>
+        </SidebarHeader>
+
+        <SidebarContent>
+          <div className="flex flex-col">
+            {filteredMenuGroups.map((group, groupIndex) => (
+              <div key={group.label} className="px-3 py-2">
+                <div className="text-xs font-semibold text-muted-foreground uppercase tracking-wider mb-2">
+                  {group.label}
+                </div>
+                <div className="space-y-1">
+                  {group.items.map((item) => {
+                    const isActive = location === item.path;
+                    return (
+                      <button
+                        key={item.path}
+                        onClick={() => setLocation(item.path)}
+                        className={`flex items-center gap-3 w-full px-3 py-2 text-sm rounded-md transition-colors ${
+                          isActive
+                            ? "bg-blue-50 text-blue-700 font-medium"
+                            : "text-gray-700 hover:bg-gray-100"
+                        }`}
+                      >
+                        <item.icon
+                          className={`h-4 w-4 shrink-0 ${isActive ? "text-blue-600" : "text-gray-500"}`}
+                        />
+                        <span className="truncate">{item.label}</span>
+                        {item.badge && (
+                          <Badge variant="destructive" className="h-5 px-1.5 text-xs ml-auto shrink-0">
+                            {item.badge}
+                          </Badge>
+                        )}
+                      </button>
+                    );
+                  })}
+                </div>
+                {groupIndex < filteredMenuGroups.length - 1 && (
+                  <div className="border-b border-gray-200 mt-3" />
+                )}
+              </div>
+            ))}
+          </div>
+        </SidebarContent>
+
+        <SidebarFooter className="border-t p-3">
+          {!isCollapsed && (
+            <div className="mb-3">
+              <label className="text-xs font-medium text-muted-foreground mb-1.5 block">
+                Switch Role (Demo)
+              </label>
+              <Select value={role} onValueChange={(value: UserRole) => setRole(value)}>
+                <SelectTrigger className="h-8 text-xs">
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="user">Customer</SelectItem>
+                  <SelectItem value="agent">Insurance Agent</SelectItem>
+                  <SelectItem value="underwriter">Underwriter</SelectItem>
+                  <SelectItem value="admin">Administrator</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+          )}
+          <DropdownMenu>
+            <DropdownMenuTrigger asChild>
+              <button className="flex items-center gap-3 rounded-lg px-2 py-2 hover:bg-accent/50 transition-colors w-full text-left group-data-[collapsible=icon]:justify-center focus:outline-none focus-visible:ring-2 focus-visible:ring-ring">
+                <Avatar className="h-9 w-9 border shrink-0">
+                  <AvatarFallback className="text-xs font-medium bg-blue-100 text-blue-700">
+                    {DEMO_USER.name.charAt(0).toUpperCase()}
+                  </AvatarFallback>
+                </Avatar>
+                <div className="flex-1 min-w-0 group-data-[collapsible=icon]:hidden">
+                  <div className="flex items-center gap-2">
+                    <p className="text-sm font-medium truncate leading-none">
+                      {DEMO_USER.name}
+                    </p>
+                    <Badge className={`text-[10px] px-1.5 py-0 ${roleColors[role]}`}>
+                      {roleLabels[role]}
+                    </Badge>
+                  </div>
+                  <p className="text-xs text-muted-foreground truncate mt-1">
+                    {DEMO_USER.email}
+                  </p>
+                </div>
+                <ChevronDown className="h-4 w-4 text-muted-foreground group-data-[collapsible=icon]:hidden" />
+              </button>
+            </DropdownMenuTrigger>
+            <DropdownMenuContent align="end" className="w-56">
+              <div className="px-2 py-1.5">
+                <p className="text-sm font-medium">{DEMO_USER.name}</p>
+                <p className="text-xs text-muted-foreground">{DEMO_USER.email}</p>
+              </div>
+              <DropdownMenuSeparator />
+              <DropdownMenuItem onClick={() => setLocation("/profile")} className="cursor-pointer">
+                <User className="mr-2 h-4 w-4" />
+                <span>Profile</span>
+              </DropdownMenuItem>
+              <DropdownMenuItem onClick={() => setLocation("/communication")} className="cursor-pointer">
+                <MessageSquare className="mr-2 h-4 w-4" />
+                <span>Preferences</span>
+              </DropdownMenuItem>
+              <DropdownMenuSeparator />
+              <DropdownMenuItem className="cursor-pointer text-destructive focus:text-destructive">
+                <LogOut className="mr-2 h-4 w-4" />
+                <span>Sign out</span>
+              </DropdownMenuItem>
+            </DropdownMenuContent>
+          </DropdownMenu>
+        </SidebarFooter>
+      </Sidebar>
+
+      <SidebarInset>
+        <header className="flex h-14 items-center justify-between border-b bg-background/95 px-4 backdrop-blur supports-[backdrop-filter]:backdrop-blur sticky top-0 z-40">
+          <div className="flex items-center gap-3">
+            <SidebarTrigger className="h-8 w-8 rounded-lg" />
+            <div className="flex items-center gap-2">
+              <h1 className="text-lg font-semibold">
+                {activeMenuItem?.label ?? "Dashboard"}
+              </h1>
+            </div>
+          </div>
+          <div className="flex items-center gap-2">
+            <Badge className={`${roleColors[role]}`}>
+              {roleLabels[role]}
+            </Badge>
+          </div>
+        </header>
+        <main className="flex-1 p-6 overflow-auto">{children}</main>
+      </SidebarInset>
+    </>
+  );
+}
